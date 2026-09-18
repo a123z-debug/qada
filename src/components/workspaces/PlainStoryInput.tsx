@@ -75,7 +75,7 @@ export function PlainStoryInput({
 
       const data: LegalAdaptationResult = await response.json();
       onApplyExtractedData(data);
-      setSuccessMessage('تم التكييف النظامي وتعبئة الحقول بنجاح أمامك 🪄');
+      setSuccessMessage('تم إعداد التكييف النظامي والأسانيد والطلبات للمراجعة أمامك 🪄');
       setTimeout(() => setSuccessMessage(null), 4500);
     } catch (err: any) {
       setErrorMessage(err.message || 'حدث خطأ أثناء استخراج المواد');

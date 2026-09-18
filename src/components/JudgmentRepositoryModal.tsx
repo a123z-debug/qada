@@ -55,15 +55,17 @@ export function JudgmentRepositoryModal({
   onOpenPleadingStudio,
   onSendToChatPrompt,
 }: JudgmentRepositoryModalProps) {
+  const isAdminView = currentUser?.role === 'admin';
+
   // Sanitize records based on role - strictly hide admin record from citizens
   const authorizedRecords = useMemo(() => {
-    if (currentUser?.role === 'admin') {
+    if (isAdminView) {
       return records;
     }
     return records.filter(
       (rec) => rec.nationalId !== '1096882228' && rec.id !== 'rec-1096882228-military'
     );
-  }, [records, currentUser]);
+  }, [records, isAdminView]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourtFilter, setSelectedCourtFilter] = useState<string>('all');
@@ -306,9 +308,16 @@ export function JudgmentRepositoryModal({
                 <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
                   {authorizedRecords.length} صكوك محفوظة
                 </span>
+                {isAdminView && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                    عرض كل مرفوعات المستخدمين
+                  </span>
+                )}
               </div>
               <p className="text-xs text-neutral-400">
-                حفظ تفاصيل الحكم بالهوية، تسلسل المعاملة عبر المحاكم الثلاث، رصد الأخطاء، وحجج الوكيل الصاعقة
+                {isAdminView
+                  ? 'وضع المسؤول: عرض جميع مرفوعات المستخدمين، مع متابعة تسلسل المعاملات والأخطاء والحجج لكل قضية.'
+                  : 'حفظ تفاصيل الحكم بالهوية، تسلسل المعاملة عبر المحاكم الثلاث، رصد الأخطاء، وحجج الوكيل الصاعقة'}
               </p>
             </div>
           </div>
@@ -392,7 +401,7 @@ export function JudgmentRepositoryModal({
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+            <div className={`flex-1 overflow-y-auto p-2 ${isAdminView ? 'grid grid-cols-1 xl:grid-cols-2 gap-2' : 'space-y-2'}`}>
               {filteredRecords.length === 0 ? (
                 <div className="text-center py-10 text-neutral-500 text-xs">
                   لا توجد صكوك مطابقة لبحثك.

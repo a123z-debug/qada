@@ -4,7 +4,7 @@
  */
 export function printLegalMemo(
   content: string,
-  title: string = 'محرر قضائي - ديوان المظالم'
+  title: string = 'محرر قضائي - أصول القضاء'
 ) {
   // Strip Markdown markers if needed for clean judicial printing
   const cleanContent = content
@@ -102,13 +102,13 @@ export function printLegalMemo(
     <body>
       <div class="header">
         <div class="kingdom">المملكة العربية السعودية</div>
-        <h1>ديوان المظالم - القضاء الإداري</h1>
-        <div class="subtitle">محرر قضائي رسمي معد للإيداع بمنصة معين</div>
+        <h1>أصول القضاء - منصة القضايا والدفوعات</h1>
+        <div class="subtitle">محرر قضائي رسمي للمراجعة والطباعة</div>
         <div class="date">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-SA')}</div>
       </div>
       <div class="content">${escapedContent}</div>
       <div class="footer">
-        <div>منظومة الذكاء القضائي الإداري</div>
+        <div>أصول القضاء - منصة القضايا والدفوعات</div>
         <div>صفحة طباعة معتمدة</div>
       </div>
       <script>

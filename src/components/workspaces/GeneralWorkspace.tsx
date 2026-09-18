@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { UserSession } from '../../types';
 import { LegalReviewEditor } from './LegalReviewEditor';
-import { PlainStoryInput } from './PlainStoryInput';
+import { LegalAdaptationResult, PlainStoryInput } from './PlainStoryInput';
 
 interface GeneralWorkspaceProps {
   service: string | null;
@@ -75,6 +75,23 @@ export function GeneralWorkspace({
   const [isReviewMode, setIsReviewMode] = useState<boolean>(Boolean(initial.generatedOutput));
   const [lastSavedTime, setLastSavedTime] = useState<string>('محفوظ محلياً');
   const [isAutoFilled, setIsAutoFilled] = useState(false);
+  const [pendingAdaptation, setPendingAdaptation] = useState<LegalAdaptationResult | null>(null);
+
+  const applyAdaptation = (extracted: LegalAdaptationResult) => {
+    const newSubject = extracted.subject || extracted.disputedSubject || disputeSubject;
+    const newGrounds = extracted.legal_bases?.length
+      ? extracted.legal_bases.map((basis) => `- ${basis}`).join('\n')
+      : extracted.legalBases || legalGrounds;
+    const newDemands = extracted.requests?.length
+      ? extracted.requests.map((request, index) => `${index + 1}. ${request}`).join('\n')
+      : extracted.claimDemands || claimDemands;
+    setDisputeSubject(newSubject);
+    setLegalGrounds(newGrounds);
+    setClaimDemands(newDemands);
+    setPendingAdaptation(null);
+    setIsAutoFilled(true);
+    setTimeout(() => setIsAutoFilled(false), 2200);
+  };
 
   // Auto-save to LocalStorage
   useEffect(() => {
@@ -363,8 +380,8 @@ ${storyAddon}`;
         </div>
       ) : (
         /* Primary Claim / Appeal / Memo */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 space-y-4">
+        <div className="space-y-6">
+          <div className="bg-transparent border-0 rounded-3xl p-0 space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-emerald-400" />
@@ -384,44 +401,20 @@ ${storyAddon}`;
               court="general"
               currentStory={userStory}
               onStoryChange={setUserStory}
-              onApplyExtractedData={(extracted) => {
-                const newSubject = extracted.subject || extracted.disputedSubject || disputeSubject;
-                const newGrounds =
-                  extracted.legal_bases && extracted.legal_bases.length > 0
-                    ? extracted.legal_bases.map((b) => `- ${b}`).join('\n')
-                    : extracted.legalBases || legalGrounds;
-                const newDemands =
-                  extracted.requests && extracted.requests.length > 0
-                    ? extracted.requests.map((r, i) => `${i + 1}. ${r}`).join('\n')
-                    : extracted.claimDemands || claimDemands;
-
-                setDisputeSubject(newSubject);
-                setLegalGrounds(newGrounds);
-                setClaimDemands(newDemands);
-
-                // Immediate LocalStorage persist
-                try {
-                  const toSave = {
-                    claimantName,
-                    nationalId,
-                    defendantName,
-                    disputeSubject: newSubject,
-                    legalGrounds: newGrounds,
-                    claimDemands: newDemands,
-                    userStory,
-                    uploadedFileName,
-                    uploadedFileText,
-                    generatedOutput,
-                  };
-                  localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-                } catch {
-                  // ignore
-                }
-
-                setIsAutoFilled(true);
-                setTimeout(() => setIsAutoFilled(false), 2200);
-              }}
+              onApplyExtractedData={(extracted) => setPendingAdaptation(extracted)}
             />
+
+            {pendingAdaptation && (
+              <div className="space-y-4 rounded-2xl border border-emerald-500/30 bg-white/5 p-4 backdrop-blur-sm">
+                <div><p className="text-xs font-bold text-emerald-300">التكييف الأولي المقترح</p><p className="mt-1 text-[11px] text-neutral-400">راجع الموضوع والأسانيد والطلبات قبل اعتمادها.</p></div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">موضوع القضية</span><p className="mt-1 text-xs leading-relaxed text-neutral-200">{pendingAdaptation.subject || pendingAdaptation.disputedSubject}</p></div>
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">الأسانيد المتوقعة</span><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.legal_bases?.map((basis) => `- ${basis}`).join('\n') || pendingAdaptation.legalBases}</p></div>
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">الطلبات المقترحة</span><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.requests?.map((request, index) => `${index + 1}. ${request}`).join('\n') || pendingAdaptation.claimDemands}</p></div>
+                </div>
+                <div className="flex justify-end gap-2"><button type="button" onClick={() => setPendingAdaptation(null)} className="rounded-xl border border-neutral-700 px-3 py-2 text-xs font-bold text-neutral-300 hover:bg-neutral-800">إلغاء الاقتراح</button><button type="button" onClick={() => applyAdaptation(pendingAdaptation)} className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-neutral-950 hover:bg-emerald-400">اعتماد وتعبئة النموذج</button></div>
+              </div>
+            )}
 
             <div className="space-y-3 pt-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -520,7 +513,7 @@ ${storyAddon}`;
             </button>
           </div>
 
-          <div className="lg:col-span-5 bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                 <div className="flex items-center gap-2">

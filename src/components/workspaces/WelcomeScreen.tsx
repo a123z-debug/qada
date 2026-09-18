@@ -20,6 +20,8 @@ interface WelcomeScreenProps {
   onSelectService: (service: string) => void;
   userName?: string;
   message?: string;
+  isAdmin?: boolean;
+  onOpenAdminOverview?: () => void;
 }
 
 export function WelcomeScreen({
@@ -27,6 +29,8 @@ export function WelcomeScreen({
   onSelectService,
   userName,
   message = 'الرجاء اختيار الاختصاص القضائي للبدء',
+  isAdmin = false,
+  onOpenAdminOverview,
 }: WelcomeScreenProps) {
   const handleQuickLaunch = (court: CourtJurisdiction, serviceId: string) => {
     onSelectCourt(court);
@@ -34,9 +38,9 @@ export function WelcomeScreen({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 py-4 px-2 sm:px-6">
+    <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 py-3 sm:py-4 px-2 sm:px-6">
       {/* 1. Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 p-6 sm:p-10 shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 p-4 sm:p-10 shadow-2xl">
         <div className="absolute top-0 left-0 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold">
@@ -45,14 +49,21 @@ export function WelcomeScreen({
           </div>
 
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-neutral-100 tracking-tight">
-            {userName ? `أهلاً بك، ${userName}` : 'منظومة الترافع والذكاء القضائي'}
+            {isAdmin ? 'أهلاً بك' : userName ? `أهلاً بك، ${userName}` : 'منظومة الترافع والذكاء القضائي'}
           </h1>
+
+          {isAdmin && (
+            <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300">
+              <ShieldCheck className="h-4 w-4" />
+              <span>حساب مسؤول</span>
+            </div>
+          )}
 
           <p className="text-sm sm:text-base text-neutral-300 max-w-2xl leading-relaxed">
             {message}. تم بناء الواجهة بتقنية الصفحة الواحدة الحديثة مع العزل التام للمذكرات واللوائح لكل محكمة على حدة لضمان الدقة وتجنب تداخل الاختصاصات.
           </p>
 
-          <div className="pt-2 flex flex-wrap items-center gap-4 text-xs text-neutral-400">
+          <div className="hidden sm:flex pt-2 flex-wrap items-center gap-4 text-xs text-neutral-400">
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>تنقل فوري بدون إعادة تحميل (No Refresh)</span>
@@ -68,6 +79,19 @@ export function WelcomeScreen({
           </div>
         </div>
       </div>
+
+      {isAdmin && onOpenAdminOverview && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={onOpenAdminOverview}
+            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-200 transition hover:bg-emerald-500/20"
+          >
+            <FolderOpen className="w-4 h-4" />
+            <span>مرفوعات جميع المستخدمين</span>
+          </button>
+        </div>
+      )}
 
       {/* 2. Three Judicial Core Jurisdiction Cards */}
       <div className="space-y-4">
@@ -87,7 +111,7 @@ export function WelcomeScreen({
             return (
               <div
                 key={cat.id}
-                className="group relative rounded-3xl bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 transition-all duration-300 p-6 flex flex-col justify-between shadow-xl hover:shadow-2xl hover:-translate-y-1"
+                className="group relative rounded-3xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-400/70 transition-all duration-300 p-4 sm:p-6 flex flex-col justify-between shadow-[0_0_20px_rgba(245,158,11,0.08)] hover:shadow-[0_0_30px_rgba(245,158,11,0.18)] hover:-translate-y-1 backdrop-blur-md"
               >
                 <div className="space-y-4">
                   {/* Top Badge & Icon */}
@@ -119,7 +143,7 @@ export function WelcomeScreen({
                         key={srv.id}
                         type="button"
                         onClick={() => handleQuickLaunch(cat.id, srv.id)}
-                        className="w-full flex items-center justify-between p-1.5 rounded-lg text-xs text-neutral-300 hover:text-amber-300 hover:bg-neutral-800/80 transition-colors text-right"
+                        className="w-full min-h-11 flex items-center justify-between p-2 rounded-lg text-xs text-neutral-300 hover:text-amber-300 hover:bg-neutral-800/80 transition-colors text-right"
                       >
                         <span className="truncate">{srv.label}</span>
                         <ArrowLeft className="w-3 h-3 text-neutral-500 group-hover:text-amber-400 shrink-0" />

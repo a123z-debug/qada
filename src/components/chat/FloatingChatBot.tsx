@@ -53,6 +53,29 @@ export function FloatingChatBot({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
+  const getWelcomeMessage = () => {
+    if (activeCourt === 'administrative') {
+      return 'أهلاً بك في المسار الإداري. ما الذي حدث معك باختصار؟ اذكر القرار أو الحق الذي لم يُصرف، وتاريخ علمك به، وهل قدمت تظلماً للجهة؟ سأرتب الوقائع ثم أستخرج الأسانيد والطلبات معك خطوة بخطوة.';
+    }
+    if (activeCourt === 'general') {
+      return 'أهلاً بك في المسار العام. احكِ لي ما حدث باختصار: ما العلاقة أو العقد بين الأطراف، وما الالتزام الذي لم يُنفذ، وما طلبك من المحكمة؟ سأحوّل الوقائع إلى موضوع دعوى وأسانيد وطلبات قابلة للمراجعة.';
+    }
+    if (activeCourt === 'criminal') {
+      return 'أهلاً بك في المسار الجزائي. اذكر الواقعة والإجراء الذي تم بحقك، وهل يوجد قبض أو تفتيش أو تحقيق أو اعتراف؟ لا ترسل بيانات حساسة غير لازمة. سأرتب الوقائع وأحدد الدفوع والمرفقات المطلوبة قبل الصياغة.';
+    }
+    return 'أهلاً بك في أصول القضاء. ما قصتك أو طلبك باختصار؟ اختر المسار الإداري أو العام أو الجزائي، وسأطرح عليك الأسئلة المهمة ثم أحوّل إجاباتك إلى موضوع وأسانيد وطلبات ومذكرة قابلة للمراجعة.';
+  };
+
+  useEffect(() => {
+    setMessages((previous) => {
+      const welcomeMessage = getWelcomeMessage();
+      if (previous.length === 1 && previous[0].id === 'welcome-msg') {
+        return [{ ...previous[0], content: welcomeMessage }];
+      }
+      return previous;
+    });
+  }, [activeCourt]);
+
   // Auto scroll to bottom when messages update
   useEffect(() => {
     if (chatScrollRef.current) {
@@ -288,7 +311,7 @@ export function FloatingChatBot({
 
                         {!isUser && m.content && (
                           <div className="mt-2 pt-1 border-t border-neutral-800/80 flex items-center justify-between text-[10px] text-neutral-400">
-                            <span>ذكاء ديوان المظالم</span>
+                            <span>مستشار أصول القضاء</span>
                             <button
                               type="button"
                               onClick={() => copyMessage(m.id, m.content)}

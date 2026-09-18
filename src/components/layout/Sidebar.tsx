@@ -50,7 +50,7 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
   {
     id: 'administrative',
     title: 'المحاكم الإدارية',
-    subTitle: 'ديوان المظالم والتظلمات وقضايا القرارات والبدلات',
+    subTitle: 'القضايا الإدارية والتظلمات والقرارات والبدلات',
     icon: Building2,
     colorTheme: {
       bg: 'bg-amber-500/10',
@@ -238,7 +238,7 @@ export function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="h-full flex flex-col bg-neutral-900 border-l border-neutral-800 text-neutral-100 select-none">
+    <div className="app-sidebar h-full flex flex-col bg-neutral-900 border-l border-neutral-800 text-neutral-100">
       {/* 1. Header & Identity */}
       <div className="p-4 border-b border-neutral-800/80 bg-neutral-950/60">
         <div className="flex items-center justify-between gap-2">
@@ -248,12 +248,12 @@ export function Sidebar({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h1 className="text-sm font-bold text-neutral-100 tracking-tight">ديوان المظالم</h1>
+                <h1 className="text-sm font-bold text-neutral-100 tracking-tight">أصول القضاء</h1>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   SPA
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400">بوابة الذكاء القضائي الموحدة</p>
+              <p className="text-[11px] text-neutral-400">منصة القضايا والدفوعات</p>
             </div>
           </div>
 
@@ -261,7 +261,7 @@ export function Sidebar({
           {onCloseMobile && (
             <button
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+              className="lg:hidden min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
               title="إغلاق القائمة"
             >
               <X className="w-5 h-5" />
@@ -289,7 +289,7 @@ export function Sidebar({
               {onLogout && (
                 <button
                   onClick={onLogout}
-                  className="p-1 rounded text-neutral-400 hover:text-rose-400 hover:bg-neutral-800 transition-colors"
+                  className="min-h-11 min-w-11 inline-flex items-center justify-center rounded text-neutral-400 hover:text-rose-400 hover:bg-neutral-800 transition-colors"
                   title="تسجيل الخروج"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -305,6 +305,7 @@ export function Sidebar({
         <button
           id="btn-return-home"
           type="button"
+          aria-current={activeCourt === null ? 'page' : undefined}
           onClick={() => {
             onSelectCourt(null);
             if (onCloseMobile) onCloseMobile();
@@ -341,7 +342,7 @@ export function Sidebar({
               className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                 isCurrentCourt
                   ? `${cat.colorTheme.border} bg-neutral-950/80 shadow-lg ring-1 ring-neutral-700/50`
-                  : 'border-neutral-800 bg-neutral-900/60 hover:border-neutral-700'
+                  : 'border-amber-500/15 bg-slate-900/70 shadow-[0_0_14px_rgba(245,158,11,0.05)] hover:border-amber-400/50 hover:shadow-[0_0_22px_rgba(245,158,11,0.12)]'
               }`}
             >
               {/* Accordion Header Button */}

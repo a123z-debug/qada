@@ -47,7 +47,7 @@ export function PromptLibraryModal({ isOpen, onClose, onSelect }: PromptLibraryM
             </div>
             <div>
               <h2 className="text-base font-bold text-neutral-100">مكتبة النماذج والاستشارات القضائية</h2>
-              <p className="text-xs text-neutral-400">قوالب صياغة الدفوع وتحليل قضايا ديوان المظالم السعودي</p>
+              <p className="text-xs text-neutral-400">قوالب صياغة الدفوع وتحليل القضايا واللوائح</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

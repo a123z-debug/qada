@@ -22,7 +22,7 @@ import {
 import { printLegalMemo } from '../../utils/printMemo';
 import { UserSession } from '../../types';
 import { LegalReviewEditor } from './LegalReviewEditor';
-import { PlainStoryInput } from './PlainStoryInput';
+import { LegalAdaptationResult, PlainStoryInput } from './PlainStoryInput';
 
 interface AdministrativeWorkspaceProps {
   service: string | null;
@@ -94,6 +94,24 @@ export function AdministrativeWorkspace({
   const [isReviewMode, setIsReviewMode] = useState<boolean>(Boolean(initial.generatedOutput));
   const [lastSavedTime, setLastSavedTime] = useState<string>('محفوظ محلياً');
   const [isAutoFilled, setIsAutoFilled] = useState(false);
+  const [pendingAdaptation, setPendingAdaptation] = useState<LegalAdaptationResult | null>(null);
+
+  const applyAdaptation = (extracted: LegalAdaptationResult) => {
+    const newSubject = extracted.subject || extracted.disputedSubject || disputedDecision;
+    const newLegalBases = extracted.legal_bases?.length
+      ? extracted.legal_bases.map((basis) => `- ${basis}`).join('\n')
+      : extracted.legalBases || legalBases;
+    const newRequests = extracted.requests?.length
+      ? extracted.requests.map((request, index) => `${index + 1}. ${request}`).join('\n')
+      : extracted.claimDemands || claimRequests;
+
+    setDisputedDecision(newSubject);
+    setLegalBases(newLegalBases);
+    setClaimRequests(newRequests);
+    setPendingAdaptation(null);
+    setIsAutoFilled(true);
+    setTimeout(() => setIsAutoFilled(false), 2200);
+  };
 
   // Auto-save to LocalStorage whenever form fields or output change
   useEffect(() => {
@@ -289,7 +307,7 @@ ${storyAddon}`;
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-neutral-100">بؤرة المحاكم الإدارية (ديوان المظالم)</h2>
+              <h2 className="text-base font-bold text-neutral-100">بؤرة القضايا الإدارية</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                 عزل تام
               </span>
@@ -331,7 +349,7 @@ ${storyAddon}`;
             <div className="flex items-center gap-2.5 text-amber-400">
               <UploadCloud className="w-6 h-6" />
               <div>
-                <h3 className="text-lg font-bold text-neutral-100">رفع مرفقات وقرارات ديوان المظالم</h3>
+                <h3 className="text-lg font-bold text-neutral-100">رفع مرفقات وقرارات القضية</h3>
                 <p className="text-xs text-neutral-400">
                   يتم حفظ المرفقات في مسودة العمل محلياً دون استهلاك رصيد أو تشغيل تلقائي للذكاء الاصطناعي
                 </p>
@@ -395,9 +413,8 @@ ${storyAddon}`;
         </div>
       ) : (
         /* Primary Pleading / Claim / Appeal / Memo Studio */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Form Side (7 cols) */}
-          <div className="lg:col-span-7 bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 space-y-4">
+        <div className="space-y-6">
+          <div className="bg-transparent border-0 rounded-3xl p-0 space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-amber-400" />
@@ -417,46 +434,35 @@ ${storyAddon}`;
               court="administrative"
               currentStory={userStory}
               onStoryChange={setUserStory}
-              onApplyExtractedData={(extracted) => {
-                const newSubject = extracted.subject || extracted.disputedSubject || disputedDecision;
-                const newLegalBases =
-                  extracted.legal_bases && extracted.legal_bases.length > 0
-                    ? extracted.legal_bases.map((b) => `- ${b}`).join('\n')
-                    : extracted.legalBases || legalBases;
-                const newRequests =
-                  extracted.requests && extracted.requests.length > 0
-                    ? extracted.requests.map((r, i) => `${i + 1}. ${r}`).join('\n')
-                    : extracted.claimDemands || claimRequests;
-
-                setDisputedDecision(newSubject);
-                setLegalBases(newLegalBases);
-                setClaimRequests(newRequests);
-
-                // Immediate LocalStorage persist
-                try {
-                  const toSave = {
-                    claimantName,
-                    nationalId,
-                    defendantAgency,
-                    disputedDecision: newSubject,
-                    grievanceDate,
-                    legalBases: newLegalBases,
-                    claimRequests: newRequests,
-                    userStory,
-                    uploadedFileName,
-                    uploadedFileText,
-                    generatedOutput,
-                  };
-                  localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-                } catch {
-                  // ignore
-                }
-
-                // Trigger visual auto-fill glow / fade-in
-                setIsAutoFilled(true);
-                setTimeout(() => setIsAutoFilled(false), 2200);
-              }}
+              onApplyExtractedData={(extracted) => setPendingAdaptation(extracted)}
             />
+
+            {pendingAdaptation && (
+              <div className="space-y-4 rounded-2xl border border-amber-500/30 bg-white/5 p-4 backdrop-blur-sm">
+                <div>
+                  <p className="text-xs font-bold text-amber-300">التكييف الأولي المقترح</p>
+                  <p className="mt-1 text-[11px] text-neutral-400">راجع النتيجة ثم اعتمدها لتعبئة نموذج اللائحة، أو عدّلها يدويًا بعد الاعتماد.</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3">
+                    <span className="text-[10px] font-bold text-neutral-400">موضوع القضية</span>
+                    <p className="mt-1 text-xs leading-relaxed text-neutral-200">{pendingAdaptation.subject || pendingAdaptation.disputedSubject}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3">
+                    <span className="text-[10px] font-bold text-neutral-400">الأسانيد المتوقعة</span>
+                    <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.legal_bases?.map((basis) => `- ${basis}`).join('\n') || pendingAdaptation.legalBases}</p>
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3">
+                    <span className="text-[10px] font-bold text-neutral-400">الطلبات المقترحة</span>
+                    <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.requests?.map((request, index) => `${index + 1}. ${request}`).join('\n') || pendingAdaptation.claimDemands}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <button type="button" onClick={() => setPendingAdaptation(null)} className="rounded-xl border border-neutral-700 px-3 py-2 text-xs font-bold text-neutral-300 hover:bg-neutral-800">إلغاء النتيجة</button>
+                  <button type="button" onClick={() => applyAdaptation(pendingAdaptation)} className="rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-neutral-950 hover:bg-amber-400">اعتماد وتعبئة النموذج</button>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3 pt-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -535,6 +541,17 @@ ${storyAddon}`;
                 />
               </div>
 
+              <button
+                type="button"
+                id="btn-draft-memo-admin"
+                onClick={handleGenerateDocument}
+                disabled={isGenerating}
+                className="w-full bg-amber-500/90 hover:bg-amber-500 text-slate-950 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-200 cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>{isGenerating ? 'جاري الاتصال بالذكاء الاصطناعي والصياغة...' : 'صياغة المذكرة الاحترافية'}</span>
+              </button>
+
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-semibold text-neutral-300">الطلبات الختامية الجازمة:</label>
@@ -551,23 +568,15 @@ ${storyAddon}`;
                   }`}
                 />
               </div>
-            </div>
 
-            {/* MANDATORY BUTTON AS SPECIFIED: (صياغة المذكرة) */}
-            <button
-              type="button"
-              id="btn-draft-memo-admin"
-              onClick={handleGenerateDocument}
-              disabled={isGenerating}
-              className="w-full py-3 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black text-sm flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer disabled:opacity-50"
-            >
-              <Sparkles className="w-5 h-5" />
-              <span>{isGenerating ? 'جاري الاتصال بالذكاء الاصطناعي والصياغة...' : 'صياغة المذكرة'}</span>
-            </button>
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-slate-300 text-sm backdrop-blur-sm">
+                <span className="text-xs text-amber-400/80 block mb-1">الأسانيد النظامية والمواد المستند إليها (كمثال توضيحي):</span>
+                <p className="opacity-80">المرسوم الملكي الكريم رقم (م/37) وتاريخ 1430/06/30هـ...</p>
+              </div>
+            </div>
           </div>
 
-          {/* Right Summary / Output (5 cols) */}
-          <div className="lg:col-span-5 bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                 <div className="flex items-center gap-2">

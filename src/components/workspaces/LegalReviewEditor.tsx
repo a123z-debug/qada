@@ -192,6 +192,7 @@ export function LegalReviewEditor({
   const [isLoadingJudges, setIsLoadingJudges] = useState(false);
   const [previousContent, setPreviousContent] = useState<string | null>(null);
   const [revisionToast, setRevisionToast] = useState<string | null>(null);
+  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
 
   const isAllApproved = checkNames && checkDates && checkRequests;
   const approvedCount = (checkNames ? 1 : 0) + (checkDates ? 1 : 0) + (checkRequests ? 1 : 0);
@@ -228,8 +229,9 @@ export function LegalReviewEditor({
       }
 
       const data = await response.json();
-      if (data.report) {
-        setJudgesReport(data.report);
+      const report = data.report || data.auditReport;
+      if (report) {
+        setJudgesReport(report);
       }
     } catch (err: any) {
       console.error('Error invoking judges audit:', err);
@@ -359,6 +361,11 @@ export function LegalReviewEditor({
 
   const handlePrintPdf = () => {
     if (!isAllApproved) return;
+    setIsPrintPreviewOpen(true);
+  };
+
+  const handleConfirmPrint = () => {
+    setIsPrintPreviewOpen(false);
     printLegalMemo(content, documentTitle || 'محرر قضائي رسمي');
   };
 
@@ -532,7 +539,7 @@ export function LegalReviewEditor({
               )}
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">
-              فحص أخطاء الطعن بالنقض، عيوب عريضة الدعوى، ونواقص المرفقات مع الصياغة البديلة المعدلة الجاهزة للإيداع ("ويعدلون لي").
+              فحص أخطاء الطعن بالنقض، عيوب عريضة الدعوى، ونواقص المرفقات مع اقتراح التعديلات اللازمة والصياغة الجاهزة للإيداع.
             </p>
           </div>
         </div>
@@ -820,10 +827,10 @@ export function LegalReviewEditor({
                       ? 'bg-amber-500 hover:bg-amber-400 text-neutral-950 cursor-pointer shadow-amber-500/20'
                       : 'bg-neutral-800 text-neutral-500 opacity-50 cursor-not-allowed'
                   }`}
-                  title={!isAllApproved ? 'مُعطل حتى يتم تدقيق البنود الثلاثة' : 'طباعة / تصدير PDF'}
+                  title={!isAllApproved ? 'مُعطل حتى يتم تدقيق البنود الثلاثة' : 'معاينة اللائحة ثم طباعتها'}
                 >
                   <Printer className="w-4 h-4" />
-                  <span>اعتماد وتصدير PDF</span>
+                  <span>معاينة وطباعة اللائحة</span>
                 </button>
 
                 <button
@@ -846,6 +853,43 @@ export function LegalReviewEditor({
           </div>
         </div>
       </div>
+      )}
+
+      {isPrintPreviewOpen && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-3 sm:p-6" dir="rtl">
+          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-neutral-700 bg-neutral-900 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3 sm:px-6">
+              <div>
+                <h3 className="text-sm font-bold text-neutral-100">معاينة نهائية قبل الطباعة</h3>
+                <p className="mt-1 text-[11px] text-neutral-400">يمكنك الرجوع للمحرر وإضافة أي تعديل قبل إخراج اللائحة.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPrintPreviewOpen(false)}
+                className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-neutral-300 hover:bg-neutral-800 hover:text-white"
+              >
+                رجوع للتعديل
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto bg-white p-5 text-right text-sm leading-loose text-slate-900 sm:p-8">
+              <h4 className="mb-5 border-b-2 border-slate-300 pb-3 text-center text-lg font-bold">{documentTitle}</h4>
+              <div className="whitespace-pre-wrap">{content}</div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-800 bg-neutral-950 px-4 py-3 sm:px-6">
+              <span className="text-[11px] text-neutral-400">هذه المعاينة لا ترسل اللائحة إلى أي جهة.</span>
+              <button
+                type="button"
+                onClick={handleConfirmPrint}
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-neutral-950 hover:bg-amber-400"
+              >
+                <Printer className="h-4 w-4" />
+                طباعة اللائحة الآن
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

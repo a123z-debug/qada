@@ -1,7 +1,154 @@
 @import "tailwindcss";
 
+:root {
+  color-scheme: dark;
+  --app-bg: #11191f;
+  --app-surface: #18232b;
+  --app-surface-deep: #0f171d;
+  --app-border: rgba(148, 163, 184, 0.16);
+  --app-text: #e7edf2;
+  --app-muted: #9eacb8;
+  --app-accent: #d8a24a;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  overscroll-behavior-y: none;
+}
+
 body {
   font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--app-bg);
+  color: var(--app-text);
+  line-height: 1.6;
+  user-select: none;
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+textarea,
+select {
+  user-select: text;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(216, 162, 74, 0.75);
+  outline-offset: 2px;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.app-shell,
+.login-shell {
+  background: var(--app-bg) !important;
+  color: var(--app-text) !important;
+}
+
+.app-shell [class~="bg-neutral-950"],
+.login-shell [class~="bg-neutral-950"] {
+  background-color: var(--app-surface-deep) !important;
+}
+
+.app-shell [class~="bg-neutral-900"],
+.login-shell [class~="bg-neutral-900"] {
+  background-color: var(--app-surface) !important;
+}
+
+.app-shell [class~="bg-neutral-800"],
+.login-shell [class~="bg-neutral-800"] {
+  background-color: #22303a !important;
+}
+
+.app-shell [class*="bg-neutral-950/"],
+.app-shell [class*="bg-neutral-900/"],
+.login-shell [class*="bg-neutral-950/"],
+.login-shell [class*="bg-neutral-900/"] {
+  background-color: rgba(15, 23, 29, 0.72) !important;
+}
+
+.app-shell [class*="bg-neutral-800/"],
+.login-shell [class*="bg-neutral-800/"] {
+  background-color: rgba(34, 48, 58, 0.72) !important;
+}
+
+.app-shell [class~="border-neutral-800"],
+.app-shell [class*="border-neutral-800/"],
+.app-shell [class~="border-neutral-700"],
+.login-shell [class~="border-neutral-800"],
+.login-shell [class*="border-neutral-800/"],
+.login-shell [class~="border-neutral-700"] {
+  border-color: var(--app-border) !important;
+}
+
+.app-shell [class~="text-neutral-100"],
+.app-shell [class~="text-neutral-200"],
+.login-shell [class~="text-neutral-100"],
+.login-shell [class~="text-neutral-200"] {
+  color: var(--app-text) !important;
+}
+
+.app-shell [class~="text-neutral-300"],
+.app-shell [class~="text-neutral-400"],
+.login-shell [class~="text-neutral-300"],
+.login-shell [class~="text-neutral-400"] {
+  color: var(--app-muted) !important;
+}
+
+.app-shell [class~="text-amber-400"],
+.app-shell [class~="text-amber-300"],
+.login-shell [class~="text-amber-400"],
+.login-shell [class~="text-amber-300"] {
+  color: var(--app-accent) !important;
+}
+
+.app-shell [class~="bg-amber-500"],
+.login-shell [class~="bg-amber-500"] {
+  background-color: var(--app-accent) !important;
+}
+
+.app-shell [class*="border-amber-500/"],
+.login-shell [class*="border-amber-500/"] {
+  border-color: rgba(216, 162, 74, 0.34) !important;
+}
+
+.app-shell [class*="bg-amber-500/"],
+.login-shell [class*="bg-amber-500/"] {
+  background-color: rgba(216, 162, 74, 0.12) !important;
 }
 
 .font-legal {

@@ -8,23 +8,34 @@ dotenv.config();
 
 const PORT = 3000;
 
-function getGeminiClient(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+function getGeminiClients(): GoogleGenAI[] {
+  const apiKeys = [1, 2, 3, 4]
+    .map((index) => process.env[`GEMINI_API_KEY${index === 1 ? "" : `_${index}`}`]?.trim())
+    .filter((apiKey): apiKey is string => Boolean(apiKey));
+
+  if (apiKeys.length === 0) {
     throw new Error("GEMINI_API_KEY is not configured in environment.");
   }
-  return new GoogleGenAI({
+
+  return apiKeys.map((apiKey) => new GoogleGenAI({
     apiKey,
     httpOptions: {
       headers: {
         "User-Agent": "aistudio-build",
       },
     },
-  });
+  }));
 }
 
-const DEFAULT_LEGAL_SYSTEM_INSTRUCTION = `أنت "المستشار القضائي الإداري الصارم" أمام ديوان المظالم والمحاكم السعودية.
+const DEFAULT_LEGAL_SYSTEM_INSTRUCTION = `أنت "المستشار القضائي الذكي" لمنصة "أصول القضاء" المتخصصة في قضاء ديوان المظالم والمحاكم الإدارية والعامة والجزائية في المملكة العربية السعودية.
 مهمتك: تقديم صياغات قضائية، دفوع نظامية، ولوائح دعوى قطعية بدون فلسفة نظرية أو حشو أو تهرب أو خلط بين الأنظمة.
+
+[منهجية المرافقة من البداية إلى النهاية]:
+1. رحب بالمستخدم بحسب الاختصاص المختار، واسأله مباشرة عن وقائع قضيته أو طلبه باختصار.
+2. لا تقدم إجابات عامة؛ اسأل عن البيانات الجوهرية الناقصة مثل تاريخ العلم بالقرار، التظلم الإداري، والصفة العسكرية أو المدنية.
+3. استند إلى الأنظمة السعودية ذات الصلة، وقدم خيارات عملية واضحة للخطوة التالية: التظلم، صحيفة الدعوى، حساب المواعيد، أو صياغة المذكرة.
+4. رافق المستخدم خطوة بخطوة حتى يكتمل المحرر، مع الحفاظ على لغة قانونية رصينة ومباشرة.
+5. ذكّر المستخدم عند الحاجة، وباختصار غير متكرر، بمراجعة الأسانيد النظامية والمواد والتواريخ والمرفقات قبل اعتماد أي لائحة أو مذكرة. لا تكرر التذكير إذا كانت البيانات مكتملة.
 
 [قواعد الانضباط والمنع الصارم - زر البور القضائي]:
 1. [ممنوع الفلسفة والحشو والتكرار]: ادخل في صلب الموضوع القضائي والدفع النظامي مباشرة. يُمنع التردد، ويُمنع الوعظ، ويُمنع الكلام الإنشائي العام.
@@ -92,21 +103,23 @@ function formatGeminiErrorMessage(err: any): string {
 }
 
 const FALLBACK_MODELS = [
+  "gemini-3.6-flash",
   "gemini-3.1-flash-lite",
   "gemini-3.8-flash",
   "gemini-flash-latest",
 ];
 
 async function generateStreamWithFallback(
-  ai: GoogleGenAI,
+  clients: GoogleGenAI[],
   contents: any[],
   systemInstruction: string,
   temperature: number
 ) {
   let lastErr: any = null;
 
-  for (const model of FALLBACK_MODELS) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
+  for (const ai of clients) {
+    for (const model of FALLBACK_MODELS) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const stream = await ai.models.generateContentStream({
           model,
@@ -140,6 +153,7 @@ async function generateStreamWithFallback(
         // If not temporary or max attempts reached for this model, fallback to next model
         break;
       }
+      }
     }
   }
 
@@ -147,15 +161,16 @@ async function generateStreamWithFallback(
 }
 
 async function generateContentWithFallback(
-  ai: GoogleGenAI,
+  clients: GoogleGenAI[],
   contents: string,
   systemInstruction: string,
   temperature: number
 ) {
   let lastErr: any = null;
 
-  for (const model of FALLBACK_MODELS) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
+  for (const ai of clients) {
+    for (const model of FALLBACK_MODELS) {
+      for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const res = await ai.models.generateContent({
           model,
@@ -184,6 +199,7 @@ async function generateContentWithFallback(
           continue;
         }
         break;
+      }
       }
     }
   }
@@ -220,7 +236,7 @@ async function startServer() {
     }
 
     try {
-      const ai = getGeminiClient();
+      const aiClients = getGeminiClients();
 
       // Transform messages into Gemini contents structure supporting multimodal attachments
       const contents = messages.map(
@@ -306,7 +322,7 @@ async function startServer() {
 
       // Acquire stream with resilient model fallback BEFORE sending SSE headers
       const { stream: responseStream, model: usedModel } =
-        await generateStreamWithFallback(ai, contents, sysInstruction, safeTemp);
+        await generateStreamWithFallback(aiClients, contents, sysInstruction, safeTemp);
 
       console.log(`[Gemini] Successfully started streaming using model: ${usedModel}`);
 
@@ -358,13 +374,13 @@ async function startServer() {
     }
 
     try {
-      const ai = getGeminiClient();
+      const aiClients = getGeminiClients();
 
       const instruction = `أنت مستشار قضائي أول وخبير بصياغة الدفوع أمام ديوان المظالم السعودي. قم بإعادة صياغة استفسار أو طلب المستخدم ليكون طلباً واستشارة قضائية إدارية احترافية، محكمة الألفاظ، مستندة للقواعد الإجرائية والموضوعية، مع بيان الوقائع المطلوب فحصها (تاريخ القرار، عيوب المشروعية، التظلم الوجوبي، السوابق القضائية). أرجع النص المصاغ مباشرة دون أي مقدمات أو هوامش.`;
       const promptContent = `أعد صياغة وتطوير الاستفسار/الطلب القضائي التالي ليصبح طلباً محكماً أمام ديوان المظالم السعودي:\n\n"""${prompt}"""`;
 
       const response = await generateContentWithFallback(
-        ai,
+        aiClients,
         promptContent,
         instruction,
         0.3
@@ -388,7 +404,7 @@ async function startServer() {
     }
 
     try {
-      const ai = getGeminiClient();
+      const aiClients = getGeminiClients();
 
       let courtName = "المحاكم الإدارية (ديوان المظالم)";
       if (court === "criminal") {
@@ -403,7 +419,7 @@ legal_bases: (مصفوفة Array تحتوي على أرقام المواد وا�
 requests: (مصفوفة Array للطلبات الختامية المتوقعة من المحكمة).`;
 
       const response = await generateContentWithFallback(
-        ai,
+        aiClients,
         `نص قصة المستخدم أو النص المنسوخ:\n"""\n${story}\n"""\n\nأرجع كائن JSON الصارم بالـ 3 مفاتيح فقط بدون أي تعليق خارج JSON.`,
         systemInstruction,
         0.1
@@ -465,7 +481,7 @@ requests: (مصفوفة Array للطلبات الختامية المتوقعة �
     }
 
     try {
-      const ai = getGeminiClient();
+      const aiClients = getGeminiClients();
 
       const systemInstruction = `أنت تمثل هيئة رقابة وتدقيق قضائية عليا سعودية تضم 6 قضاة متخصصين موزعين على ثلاثة اختصاصات قضائية (قاضيان لكل محكمة):
 
@@ -585,7 +601,7 @@ requests: (مصفوفة Array للطلبات الختامية المتوقعة �
       }
 
       const response = await generateContentWithFallback(
-        ai,
+        aiClients,
         promptContent,
         systemInstruction,
         0.2
@@ -736,7 +752,7 @@ requests: (مصفوفة Array للطلبات الختامية المتوقعة �
     }
 
     try {
-      const ai = getGeminiClient();
+      const aiClients = getGeminiClients();
 
       const courtNameAr =
         court === "administrative"
@@ -853,7 +869,7 @@ ${attachmentsText || "مستندات وبيانات مرفقة في ملف ال�
         userPrompt += `\n\n(ملاحظة: لم يتم إرفاق مستندات مستقلة حتى الآن، لذا يجب على قاضي تدقيق المرفقات فحص ما إذا كانت الدعوى تفتقر إلى إرفاق عقود أو إشعارات أو قرارات لازمة وتوضيحها في attachmentErrors).`;
       }
 
-      const response = await generateContentWithFallback(ai, userPrompt, systemInstruction, 0.2);
+      const response = await generateContentWithFallback(aiClients, userPrompt, systemInstruction, 0.2);
       const raw = response.text?.trim() || "";
 
       let parsed: any = null;

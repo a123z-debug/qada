@@ -97,12 +97,14 @@ export function CaseDossierModal({
   ];
 
   // Filter dossiers shown in quick selector: Hide admin dossier from public/citizens
+  const isAdminView = currentUser?.role === 'admin';
+
   const visibleDossiers = useMemo(() => {
-    if (currentUser?.role === 'admin') {
+    if (isAdminView) {
       return ALL_REGISTERED_DOSSIERS;
     }
     return ALL_REGISTERED_DOSSIERS.filter((d) => !d.isAdminOnly && d.nationalId !== '1096882228');
-  }, [currentUser]);
+  }, [isAdminView]);
 
   const handleVerifyNationalId = (idToVerify: string) => {
     const cleanId = idToVerify.trim().replace(/\D/g, '');

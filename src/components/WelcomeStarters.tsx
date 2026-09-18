@@ -24,7 +24,7 @@ export function WelcomeStarters({ onSelectPrompt, onOpenArticle8, onOpenReposito
       {/* Official Judicial Emblem Badge */}
       <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] sm:text-xs font-semibold mb-3 sm:mb-4 shadow-sm">
         <Scale className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-        <span>منظومة الذكاء القضائي الإداري | ديوان المظالم السعودي</span>
+        <span>أصول القضاء | منصة القضايا والدفوعات</span>
       </div>
 
       {/* Main Title */}

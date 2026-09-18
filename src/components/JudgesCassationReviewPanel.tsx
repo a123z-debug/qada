@@ -257,7 +257,7 @@ export function JudgesCassationReviewPanel({
             <span>
               {isSoundDocument
                 ? 'اللائحة المعتمدة الكاملة للطباعة والإيداع ✓'
-                : 'الصياغة المعدلة المعتمدة ("ويعدلون لي")'}
+                : 'اقتراح التعديلات اللازمة والصياغة الجاهزة للإيداع'}
             </span>
           </button>
         </div>
