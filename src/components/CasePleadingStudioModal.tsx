@@ -43,7 +43,7 @@ export function CasePleadingStudioModal({
       return record;
     }
     // If the record belongs to the admin, strictly mask it with citizen session or standard citizen details
-    if (record.nationalId === '1096882228') {
+    if (record.nationalId === '3751') {
       return {
         ...record,
         id: `sanitized-${currentUser?.nationalId || 'citizen'}`,

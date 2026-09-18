@@ -51,6 +51,55 @@ interface RagReference {
   category: 'statute' | 'decree' | 'precedent' | 'shura';
 }
 
+function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
+  const normalizeSection = (section: any, title: string) => ({
+    title: section?.title || title,
+    items: Array.isArray(section?.items) ? section.items.filter((item: unknown): item is string => typeof item === 'string') : [],
+    severity: ['عالية', 'متوسطة', 'منخفضة'].includes(section?.severity) ? section.severity : 'منخفضة',
+  });
+
+  const judges = Array.isArray(raw?.judges) && raw.judges.length > 0
+    ? raw.judges.map((judge: any, index: number) => ({
+        judgeId: judge?.judgeId || judge?.id || `judge_${index + 1}`,
+        judgeName: judge?.judgeName || judge?.name || judge?.role || `عضو الهيئة ${index + 1}`,
+        judgeTitle: judge?.judgeTitle || judge?.title || 'فحص وتدقيق المحرر القضائي',
+        courtCategory: judge?.courtCategory || 'هيئة المراجعة القضائية',
+        verdict: judge?.verdict || 'بحاجة لتصحيح جوهري',
+        scoreOutOf100: Number(judge?.scoreOutOf100) || 80,
+        errorsIdentified: Array.isArray(judge?.errorsIdentified) ? judge.errorsIdentified : [],
+        critique: judge?.critique || judge?.opinion || 'لم يرد تفصيل كافٍ في تقرير الهيئة.',
+        specificAmendment: judge?.specificAmendment || '',
+      }))
+    : [{
+        judgeId: 'judge_review',
+        judgeName: 'هيئة المراجعة القضائية',
+        judgeTitle: 'فحص وتدقيق المحرر القضائي',
+        courtCategory: 'هيئة المراجعة القضائية',
+        verdict: 'بحاجة لتصحيح جوهري',
+        scoreOutOf100: 80,
+        errorsIdentified: [],
+        critique: 'تعذر استكمال تفاصيل التقرير. راجع النص وحاول الفحص مرة أخرى.',
+        specificAmendment: '',
+      }];
+
+  return {
+    documentType: raw?.documentType || 'محرر قضائي',
+    overallStatus: raw?.overallStatus || 'معيب بحاجة لتصحيح',
+    primaryFatalDefect: raw?.primaryFatalDefect || '',
+    judges,
+    cassationErrors: normalizeSection(raw?.cassationErrors, 'أخطاء الطعن والنقض'),
+    claimErrors: normalizeSection(raw?.claimErrors, 'أخطاء الدعوى والطلبات'),
+    attachmentErrors: {
+      ...normalizeSection(raw?.attachmentErrors, 'أخطاء ونواقص المرفقات'),
+      missingRequiredDocs: Array.isArray(raw?.attachmentErrors?.missingRequiredDocs) ? raw.attachmentErrors.missingRequiredDocs : [],
+    },
+    revisedDocument: typeof raw?.revisedDocument === 'string' && raw.revisedDocument.trim() ? raw.revisedDocument : originalText,
+    changeLog: Array.isArray(raw?.changeLog) ? raw.changeLog.filter((item: unknown): item is string => typeof item === 'string') : [],
+    synthesisAdvice: raw?.synthesisAdvice || 'راجع النص والمواد والتواريخ والمرفقات قبل الاعتماد.',
+    timestamp: Number(raw?.timestamp) || Date.now(),
+  };
+}
+
 const RAG_REFERENCES_BY_COURT: Record<CourtJurisdiction, RagReference[]> = {
   administrative: [
     {
@@ -231,7 +280,7 @@ export function LegalReviewEditor({
       const data = await response.json();
       const report = data.report || data.auditReport;
       if (report) {
-        setJudgesReport(report);
+        setJudgesReport(normalizeJudgesReport(report, content));
       }
     } catch (err: any) {
       console.error('Error invoking judges audit:', err);

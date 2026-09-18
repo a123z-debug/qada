@@ -12,6 +12,12 @@ import {
   CheckCircle2,
   HelpCircle,
   FolderOpen,
+  Search,
+  Library,
+  Bot,
+  FileCheck,
+  AlertTriangle,
+  Clock
 } from 'lucide-react';
 import { CourtJurisdiction, COURT_CATEGORIES } from '../layout/Sidebar';
 
@@ -38,45 +44,81 @@ export function WelcomeScreen({
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5 sm:space-y-8 py-3 sm:py-4 px-2 sm:px-6">
-      {/* 1. Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-neutral-900 via-neutral-900 to-neutral-950 border border-neutral-800 p-4 sm:p-10 shadow-2xl">
-        <div className="absolute top-0 left-0 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>نظام البؤرة القضائية والعزل التام (SPA)</span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-neutral-100 tracking-tight">
-            {isAdmin ? 'أهلاً بك' : userName ? `أهلاً بك، ${userName}` : 'منظومة الترافع والذكاء القضائي'}
-          </h1>
-
-          {isAdmin && (
-            <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300">
-              <ShieldCheck className="h-4 w-4" />
-              <span>حساب مسؤول</span>
+    <div className="max-w-6xl mx-auto space-y-8 py-4 px-2 sm:px-6 select-none" dir="rtl">
+      
+      {/* 1. بانر الـ Hero الرئيسي */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-amber-500/20 p-6 sm:p-10 shadow-2xl">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          
+          <div className="space-y-4 max-w-2xl text-right">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>منصة التدقيق والتقاضي الذكي — أصول القضاء</span>
             </div>
-          )}
 
-          <p className="text-sm sm:text-base text-neutral-300 max-w-2xl leading-relaxed">
-            {message}. تم بناء الواجهة بتقنية الصفحة الواحدة الحديثة مع العزل التام للمذكرات واللوائح لكل محكمة على حدة لضمان الدقة وتجنب تداخل الاختصاصات.
-          </p>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+              افحص قضيتك <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">قبل أن تقدمها</span>
+            </h1>
 
-          <div className="hidden sm:flex pt-2 flex-wrap items-center gap-4 text-xs text-neutral-400">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>تنقل فوري بدون إعادة تحميل (No Refresh)</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>عزل برمجيات الدفوع والمذكرات</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>مستشار ذكي عائم (Floating Chat)</span>
-            </span>
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
+              {userName ? `أهلاً بك، ${userName}. ` : ''}لا ترفع دعواك قبل أن تعرف نقاط قوتها وضعفها. افحص دعواك، دقّق لائحتك، راجع مستنداتك، واكتشف الثغرات الإجرائية والموضوعية بالاستناد إلى الأنظمة والمراجع القضائية.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => handleQuickLaunch('administrative', 'administrative_claim')}
+                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:from-amber-400 hover:to-amber-500 transition-all text-sm flex items-center gap-2"
+              >
+                <Scale className="w-4 h-4" /> ابدأ فحص قضيتك
+              </button>
+              <a
+                href="#tools-section"
+                className="px-6 py-3 bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-medium border border-slate-700 rounded-xl transition-all text-sm"
+              >
+                استكشف أدوات المنصة
+              </a>
+            </div>
           </div>
+
+          {/* لوحة مصغرة تمثل ملف القضية الرقمي */}
+          <div className="w-full md:w-80 bg-slate-950/80 border border-amber-500/30 rounded-2xl p-5 shadow-2xl backdrop-blur-md shrink-0">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+              <span className="font-bold text-xs text-amber-400 flex items-center gap-1.5">
+                <FolderOpen className="w-4 h-4" /> مساحة قضيتي النشطة
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">
+                قيد المراجعة
+              </span>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="flex items-center justify-between text-slate-300">
+                <span>سلامة البناء القضائي:</span>
+                <span className="font-bold text-amber-400 font-mono">78%</span>
+              </div>
+              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div className="bg-amber-500 h-full rounded-full" style={{ width: '78%' }}></div>
+              </div>
+
+              <div className="space-y-1.5 pt-2 text-[11px]">
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>✓ لائحة الدعوى:</span>
+                  <span className="text-emerald-400">مكتملة</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>⚠ المستندات والمرفقات:</span>
+                  <span className="text-amber-400">تحتاج مراجعة</span>
+                </div>
+                <div className="flex items-center justify-between text-slate-400">
+                  <span>🔴 النقاط الحرجة:</span>
+                  <span className="text-rose-400">3 نقاط</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -85,22 +127,22 @@ export function WelcomeScreen({
           <button
             type="button"
             onClick={onOpenAdminOverview}
-            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-200 transition hover:bg-emerald-500/20"
+            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-200 transition hover:bg-emerald-500/20 shadow-md"
           >
             <FolderOpen className="w-4 h-4" />
-            <span>مرفوعات جميع المستخدمين</span>
+            <span>مرفوعات جميع المستخدمين (لوحة الإدارة)</span>
           </button>
         </div>
       )}
 
-      {/* 2. Three Judicial Core Jurisdiction Cards */}
-      <div className="space-y-4">
+      {/* 2. مركز الأدوات والخدمات الرئيسية (Grid) */}
+      <div id="tools-section" className="space-y-4 pt-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-bold text-neutral-100 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Scale className="w-5 h-5 text-amber-400" />
-            <span>حدد المحكمة المختصة لبدء مساحة العمل:</span>
+            <span>ماذا تريد أن تفعل؟ (اختر أداة التدقيق أو الاختصاص)</span>
           </h2>
-          <span className="text-xs text-neutral-400">3 بؤر قضائية معزولة</span>
+          <span className="text-xs text-slate-400">منظومة متكاملة لمديري القضايا</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -111,54 +153,48 @@ export function WelcomeScreen({
             return (
               <div
                 key={cat.id}
-                className="group relative rounded-3xl bg-slate-900/80 border border-amber-500/20 hover:border-amber-400/70 transition-all duration-300 p-4 sm:p-6 flex flex-col justify-between shadow-[0_0_20px_rgba(245,158,11,0.08)] hover:shadow-[0_0_30px_rgba(245,158,11,0.18)] hover:-translate-y-1 backdrop-blur-md"
+                className="group relative rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/40 transition-all duration-300 p-6 flex flex-col justify-between shadow-xl backdrop-blur-sm"
               >
                 <div className="space-y-4">
-                  {/* Top Badge & Icon */}
                   <div className="flex items-center justify-between">
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner ${cat.colorTheme.bg} ${cat.colorTheme.border} ${cat.colorTheme.text}`}
-                    >
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner ${cat.colorTheme.bg} ${cat.colorTheme.border} ${cat.colorTheme.text}`}>
                       <CatIcon className="w-6 h-6" />
                     </div>
-                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300">
-                      {cat.services.length} خدمات
+                    <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                      {cat.services.length} مسارات
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-black text-neutral-100 group-hover:text-amber-400 transition-colors">
+                    <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
                       {cat.title}
                     </h3>
-                    <p className="text-xs text-neutral-400 mt-1.5 leading-relaxed">
+                    <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
                       {cat.subTitle}
                     </p>
                   </div>
 
-                  {/* Service list previews */}
-                  <div className="space-y-1.5 pt-2 border-t border-neutral-800/80">
-                    <p className="text-[11px] font-bold text-neutral-400">أبرز النماذج والخدمات:</p>
-                    {cat.services.slice(0, 3).map((srv) => (
+                  <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+                    <p className="text-[11px] font-bold text-slate-400">الخدمات والأدوات المتاحة:</p>
+                    {cat.services.map((srv) => (
                       <button
                         key={srv.id}
                         type="button"
                         onClick={() => handleQuickLaunch(cat.id, srv.id)}
-                        className="w-full min-h-11 flex items-center justify-between p-2 rounded-lg text-xs text-neutral-300 hover:text-amber-300 hover:bg-neutral-800/80 transition-colors text-right"
+                        className="w-full flex items-center justify-between p-2 rounded-xl text-xs text-slate-300 hover:text-amber-300 hover:bg-slate-800/80 transition-colors text-right"
                       >
                         <span className="truncate">{srv.label}</span>
-                        <ArrowLeft className="w-3 h-3 text-neutral-500 group-hover:text-amber-400 shrink-0" />
+                        <ArrowLeft className="w-3 h-3 text-slate-500 group-hover:text-amber-400 shrink-0" />
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Primary CTA Button */}
-                <div className="pt-6 mt-4 border-t border-neutral-800">
+                <div className="pt-6 mt-4 border-t border-slate-800">
                   <button
                     type="button"
-                    id={`enter-court-btn-${cat.id}`}
                     onClick={() => handleQuickLaunch(cat.id, primaryService.id)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-neutral-800 hover:bg-amber-500 hover:text-neutral-950 text-neutral-200 text-xs font-bold transition-all shadow-md cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition-all shadow-md cursor-pointer"
                   >
                     <span>الدخول لمساحة {cat.title}</span>
                     <ArrowLeft className="w-4 h-4" />
@@ -170,44 +206,45 @@ export function WelcomeScreen({
         </div>
       </div>
 
-      {/* 3. System Highlights Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-        <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800/80 flex items-start gap-3">
+      {/* 3. تنبيهات وخصائص المنصة الذكية */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-start gap-3">
           <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 shrink-0">
             <Zap className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-neutral-200">سرعة فائقة (SPA)</h4>
-            <p className="text-[11px] text-neutral-400 mt-0.5">
-              تبديل فوري للمحتوى بين اللوائح والمذكرات بنقرة زر دون فقدان البيانات.
+            <h4 className="text-xs font-bold text-white">تحليل فجوات الإثبات</h4>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              مقارنة تلقائية بين ما تدعيه في اللائحة وما تثبته في المستندات والمرفقات.
             </p>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800/80 flex items-start gap-3">
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-start gap-3">
           <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0">
             <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-neutral-200">بؤرة قضائية محكمة</h4>
-            <p className="text-[11px] text-neutral-400 mt-0.5">
-              عزل برمجيات القضايا الإدارية عن العامة والجزائية لضمان سلامة الإجراءات.
+            <h4 className="text-xs font-bold text-white">المدير الذكي الاستباقي</h4>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              متابعة التحديثات النظامية وتنبيهك لأي تعديلات قد تؤثر على دعواك.
             </p>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-neutral-900/60 border border-neutral-800/80 flex items-start gap-3">
+        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-start gap-3">
           <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 shrink-0">
-            <HelpCircle className="w-4 h-4" />
+            <Bot className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-neutral-200">مستشار ذكي عائم</h4>
-            <p className="text-[11px] text-neutral-400 mt-0.5">
-              نافذة شات عائمة أسفل اليسار ترافقك للإجابة على الاستفسارات أثناء الكتابة.
+            <h4 className="text-xs font-bold text-white">المستشار القانوني المترجم</h4>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              شرح المصطلحات المعقدة وتوجيهك بخطوات واضحة وبسيطة لتقوية موقفك.
             </p>
           </div>
         </div>
       </div>
+
     </div>
   );
 }

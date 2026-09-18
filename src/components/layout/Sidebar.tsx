@@ -1,23 +1,26 @@
-import React from 'react';
+ import React, { useState, useEffect } from 'react';
 import {
   Building2,
   Scale,
   ShieldAlert,
   FileText,
   FileCheck,
-  AlertTriangle,
-  FolderOpen,
   UploadCloud,
   ChevronDown,
-  ChevronLeft,
   Home,
   LogOut,
   User,
   ShieldCheck,
   Gavel,
-  CheckCircle2,
-  HelpCircle,
+  Library,
+  Bot,
+  FolderOpen,
+  BarChart3,
+  Settings,
   X,
+  Search,
+  Clock,
+  GitCompare
 } from 'lucide-react';
 import { UserSession } from '../../types';
 
@@ -50,7 +53,7 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
   {
     id: 'administrative',
     title: 'المحاكم الإدارية',
-    subTitle: 'القضايا الإدارية والتظلمات والقرارات والبدلات',
+    subTitle: 'القضايا الإدارية والتظلمات والقرارات',
     icon: Building2,
     colorTheme: {
       bg: 'bg-amber-500/10',
@@ -60,40 +63,16 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
       hoverBg: 'hover:bg-amber-500/15',
     },
     services: [
-      {
-        id: 'administrative_claim',
-        label: 'لائحة دعوى',
-        icon: FileText,
-        badge: 'دعوى إدارية',
-        description: 'صياغة دعوى متكاملة وفق نظام المرافعات أمام ديوان المظالم والأنظمة السارية',
-      },
-      {
-        id: 'administrative_appeal',
-        label: 'اعتراض',
-        icon: Scale,
-        badge: 'طعن استئنافي',
-        description: 'نقض أسباب الحكم الإداري والقصور في التسبيب ومخالفة المراسيم والأنظمة',
-      },
-      {
-        id: 'administrative_memo',
-        label: 'مذكرة',
-        icon: Gavel,
-        badge: 'دفوع موضوعية',
-        description: 'دحض دفاع الإدارة وإلزامية المراسيم الملكية (م/37) وأوجه بطلان القرار',
-      },
-      {
-        id: 'administrative_attachments',
-        label: 'رفع مرفقات',
-        icon: UploadCloud,
-        badge: 'قرارات ومستندات',
-        description: 'تحليل القرار الإداري المطعون فيه أو الصكوك واستخراج الثغرات النظامية',
-      },
+      { id: 'administrative_claim', label: 'لائحة دعوى', icon: FileText, badge: 'إدارية', description: 'صياغة دعوى متكاملة وفق نظام ديوان المظالم' },
+      { id: 'administrative_appeal', label: 'اعتراض واستئناف', icon: Scale, badge: 'طعن', description: 'نقض أسباب الحكم الإداري والقصور في التسبيب' },
+      { id: 'administrative_memo', label: 'مذكرة دفوع', icon: Gavel, badge: 'موضوعية', description: 'دحض دفاع الإدارة وأوجه بطلان القرار' },
+      { id: 'administrative_attachments', label: 'فحص المرفقات والقرارات', icon: UploadCloud, badge: 'مستندات', description: 'استخراج الثغرات النظامية من القرار المطعون فيه' },
     ],
   },
   {
     id: 'general',
     title: 'المحاكم العامة',
-    subTitle: 'الدعاوى الحقوقية والمدنية والعقارات والمقاولات',
+    subTitle: 'الدعاوى الحقوقية والعقارات والمقاولات',
     icon: Scale,
     colorTheme: {
       bg: 'bg-emerald-500/10',
@@ -103,40 +82,16 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
       hoverBg: 'hover:bg-emerald-500/15',
     },
     services: [
-      {
-        id: 'general_claim',
-        label: 'لائحة دعوى',
-        icon: FileText,
-        badge: 'مطالبة حقوقية',
-        description: 'صياغة دعوى مدنية طبقاً لنظام المعاملات المدنية والمرافعات الشرعية',
-      },
-      {
-        id: 'general_appeal',
-        label: 'اعتراض',
-        icon: Gavel,
-        badge: 'لائحة استئنافية',
-        description: 'أوجه الاعتراض والفساد في الاستدلال ومخالفة القواعد الشرعية والأنظمة',
-      },
-      {
-        id: 'general_memo',
-        label: 'مذكرة',
-        icon: FileCheck,
-        badge: 'دفوع جوابية',
-        description: 'الدفع بإنكار الالتزام، أو انقضاء الدين، أو التقادم، وسقوط الحق',
-      },
-      {
-        id: 'general_attachments',
-        label: 'رفع مرفقات',
-        icon: UploadCloud,
-        badge: 'عقود وبينات',
-        description: 'فحص السندات لأمر، العقود الموقعة، ودفاتر الحسابات إلكترونياً',
-      },
+      { id: 'general_claim', label: 'لائحة حقوقية', icon: FileText, badge: 'مطالبة', description: 'صياغة دعوى مدنية طبقاً لنظام المعاملات المدنية' },
+      { id: 'general_appeal', label: 'استئناف عام', icon: Gavel, badge: 'اعتراض', description: 'أوجه الاعتراض والفساد في الاستدلال' },
+      { id: 'general_memo', label: 'مذكرة جوابية', icon: FileCheck, badge: 'دفوع', description: 'الدفع بإنكار الالتزام أو انقضاء الدين' },
+      { id: 'general_attachments', label: 'فحص السندات والعقود', icon: UploadCloud, badge: 'بينات', description: 'فحص السندات لأمر والعقود الموقعة إلكترونياً' },
     ],
   },
   {
     id: 'criminal',
     title: 'المحاكم الجزائية',
-    subTitle: 'الدفاع الجنائي والدفوع الإجرائية وبطلان القبض والتفتيش',
+    subTitle: 'الدفاع الجنائي والدفوع الإجرائية',
     icon: ShieldAlert,
     colorTheme: {
       bg: 'bg-rose-500/10',
@@ -146,34 +101,10 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
       hoverBg: 'hover:bg-rose-500/15',
     },
     services: [
-      {
-        id: 'criminal_defense',
-        label: 'لائحة دعوى',
-        icon: FileText,
-        badge: 'مذكرة دفاع / براءة',
-        description: 'صياغة دفاع موضوعي ودحض أدلة الاتهام وتطبيق أصل البراءة',
-      },
-      {
-        id: 'criminal_appeal',
-        label: 'اعتراض',
-        icon: Gavel,
-        badge: 'اعتراض واستئناف',
-        description: 'الطعن في عقوبة التعزير ومخالفة نظام الإجراءات الجزائية وأصل البراءة',
-      },
-      {
-        id: 'criminal_procedural',
-        label: 'مذكرة',
-        icon: ShieldAlert,
-        badge: 'دفوع جوهرية',
-        description: 'بطلان القبض والتفتيش وانتفاء حالة التلبس وقاعدة ثمرة الشجرة الخبيثة',
-      },
-      {
-        id: 'criminal_evidence',
-        label: 'رفع مرفقات',
-        icon: UploadCloud,
-        badge: 'محاضر وتحقيق',
-        description: 'تدقيق محضر الضبط والتحقيق الجنائي واستخراج أوجه التناقض',
-      },
+      { id: 'criminal_defense', label: 'مذكرة دفاع / براءة', icon: FileText, badge: 'دفاع', description: 'دحض أدلة الاتهام وتطبيق أصل البراءة' },
+      { id: 'criminal_appeal', label: 'اعتراض جزائي', icon: Gavel, badge: 'نقض', description: 'الطعن في عقوبة التعزير ومخالفة الإجراءات' },
+      { id: 'criminal_procedural', label: 'دفوع الإجراءات الباطلة', icon: ShieldAlert, badge: 'بطلان', description: 'بطلان القبض والتفتيش وثمرة الشجرة الخبيثة' },
+      { id: 'criminal_evidence', label: 'تدقيق محضر الضبط', icon: UploadCloud, badge: 'محاضر', description: 'استخراج أوجه التناقض في محضر التحقيق' },
     ],
   },
 ];
@@ -199,32 +130,16 @@ export function Sidebar({
   isMobileOpen,
   onCloseMobile,
 }: SidebarProps) {
-  // Accordion state: which court section is open
-  const [expandedCourt, setExpandedCourt] = React.useState<CourtJurisdiction | null>(
-    activeCourt || 'administrative'
-  );
+  const [expandedSection, setExpandedSection] = useState<string | null>('courts');
 
-  // Sync expanded section if activeCourt changes from external welcome screen
-  React.useEffect(() => {
+  useEffect(() => {
     if (activeCourt) {
-      setExpandedCourt(activeCourt);
+      setExpandedSection('courts');
     }
   }, [activeCourt]);
 
-  const toggleCourtAccordion = (courtId: CourtJurisdiction) => {
-    if (expandedCourt === courtId) {
-      // Toggle off
-      setExpandedCourt(null);
-    } else {
-      // Accordion rule: open this one, close all others
-      setExpandedCourt(courtId);
-      onSelectCourt(courtId);
-      // Auto select first service if not selected
-      const cat = COURT_CATEGORIES.find((c) => c.id === courtId);
-      if (cat && cat.services.length > 0 && activeCourt !== courtId) {
-        onSelectService(cat.services[0].id);
-      }
-    }
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? null : section);
   };
 
   const handleServiceClick = (courtId: CourtJurisdiction, serviceId: string) => {
@@ -232,36 +147,34 @@ export function Sidebar({
       onSelectCourt(courtId);
     }
     onSelectService(serviceId);
-    if (onCloseMobile) {
-      onCloseMobile();
-    }
+    if (onCloseMobile) onCloseMobile();
   };
 
   const sidebarContent = (
-    <div className="app-sidebar h-full flex flex-col bg-neutral-900 border-l border-neutral-800 text-neutral-100">
-      {/* 1. Header & Identity */}
-      <div className="p-4 border-b border-neutral-800/80 bg-neutral-950/60">
+    <div className="app-sidebar h-full flex flex-col bg-slate-950 border-l border-slate-800 text-slate-100 select-none">
+      
+      {/* 1. رأس القائمة والهوية البصرية الفاخرة */}
+      <div className="p-4 border-b border-slate-800/80 bg-slate-900/60">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
               <Scale className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h1 className="text-sm font-bold text-neutral-100 tracking-tight">أصول القضاء</h1>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  SPA
+                <h1 className="text-sm font-bold text-white tracking-tight">أصول القضاء</h1>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                  OS v3.0
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400">منصة القضايا والدفوعات</p>
+              <p className="text-[11px] text-slate-400">منصة التدقيق والتقاضي الذكي</p>
             </div>
           </div>
 
-          {/* Close button for mobile */}
           {onCloseMobile && (
             <button
               onClick={onCloseMobile}
-              className="lg:hidden min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+              className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               title="إغلاق القائمة"
             >
               <X className="w-5 h-5" />
@@ -269,19 +182,19 @@ export function Sidebar({
           )}
         </div>
 
-        {/* User Identity Info */}
+        {/* بيانات المستخدم الجلسة */}
         {userSession && (
-          <div className="mt-3 p-2.5 rounded-xl bg-neutral-900/90 border border-neutral-800 text-xs">
+          <div className="mt-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs shadow-inner">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                   <User className="w-3.5 h-3.5" />
                 </div>
                 <div className="truncate">
-                  <p className="text-neutral-200 font-semibold truncate text-[11px]">
+                  <p className="text-slate-200 font-semibold truncate text-[11px]">
                     {userSession.name}
                   </p>
-                  <p className="text-[10px] text-neutral-400 font-mono">
+                  <p className="text-[10px] text-slate-400 font-mono">
                     هوية: {userSession.nationalId}
                   </p>
                 </div>
@@ -289,7 +202,7 @@ export function Sidebar({
               {onLogout && (
                 <button
                   onClick={onLogout}
-                  className="min-h-11 min-w-11 inline-flex items-center justify-center rounded text-neutral-400 hover:text-rose-400 hover:bg-neutral-800 transition-colors"
+                  className="p-1.5 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
                   title="تسجيل الخروج"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -300,176 +213,197 @@ export function Sidebar({
         )}
       </div>
 
-      {/* 2. Navigation Overview Home Button */}
-      <div className="p-3 border-b border-neutral-800/60 bg-neutral-900/40">
+      {/* 2. زر الرئيسية (مركز القيادة) */}
+      <div className="p-3 border-b border-slate-800/60 bg-slate-900/40">
         <button
-          id="btn-return-home"
           type="button"
-          aria-current={activeCourt === null ? 'page' : undefined}
           onClick={() => {
             onSelectCourt(null);
             if (onCloseMobile) onCloseMobile();
           }}
-          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
             activeCourt === null
-              ? 'bg-amber-500 text-neutral-950 shadow-md font-extrabold'
-              : 'bg-neutral-800/60 text-neutral-300 hover:bg-neutral-800 hover:text-white'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.3)] font-black'
+              : 'bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
           }`}
         >
-          <span className="flex items-center gap-2">
+          <span className="flex items-center gap-2.5">
             <Home className="w-4 h-4" />
-            <span>البؤرة القضائية الرئيسية</span>
+            <span>مركز القيادة الرئيسي</span>
           </span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/20">3 اختصاصات</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/30 font-mono text-amber-300">الرئيسية</span>
         </button>
       </div>
 
-      {/* 3. Accordion Section for 3 Jurisdictions */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
-        <div className="px-2 py-1 flex items-center justify-between text-[11px] font-semibold text-neutral-400">
-          <span>الاختصاصات القضائية المعتمدة</span>
-          <span className="text-[10px] text-neutral-400">عزل تام</span>
-        </div>
+      {/* 3. هيكل التنقل والأقسام المعتمدة */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
+        
+        {/* قسم أدوات التقاضي والاختصاصات */}
+        <div className="space-y-1.5">
+          <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-amber-400/90 tracking-wide">
+            <span className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5" /> أدوات التقاضي والمسارات</span>
+          </div>
 
-        {COURT_CATEGORIES.map((cat) => {
-          const isExpanded = expandedCourt === cat.id;
-          const isCurrentCourt = activeCourt === cat.id;
-          const CatIcon = cat.icon;
+          {COURT_CATEGORIES.map((cat) => {
+            const isCurrentCourt = activeCourt === cat.id;
+            const CatIcon = cat.icon;
 
-          return (
-            <div
-              key={cat.id}
-              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-                isCurrentCourt
-                  ? `${cat.colorTheme.border} bg-neutral-950/80 shadow-lg ring-1 ring-neutral-700/50`
-                  : 'border-amber-500/15 bg-slate-900/70 shadow-[0_0_14px_rgba(245,158,11,0.05)] hover:border-amber-400/50 hover:shadow-[0_0_22px_rgba(245,158,11,0.12)]'
-              }`}
-            >
-              {/* Accordion Header Button */}
-              <button
-                type="button"
-                id={`accordion-btn-${cat.id}`}
-                onClick={() => toggleCourtAccordion(cat.id)}
-                className={`w-full flex items-center justify-between p-3 text-right transition-colors ${
-                  isExpanded ? 'bg-neutral-850/80' : 'hover:bg-neutral-850/50'
+            return (
+              <div
+                key={cat.id}
+                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                  isCurrentCourt
+                    ? 'border-amber-500/50 bg-slate-900 shadow-lg ring-1 ring-amber-500/20'
+                    : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
                 }`}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${cat.colorTheme.bg} ${cat.colorTheme.border} ${cat.colorTheme.text}`}
-                  >
-                    <CatIcon className="w-4 h-4" />
-                  </div>
-                  <div className="truncate">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-xs sm:text-sm text-neutral-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectCourt(cat.id);
+                    if (cat.services.length > 0 && !activeService) {
+                      onSelectService(cat.services[0].id);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between p-3 text-right transition-colors ${
+                    isCurrentCourt ? 'bg-amber-500/10' : 'hover:bg-slate-850'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${cat.colorTheme.bg} ${cat.colorTheme.border} ${cat.colorTheme.text}`}>
+                      <CatIcon className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="truncate">
+                      <span className="font-bold text-xs text-white block truncate">
                         {cat.title}
                       </span>
-                      {isCurrentCourt && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      )}
+                      <span className="text-[10px] text-slate-400 block truncate">
+                        {cat.subTitle}
+                      </span>
                     </div>
-                    <p className="text-[10px] text-neutral-400 truncate max-w-[170px]">
-                      {cat.subTitle}
-                    </p>
                   </div>
-                </div>
+                  <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isCurrentCourt ? 'rotate-180 text-amber-400' : ''}`} />
+                </button>
 
-                <div className="flex items-center gap-1.5 text-neutral-400">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 font-mono">
-                    {cat.services.length}
-                  </span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${
-                      isExpanded ? 'rotate-180 text-amber-400' : 'text-neutral-500'
-                    }`}
-                  />
-                </div>
-              </button>
+                {/* خدمات الاختصاص الفردية */}
+                {isCurrentCourt && (
+                  <div className="p-2 pt-0 space-y-1 bg-slate-950/80 border-t border-slate-800/80">
+                    {cat.services.map((srv) => {
+                      const isServiceActive = activeService === srv.id;
+                      const SrvIcon = srv.icon;
 
-              {/* Accordion Sub-Menu (Services) */}
-              {isExpanded && (
-                <div className="p-2 pt-1 space-y-1 bg-neutral-950/60 border-t border-neutral-800/80">
-                  {cat.services.map((srv) => {
-                    const isServiceActive = isCurrentCourt && activeService === srv.id;
-                    const SrvIcon = srv.icon;
-
-                    return (
-                      <button
-                        key={srv.id}
-                        id={`service-btn-${srv.id}`}
-                        type="button"
-                        onClick={() => handleServiceClick(cat.id, srv.id)}
-                        className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-right transition-all group ${
-                          isServiceActive
-                            ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold shadow-sm'
-                            : 'hover:bg-neutral-850/80 text-neutral-300 hover:text-white border border-transparent'
-                        }`}
-                      >
-                        <div
-                          className={`mt-0.5 p-1 rounded-lg shrink-0 ${
+                      return (
+                        <button
+                          key={srv.id}
+                          type="button"
+                          onClick={() => handleServiceClick(cat.id, srv.id)}
+                          className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-right transition-all ${
                             isServiceActive
-                              ? 'bg-amber-500 text-neutral-950'
-                              : 'bg-neutral-800 text-neutral-400 group-hover:text-amber-400 group-hover:bg-neutral-750'
+                              ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold'
+                              : 'hover:bg-slate-900 text-slate-300 hover:text-white border border-transparent'
                           }`}
                         >
-                          <SrvIcon className="w-3.5 h-3.5" />
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-xs font-semibold truncate leading-tight">
-                              {srv.label}
-                            </span>
-                            {srv.badge && (
-                              <span
-                                className={`text-[9px] px-1 py-0.2 rounded font-mono shrink-0 ${
-                                  isServiceActive
-                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                    : 'bg-neutral-800 text-neutral-400'
-                                }`}
-                              >
-                                {srv.badge}
-                              </span>
-                            )}
+                          <SrvIcon className={`w-3.5 h-3.5 shrink-0 ${isServiceActive ? 'text-amber-400' : 'text-slate-400'}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs truncate">{srv.label}</span>
+                              {srv.badge && (
+                                <span className="text-[9px] px-1 rounded bg-slate-800 text-slate-400 font-mono">
+                                  {srv.badge}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-[10px] text-neutral-400 line-clamp-1 mt-0.5">
-                            {srv.description}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* قسم المعرفة والبحث النظامي */}
+        <div className="pt-2 border-t border-slate-800/80 space-y-1">
+          <div className="px-2 py-1 text-[11px] font-bold text-slate-400 tracking-wide flex items-center gap-1.5">
+            <Library className="w-3.5 h-3.5 text-amber-400" /> المعرفة والأسانيد
+          </div>
+          
+          <button 
+            onClick={() => {
+              // توجيه لمركز المعرفة أو المكتبة
+              if (onCloseMobile) onCloseMobile();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
+          >
+            <Library className="w-4 h-4 text-slate-400" />
+            <span>المكتبة النظامية الشاملة</span>
+          </button>
+
+          <button 
+            onClick={() => {
+              if (onCloseMobile) onCloseMobile();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
+          >
+            <Search className="w-4 h-4 text-slate-400" />
+            <span>البحث المعرفي الذكي</span>
+          </button>
+        </div>
+
+        {/* قسم الذكاء الاصطناعي والإدارة */}
+        <div className="pt-2 border-t border-slate-800/80 space-y-1">
+          <div className="px-2 py-1 text-[11px] font-bold text-slate-400 tracking-wide flex items-center gap-1.5">
+            <Bot className="w-3.5 h-3.5 text-amber-400" /> المحرك الذكي
+          </div>
+
+          <button 
+            onClick={() => {
+              if (onCloseMobile) onCloseMobile();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
+          >
+            <Bot className="w-4 h-4 text-amber-400" />
+            <span>المستشار الذكي (المدير)</span>
+          </button>
+
+          <button 
+            onClick={() => {
+              if (onCloseMobile) onCloseMobile();
+            }}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
+          >
+            <BarChart3 className="w-4 h-4 text-slate-400" />
+            <span>تقارير الفحص والنتائج</span>
+          </button>
+        </div>
+
       </div>
 
-      {/* 4. Footer info */}
-      <div className="p-3 border-t border-neutral-800/80 bg-neutral-950/80 text-[11px] text-neutral-400 flex items-center justify-between">
+      {/* 4. تذييل القائمة الحماية والعزل */}
+      <div className="p-3 border-t border-slate-800/80 bg-slate-900/80 text-[11px] text-slate-400 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>تشفير وعزل قضائي</span>
+          <span>حماية وعزل قضائي</span>
         </div>
-        <span className="font-mono text-[10px] text-neutral-400">SPA v3.0</span>
+        <span className="font-mono text-[10px] text-amber-400/80">SECURE OS</span>
       </div>
     </div>
   );
 
   return (
     <>
-      {/* Desktop Persistent Sidebar (25% on desktop) */}
+      {/* القائمة الثابتة على الشاشات الكبيرة */}
       <aside className="hidden lg:block w-full lg:w-1/4 h-full shrink-0 z-20">
         {sidebarContent}
       </aside>
 
-      {/* Mobile Drawer Overlay */}
+      {/* قائمة الجوال المنبثقة */}
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
             onClick={onCloseMobile}
           />
           <div className="relative w-80 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-right duration-200">

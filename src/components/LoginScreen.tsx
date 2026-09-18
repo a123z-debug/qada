@@ -16,13 +16,12 @@ interface StoredUser {
 const USERS_STORAGE_KEY = 'diwan_registered_users_v1';
 
 export const ADMIN_CREDENTIALS = {
-  nationalId: '1096882228',
-  name: 'عبدالله محمد هيازع عسيري',
+  nationalId: '3751375135',
+  name: 'مدير النظام',
   role: 'admin' as const,
-  militaryNumber: '583107',
-  agency: 'وزارة الدفاع (قيادة القوات البرية الملكية السعودية)',
-  password: 'As123@456',
-  email: 'azxcvbvcxz1@gmail.com',
+  agency: 'الإدارة العامة',
+  password: 'As123@456', 
+  email: 'admin@diwan.gov.sa',
 };
 
 function readUsers(): StoredUser[] {
@@ -75,7 +74,6 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         nationalId: ADMIN_CREDENTIALS.nationalId,
         email: ADMIN_CREDENTIALS.email,
         role: 'admin',
-        militaryNumber: ADMIN_CREDENTIALS.militaryNumber,
         agency: ADMIN_CREDENTIALS.agency,
         loginMethod: 'admin_password',
         loginAt: Date.now(),

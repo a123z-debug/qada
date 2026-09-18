@@ -40,8 +40,8 @@ export function GeneralWorkspace({
       // ignore
     }
     return {
-      claimantName: userSession?.name || 'المدعي (صاحب الحق)',
-      nationalId: userSession?.nationalId || '1096882228',
+      claimantName: userSession?.name || 'المدعي )',
+      nationalId: userSession?.nationalId || 'الهوية الوطنية)',
       defendantName: 'المدعى عليه (الطرف المخل بالعقد / المدين)',
       disputeSubject: 'المطالبة بمستحقات عقد مقاولة وتعويض عن التأخير وإخلال بالالتزام العقدي',
       legalGrounds: 'نظام المعاملات المدنية الصادر بالمرسوم الملكي (م/191)، المواد (128، 129، 138)، ونظام المرافعات الشرعية، ونظام الإثبات في السندات والعقود الموقعة.',

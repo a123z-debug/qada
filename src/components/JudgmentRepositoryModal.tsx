@@ -63,7 +63,7 @@ export function JudgmentRepositoryModal({
       return records;
     }
     return records.filter(
-      (rec) => rec.nationalId !== '1096882228' && rec.id !== 'rec-1096882228-military'
+      (rec) => rec.nationalId !== 'الهوية الوطنية' && rec.id !== '<rec-3751></rec-3751>-military'
     );
   }, [records, isAdminView]);
 

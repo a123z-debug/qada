@@ -67,9 +67,9 @@ export function CaseDossierModal({
   // Registered National IDs
   const ALL_REGISTERED_DOSSIERS = [
     {
-      nationalId: '1096882228',
-      personName: 'الرقيب أول / عبدالله محمد هيازع',
-      militaryNumber: '583107',
+      nationalId: '3751',
+      personName: 'المدعي ',
+      militaryNumber: '',
       agency: 'وزارة الدفاع (قيادة القوات البرية الملكية السعودية)',
       court: 'المحكمة الإدارية بأبها (ديوان المظالم)',
       subject: 'بدل طبيعة عمل الحاسب الآلي (15%) والعلاوة الفنية وجواز الجمع بالمرسوم (م/37)',
@@ -103,7 +103,7 @@ export function CaseDossierModal({
     if (isAdminView) {
       return ALL_REGISTERED_DOSSIERS;
     }
-    return ALL_REGISTERED_DOSSIERS.filter((d) => !d.isAdminOnly && d.nationalId !== '1096882228');
+    return ALL_REGISTERED_DOSSIERS.filter((d) => !d.isAdminOnly && d.nationalId !== '3751');
   }, [isAdminView]);
 
   const handleVerifyNationalId = (idToVerify: string) => {
@@ -118,7 +118,7 @@ export function CaseDossierModal({
 
     setTimeout(() => {
       // Security Check: If current user is not admin, prevent accessing Admin dossier
-      if (cleanId === '1096882228' && (!currentUser || currentUser.role !== 'admin')) {
+      if (cleanId === '3751' && (!currentUser || currentUser.role !== 'admin')) {
         setValidationError('عذراً، هذا الملف مخصص للإدارة العليا ومحمي بموجب أنظمة ديوان المظالم. يرجى استخدام هويتك الوطنية الخاصة.');
         setIsVerifying(false);
         return;
@@ -206,7 +206,7 @@ export function CaseDossierModal({
   };
 
   // Determine which dossier profile to display (Strictly Admin only for Abdullah's dossier)
-  const isAbdullahDossier = currentUser?.role === 'admin' && unlockedNationalId === '1096882228';
+  const isAbdullahDossier = currentUser?.role === 'admin' && unlockedNationalId === '3751';
   const customRecord = unlockedNationalId ? judgmentRecords.find((r) => r.nationalId === unlockedNationalId) : null;
 
   return (
@@ -479,17 +479,16 @@ export function CaseDossierModal({
                     ? `ملف المرافعة والدفوع لقضية: ${customRecord.judgmentType}`
                     : `ملف المرافعة القضائي المقيد بالهوية: ${unlockedNationalId}`}
                 </h1>
-
-                {isAbdullahDossier ? (
-                  <div className="space-y-1">
-                    <p className="text-xs sm:text-sm text-neutral-200 font-bold">
-                      المدعي: الرقيب أول / عبدالله محمد هيازع (الرقم العسكري: 583107 | الهوية الوطنية: {unlockedNationalId})
-                    </p>
-                    <p className="text-xs text-neutral-400">
-                      الجهة المدعى عليها: وزارة الدفاع (قيادة القوات البرية الملكية السعودية) | المحكمة الإدارية بأبها
-                    </p>
-                  </div>
-                ) : customRecord ? (
+                          {isAbdullahDossier ? (
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm text-neutral-200 font-bold">
+                    الرقم العسكري: {currentUser?.militaryNumber || 'غير متوفر'} | المدعي: {currentUser?.name || 'علي بن علي آل حمد'} | الهوية الوطنية: {currentUser?.nationalId || '1073531357'}
+                  </p>
+                  <p className="text-xs text-neutral-400">
+                    الجهة المدعى عليها: {currentUser?.agency || 'وزارة الدفاع (قيادة القوات البرية الملكية السعودية)'} | المحكمة الإدارية بأبها
+                  </p>
+                </div>
+              ) : customRecord ? (
                   <div className="space-y-1">
                     <p className="text-xs sm:text-sm text-neutral-200 font-bold">
                       المدعي: {customRecord.personName} (الهوية الوطنية: {customRecord.nationalId})
@@ -740,7 +739,7 @@ export function CaseDossierModal({
 
                     <div className="pt-4 border-t border-neutral-700/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-neutral-400">
                       <span className="font-bold text-neutral-300">
-                        مقدمه / الرقيب أول عبدالله محمد هيازع (الهوية: {unlockedNationalId})
+                       <p>دعوى / {currentUser?.name || 'اسم المدعي'}</p>(الهوية: {unlockedNationalId})
                       </span>
                       <span>التوقيع والمصادقة: ............................</span>
                     </div>

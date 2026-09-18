@@ -56,8 +56,8 @@ export function AdministrativeWorkspace({
       // ignore
     }
     return {
-      claimantName: userSession?.name || 'عبدالله محمد هيازع عسيري',
-      nationalId: userSession?.nationalId || '1096882228',
+      claimantName: userSession?.name || '',
+      nationalId: userSession?.nationalId || '',
       defendantAgency: 'وزارة الدفاع (قيادة القوات البرية الملكية السعودية)',
       disputedDecision: 'القرار السلبي بالامتناع عن صرف بدل مكافحة الإرهاب والعمليات والجمع بين العلاوتين وفق المرسوم (م/37)',
       grievanceDate: '1445/05/15هـ',
@@ -167,6 +167,18 @@ export function AdministrativeWorkspace({
 
   // Generation Handler triggered ONLY by explicit "صياغة المذكرة" button
   const handleGenerateDocument = async () => {
+    const cleanNationalId = nationalId.trim().replace(/\D/g, '');
+    if (
+      claimantName.trim().length < 3 ||
+      cleanNationalId.length !== 10 ||
+      !defendantAgency.trim() ||
+      !grievanceDate.trim() ||
+      !disputedDecision.trim()
+    ) {
+      window.alert('يرجى إكمال اسم صاحب الحق ورقم الهوية والجهة وتاريخ التظلم وموضوع الدعوى قبل الصياغة.');
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratedOutput('');
 
@@ -472,6 +484,7 @@ ${storyAddon}`;
                     type="text"
                     value={claimantName}
                     onChange={(e) => setClaimantName(e.target.value)}
+                    required
                     className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs focus:border-amber-500 outline-none"
                   />
                 </div>
@@ -481,6 +494,9 @@ ${storyAddon}`;
                     type="text"
                     value={nationalId}
                     onChange={(e) => setNationalId(e.target.value)}
+                    required
+                    maxLength={10}
+                    inputMode="numeric"
                     className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs font-mono focus:border-amber-500 outline-none"
                   />
                 </div>
@@ -493,6 +509,7 @@ ${storyAddon}`;
                     type="text"
                     value={defendantAgency}
                     onChange={(e) => setDefendantAgency(e.target.value)}
+                    required
                     className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs focus:border-amber-500 outline-none"
                   />
                 </div>
@@ -502,6 +519,7 @@ ${storyAddon}`;
                     type="text"
                     value={grievanceDate}
                     onChange={(e) => setGrievanceDate(e.target.value)}
+                    required
                     className="w-full px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs font-mono focus:border-amber-500 outline-none"
                   />
                 </div>
@@ -518,6 +536,7 @@ ${storyAddon}`;
                   rows={2}
                   value={disputedDecision}
                   onChange={(e) => setDisputedDecision(e.target.value)}
+                  required
                   className={`w-full px-3 py-2 rounded-xl bg-neutral-950 text-neutral-100 text-xs focus:border-amber-500 outline-none resize-none transition-all duration-500 ${
                     isAutoFilled ? 'animate-auto-fill border-amber-500 ring-2 ring-amber-500/40' : 'border border-neutral-800'
                   }`}
