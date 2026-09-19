@@ -52,9 +52,11 @@ export function JudgesCassationReviewPanel({
   const [appliedNotification, setAppliedNotification] = useState<string | null>(null);
   const [expandedJudge, setExpandedJudge] = useState<string | null>('judge_cassation');
 
+  const reviewFailed = report?.overallStatus === 'تعذر إكمال الفحص الآلي';
   const isSoundDocument =
-    (report?.cassationErrors?.items?.length === 0 && report?.claimErrors?.items?.length === 0) ||
-    report?.overallStatus === 'جاهز للإيداع';
+    !reviewFailed &&
+    ((report?.cassationErrors?.items?.length === 0 && report?.claimErrors?.items?.length === 0) ||
+      report?.overallStatus === 'جاهز للإيداع');
 
   // Safeguard: Always use the complete text; never allow truncated or reduced versions
   const effectiveText =
@@ -154,9 +156,14 @@ export function JudgesCassationReviewPanel({
     );
   }
 
-  const averageScore = Math.round(
-    report.judges.reduce((acc, j) => acc + (j.scoreOutOf100 || 80), 0) / (report.judges.length || 1)
+  const scoredJudges = report.judges.filter(
+    (judge): judge is DetailedJudgeItem & { scoreOutOf100: number } =>
+      typeof judge.scoreOutOf100 === 'number' && Number.isFinite(judge.scoreOutOf100)
   );
+  const averageScore =
+    scoredJudges.length > 0
+      ? Math.round(scoredJudges.reduce((acc, judge) => acc + judge.scoreOutOf100, 0) / scoredJudges.length)
+      : null;
 
   return (
     <div className="rounded-3xl bg-neutral-900/95 border border-amber-500/30 overflow-hidden shadow-2xl space-y-0 transition-all text-right">
@@ -173,7 +180,7 @@ export function JudgesCassationReviewPanel({
                   تقرير هيئة قضاة النقض والاستئناف والمحكمة العليا
                 </h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  فحص وتعديل معتمد
+                  {reviewFailed ? 'الفحص غير مكتمل' : 'فحص وتعديل مكتمل'}
                 </span>
               </div>
               <p className="text-xs text-neutral-400 mt-0.5">
@@ -185,7 +192,7 @@ export function JudgesCassationReviewPanel({
           <div className="flex items-center gap-2 self-end sm:self-center">
             <div className="px-3 py-1.5 rounded-xl bg-neutral-950 border border-neutral-800 text-center">
               <div className="text-[10px] text-neutral-400 font-medium">مؤشر السلامة</div>
-              <div className="text-sm font-bold font-mono text-amber-400">{averageScore}%</div>
+              <div className="text-sm font-bold font-mono text-amber-400">{averageScore === null ? 'غير مقيم' : `${averageScore}%`}</div>
             </div>
             <button
               onClick={onRunAudit}
@@ -198,7 +205,16 @@ export function JudgesCassationReviewPanel({
           </div>
         </div>
 
-        {/* Primary Fatal Flaw Callout */}
+        {reviewFailed && (
+          <div className="mt-3.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-100 leading-relaxed">
+              لم يكتمل الفحص الآلي؛ لذلك لم تُمنح المذكرة أي درجة سلامة، ولا تُعد خلو قوائم الأخطاء دليلاً على سلامة المستند. أعد الفحص قبل تطبيق أي تعديل أو اعتماد النتيجة.
+            </div>
+          </div>
+        )}
+
+                {/* Primary Fatal Flaw Callout */}
         {report.primaryFatalDefect && (
           <div className="mt-3.5 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-start gap-2.5">
             <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
@@ -300,26 +316,26 @@ export function JudgesCassationReviewPanel({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               {/* 1. أخطاء وعوار النقض */}
               <div className={`p-4 rounded-2xl bg-neutral-950 space-y-2.5 flex flex-col justify-between border ${
-                report.cassationErrors.items.length === 0 ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-rose-500/30'
+                !reviewFailed && report.cassationErrors.items.length === 0 ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-rose-500/30'
               }`}>
                 <div>
                   <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
                     <div className="flex items-center gap-2">
-                      {report.cassationErrors.items.length === 0 ? (
+                      {!reviewFailed && report.cassationErrors.items.length === 0 ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                       ) : (
                         <Gavel className="w-4 h-4 text-rose-400" />
                       )}
-                      <h5 className={`text-xs font-bold ${report.cassationErrors.items.length === 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                      <h5 className={`text-xs font-bold ${!reviewFailed && report.cassationErrors.items.length === 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
                         {report.cassationErrors.title || 'أخطاء وعوار النقض'}
                       </h5>
                     </div>
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                      report.cassationErrors.items.length === 0
+                      !reviewFailed && report.cassationErrors.items.length === 0
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
                     }`}>
-                      {report.cassationErrors.items.length === 0 ? 'سليم تماماً ✓' : `خطورة ${report.cassationErrors.severity || 'عالية'}`}
+                      {!reviewFailed && report.cassationErrors.items.length === 0 ? 'سليم تماماً ✓' : `خطورة ${report.cassationErrors.severity || 'عالية'}`}
                     </span>
                   </div>
 
@@ -327,7 +343,7 @@ export function JudgesCassationReviewPanel({
                     الرقابة العليا على مخالفة الشريعة والأنظمة، وبطلان الإجراءات وفق المادة (193) مرافعات والمادة (11) ديوان المظالم:
                   </p>
 
-                  {report.cassationErrors.items.length === 0 ? (
+                  {!reviewFailed && report.cassationErrors.items.length === 0 ? (
                     <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
                       <p className="text-xs text-emerald-300 font-semibold">خالٍ تماماً من عوار النقض</p>
                       <p className="text-[11px] text-neutral-300 leading-relaxed">
@@ -348,34 +364,34 @@ export function JudgesCassationReviewPanel({
 
                 <div className="pt-2 text-[10px] text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
                   <span>محكمة النقض (المحكمة العليا)</span>
-                  <span className={report.cassationErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
-                    {report.cassationErrors.items.length === 0 ? 'مطابق للأصول ✓' : `${report.cassationErrors.items.length} عيوب مرصودة`}
+                  <span className={!reviewFailed && report.cassationErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
+                    {!reviewFailed && report.cassationErrors.items.length === 0 ? 'مطابق للأصول ✓' : `${report.cassationErrors.items.length} عيوب مرصودة`}
                   </span>
                 </div>
               </div>
 
               {/* 2. أخطاء وعيوب عريضة الدعوى */}
               <div className={`p-4 rounded-2xl bg-neutral-950 space-y-2.5 flex flex-col justify-between border ${
-                report.claimErrors.items.length === 0 ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-amber-500/30'
+                !reviewFailed && report.claimErrors.items.length === 0 ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-amber-500/30'
               }`}>
                 <div>
                   <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
                     <div className="flex items-center gap-2">
-                      {report.claimErrors.items.length === 0 ? (
+                      {!reviewFailed && report.claimErrors.items.length === 0 ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                       ) : (
                         <FileText className="w-4 h-4 text-amber-400" />
                       )}
-                      <h5 className={`text-xs font-bold ${report.claimErrors.items.length === 0 ? 'text-emerald-300' : 'text-amber-300'}`}>
+                      <h5 className={`text-xs font-bold ${!reviewFailed && report.claimErrors.items.length === 0 ? 'text-emerald-300' : 'text-amber-300'}`}>
                         {report.claimErrors.title || 'أخطاء عريضة الدعوى والطلبات'}
                       </h5>
                     </div>
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                      report.claimErrors.items.length === 0
+                      !reviewFailed && report.claimErrors.items.length === 0
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                     }`}>
-                      {report.claimErrors.items.length === 0 ? 'سليم تماماً ✓' : `خطورة ${report.claimErrors.severity || 'متوسطة'}`}
+                      {!reviewFailed && report.claimErrors.items.length === 0 ? 'سليم تماماً ✓' : `خطورة ${report.claimErrors.severity || 'متوسطة'}`}
                     </span>
                   </div>
 
@@ -383,7 +399,7 @@ export function JudgesCassationReviewPanel({
                     تحرير النزاع، بيان الصفة والمصلحة، وتعيين الطلبات القضائية الجازمة دون تجهيل أو غموض:
                   </p>
 
-                  {report.claimErrors.items.length === 0 ? (
+                  {!reviewFailed && report.claimErrors.items.length === 0 ? (
                     <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
                       <p className="text-xs text-emerald-300 font-semibold">صياغة الطلبات جازمة ومحكمة</p>
                       <p className="text-[11px] text-neutral-300 leading-relaxed">
@@ -404,34 +420,34 @@ export function JudgesCassationReviewPanel({
 
                 <div className="pt-2 text-[10px] text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
                   <span>محكمة الاستئناف والموضوع</span>
-                  <span className={report.claimErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
-                    {report.claimErrors.items.length === 0 ? 'مطابق للأصول ✓' : `${report.claimErrors.items.length} ملاحظات صياغة`}
+                  <span className={!reviewFailed && report.claimErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                    {!reviewFailed && report.claimErrors.items.length === 0 ? 'مطابق للأصول ✓' : `${report.claimErrors.items.length} ملاحظات صياغة`}
                   </span>
                 </div>
               </div>
 
               {/* 3. أخطاء ونواقص المرفقات */}
               <div className={`p-4 rounded-2xl bg-neutral-950 space-y-2.5 flex flex-col justify-between border ${
-                report.attachmentErrors.items.length === 0 ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-sky-500/30'
+                !reviewFailed && report.attachmentErrors.items.length === 0 ? 'border-emerald-500/40 bg-emerald-950/10' : 'border-sky-500/30'
               }`}>
                 <div>
                   <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
                     <div className="flex items-center gap-2">
-                      {report.attachmentErrors.items.length === 0 ? (
+                      {!reviewFailed && report.attachmentErrors.items.length === 0 ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                       ) : (
                         <Paperclip className="w-4 h-4 text-sky-400" />
                       )}
-                      <h5 className={`text-xs font-bold ${report.attachmentErrors.items.length === 0 ? 'text-emerald-300' : 'text-sky-300'}`}>
+                      <h5 className={`text-xs font-bold ${!reviewFailed && report.attachmentErrors.items.length === 0 ? 'text-emerald-300' : 'text-sky-300'}`}>
                         {report.attachmentErrors.title || 'أخطاء ونواقص المرفقات'}
                       </h5>
                     </div>
                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                      report.attachmentErrors.items.length === 0
+                      !reviewFailed && report.attachmentErrors.items.length === 0
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         : 'bg-sky-500/20 text-sky-300 border-sky-500/30'
                     }`}>
-                      {report.attachmentErrors.items.length === 0 ? 'مستوفٍ تماماً ✓' : `خطورة ${report.attachmentErrors.severity || 'عالية'}`}
+                      {!reviewFailed && report.attachmentErrors.items.length === 0 ? 'مستوفٍ تماماً ✓' : `خطورة ${report.attachmentErrors.severity || 'عالية'}`}
                     </span>
                   </div>
 
@@ -439,7 +455,7 @@ export function JudgesCassationReviewPanel({
                     كفاية وحجية البينات والمحررات وفق نظام الإثبات والمستندات الواجب إيداعها لإثبات الحق:
                   </p>
 
-                  {report.attachmentErrors.items.length === 0 ? (
+                  {!reviewFailed && report.attachmentErrors.items.length === 0 ? (
                     <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
                       <p className="text-xs text-emerald-300 font-semibold">مرفقات مرحلة النقض مستوفاة</p>
                       <p className="text-[11px] text-neutral-300 leading-relaxed">
@@ -474,8 +490,8 @@ export function JudgesCassationReviewPanel({
 
                 <div className="pt-2 text-[10px] text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
                   <span>دائرة تدقيق المرفقات</span>
-                  <span className={report.attachmentErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-sky-400 font-semibold'}>
-                    {report.attachmentErrors.items.length === 0 ? 'مستندات كافية ✓' : `${report.attachmentErrors.items.length} نواقص مسجلة`}
+                  <span className={!reviewFailed && report.attachmentErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-sky-400 font-semibold'}>
+                    {!reviewFailed && report.attachmentErrors.items.length === 0 ? 'مستندات كافية ✓' : `${report.attachmentErrors.items.length} نواقص مسجلة`}
                   </span>
                 </div>
               </div>
