@@ -20,7 +20,7 @@ export interface CassationJudgeOpinion {
   proceduralCritique: string; // الرقابة الإجرائية والمواعيد
   substantiveCritique: string; // رقابة تطبيق النظام والشريعة ومبادئ المحكمة العليا
   actionableRemedy: string; // التوجيه الحاسم لتصحيح الخلل
-  scoreOutOf100: number;
+  scoreOutOf100: number | null;
 }
 
 export interface CassationAuditReport {
@@ -40,7 +40,7 @@ export interface DetailedJudgeItem {
   judgeName: string;
   judgeTitle: string;
   courtCategory: string;
-  verdict: 'مقبول شكلاً وموضوعاً' | 'معيب موضوعاً' | 'مرفوض شكلاً' | 'بحاجة لتصحيح جوهري' | 'خطر السقوط الشكلي';
+  verdict: 'مقبول شكلاً وموضوعاً' | 'معيب موضوعاً' | 'مرفوض شكلاً' | 'بحاجة لتصحيح جوهري' | 'خطر السقوط الشكلي' | 'لم يكتمل الفحص الآلي';
   scoreOutOf100: number;
   errorsIdentified: string[];
   critique: string;
@@ -49,23 +49,23 @@ export interface DetailedJudgeItem {
 
 export interface DetailedJudgesReviewReport {
   documentType: string;
-  overallStatus: 'جاهز للإيداع' | 'معيب بحاجة لتصحيح' | 'خطر السقوط الشكلي' | 'بطلان محتمل';
+  overallStatus: 'جاهز للإيداع' | 'معيب بحاجة لتصحيح' | 'خطر السقوط الشكلي' | 'بطلان محتمل' | 'تعذر إكمال الفحص الآلي';
   primaryFatalDefect: string;
   judges: DetailedJudgeItem[];
   cassationErrors: {
     title: string;
     items: string[];
-    severity: 'عالية' | 'متوسطة' | 'منخفضة';
+    severity: 'عالية' | 'متوسطة' | 'منخفضة' | 'غير مقيمة';
   };
   claimErrors: {
     title: string;
     items: string[];
-    severity: 'عالية' | 'متوسطة' | 'منخفضة';
+    severity: 'عالية' | 'متوسطة' | 'منخفضة' | 'غير مقيمة';
   };
   attachmentErrors: {
     title: string;
     items: string[];
-    severity: 'عالية' | 'متوسطة' | 'منخفضة';
+    severity: 'عالية' | 'متوسطة' | 'منخفضة' | 'غير مقيمة';
     missingRequiredDocs: string[];
   };
   revisedDocument: string;
