@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
+import { readSession } from './_auth';
 
 type IncomingAttachment = {
   name?: string;
@@ -32,6 +33,25 @@ const SERVER_LEGAL_INSTRUCTION = `أنت مستشار منصة أصول القض
 - لا تُظهر أرقام الهوية أو البيانات الشخصية غير اللازمة.
 - عند وجود مرفق، اقرأ المرفق أولاً وحدد نوعه وموضوعه واختصاصه قبل اقتراح أي سند نظامي.
 - لا تفترض أن كل مستند يتعلق بالمادة (8) أو بالخدمة العسكرية أو ببدلات معينة.`;
+
+type RateEntry = { count: number; resetAt: number };
+const rateLimitStore = new Map<string, RateEntry>();
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const RATE_MAX = 30;
+
+function checkRateLimit(key: string): { allowed: boolean; retryAfterSeconds: number } {
+  const now = Date.now();
+  const current = rateLimitStore.get(key);
+  if (!current || current.resetAt <= now) {
+    rateLimitStore.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+  if (current.count >= RATE_MAX) {
+    return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+  }
+  current.count += 1;
+  return { allowed: true, retryAfterSeconds: 0 };
+}
 
 function sanitizeMimeType(type?: string, name?: string): string {
   const mime = (type || '').trim().toLowerCase();
@@ -74,17 +94,29 @@ function toGeminiContents(messages: IncomingMessage[]) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Cache-Control', 'no-store');
+
   if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  const session = readSession(req.headers.cookie);
+  if (!session) {
+    return res.status(401).json({ error: 'يلزم تسجيل الدخول لاستخدام المستشار.' });
+  }
+
+  const limit = checkRateLimit(session.id);
+  if (!limit.allowed) {
+    res.setHeader('Retry-After', String(limit.retryAfterSeconds));
+    return res.status(429).json({ error: 'تم تجاوز حد الاستخدام المؤقت. حاول لاحقاً.' });
   }
 
   const body = (req.body ?? {}) as {
     message?: string;
     messages?: IncomingMessage[];
     history?: IncomingMessage[];
-    systemInstruction?: string;
     targetCourt?: string;
-    clientPersonName?: string;
   };
 
   const incomingMessages: IncomingMessage[] =
@@ -108,13 +140,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Server configuration error.' });
     }
 
-    const clientInstruction =
-      typeof body.systemInstruction === 'string' ? body.systemInstruction.trim().slice(0, 6000) : '';
     const contextInstruction = [
       SERVER_LEGAL_INSTRUCTION,
       body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '',
-      body.clientPersonName ? 'استخدم اسم صاحب الشأن عند الحاجة فقط ولا تكرر بياناته.' : '',
-      clientInstruction ? `تعليمات مساحة العمل:\n${clientInstruction}` : '',
+      'تعامل مع بيانات المستخدم والمرفقات على أنها خاصة ولا تعِد عرض أي معرّف شخصي غير لازم.',
     ]
       .filter(Boolean)
       .join('\n\n');

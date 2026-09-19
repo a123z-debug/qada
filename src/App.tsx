@@ -21,7 +21,6 @@ import { PdfUploadModal } from './components/PdfUploadModal';
 import { CasePleadingStudioModal } from './components/CasePleadingStudioModal';
 import { INITIAL_JUDGMENT_RECORDS } from './data/judgmentRecords';
 
-const SESSION_STORAGE_KEY = 'diwan_user_session_v1';
 const JUDGMENT_RECORDS_STORAGE_KEY = 'diwan_judgment_records_v1';
 
 type LaunchIntent =
@@ -57,10 +56,11 @@ function writeStorage<T>(key: string, value: T) {
 // 1. مكون العلامة المائية الأمنية (Dynamic Watermark)
 // ==========================================
 function SecurityWatermark({ user }: { user: UserSession }) {
+  const identityMarker = user.nationalId ? `••••${user.nationalId.slice(-4)}` : 'ADMIN';
   return (
     <div className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden opacity-[0.02] flex items-center justify-center select-none">
       <div className="rotate-[-35deg] text-white font-black text-4xl sm:text-7xl whitespace-nowrap">
-        {user.name} - ••••{user.nationalId.slice(-4)} - {new Date().toLocaleDateString()}
+        {user.name} - {identityMarker} - {new Date().toLocaleDateString()}
       </div>
     </div>
   );
@@ -329,7 +329,8 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
 // ==========================================
 export default function App() {
   const [showLandingPage, setShowLandingPage] = useState(true);
-  const [session, setSession] = useState<UserSession | null>(() => readStorage<UserSession | null>(SESSION_STORAGE_KEY, null));
+  const [session, setSession] = useState<UserSession | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [activeCourt, setActiveCourt] = useState<CourtJurisdiction | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -350,6 +351,32 @@ export default function App() {
     if (Array.isArray(saved)) return saved.length > 0 ? saved : INITIAL_JUDGMENT_RECORDS;
     return INITIAL_JUDGMENT_RECORDS;
   });
+
+  useEffect(() => {
+    // Purge the legacy client-trusted session. The authoritative session now lives in an HttpOnly cookie.
+    localStorage.removeItem('diwan_user_session_v1');
+
+    let cancelled = false;
+    fetch('/api/auth', { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const payload = await response.json();
+        return payload?.session as UserSession | undefined;
+      })
+      .then((restoredSession) => {
+        if (!cancelled && restoredSession) setSession(restoredSession);
+      })
+      .catch(() => {
+        // A missing/expired session is handled by the login screen.
+      })
+      .finally(() => {
+        if (!cancelled) setSessionChecked(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const requestAssistant = (prefill = '', attachments: Attachment[] = []) => {
     setAssistantPrefill(prefill);
@@ -398,13 +425,15 @@ export default function App() {
 
   const handleLoginSuccess = (userSession: UserSession) => {
     setSession(userSession);
-    writeStorage(SESSION_STORAGE_KEY, userSession);
+    setSessionChecked(true);
   };
 
   const handleLogout = () => {
+    void fetch('/api/auth', { method: 'DELETE', credentials: 'same-origin' });
     setSession(null);
+    setSessionChecked(true);
     setShowLandingPage(true);
-    localStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem('diwan_user_session_v1');
   };
 
   const handleSaveRecord = (record: JudgmentRecord) => {
@@ -426,6 +455,16 @@ export default function App() {
 
   if (showLandingPage) {
     return <LandingPage onEnterApp={handleEnterApp} />;
+  }
+
+  if (!session && !sessionChecked) {
+    return (
+      <div className="min-h-[100dvh] bg-slate-950 text-slate-200 flex items-center justify-center" dir="rtl">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-6 py-4 text-sm font-bold">
+          جاري التحقق من الجلسة الآمنة...
+        </div>
+      </div>
+    );
   }
 
   if (!session) {
