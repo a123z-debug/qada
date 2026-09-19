@@ -200,7 +200,7 @@ export interface UserSession {
   role: 'admin' | 'user';
   militaryNumber?: string;
   agency?: string;
-  loginMethod: 'admin_password' | 'email_otp';
+  loginMethod: 'admin_password' | 'email_password' | 'email_otp';
   token?: string;
   loginAt: number;
 }
