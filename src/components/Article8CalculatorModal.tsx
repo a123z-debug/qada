@@ -22,82 +22,95 @@ export function Article8CalculatorModal({
     d.setDate(d.getDate() - 5);
     return d.toISOString().split('T')[0];
   });
+  const [claimPath, setClaimPath] = useState<'cancellation' | 'service_rights' | 'unknown'>('unknown');
   const [hasExplicitResponse, setHasExplicitResponse] = useState<boolean>(false);
   const [explicitResponseDate, setExplicitResponseDate] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
 
   const calcResult = useMemo(() => {
-    if (!notificationDate) return null;
+    if (!notificationDate || claimPath === 'unknown') return null;
 
     const notif = new Date(notificationDate);
-    
-    // Grievance deadline: 60 days from notification
-    const grievanceDeadline = new Date(notif);
-    grievanceDeadline.setDate(grievanceDeadline.getDate() + 60);
-
     let grievanceDateObj: Date | null = null;
-    let isGrievanceOnTime = true;
-    let grievanceElapsed = 0;
+    if (grievanceDate) grievanceDateObj = new Date(grievanceDate);
 
-    if (grievanceDate) {
-      grievanceDateObj = new Date(grievanceDate);
-      const diffTime = grievanceDateObj.getTime() - notif.getTime();
-      grievanceElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      isGrievanceOnTime = grievanceElapsed <= 60 && grievanceElapsed >= 0;
+    const isCancellation = claimPath === 'cancellation';
+    let grievanceDeadline: Date | null = null;
+    let grievanceElapsed: number | null = null;
+    let isGrievanceOnTime: boolean | null = null;
+
+    if (isCancellation) {
+      grievanceDeadline = new Date(notif);
+      grievanceDeadline.setDate(grievanceDeadline.getDate() + 60);
+      if (grievanceDateObj) {
+        const diffTime = grievanceDateObj.getTime() - notif.getTime();
+        grievanceElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        isGrievanceOnTime = grievanceElapsed <= 60 && grievanceElapsed >= 0;
+      }
     }
 
-    // Agency 60-day response window (from grievance date)
-    const baseGrievanceDate = grievanceDateObj || notif;
-    const agencyDecisionDeadline = new Date(baseGrievanceDate);
+    if (!grievanceDateObj) {
+      return {
+        claimPath,
+        notificationDateStr: notificationDate,
+        grievanceDeadlineStr: grievanceDeadline ? grievanceDeadline.toISOString().split('T')[0] : null,
+        grievanceElapsed,
+        isGrievanceOnTime,
+        agencyDecisionDeadlineStr: null,
+        courtDeadlineStr: null,
+        triggerDescription: 'يلزم إدخال تاريخ تقديم التظلم قبل حساب مهلة بت الجهة وميعاد رفع الدعوى.',
+        daysRemainingForCourt: null,
+        isCourtWindowOpen: null,
+      };
+    }
+
+    const agencyDecisionDeadline = new Date(grievanceDateObj);
     agencyDecisionDeadline.setDate(agencyDecisionDeadline.getDate() + 60);
 
-    // Court filing deadline: 60 days from explicit response OR from expiry of agency 60-day window
     let courtDeadline = new Date(agencyDecisionDeadline);
-    let triggerDescription = 'انقضاء مهلة الـ 60 يوماً دون رد (الرفض الحكمي/الضمني)';
+    let triggerDescription = 'انقضاء مهلة بت الجهة دون رد';
 
     if (hasExplicitResponse && explicitResponseDate) {
       const explicitDateObj = new Date(explicitResponseDate);
       courtDeadline = new Date(explicitDateObj);
       courtDeadline.setDate(courtDeadline.getDate() + 60);
-      triggerDescription = `تاريخ صدور قرار الرفض الصريح (${explicitResponseDate})`;
+      triggerDescription = `تاريخ إبلاغ الرفض الصريح (${explicitResponseDate})`;
     } else {
       courtDeadline.setDate(courtDeadline.getDate() + 60);
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     const daysRemainingForCourt = Math.ceil(
       (courtDeadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    const isCourtWindowOpen = daysRemainingForCourt >= 0;
-
     return {
+      claimPath,
       notificationDateStr: notificationDate,
-      grievanceDeadlineStr: grievanceDeadline.toISOString().split('T')[0],
+      grievanceDeadlineStr: grievanceDeadline ? grievanceDeadline.toISOString().split('T')[0] : null,
       grievanceElapsed,
       isGrievanceOnTime,
       agencyDecisionDeadlineStr: agencyDecisionDeadline.toISOString().split('T')[0],
       courtDeadlineStr: courtDeadline.toISOString().split('T')[0],
       triggerDescription,
       daysRemainingForCourt,
-      isCourtWindowOpen,
+      isCourtWindowOpen: daysRemainingForCourt >= 0,
     };
-  }, [notificationDate, grievanceDate, hasExplicitResponse, explicitResponseDate]);
+  }, [notificationDate, grievanceDate, hasExplicitResponse, explicitResponseDate, claimPath]);
 
   if (!isOpen) return null;
 
   const generatedText = calcResult
-    ? `بيانات فحص الميعاد النظامي (المادة 8 من نظام المرافعات أمام ديوان المظالم):
-- تاريخ العلم بالقرار أو إبلاغه: ${calcResult.notificationDateStr}
-- أقصى ميعاد لتقديم التظلم للجهة (60 يوماً): ${calcResult.grievanceDeadlineStr}
-- تاريخ تقديم التظلم الفعلي: ${grievanceDate || 'لم يقدم بعد'} (${calcResult.isGrievanceOnTime ? 'داخل الميعاد' : 'خارج الميعاد النظامي'})
-- ميعاد انقضاء مهلة بت الجهة (60 يوماً): ${calcResult.agencyDecisionDeadlineStr}
-- ميعاد سقوط الحق في رفع الدعوى أمام ديوان المظالم: ${calcResult.courtDeadlineStr}
-- المتبقي لإقامة الدعوى أمام المحكمة الإدارية: ${calcResult.daysRemainingForCourt} يوماً (${calcResult.isCourtWindowOpen ? 'الدعوى مقبولة شكلاً من حيث الميعاد' : 'سقط الميعاد شكلاً'})
+    ? `بيانات فحص ميعاد مبدئي وفق المسار المختار في المادة (8) من نظام المرافعات أمام ديوان المظالم:
+- نوع المسار: ${claimPath === 'cancellation' ? 'دعوى إلغاء قرار إداري' : 'دعوى حقوق وظيفية / خدمة مدنية أو عسكرية'}
+- التاريخ المدخل كبداية للوقائع: ${calcResult.notificationDateStr}
+${claimPath === 'cancellation' && calcResult.grievanceDeadlineStr ? `- آخر موعد مبدئي للتظلم بحسب مسار الإلغاء (60 يوماً): ${calcResult.grievanceDeadlineStr}` : '- لا تطبق الحاسبة مهلة 60 يوماً من تاريخ العلم على مسار الحقوق الوظيفية؛ يجب التحقق من تاريخ نشوء الحق والنص الرسمي النافذ.'}
+- تاريخ تقديم التظلم الفعلي: ${grievanceDate || 'لم يقدم بعد'}
+${calcResult.agencyDecisionDeadlineStr ? `- ميعاد انقضاء مهلة بت الجهة المحسوبة: ${calcResult.agencyDecisionDeadlineStr}` : '- لم يُحسب ميعاد بت الجهة لعدم إدخال تاريخ التظلم.'}
+${calcResult.courtDeadlineStr ? `- الميعاد المبدئي المحسوب لرفع الدعوى بعد رد الجهة/انقضاء مهلة البت: ${calcResult.courtDeadlineStr}` : '- لم يُحسب ميعاد رفع الدعوى بعد.'}
 
-المطلوب: تدقيق هذه المواعيد وبيان الدفوع الشكلية المقررة والمذكرات الاحترازية.`
+تنبيه إلزامي: هذه حاسبة مساعدة وليست حكماً بقبول الدعوى أو سقوطها. يجب مطابقة نوع الدعوى والفقرة النظامية والنسخة النافذة من المادة (8) مع المصدر الرسمي قبل الاعتماد.`
     : '';
 
   const handleCopy = () => {
@@ -128,7 +141,7 @@ export function Article8CalculatorModal({
                 حاسبة الميعاد النظامي للتظلم الوجوبي (المادة 8)
               </h2>
               <p className="text-xs text-neutral-400">
-                نظام المرافعات أمام ديوان المظالم - مدد الـ (60) يوماً
+                فحص مساعد للمواعيد بحسب نوع الدعوى مع وجوب المطابقة بالمصدر الرسمي
               </p>
             </div>
           </div>
@@ -155,6 +168,21 @@ export function Article8CalculatorModal({
 
         {/* Form Controls */}
         <div className="p-6 space-y-4 overflow-y-auto">
+          <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+            <label className="block text-xs font-bold text-amber-200">اختر مسار الدعوى قبل الحساب</label>
+            <select
+              value={claimPath}
+              onChange={(e) => setClaimPath(e.target.value as 'cancellation' | 'service_rights' | 'unknown')}
+              className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-hidden focus:border-amber-500"
+            >
+              <option value="unknown">حدد نوع الدعوى</option>
+              <option value="cancellation">دعوى إلغاء قرار إداري</option>
+              <option value="service_rights">دعوى حقوق وظيفية / خدمة مدنية أو عسكرية</option>
+            </select>
+            <p className="text-[11px] leading-relaxed text-neutral-400">
+              تختلف المواعيد بحسب نوع الدعوى. لن تصدر الحاسبة حكماً بالسقوط أو القبول قبل اختيار المسار، ولن تطبق مهلة الإلغاء على دعاوى الحقوق الوظيفية.
+            </p>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Notification Date */}
             <div>
@@ -234,20 +262,20 @@ export function Article8CalculatorModal({
                 <span className="text-xs font-bold text-amber-400">النتيجة الإجرائية المبدئية</span>
                 <span
                   className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                    calcResult.isGrievanceOnTime && calcResult.isCourtWindowOpen
+                    calcResult.isCourtWindowOpen === true && (calcResult.isGrievanceOnTime !== false)
                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                       : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
                   }`}
                 >
-                  {calcResult.isGrievanceOnTime && calcResult.isCourtWindowOpen ? (
+                  {calcResult.isCourtWindowOpen === true && calcResult.isGrievanceOnTime !== false ? (
                     <>
                       <CheckCircle2 className="w-3 h-3" />
-                      الميعاد قائم (مقبول شكلاً)
+                      الحساب المبدئي داخل المدة
                     </>
                   ) : (
                     <>
                       <AlertTriangle className="w-3 h-3" />
-                      خطر السقوط الشكلي
+                      يحتاج تحققاً من المسار والمصدر
                     </>
                   )}
                 </span>
@@ -255,25 +283,28 @@ export function Article8CalculatorModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-neutral-300">
                 <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800/80">
-                  <span className="text-neutral-400 block text-[11px]">آخر موعد للتظلم أمام الجهة:</span>
-                  <span className="font-semibold text-neutral-100">{calcResult.grievanceDeadlineStr}</span>
+                  <span className="text-neutral-400 block text-[11px]">{claimPath === 'cancellation' ? 'آخر موعد مبدئي للتظلم في مسار الإلغاء:' : 'ميعاد التظلم في مسار الحقوق:'}</span>
+                  <span className="font-semibold text-neutral-100">{calcResult.grievanceDeadlineStr || 'لا يُحسب هنا؛ يلزم التحقق من تاريخ نشوء الحق والنص الرسمي'}</span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800/80">
-                  <span className="text-neutral-400 block text-[11px]">آخر ميعاد لإقامة الدعوى بالديوان:</span>
-                  <span className="font-semibold text-neutral-100">{calcResult.courtDeadlineStr}</span>
+                  <span className="text-neutral-400 block text-[11px]">ميعاد رفع الدعوى المحسوب بعد التظلم:</span>
+                  <span className="font-semibold text-neutral-100">{calcResult.courtDeadlineStr || 'أدخل تاريخ التظلم أولاً'}</span>
                 </div>
               </div>
 
               <div className="text-[11px] text-neutral-400 leading-relaxed border-t border-neutral-800/80 pt-2">
-                {calcResult.daysRemainingForCourt >= 0 ? (
-                  <span>
-                    متبقي <strong className="text-amber-400">{calcResult.daysRemainingForCourt} يوماً</strong>{' '}
-                    لقيد لائحة الدعوى بنظام (معين / ديوان المظالم) قبل فوات الميعاد النظامي الحتمي.
-                  </span>
+                {typeof calcResult.daysRemainingForCourt === 'number' ? (
+                  calcResult.daysRemainingForCourt >= 0 ? (
+                    <span>
+                      المتبقي بحسب الحساب المبدئي <strong className="text-amber-400">{calcResult.daysRemainingForCourt} يوماً</strong>. يلزم مطابقة هذا الناتج بالمصدر الرسمي ونوع الدعوى قبل الاعتماد.
+                    </span>
+                  ) : (
+                    <span className="text-amber-300 font-medium">
+                      الحساب المبدئي تجاوز التاريخ المحسوب بمقدار {Math.abs(calcResult.daysRemainingForCourt)} يوماً، لكن الحاسبة لا تقرر سقوط الدعوى؛ يلزم فحص نوع الدعوى وتاريخ نشوء الحق وأي استثناءات أو أسباب توقف/انقطاع الميعاد من المصدر الرسمي.
+                    </span>
+                  )
                 ) : (
-                  <span className="text-rose-400 font-medium">
-                    تجاوزت المهلة النظامية بمقدار {Math.abs(calcResult.daysRemainingForCourt)} يوماً. يجب فحص ما إذا كان هناك عذر مانع أو تظلم ولائي مجدد أو انعدام في القرار يسقط سريان الميعاد.
-                  </span>
+                  <span>أدخل تاريخ التظلم لإكمال الحساب المبدئي.</span>
                 )}
               </div>
             </div>
