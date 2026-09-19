@@ -21,7 +21,11 @@ import { PdfUploadModal } from './components/PdfUploadModal';
 import { CasePleadingStudioModal } from './components/CasePleadingStudioModal';
 import { INITIAL_JUDGMENT_RECORDS } from './data/judgmentRecords';
 
-const JUDGMENT_RECORDS_STORAGE_KEY = 'diwan_judgment_records_v1';
+const LEGACY_JUDGMENT_RECORDS_STORAGE_KEY = 'diwan_judgment_records_v1';
+
+function judgmentRecordsStorageKey(session: UserSession): string {
+  return `diwan_judgment_records_v2_${session.id}`;
+}
 
 type LaunchIntent =
   | { kind: 'dashboard' }
@@ -346,15 +350,22 @@ export default function App() {
   const [pleadingRecord, setPleadingRecord] = useState<JudgmentRecord | null>(null);
   const [isPleadingStudioOpen, setIsPleadingStudioOpen] = useState(false);
 
-  const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>(() => {
-    const saved = readStorage<JudgmentRecord[] | null>(JUDGMENT_RECORDS_STORAGE_KEY, null);
-    if (Array.isArray(saved)) return saved.length > 0 ? saved : INITIAL_JUDGMENT_RECORDS;
-    return INITIAL_JUDGMENT_RECORDS;
-  });
+  const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>(INITIAL_JUDGMENT_RECORDS);
 
   useEffect(() => {
-    // Purge the legacy client-trusted session. The authoritative session now lives in an HttpOnly cookie.
+    if (!session) {
+      setJudgmentRecords([]);
+      return;
+    }
+    const scopedKey = judgmentRecordsStorageKey(session);
+    const saved = readStorage<JudgmentRecord[] | null>(scopedKey, null);
+    setJudgmentRecords(Array.isArray(saved) ? saved : INITIAL_JUDGMENT_RECORDS);
+  }, [session?.id]);
+
+  useEffect(() => {
+    // Purge legacy shared/client-trusted stores. New case data is isolated by authenticated session id.
     localStorage.removeItem('diwan_user_session_v1');
+    localStorage.removeItem(LEGACY_JUDGMENT_RECORDS_STORAGE_KEY);
 
     let cancelled = false;
     fetch('/api/auth', { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
@@ -434,21 +445,24 @@ export default function App() {
     setSessionChecked(true);
     setShowLandingPage(true);
     localStorage.removeItem('diwan_user_session_v1');
+    setJudgmentRecords([]);
   };
 
   const handleSaveRecord = (record: JudgmentRecord) => {
+    if (!session) return;
     setJudgmentRecords((prev) => {
       const exists = prev.some((r) => r.id === record.id);
       const updated = exists ? prev.map((r) => (r.id === record.id ? record : r)) : [record, ...prev];
-      writeStorage(JUDGMENT_RECORDS_STORAGE_KEY, updated);
+      writeStorage(judgmentRecordsStorageKey(session), updated);
       return updated;
     });
   };
 
   const handleDeleteRecord = (recordId: string) => {
+    if (!session) return;
     setJudgmentRecords((prev) => {
       const updated = prev.filter((r) => r.id !== recordId);
-      writeStorage(JUDGMENT_RECORDS_STORAGE_KEY, updated);
+      writeStorage(judgmentRecordsStorageKey(session), updated);
       return updated;
     });
   };
