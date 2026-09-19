@@ -4,6 +4,8 @@ import {
   BookOpenCheck,
   Bot,
   CheckCircle2,
+  Check,
+  Copy,
   ChevronLeft,
   ExternalLink,
   FileCheck2,
@@ -27,6 +29,29 @@ interface LegalReferencesModalProps {
 }
 
 type ReferenceTab = 'articles' | 'law' | 'executive' | 'amendments' | 'versions';
+
+const OFFICIAL_REFERENCE_PORTALS = [
+  {
+    label: 'هيئة الخبراء بمجلس الوزراء',
+    url: 'https://laws.boe.gov.sa/',
+    note: 'النص النظامي، أدوات الإصدار، الإصدارات والتعديلات',
+  },
+  {
+    label: 'مجلس الوزراء السعودي',
+    url: 'https://www.uqn.gov.sa/Decisions/council-of-ministers-decisions',
+    note: 'قرارات مجلس الوزراء المنشورة رسمياً',
+  },
+  {
+    label: 'مجلس الشورى',
+    url: 'https://www.shura.gov.sa/',
+    note: 'قرارات المجلس ومسار دراسة مشروعات الأنظمة',
+  },
+  {
+    label: 'جريدة أم القرى',
+    url: 'https://www.uqn.gov.sa/',
+    note: 'التحقق من النشر والنفاذ والمراسيم والقرارات',
+  },
+] as const;
 
 interface ParsedArticle {
   title: string;
@@ -67,6 +92,7 @@ export function LegalReferencesModal({
   const [selectedId, setSelectedId] = useState(LEGAL_REFERENCE_SYSTEMS[0]?.id || '');
   const [tab, setTab] = useState<ReferenceTab>('articles');
   const [expertRequest, setExpertRequest] = useState('');
+  const [copiedAll, setCopiedAll] = useState(false);
 
   const systems = useMemo(() => {
     const q = normalize(query);
@@ -95,6 +121,26 @@ export function LegalReferencesModal({
   const articles = useMemo(() => parseArticles(selected?.lawText || ''), [selected]);
 
   if (!isOpen || !selected) return null;
+
+  const copyCompleteReference = async () => {
+    const payload = [
+      selected.name,
+      selected.royalDecree ? `أداة الإصدار: ${selected.royalDecree}` : '',
+      selected.cabinetResolution ? `قرار مجلس الوزراء: ${selected.cabinetResolution}` : '',
+      selected.status ? `الحالة: ${selected.status}` : '',
+      selected.lawText ? `\n=== نص النظام ===\n${selected.lawText}` : '',
+      selected.executiveText ? `\n=== اللائحة والملحقات ===\n${selected.executiveText}` : '',
+      selected.amendmentsText ? `\n=== التعديلات والقرارات ===\n${selected.amendmentsText}` : '',
+      selected.officialSourceUrl ? `\nالمصدر الرسمي: ${selected.officialSourceUrl}` : '',
+    ].filter(Boolean).join('\n');
+    try {
+      await navigator.clipboard.writeText(payload);
+      setCopiedAll(true);
+      window.setTimeout(() => setCopiedAll(false), 1800);
+    } catch (error) {
+      console.error('Copy legal reference failed', error);
+    }
+  };
 
   const askReferenceCustodian = () => {
     const request = expertRequest.trim() || query.trim() || `أعطني مواد ${selected.name}`;
@@ -185,8 +231,8 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
             </div>
           </aside>
 
-          <main className="min-h-0 overflow-y-auto p-4 sm:p-6">
-            <section className="rounded-2xl border border-cyan-400/15 bg-[#07172d] p-4">
+          <main className="min-h-0 overflow-y-auto p-4 sm:p-6 select-text">
+            <section className="rounded-2xl border border-cyan-400/15 bg-[#07172d] p-4 select-text">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -201,11 +247,38 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                     <div><span className="font-bold text-slate-300">الجهة:</span> {selected.authority || 'غير محددة'}</div>
                   </div>
                 </div>
-                {selected.officialSourceUrl && (
-                  <a href={selected.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-400/15">
-                    <ExternalLink className="h-4 w-4" /> المصدر الرسمي
+                <div className="flex flex-wrap gap-2">
+                  <button onClick={copyCompleteReference} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-400/15">
+                    {copiedAll ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedAll ? 'تم النسخ' : 'نسخ المرجع كاملاً'}
+                  </button>
+                  {selected.officialSourceUrl && (
+                    <a href={selected.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-400/15">
+                      <ExternalLink className="h-4 w-4" /> المصدر الرسمي
+                    </a>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            <section className="mt-4 rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-4">
+              <div className="flex items-center gap-2 text-emerald-200">
+                <ShieldCheck className="h-5 w-5" />
+                <h4 className="font-black">مصادر الاعتماد الرئيسية</h4>
+              </div>
+              <p className="mt-1 text-[11px] leading-5 text-slate-400">
+                ترتيب التحقق في أصول القضاء: هيئة الخبراء بمجلس الوزراء، قرارات مجلس الوزراء السعودي، مجلس الشورى، ثم جريدة أم القرى لإثبات النشر والنفاذ. لا تُقدَّم النسخة الداخلية على المصدر الرسمي.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {OFFICIAL_REFERENCE_PORTALS.map((portal) => (
+                  <a key={portal.label} href={portal.url} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-700 bg-slate-950/70 p-3 hover:border-emerald-400/40">
+                    <div className="flex items-center gap-2 text-xs font-black text-slate-100">
+                      <ExternalLink className="h-3.5 w-3.5 text-emerald-300" />
+                      <span>{portal.label}</span>
+                    </div>
+                    <p className="mt-1 text-[10px] leading-4 text-slate-500">{portal.note}</p>
                   </a>
-                )}
+                ))}
               </div>
             </section>
 
@@ -289,13 +362,34 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
 }
 
 function ReferenceText({ title, text }: { title: string; text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyText = async () => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch (error) {
+      console.error('Copy reference text failed', error);
+    }
+  };
+
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <FileText className="h-4 w-4 text-cyan-300" />
-        <h4 className="font-black text-white">{title}</h4>
+    <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 select-text">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-cyan-300" />
+          <h4 className="font-black text-white">{title}</h4>
+        </div>
+        {text && (
+          <button onClick={copyText} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-2.5 text-[11px] font-bold text-cyan-200 hover:bg-cyan-400/10">
+            {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? 'تم النسخ' : 'نسخ النص كاملاً'}
+          </button>
+        )}
       </div>
-      {text ? <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-slate-300">{text}</pre> : <p className="text-sm text-slate-500">لا توجد نسخة نصية مفهرسة في قاعدة المنصة حالياً.</p>}
+      {text ? <pre className="whitespace-pre-wrap font-sans text-sm leading-7 text-slate-300 select-text">{text}</pre> : <p className="text-sm text-slate-500">لا توجد نسخة نصية مفهرسة في قاعدة المنصة حالياً.</p>}
     </div>
   );
 }
