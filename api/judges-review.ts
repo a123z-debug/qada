@@ -12,33 +12,33 @@ function buildFallback(text: string) {
   const judges = [
     {
       judgeId: 'judge_appeal',
-      judgeName: 'قاضي الاستئناف',
+      judgeName: 'مراجع الاستئناف',
       judgeTitle: 'فحص الموضوع والوقائع والتسبيب',
       courtCategory: 'محكمة الاستئناف',
       verdict: 'لم يكتمل الفحص الآلي',
-      scoreOutOf100: 80,
+      scoreOutOf100: null,
       errorsIdentified: [],
       critique: 'تم الحفاظ على النص الأصلي للمراجعة اليدوية.',
       specificAmendment: '',
     },
     {
       judgeId: 'judge_cassation',
-      judgeName: 'قاضي المحكمة العليا',
+      judgeName: 'مراجع النقض',
       judgeTitle: 'رقابة النقض وبطلان الأحكام والأنظمة',
       courtCategory: 'المحكمة العليا',
       verdict: 'لم يكتمل الفحص الآلي',
-      scoreOutOf100: 80,
+      scoreOutOf100: null,
       errorsIdentified: [],
       critique: 'يلزم تدقيق أسباب الطعن والمواد النظامية قبل الإيداع.',
       specificAmendment: '',
     },
     {
       judgeId: 'judge_evidence',
-      judgeName: 'قاضي تدقيق المرفقات',
+      judgeName: 'مراجع المرفقات',
       judgeTitle: 'فحص المرفقات والبينات وتوثيق السندات',
       courtCategory: 'دائرة الإثبات والمرفقات',
       verdict: 'لم يكتمل الفحص الآلي',
-      scoreOutOf100: 80,
+      scoreOutOf100: null,
       errorsIdentified: [],
       critique: 'تحقق من إرفاق القرارات والعقود والإشعارات ذات الصلة.',
       specificAmendment: '',
@@ -50,9 +50,9 @@ function buildFallback(text: string) {
     overallStatus: 'تعذر إكمال الفحص الآلي',
     primaryFatalDefect: '',
     judges,
-    cassationErrors: { title: 'أخطاء الطعن والنقض', items: [], severity: 'منخفضة' },
-    claimErrors: { title: 'أخطاء الدعوى والطلبات', items: [], severity: 'منخفضة' },
-    attachmentErrors: { title: 'أخطاء المرفقات والبينات', items: [], severity: 'منخفضة', missingRequiredDocs: [] },
+    cassationErrors: { title: 'أخطاء الطعن والنقض', items: [], severity: 'غير مقيمة' },
+    claimErrors: { title: 'أخطاء الدعوى والطلبات', items: [], severity: 'غير مقيمة' },
+    attachmentErrors: { title: 'أخطاء المرفقات والبينات', items: [], severity: 'غير مقيمة', missingRequiredDocs: [] },
     revisedDocument: text,
     changeLog: [],
     synthesisAdvice: 'راجع النص والتواريخ والطلبات والمرفقات قبل التقديم.',
@@ -78,7 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const clients = getGeminiClients();
   if (clients.length === 0) return res.status(500).json({ error: 'Server configuration error.' });
 
-  const prompt = `أنت هيئة مراجعة قانونية سعودية من ثلاثة أدوار: قاضي استئناف، قاضي نقض، وقاضي مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة.\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: ${body.clientName || 'صاحب الشأن'}\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
+  const prompt = `أنت فريق مراجعة قانونية سعودي من ثلاثة أدوار تحليلية: مراجع استئناف، مراجع نقض، ومراجع مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة. لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً. لا تنسب مادة أو ميعاداً أو مرسوماً إلى النظام من الذاكرة؛ إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل.\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: ${body.clientName || 'صاحب الشأن'}\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
 
   let raw = '';
   let lastError: unknown;
