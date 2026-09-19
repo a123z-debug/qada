@@ -122,9 +122,9 @@ export function CassationJudgesPanel({
           <div>
             <div className="flex items-center gap-2">
               <h4 className="text-xs sm:text-sm font-bold text-neutral-100 flex items-center gap-1.5">
-                <span>هيئة قضاة الرقابة والتدقيق (الإدارية • الجزائية • العامة)</span>
+                <span>هيئة المراجعة والتدقيق (الإدارية • الجزائية • العامة)</span>
                 <span className="text-[10px] text-amber-400 font-mono px-1.5 py-0.5 rounded-sm bg-neutral-950/60 border border-neutral-800">
-                  {allJudges.length} قضاة (٢ لكل محكمة)
+                  {allJudges.length} مراجعين متخصصين
                 </span>
               </h4>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${banner.badge}`}>
@@ -305,7 +305,7 @@ function JudgeBox({
               <span>{judge.verdict}</span>
             </span>
             <span className="text-[10px] font-mono text-neutral-400">
-              مؤشر السلامة: <b className="text-amber-400">{judge.scoreOutOf100}%</b>
+              مؤشر السلامة: <b className="text-amber-400">{typeof judge.scoreOutOf100 === 'number' ? `${judge.scoreOutOf100}%` : 'غير مقيم'}</b>
             </span>
           </div>
         </div>
