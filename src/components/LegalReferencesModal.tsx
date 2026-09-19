@@ -21,6 +21,7 @@ import {
   LEGAL_REFERENCE_SYSTEMS,
   LegalReferenceSystem,
 } from '../data/legalReferences';
+import { OFFICIAL_JUDICIAL_REFERENCE_INDEX } from '../data/officialJudicialReferenceIndex';
 
 interface LegalReferencesModalProps {
   isOpen: boolean;
@@ -123,6 +124,30 @@ export function LegalReferencesModal({
     });
   }, [query, category]);
 
+  const officialReferences = useMemo(() => {
+    const q = normalize(query);
+    return OFFICIAL_JUDICIAL_REFERENCE_INDEX.filter((reference) => {
+      if (!q) return true;
+      return normalize([
+        reference.systemName,
+        reference.category,
+        reference.issueInstrument,
+        reference.cabinetResolution || '',
+        reference.materialIndex.join(' '),
+        reference.regulation?.name || '',
+        reference.amendments.join(' '),
+        reference.versions.join(' '),
+      ].join(' ')).includes(q);
+    });
+  }, [query]);
+
+  const officialVerifiedCount = OFFICIAL_JUDICIAL_REFERENCE_INDEX.filter(
+    (reference) => reference.status === 'official-verified'
+  ).length;
+  const needsCorrectionCount = OFFICIAL_JUDICIAL_REFERENCE_INDEX.filter(
+    (reference) => reference.status === 'needs-correction'
+  ).length;
+
   const selected =
     LEGAL_REFERENCE_SYSTEMS.find((system) => system.id === selectedId) ||
     systems[0] ||
@@ -209,7 +234,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
             <div className="min-w-0">
               <h2 className="truncate text-base font-black sm:text-xl">مركز المراجع والأنظمة</h2>
               <p className="mt-0.5 text-[11px] text-slate-400">
-                {LEGAL_REFERENCE_SYSTEMS.length} مرجعاً منظماً • إصدار القاعدة {LEGAL_REFERENCE_DB_VERSION} • النظام ← المواد ← اللائحة ← التعديلات
+                {officialVerifiedCount} مرجعاً رسمياً موثقاً • {needsCorrectionCount} يحتاج تصحيحاً • إصدار القاعدة {LEGAL_REFERENCE_DB_VERSION}
               </p>
             </div>
           </div>
@@ -251,6 +276,63 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
           </aside>
 
           <main className="min-h-0 overflow-y-auto p-4 sm:p-6 select-text">
+            <section className="mb-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2 text-emerald-200">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <h3 className="font-black">الفهرس الرسمي الآمن</h3>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-5 text-slate-400">
+                    هذه هي الطبقة التي يستخدمها خبير المراجع فعلياً. السجل الذي يحتاج تصحيحاً لا يدخل الاسترجاع القضائي.
+                  </p>
+                </div>
+                <span className="rounded-full border border-emerald-400/20 bg-slate-950/50 px-3 py-1 text-[10px] font-bold text-emerald-200">
+                  {officialReferences.length} نتيجة
+                </span>
+              </div>
+              <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {officialReferences.map((reference) => (
+                  <div key={reference.id} className={`rounded-xl border p-3 ${reference.status === 'official-verified' ? 'border-emerald-400/15 bg-slate-950/60' : 'border-rose-400/20 bg-rose-400/5'}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-xs font-black text-slate-100">{reference.systemName}</div>
+                        <div className="mt-1 text-[10px] text-slate-500">{reference.category}</div>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-bold ${reference.status === 'official-verified' ? 'bg-emerald-400/10 text-emerald-300' : 'bg-rose-400/10 text-rose-200'}`}>
+                        {reference.status === 'official-verified' ? 'موثق' : 'يحتاج تصحيح'}
+                      </span>
+                    </div>
+                    <p className="mt-2 line-clamp-2 text-[10px] leading-5 text-slate-400">{reference.issueInstrument}</p>
+                    {reference.materialIndex.length > 0 && (
+                      <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-slate-500">
+                        المواد المفهرسة: {reference.materialIndex.join('، ')}
+                      </p>
+                    )}
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <a href={reference.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+                        <ExternalLink className="h-3 w-3" /> المصدر
+                      </a>
+                      <button
+                        onClick={() => {
+                          onAskExpert(`[خبير المراجع القانونية - أصول القضاء]
+راجع: ${reference.systemName}
+أداة الإصدار: ${reference.issueInstrument}
+الحالة: ${reference.status}
+المصدر الرسمي: ${reference.officialSourceUrl}
+المطلوب: استخرج فقط ما هو موثق رسمياً من النظام والمواد واللائحة والتعديلات والنسخ. إذا كان السجل يحتاج تصحيحاً فلا تعتمد النص المتعارض.`);
+                          onClose();
+                        }}
+                        className="text-[10px] font-bold text-cyan-300"
+                      >
+                        اسأل الخبير
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
             <section className="rounded-2xl border border-cyan-400/15 bg-[#07172d] p-4 select-text">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                 <div>
