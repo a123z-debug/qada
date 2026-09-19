@@ -1,41 +1,37 @@
-import { useState } from 'react';
-import { Eye, EyeOff, LockKeyhole, Mail, Scale, ShieldCheck, UserPlus } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Eye, EyeOff, KeyRound, LockKeyhole, Mail, Scale, ShieldCheck, UserPlus } from 'lucide-react';
 import { UserSession } from '../types';
 
 interface LoginScreenProps {
   onLoginSuccess: (session: UserSession) => void;
 }
 
-interface StoredUser {
-  name: string;
-  nationalId: string;
-  email: string;
-  password: string;
-}
+const ACCOUNT_PROOFS_STORAGE_KEY = 'diwan_account_proofs_v2';
+const LEGACY_USERS_STORAGE_KEY = 'diwan_registered_users_v1';
 
-const USERS_STORAGE_KEY = 'diwan_registered_users_v1';
-
-export const ADMIN_CREDENTIALS = {
-  nationalId: '3751375135',
-  name: 'مدير النظام',
-  role: 'admin' as const,
-  agency: 'الإدارة العامة',
-  password: 'As123@456', 
-  email: 'admin@diwan.gov.sa',
-};
-
-function readUsers(): StoredUser[] {
+function readAccountProofs(): Record<string, string> {
   try {
-    const stored = localStorage.getItem(USERS_STORAGE_KEY);
-    const users = stored ? JSON.parse(stored) : [];
-    return Array.isArray(users) ? users : [];
+    const raw = localStorage.getItem(ACCOUNT_PROOFS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
   } catch {
-    return [];
+    return {};
   }
 }
 
-function saveUsers(users: StoredUser[]) {
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+function saveAccountProof(email: string, accountProof: string) {
+  const proofs = readAccountProofs();
+  proofs[email] = accountProof;
+  localStorage.setItem(ACCOUNT_PROOFS_STORAGE_KEY, JSON.stringify(proofs));
+}
+
+async function readJsonError(response: Response, fallback: string) {
+  try {
+    const payload = await response.json();
+    return typeof payload?.error === 'string' ? payload.error : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
@@ -44,108 +40,138 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [nationalId, setNationalId] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [adminCode, setAdminCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    // Remove the legacy store because older builds saved passwords as plaintext.
+    localStorage.removeItem(LEGACY_USERS_STORAGE_KEY);
+  }, []);
+
   const resetError = () => setError('');
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     resetError();
     setIsSubmitting(true);
 
     const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
+    const cleanPassword = password;
     const cleanName = name.trim();
     const cleanNationalId = nationalId.trim().replace(/\D/g, '');
 
-    if (mode === 'admin') {
-      if (cleanNationalId !== ADMIN_CREDENTIALS.nationalId || cleanPassword !== ADMIN_CREDENTIALS.password) {
-        setError('رقم الهوية أو كلمة المرور غير صحيحة.');
-        setIsSubmitting(false);
+    try {
+      if (mode === 'admin') {
+        const response = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            action: 'admin-login',
+            adminCode: adminCode.trim(),
+            password: cleanPassword,
+          }),
+        });
+
+        if (!response.ok) {
+          setError(await readJsonError(response, 'تعذر تسجيل دخول الإدارة.'));
+          return;
+        }
+
+        const payload = await response.json();
+        onLoginSuccess(payload.session as UserSession);
         return;
       }
 
-      onLoginSuccess({
-        id: `admin-${ADMIN_CREDENTIALS.nationalId}`,
-        name: ADMIN_CREDENTIALS.name,
-        personName: ADMIN_CREDENTIALS.name,
-        nationalId: ADMIN_CREDENTIALS.nationalId,
-        email: ADMIN_CREDENTIALS.email,
-        role: 'admin',
-        agency: ADMIN_CREDENTIALS.agency,
-        loginMethod: 'admin_password',
-        loginAt: Date.now(),
-      });
-      return;
-    }
-
-    if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setError('يرجى إدخال بريد إلكتروني صحيح.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (cleanPassword.length < 6) {
-      setError('كلمة المرور يجب أن تكون 6 أحرف أو أرقام على الأقل.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    const users = readUsers();
-
-    if (mode === 'login') {
-      const user = users.find((item) => item.email.toLowerCase() === cleanEmail && item.password === cleanPassword);
-      if (!user) {
-        setError('بيانات الدخول غير صحيحة أو الحساب غير موجود. يمكنك إنشاء حساب جديد.');
-        setIsSubmitting(false);
+      if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+        setError('يرجى إدخال بريد إلكتروني صحيح.');
         return;
       }
 
-      onLoginSuccess({
-        id: `user-${user.nationalId}`,
-        name: user.name,
-        personName: user.name,
-        nationalId: user.nationalId,
-        email: user.email,
-        role: 'user',
-        loginMethod: 'email_otp',
-        loginAt: Date.now(),
+      if (cleanPassword.length < 10) {
+        setError('كلمة المرور يجب أن تكون 10 أحرف على الأقل.');
+        return;
+      }
+
+      if (mode === 'login') {
+        const accountProof = readAccountProofs()[cleanEmail];
+        if (!accountProof) {
+          setError('بيانات الحساب الآمنة غير موجودة في هذا المتصفح. أنشئ الحساب أولاً باستخدام رمز الدعوة.');
+          return;
+        }
+
+        const response = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            action: 'login',
+            email: cleanEmail,
+            password: cleanPassword,
+            accountProof,
+          }),
+        });
+
+        if (!response.ok) {
+          setError(await readJsonError(response, 'بيانات الدخول غير صحيحة.'));
+          return;
+        }
+
+        const payload = await response.json();
+        onLoginSuccess(payload.session as UserSession);
+        return;
+      }
+
+      if (cleanName.length < 3 || cleanNationalId.length !== 10) {
+        setError('يرجى إدخال الاسم ورقم الهوية المكون من 10 أرقام.');
+        return;
+      }
+
+      if (!inviteCode.trim()) {
+        setError('رمز الدعوة مطلوب لإنشاء مستخدم جديد.');
+        return;
+      }
+
+      if (readAccountProofs()[cleanEmail]) {
+        setError('يوجد حساب محفوظ بهذا البريد في هذا المتصفح. استخدم تسجيل الدخول.');
+        return;
+      }
+
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          action: 'register',
+          name: cleanName,
+          nationalId: cleanNationalId,
+          email: cleanEmail,
+          password: cleanPassword,
+          inviteCode: inviteCode.trim(),
+        }),
       });
-      return;
-    }
 
-    if (cleanName.length < 3 || cleanNationalId.length !== 10) {
-      setError('يرجى إدخال الاسم ورقم الهوية المكون من 10 أرقام.');
+      if (!response.ok) {
+        setError(await readJsonError(response, 'تعذر إنشاء الحساب.'));
+        return;
+      }
+
+      const payload = await response.json();
+      if (typeof payload.accountProof !== 'string' || !payload.session) {
+        setError('تعذر حفظ بيانات الحساب الآمنة.');
+        return;
+      }
+
+      saveAccountProof(cleanEmail, payload.accountProof);
+      onLoginSuccess(payload.session as UserSession);
+    } catch {
+      setError('تعذر الاتصال بخدمة المصادقة. تحقق من الاتصال وحاول مرة أخرى.');
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    if (cleanNationalId === ADMIN_CREDENTIALS.nationalId) {
-      setError('هذه الهوية مخصصة للحساب الإداري. استخدم مسار دخول الإدارة.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (users.some((item) => item.email.toLowerCase() === cleanEmail || item.nationalId === cleanNationalId)) {
-      setError('يوجد حساب مسجل بهذا البريد أو رقم الهوية. استخدم تسجيل الدخول.');
-      setIsSubmitting(false);
-      return;
-    }
-
-    const newUser = { name: cleanName, nationalId: cleanNationalId, email: cleanEmail, password: cleanPassword };
-    saveUsers([...users, newUser]);
-    onLoginSuccess({
-      id: `user-${newUser.nationalId}`,
-      name: newUser.name,
-      personName: newUser.name,
-      nationalId: newUser.nationalId,
-      email: newUser.email,
-      role: 'user',
-      loginMethod: 'email_otp',
-      loginAt: Date.now(),
-    });
   };
 
   const isAdmin = mode === 'admin';
@@ -168,7 +194,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         </div>
         <div className="flex items-center gap-2 text-xs text-neutral-400 bg-neutral-900/80 px-3 py-1.5 rounded-xl border border-neutral-800">
           <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>دخول آمن</span>
+          <span>جلسة خادمية آمنة</span>
         </div>
       </header>
 
@@ -182,7 +208,11 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               {isAdmin ? 'دخول الإدارة' : isRegister ? 'إنشاء مستخدم جديد' : 'تسجيل الدخول'}
             </h2>
             <p className="text-xs sm:text-sm text-neutral-400 max-w-sm mx-auto">
-              {isAdmin ? 'أدخل رقم الهوية وكلمة المرور الإدارية.' : isRegister ? 'أنشئ حسابك لحفظ معاملاتك والعودة إليها لاحقاً.' : 'أدخل البريد الإلكتروني وكلمة المرور للمتابعة.'}
+              {isAdmin
+                ? 'أدخل رمز الإدارة وكلمة المرور. لا تُخزن بيانات الإدارة في الواجهة.'
+                : isRegister
+                  ? 'أنشئ حسابك برمز الدعوة. كلمة المرور لا تُحفظ داخل المتصفح.'
+                  : 'أدخل البريد الإلكتروني وكلمة المرور للمتابعة.'}
             </p>
           </div>
 
@@ -195,15 +225,25 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 </div>
                 <div>
                   <label htmlFor="register-national-id" className="block text-xs font-bold text-neutral-300 mb-1.5">رقم الهوية الوطنية</label>
-                  <input id="register-national-id" value={nationalId} onChange={(event) => { setNationalId(event.target.value); resetError(); }} maxLength={10} inputMode="numeric" className="w-full px-4 py-3 bg-neutral-950 border border-neutral-750 rounded-xl text-sm font-mono text-center" placeholder="10 أرقام" required />
+                  <input id="register-national-id" value={nationalId} onChange={(event) => { setNationalId(event.target.value); resetError(); }} maxLength={10} inputMode="numeric" autoComplete="off" className="w-full px-4 py-3 bg-neutral-950 border border-neutral-750 rounded-xl text-sm font-mono text-center" placeholder="10 أرقام" required />
+                </div>
+                <div>
+                  <label htmlFor="register-invite-code" className="block text-xs font-bold text-neutral-300 mb-1.5">رمز الدعوة</label>
+                  <div className="relative">
+                    <input id="register-invite-code" value={inviteCode} onChange={(event) => { setInviteCode(event.target.value); resetError(); }} autoComplete="off" className="w-full px-4 py-3 pl-11 bg-neutral-950 border border-neutral-750 rounded-xl text-sm" placeholder="رمز الدعوة المخصص" required />
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                  </div>
                 </div>
               </>
             )}
 
             {isAdmin && (
               <div>
-                <label htmlFor="admin-national-id" className="block text-xs font-bold text-neutral-300 mb-1.5">رقم الهوية الوطنية</label>
-                <input id="admin-national-id" value={nationalId} onChange={(event) => { setNationalId(event.target.value); resetError(); }} maxLength={10} inputMode="numeric" className="w-full px-4 py-3 bg-neutral-950 border border-neutral-750 rounded-xl text-sm font-mono text-center" placeholder="رقم الهوية" required />
+                <label htmlFor="admin-code" className="block text-xs font-bold text-neutral-300 mb-1.5">رمز دخول الإدارة</label>
+                <div className="relative">
+                  <input id="admin-code" value={adminCode} onChange={(event) => { setAdminCode(event.target.value); resetError(); }} autoComplete="username" className="w-full px-4 py-3 pl-11 bg-neutral-950 border border-neutral-750 rounded-xl text-sm font-mono text-center" placeholder="رمز الإدارة" required />
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                </div>
               </div>
             )}
 
@@ -211,7 +251,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               <div>
                 <label htmlFor="login-email" className="block text-xs font-bold text-neutral-300 mb-1.5">البريد الإلكتروني</label>
                 <div className="relative">
-                  <input id="login-email" type="email" value={email} onChange={(event) => { setEmail(event.target.value); resetError(); }} className="w-full px-4 py-3 pl-11 bg-neutral-950 border border-neutral-750 rounded-xl text-sm" placeholder="example@domain.com" required />
+                  <input id="login-email" type="email" value={email} onChange={(event) => { setEmail(event.target.value); resetError(); }} autoComplete="email" className="w-full px-4 py-3 pl-11 bg-neutral-950 border border-neutral-750 rounded-xl text-sm" placeholder="example@domain.com" required />
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
                 </div>
               </div>
@@ -220,7 +260,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             <div>
               <label htmlFor="account-password" className="block text-xs font-bold text-neutral-300 mb-1.5">كلمة المرور</label>
               <div className="relative">
-                <input id="account-password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => { setPassword(event.target.value); resetError(); }} className="w-full px-4 py-3 pl-11 bg-neutral-950 border border-neutral-750 rounded-xl text-sm" placeholder="6 أحرف أو أرقام على الأقل" required />
+                <input id="account-password" type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => { setPassword(event.target.value); resetError(); }} autoComplete={isAdmin ? 'current-password' : isRegister ? 'new-password' : 'current-password'} className="w-full px-4 py-3 pl-11 bg-neutral-950 border border-neutral-750 rounded-xl text-sm" placeholder="10 أحرف على الأقل" required />
                 <button type="button" onClick={() => setShowPassword((visible) => !visible)} className="absolute left-1 top-1/2 -translate-y-1/2 min-h-11 min-w-11 inline-flex items-center justify-center text-neutral-400" title={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}>
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -240,7 +280,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 {isRegister ? 'لديك حساب؟ تسجيل الدخول' : 'إنشاء مستخدم جديد'}
               </button>
             )}
-            <button type="button" onClick={() => { setMode(isAdmin ? 'login' : 'admin'); setNationalId(''); setPassword(''); resetError(); }} className="text-neutral-400 hover:text-neutral-200 underline">
+            <button type="button" onClick={() => { setMode(isAdmin ? 'login' : 'admin'); setAdminCode(''); setPassword(''); resetError(); }} className="text-neutral-400 hover:text-neutral-200 underline">
               {isAdmin ? 'العودة لدخول المستخدمين' : 'دخول مصرح للإدارة'}
             </button>
           </div>
@@ -248,7 +288,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       </main>
 
       <footer className="p-4 border-t border-neutral-850 text-center text-xs text-neutral-400 relative z-10">
-        <span className="inline-flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> دخول آمن ومقيد بالهوية</span>
+        <span className="inline-flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> المصادقة والتحقق يتمان على الخادم</span>
       </footer>
     </div>
   );
