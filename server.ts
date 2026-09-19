@@ -5,6 +5,7 @@ import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import {
   authErrorMessage,
+  clearLegacySessionCookie,
   clearSessionCookie,
   loginAccount,
   loginAdmin,
@@ -16,6 +17,26 @@ import {
 dotenv.config();
 
 const PORT = Number(process.env.PORT || 3000);
+
+type AuthAttemptEntry = { count: number; resetAt: number };
+const authAttempts = new Map<string, AuthAttemptEntry>();
+const AUTH_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_ATTEMPT_MAX = 12;
+
+function allowAuthAttempt(key: string): { allowed: boolean; retryAfter: number } {
+  const now = Date.now();
+  const current = authAttempts.get(key);
+  if (!current || current.resetAt <= now) {
+    authAttempts.set(key, { count: 1, resetAt: now + AUTH_ATTEMPT_WINDOW_MS });
+    return { allowed: true, retryAfter: 0 };
+  }
+  if (current.count >= AUTH_ATTEMPT_MAX) {
+    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+  }
+  current.count += 1;
+  return { allowed: true, retryAfter: 0 };
+}
+
 
 function getGeminiClients(): GoogleGenAI[] {
   const apiKeys = [1, 2, 3, 4]
@@ -295,6 +316,19 @@ async function startServer() {
     const body = req.body || {};
     const action = String(body.action || "");
 
+    if (action === "register" || action === "login" || action === "admin-login") {
+      const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown")
+        .split(",")[0]
+        .trim()
+        .slice(0, 80);
+      const limit = allowAuthAttempt(`${action}:${ip}`);
+      if (!limit.allowed) {
+        res.setHeader("Retry-After", String(limit.retryAfter));
+        res.status(429).json({ error: "محاولات كثيرة. حاول مرة أخرى لاحقاً." });
+        return;
+      }
+    }
+
     try {
       if (action === "register") {
         const { session, accountProof } = registerAccount({
@@ -304,7 +338,7 @@ async function startServer() {
           password: String(body.password || ""),
           inviteCode: String(body.inviteCode || ""),
         });
-        res.setHeader("Set-Cookie", sessionCookie(session));
+        res.setHeader("Set-Cookie", [clearLegacySessionCookie(), sessionCookie(session)]);
         res.status(201).json({ session, accountProof });
         return;
       }
@@ -315,7 +349,7 @@ async function startServer() {
           password: String(body.password || ""),
           accountProof: String(body.accountProof || ""),
         });
-        res.setHeader("Set-Cookie", sessionCookie(session));
+        res.setHeader("Set-Cookie", [clearLegacySessionCookie(), sessionCookie(session)]);
         res.json({ session });
         return;
       }
@@ -325,7 +359,7 @@ async function startServer() {
           adminCode: String(body.adminCode || ""),
           password: String(body.password || ""),
         });
-        res.setHeader("Set-Cookie", sessionCookie(session));
+        res.setHeader("Set-Cookie", [clearLegacySessionCookie(), sessionCookie(session)]);
         res.json({ session });
         return;
       }
@@ -338,7 +372,7 @@ async function startServer() {
   });
 
   app.delete("/api/auth", (_req, res) => {
-    res.setHeader("Set-Cookie", clearSessionCookie());
+    res.setHeader("Set-Cookie", [clearSessionCookie(), clearLegacySessionCookie()]);
     res.status(204).end();
   });
 
