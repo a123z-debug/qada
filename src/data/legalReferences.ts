@@ -415,8 +415,8 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "executiveText": "# اللائحة التنفيذية لنظام القضاء وقواعد التفتيش القضائي\n\nتنظم اللائحة شؤون السلك القضائي، التعيين، الترقية، الإعارة، وقواعد وإجراءات التفتيش القضائي على أعمال القضاة.\n",
     "amendmentsText": "# سجل التعديلات - نظام القضاء\n\n- صدور تعديلات بتوحيد جهات التوثيق واستحداث اللوائح المتخصصة لدوائر المحكمة العليا.\n",
     "judicialText": "# المبادئ القضائية الصادرة من الهيئة العامة للمحكمة العليا\n\n## مبدأ قضائي في استقلال القضاء:\n  > \"أحكام القضاء الصادرة وفق الأصول الشرعية والنظامية حجة بما قضت به، ولا يجوز نقضها إلا بالطرق المحددة نظاماً.\"\n",
-    "officialSourceUrl": null,
-    "verificationStatus": "pending"
+    "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/ea1765a3-dec3-41a0-a32f-a9a700f26d58/1",
+    "verificationStatus": "official"
   },
   {
     "id": "law_of_sharia_procedure",
@@ -440,8 +440,8 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "executiveText": "# اللائحة التنفيذية لنظام المرافعات الشرعية\n\nتحدد اللائحة تفاصيل التبليغ القضائي الإلكتروني عبر (أبشر) ووسائل الاتصال المعتمدة، وإجراءات الجلسات المرئية عن بعد وضوابط المداولة.\n",
     "amendmentsText": "# سجل التعديلات - نظام المرافعات الشرعية\n\n- إقرار التبليغ بالوسائل الإلكترونية المعتمدة واعتباره تبليغاً لشخص المدعى عليه ومنتجاً لآثاره النظامية كاملة.\n",
     "judicialText": "# المبادئ القضائية في المرافعات الشرعية\n\n## مبدأ قضائي في الدفوع الشكلية:\n  > \"الدفع بعدم الاختصاص النوعي للمحكمة من النظام العام، يجوز الدفع به في أي مرحلة تكون عليها الدعوى، وتقضي به المحكمة من تلقاء نفسها.\"\n",
-    "officialSourceUrl": null,
-    "verificationStatus": "pending"
+    "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/f0eaae46-9f84-40ee-815e-a9a700f268b3/1",
+    "verificationStatus": "official"
   },
   {
     "id": "law_of_evidence",
@@ -492,8 +492,8 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "executiveText": "# اللائحة التنفيذية لنظام التنفيذ\n\nتفصيل آليات الحجز والبيع بالمزاد العلني الإلكتروني، وتدقيق منازعات التنفيذ الشكلية والموضوعية.\n",
     "amendmentsText": "# سجل التعديلات - نظام التنفيذ\n\n- إلغاء إجراءات إيقاف الخدمات الحكومية عن المنفذ ضدهم وحصر التنفيذ في الأموال والذمة المالية والمنع من السفر.\n",
     "judicialText": "# المبادئ القضائية في قضاء التنفيذ\n\n## مبدأ قضائي في الورقة التجارية:\n  > \"السند لأمر مكتمل البيانات الشكلية سند تنفيذي واجب النفاذ بذاته، ولا يجوز لقاضي التنفيذ النظر في بواعث تحريره ما لم تكن هناك منازعة موضوعية تختص بها محكمة الموضوع.\"\n",
-    "officialSourceUrl": null,
-    "verificationStatus": "pending"
+    "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/c81ba2f1-1bf1-443b-9b1c-a9a700f27110/1",
+    "verificationStatus": "official"
   },
   {
     "id": "civil_transactions_law",
@@ -697,8 +697,8 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "executiveText": "# اللائحة التنفيذية لنظام الإجراءات الجزائية\n\nتتضمن القواعد المنظمة لأعمال مأموري الضبط القضائي، والمدد النظامية للتوقيف، وتفتيش المساكن والأشخاص، وحضور المحامي لجلسات التحقيق.\n",
     "amendmentsText": "# سجل التعديلات - نظام الإجراءات الجزائية\n\n- تعديل مدد التوقيف واشتراط موافقة النائب العام للتمديد بعد مدد معينة.\n- إضافة أحكام التسوية الجزائية والصلح الجنائي في الجرائم غير الجسيمة.\n",
     "judicialText": "# المبادئ القضائية في الإجراءات والعدالة الجزائية\n\n## مبدأ قضائي في بطلان القبض والتفتيش:\n  > \"بطلان إجراءات القبض أو التفتيش لعدم مشروعيتها أو لانتفاء حالة التلبس أو إذن جهة التحقيق المختصة يترتب عليه بطلان الدليل المستمد منها، تأسيسياً على قاعدة أن ما بني على باطل فهو باطل.\"\n",
-    "officialSourceUrl": null,
-    "verificationStatus": "pending"
+    "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/8f1b7079-a5f0-425d-b5e0-a9a700f26b2d/1",
+    "verificationStatus": "official"
   },
   {
     "id": "public_prosecution_law",
