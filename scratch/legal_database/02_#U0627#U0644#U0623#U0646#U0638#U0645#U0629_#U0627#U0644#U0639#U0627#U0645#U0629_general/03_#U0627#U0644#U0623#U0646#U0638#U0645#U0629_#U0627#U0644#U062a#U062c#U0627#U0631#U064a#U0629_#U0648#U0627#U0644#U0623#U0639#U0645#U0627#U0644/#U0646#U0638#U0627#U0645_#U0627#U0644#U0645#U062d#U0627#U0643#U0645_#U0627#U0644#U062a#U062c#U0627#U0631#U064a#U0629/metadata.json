@@ -1,0 +1,21 @@
+{
+    "id":  "commercial_courts_law",
+    "name_ar":  "نظام المحاكم التجارية",
+    "name_en":  "Commercial Courts Law",
+    "category":  "أنظمة عامة",
+    "sub_category":  "الأنظمة التجارية والأعمال",
+    "royal_decree":  "م/93 بتاريخ 15/08/1441هـ",
+    "cabinet_resolution":  "قرار مجلس الوزراء رقم (511) بتاريخ 14/08/1441هـ",
+    "issue_date_hijri":  "1441-08-15",
+    "effective_date_hijri":  "1441-11-15",
+    "status":  "ساري",
+    "supervising_authority":  "وزارة العدل",
+    "relative_path":  "02_الأنظمة_العامة_general\\03_الأنظمة_التجارية_والأعمال\\نظام_المحاكم_التجارية",
+    "tags":  [
+                 "محاكم تجارية",
+                 "قضاء تجاري",
+                 "منازعات تجارية",
+                 "وساطة",
+                 "تحكيم"
+             ]
+}

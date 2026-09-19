@@ -163,7 +163,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold text-neutral-100">أصول القضاء</h1>
-            <p className="text-[11px] text-neutral-400">منصة القضايا والدفوعات</p>
+            <p className="text-[11px] text-neutral-400">منصة التدقيق والتقاضي الذكي</p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-neutral-400 bg-neutral-900/80 px-3 py-1.5 rounded-xl border border-neutral-800">

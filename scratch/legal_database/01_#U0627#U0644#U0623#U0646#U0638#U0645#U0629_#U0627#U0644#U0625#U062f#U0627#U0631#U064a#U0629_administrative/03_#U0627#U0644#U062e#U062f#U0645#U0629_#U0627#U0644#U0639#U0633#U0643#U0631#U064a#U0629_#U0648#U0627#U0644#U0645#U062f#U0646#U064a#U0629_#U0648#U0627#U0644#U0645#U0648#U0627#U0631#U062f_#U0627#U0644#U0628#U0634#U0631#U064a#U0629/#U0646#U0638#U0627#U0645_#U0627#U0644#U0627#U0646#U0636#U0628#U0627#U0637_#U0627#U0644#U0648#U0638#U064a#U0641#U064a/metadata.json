@@ -1,0 +1,21 @@
+{
+    "id":  "public_service_discipline_law",
+    "name_ar":  "نظام الانضباط الوظيفي",
+    "name_en":  "Public Service Discipline Law",
+    "category":  "أنظمة إدارية",
+    "sub_category":  "أنظمة الخدمة العسكرية والموارد البشرية",
+    "royal_decree":  "م/18 بتاريخ 01/02/1443هـ",
+    "cabinet_resolution":  "قرار مجلس الوزراء رقم (51) بتاريخ 23/01/1443هـ",
+    "issue_date_hijri":  "1443-02-01",
+    "effective_date_hijri":  "1443-08-01",
+    "status":  "ساري",
+    "supervising_authority":  "وزارة الموارد البشرية والتنمية الاجتماعية",
+    "relative_path":  "01_الأنظمة_الإدارية_administrative\\03_الخدمة_العسكرية_والمدنية_والموارد_البشرية\\نظام_الانضباط_الوظيفي",
+    "tags":  [
+                 "انضباط وظيفي",
+                 "عقوبات تأديبية",
+                 "تحقيق إداري",
+                 "فصل",
+                 "موارد بشرية"
+             ]
+}

@@ -1,0 +1,21 @@
+{
+    "id":  "electronic_litigation_rules_moen_platform",
+    "name_ar":  "لائحة الترافع الإلكتروني وإدارة الدعوى عبر منصة معين",
+    "name_en":  "Electronic Litigation and Case Management Rules (Moen Platform)",
+    "category":  "أنظمة إدارية",
+    "sub_category":  "المرافعات الإدارية واللوائح التنفيذية",
+    "royal_decree":  "مستندة للأمر السامي الكريم بدعم التحول الرقمي القضائي",
+    "cabinet_resolution":  "قرار رئيس ديوان المظالم رئيس مجلس القضاء الإداري لعام 1442هـ",
+    "issue_date_hijri":  "1442-08-01",
+    "effective_date_hijri":  "1442-09-01",
+    "status":  "ساري",
+    "supervising_authority":  "ديوان المظالم - الإدارة العامة لمنظومة معين القضائية",
+    "relative_path":  "01_الأنظمة_الإدارية_administrative\\02_المرافعات_الإدارية_واللوائح_التنفيذية\\لائحة_الترافع_الإلكتروني_منصة_معين",
+    "tags":  [
+                 "منصة معين",
+                 "ترافع إلكتروني",
+                 "جلسات رقمية",
+                 "قضاء إداري رقمي",
+                 "صكوك إلكترونية"
+             ]
+}

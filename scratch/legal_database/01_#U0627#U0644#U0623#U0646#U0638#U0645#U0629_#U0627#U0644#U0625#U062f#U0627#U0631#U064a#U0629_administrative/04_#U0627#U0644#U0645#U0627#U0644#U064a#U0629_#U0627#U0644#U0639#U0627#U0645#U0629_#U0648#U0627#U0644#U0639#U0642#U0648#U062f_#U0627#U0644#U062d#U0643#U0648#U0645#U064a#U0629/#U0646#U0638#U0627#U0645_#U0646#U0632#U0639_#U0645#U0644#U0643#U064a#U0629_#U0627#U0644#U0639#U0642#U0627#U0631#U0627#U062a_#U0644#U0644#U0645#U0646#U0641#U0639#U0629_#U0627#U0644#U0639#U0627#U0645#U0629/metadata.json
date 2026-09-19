@@ -1,0 +1,21 @@
+{
+    "id":  "expropriation_of_real_estate_law",
+    "name_ar":  "نظام نزع ملكية العقارات للمنفعة العامة ووضع اليد المؤقت",
+    "name_en":  "Eminent Domain and Property Expropriation Law",
+    "category":  "أنظمة إدارية",
+    "sub_category":  "المالية العامة والعقود الحكومية",
+    "royal_decree":  "م/15 بتاريخ 11/03/1424هـ",
+    "cabinet_resolution":  "قرار مجلس الوزراء رقم (54) وتاريخ 11/03/1424هـ",
+    "issue_date_hijri":  "1424-03-11",
+    "effective_date_hijri":  "1424-05-01",
+    "status":  "ساري",
+    "supervising_authority":  "وزارة البلديات والإسكان / هيئة عقارات الدولة",
+    "relative_path":  "01_الأنظمة_الإدارية_administrative\\04_المالية_العامة_والعقود_الحكومية\\نظام_نزع_ملكية_العقارات_للمنفعة_العامة",
+    "tags":  [
+                 "نزع ملكية",
+                 "منفعة عامة",
+                 "تعويض عادل",
+                 "وضع يد",
+                 "عقارات"
+             ]
+}

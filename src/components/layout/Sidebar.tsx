@@ -75,11 +75,11 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
     subTitle: 'الدعاوى الحقوقية والعقارات والمقاولات',
     icon: Scale,
     colorTheme: {
-      bg: 'bg-emerald-500/10',
-      border: 'border-emerald-500/30',
-      text: 'text-emerald-400',
-      accent: 'text-emerald-300',
-      hoverBg: 'hover:bg-emerald-500/15',
+      bg: 'bg-cyan-500/10',
+      border: 'border-cyan-400/30',
+      text: 'text-cyan-300',
+      accent: 'text-cyan-200',
+      hoverBg: 'hover:bg-cyan-400/10',
     },
     services: [
       { id: 'general_claim', label: 'لائحة حقوقية', icon: FileText, badge: 'مطالبة', description: 'صياغة دعوى مدنية طبقاً لنظام المعاملات المدنية' },
@@ -94,11 +94,11 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
     subTitle: 'الدفاع الجنائي والدفوع الإجرائية',
     icon: ShieldAlert,
     colorTheme: {
-      bg: 'bg-rose-500/10',
-      border: 'border-rose-500/30',
-      text: 'text-rose-400',
-      accent: 'text-rose-300',
-      hoverBg: 'hover:bg-rose-500/15',
+      bg: 'bg-fuchsia-500/10',
+      border: 'border-fuchsia-400/30',
+      text: 'text-fuchsia-300',
+      accent: 'text-fuchsia-200',
+      hoverBg: 'hover:bg-fuchsia-400/10',
     },
     services: [
       { id: 'criminal_defense', label: 'مذكرة دفاع / براءة', icon: FileText, badge: 'دفاع', description: 'دحض أدلة الاتهام وتطبيق أصل البراءة' },
@@ -118,6 +118,10 @@ interface SidebarProps {
   onLogout?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  onOpenKnowledge?: () => void;
+  onOpenSearch?: () => void;
+  onOpenAssistant?: () => void;
+  onOpenReports?: () => void;
 }
 
 export function Sidebar({
@@ -129,6 +133,10 @@ export function Sidebar({
   onLogout,
   isMobileOpen,
   onCloseMobile,
+  onOpenKnowledge,
+  onOpenSearch,
+  onOpenAssistant,
+  onOpenReports,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
 
@@ -195,7 +203,7 @@ export function Sidebar({
                     {userSession.name}
                   </p>
                   <p className="text-[10px] text-slate-400 font-mono">
-                    هوية: {userSession.nationalId}
+                    هوية: •••• {userSession.nationalId.slice(-4)}
                   </p>
                 </div>
               </div>
@@ -263,6 +271,9 @@ export function Sidebar({
                     onSelectCourt(cat.id);
                     if (cat.services.length > 0 && !activeService) {
                       onSelectService(cat.services[0].id);
+                    }
+                    if (typeof window !== 'undefined' && window.innerWidth < 1024 && onCloseMobile) {
+                      onCloseMobile();
                     }
                   }}
                   className={`w-full flex items-center justify-between p-3 text-right transition-colors ${
@@ -332,10 +343,10 @@ export function Sidebar({
           
           <button 
             onClick={() => {
-              // توجيه لمركز المعرفة أو المكتبة
+              onOpenKnowledge?.();
               if (onCloseMobile) onCloseMobile();
             }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
+            className="min-h-11 w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
           >
             <Library className="w-4 h-4 text-slate-400" />
             <span>المكتبة النظامية الشاملة</span>
@@ -343,9 +354,10 @@ export function Sidebar({
 
           <button 
             onClick={() => {
+              onOpenSearch?.();
               if (onCloseMobile) onCloseMobile();
             }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
+            className="min-h-11 w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
           >
             <Search className="w-4 h-4 text-slate-400" />
             <span>البحث المعرفي الذكي</span>
@@ -360,9 +372,10 @@ export function Sidebar({
 
           <button 
             onClick={() => {
+              onOpenAssistant?.();
               if (onCloseMobile) onCloseMobile();
             }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
+            className="min-h-11 w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
           >
             <Bot className="w-4 h-4 text-amber-400" />
             <span>المستشار الذكي (المدير)</span>
@@ -370,9 +383,10 @@ export function Sidebar({
 
           <button 
             onClick={() => {
+              onOpenReports?.();
               if (onCloseMobile) onCloseMobile();
             }}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
+            className="min-h-11 w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
           >
             <BarChart3 className="w-4 h-4 text-slate-400" />
             <span>تقارير الفحص والنتائج</span>

@@ -16,13 +16,16 @@ import {
   User,
 } from 'lucide-react';
 import { CourtJurisdiction } from '../layout/Sidebar';
-import { UserSession } from '../../types';
+import { Attachment, UserSession } from '../../types';
 
 interface FloatingChatBotProps {
   activeCourt: CourtJurisdiction | null;
   activeService: string | null;
   userSession?: UserSession | null;
   position?: 'bottom-left' | 'bottom-right';
+  openSignal?: number;
+  externalPrefill?: string;
+  externalAttachments?: Attachment[];
 }
 
 interface ChatMsg {
@@ -37,6 +40,9 @@ export function FloatingChatBot({
   activeService,
   userSession,
   position = 'bottom-left',
+  openSignal = 0,
+  externalPrefill = '',
+  externalAttachments = [],
 }: FloatingChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -50,6 +56,7 @@ export function FloatingChatBot({
   ]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +82,18 @@ export function FloatingChatBot({
       return previous;
     });
   }, [activeCourt]);
+
+  useEffect(() => {
+    if (!openSignal) return;
+    setIsOpen(true);
+    setIsMinimized(false);
+    if (externalPrefill.trim()) {
+      setInput(externalPrefill);
+    }
+    if (externalAttachments.length) {
+      setPendingAttachments(externalAttachments);
+    }
+  }, [openSignal, externalPrefill, externalAttachments]);
 
   // Auto scroll to bottom when messages update
   useEffect(() => {
@@ -121,7 +140,7 @@ export function FloatingChatBot({
         body: JSON.stringify({
           messages: [
             ...messages.map((m) => ({ role: m.role, content: m.content })),
-            { role: 'user', content: userText },
+            { role: 'user', content: userText, attachments: pendingAttachments },
           ],
           targetCourt: getCourtLabel(),
           clientNationalId: userSession?.nationalId,
@@ -193,6 +212,7 @@ export function FloatingChatBot({
       );
     } finally {
       setIsSending(false);
+      setPendingAttachments([]);
     }
   };
 
@@ -215,16 +235,16 @@ export function FloatingChatBot({
 
   const posClass =
     position === 'bottom-left'
-      ? 'left-4 sm:left-6 bottom-4 sm:bottom-6'
-      : 'right-4 sm:right-6 bottom-4 sm:bottom-6';
+      ? 'left-3 sm:left-6 bottom-20 sm:bottom-6'
+      : 'right-3 sm:right-6 bottom-20 sm:bottom-6';
 
   return (
     <div className={`fixed ${posClass} z-40 flex flex-col items-start select-none font-sans`}>
       {/* 1. Open Chat Pop-up Window */}
       {isOpen && (
         <div
-          className={`mb-3 w-[360px] sm:w-[410px] max-w-[92vw] bg-neutral-900 border border-neutral-750 rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-200 backdrop-blur-xl ${
-            isMinimized ? 'h-14' : 'h-[520px] max-h-[80vh]'
+          className={`mb-3 w-[calc(100vw-1.5rem)] sm:w-[410px] max-w-[calc(100vw-1.5rem)] sm:max-w-[92vw] bg-neutral-900 border border-neutral-750 rounded-3xl shadow-2xl overflow-hidden flex flex-col transition-all duration-200 backdrop-blur-xl ${
+            isMinimized ? 'h-14' : 'h-[68dvh] sm:h-[520px] max-h-[78dvh] sm:max-h-[80vh]'
           }`}
         >
           {/* Pop-up Header */}
@@ -334,6 +354,12 @@ export function FloatingChatBot({
 
               {/* Chat Input Bar */}
               <div className="p-2.5 bg-neutral-900 border-t border-neutral-800">
+                {pendingAttachments.length > 0 && (
+                  <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-2 text-[10px] text-cyan-200">
+                    <span>{pendingAttachments.length} مرفق جاهز للتحليل مع رسالتك</span>
+                    <button type="button" onClick={() => setPendingAttachments([])} className="text-slate-400 hover:text-white">إزالة</button>
+                  </div>
+                )}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -372,7 +398,7 @@ export function FloatingChatBot({
           setIsOpen(!isOpen);
           setIsMinimized(false);
         }}
-        className="group flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-850 border border-amber-500/40 hover:border-amber-400 text-neutral-100 shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer ring-1 ring-amber-500/20"
+        className="group hidden sm:flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-850 border border-amber-500/40 hover:border-amber-400 text-neutral-100 shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer ring-1 ring-amber-500/20"
       >
         <div className="relative">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-neutral-950 shadow-md">
