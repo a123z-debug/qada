@@ -77,9 +77,19 @@ function parseArticles(text: string): ParsedArticle[] {
 }
 
 function sourceBadge(system: LegalReferenceSystem) {
-  return system.verificationStatus === 'official'
-    ? 'مطابق بمصدر رسمي'
-    : 'بانتظار المطابقة الرسمية';
+  if (system.verificationStatus === 'official') return 'مطابق بمصدر رسمي';
+  if (system.verificationStatus === 'needs-correction') return 'يحتاج تصحيحاً قبل الاعتماد';
+  return 'بانتظار المطابقة الرسمية';
+}
+
+function sourceBadgeClasses(system: LegalReferenceSystem) {
+  if (system.verificationStatus === 'official') {
+    return 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300';
+  }
+  if (system.verificationStatus === 'needs-correction') {
+    return 'border-rose-400/30 bg-rose-400/10 text-rose-200';
+  }
+  return 'border-amber-400/30 bg-amber-400/10 text-amber-300';
 }
 
 export function LegalReferencesModal({
@@ -118,7 +128,11 @@ export function LegalReferencesModal({
     systems[0] ||
     LEGAL_REFERENCE_SYSTEMS[0];
 
-  const articles = useMemo(() => parseArticles(selected?.lawText || ''), [selected]);
+  const selectedIsTrusted = selected?.verificationStatus === 'official';
+  const articles = useMemo(
+    () => parseArticles(selectedIsTrusted ? selected?.lawText || '' : ''),
+    [selected, selectedIsTrusted]
+  );
 
   if (!isOpen || !selected) return null;
 
@@ -128,9 +142,12 @@ export function LegalReferencesModal({
       selected.royalDecree ? `أداة الإصدار: ${selected.royalDecree}` : '',
       selected.cabinetResolution ? `قرار مجلس الوزراء: ${selected.cabinetResolution}` : '',
       selected.status ? `الحالة: ${selected.status}` : '',
-      selected.lawText ? `\n=== نص النظام ===\n${selected.lawText}` : '',
-      selected.executiveText ? `\n=== اللائحة والملحقات ===\n${selected.executiveText}` : '',
-      selected.amendmentsText ? `\n=== التعديلات والقرارات ===\n${selected.amendmentsText}` : '',
+      selected.verificationStatus === 'official' && selected.lawText ? `\n=== نص النظام ===\n${selected.lawText}` : '',
+      selected.verificationStatus === 'official' && selected.executiveText ? `\n=== اللائحة والملحقات ===\n${selected.executiveText}` : '',
+      selected.verificationStatus === 'official' && selected.amendmentsText ? `\n=== التعديلات والقرارات ===\n${selected.amendmentsText}` : '',
+      selected.verificationStatus !== 'official'
+        ? '\nتنبيه: النص الداخلي محجوب عن النسخ لأنه غير معتمد أو يحتاج تصحيحاً.'
+        : '',
       selected.officialSourceUrl ? `\nالمصدر الرسمي: ${selected.officialSourceUrl}` : '',
     ].filter(Boolean).join('\n');
     try {
@@ -222,7 +239,9 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                 <button key={system.id} onClick={() => { setSelectedId(system.id); setTab('articles'); }} className={`mb-2 w-full rounded-2xl border p-3 text-right transition ${selected.id === system.id ? 'border-cyan-400/40 bg-cyan-400/10' : 'border-slate-800 bg-slate-900/70 hover:border-slate-700'}`}>
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-xs font-extrabold leading-5 text-slate-100">{system.name}</span>
-                    {system.verificationStatus === 'official' ? <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" /> : <FileCheck2 className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />}
+                    {system.verificationStatus === 'official'
+  ? <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+  : <FileCheck2 className={`mt-0.5 h-4 w-4 shrink-0 ${system.verificationStatus === 'needs-correction' ? 'text-rose-400' : 'text-amber-400'}`} />}
                   </div>
                   <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500">{system.subCategory}</p>
                 </button>
@@ -237,7 +256,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-lg font-black text-white sm:text-2xl">{selected.name}</h3>
-                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${selected.verificationStatus === 'official' ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300' : 'border-amber-400/30 bg-amber-400/10 text-amber-300'}`}>{sourceBadge(selected)}</span>
+                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${sourceBadgeClasses(selected)}`}>{sourceBadge(selected)}</span>
                   </div>
                   <p className="mt-2 text-xs leading-6 text-slate-400">{selected.subCategory}</p>
                   <div className="mt-3 grid gap-2 text-[11px] text-slate-400 sm:grid-cols-2">
@@ -328,9 +347,21 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                 </div>
               )}
 
-              {tab === 'law' && <ReferenceText title="نص النظام في قاعدة المنصة" text={selected.lawText} />}
-              {tab === 'executive' && <ReferenceText title="اللائحة التنفيذية والملحقات" text={selected.executiveText} />}
-              {tab === 'amendments' && <ReferenceText title="سجل التعديلات والقرارات" text={selected.amendmentsText} />}
+              {tab === 'law' && (
+                selectedIsTrusted
+                  ? <ReferenceText title="نص النظام في قاعدة المنصة" text={selected.lawText} />
+                  : <UntrustedReferenceNotice />
+              )}
+              {tab === 'executive' && (
+                selectedIsTrusted
+                  ? <ReferenceText title="اللائحة التنفيذية والملحقات" text={selected.executiveText} />
+                  : <UntrustedReferenceNotice />
+              )}
+              {tab === 'amendments' && (
+                selectedIsTrusted
+                  ? <ReferenceText title="سجل التعديلات والقرارات" text={selected.amendmentsText} />
+                  : <UntrustedReferenceNotice />
+              )}
 
               {tab === 'versions' && (
                 <div className="space-y-3">
@@ -338,12 +369,14 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                     <h4 className="flex items-center gap-2 font-black text-white"><BookOpenCheck className="h-4 w-4 text-cyan-300" /> نسخة قاعدة المنصة</h4>
                     <p className="mt-2 text-xs leading-6 text-slate-400">الإصدار الداخلي: {LEGAL_REFERENCE_DB_VERSION}. تاريخ الإصدار الهجري المسجل: {selected.issueDateHijri || 'غير محدد'}، وتاريخ النفاذ المسجل: {selected.effectiveDateHijri || 'غير محدد'}.</p>
                   </div>
-                  <div className={`rounded-2xl border p-4 ${selected.verificationStatus === 'official' ? 'border-emerald-400/20 bg-emerald-400/5' : 'border-amber-400/20 bg-amber-400/5'}`}>
+                  <div className={`rounded-2xl border p-4 ${selected.verificationStatus === 'official' ? 'border-emerald-400/20 bg-emerald-400/5' : selected.verificationStatus === 'needs-correction' ? 'border-rose-400/20 bg-rose-400/5' : 'border-amber-400/20 bg-amber-400/5'}`}>
                     <h4 className="flex items-center gap-2 font-black text-white"><ShieldCheck className="h-4 w-4" /> حالة المطابقة</h4>
                     <p className="mt-2 text-xs leading-6 text-slate-300">
                       {selected.verificationStatus === 'official'
-                        ? 'تم ربط هذا المرجع بصفحة نظام رسمية في بوابة الأنظمة السعودية التابعة لهيئة الخبراء. تبقى مراجعة المواد المعدلة والإصدارات مطلوبة قبل الاستشهاد القضائي.'
-                        : 'هذا المرجع موجود في قاعدة المنصة الداخلية لكنه لم يُربط بعد بمصدر رسمي مثبت. لا يُعامل كنص تشريعي نهائي حتى يراجعه مدقق المراجع.'}
+                        ? 'تمت مطابقة هذا السجل ونصه المفهرس بالمصدر الرسمي وفق نطاق التحقق المسجل.'
+                        : selected.verificationStatus === 'needs-correction'
+                          ? 'ظهر تعارض أو نقص توثيق في هذا السجل. حُجب نصه الداخلي عن النسخ والاسترجاع القضائي حتى تتم مطابقته مادةً وتعديلاً بالمصدر الرسمي.'
+                          : 'هذا المرجع موجود في قاعدة المنصة الداخلية لكنه لم يُربط بعد بمصدر رسمي مثبت. لا يُعامل كنص تشريعي نهائي حتى يراجعه مدقق المراجع.'}
                     </p>
                     {selected.officialSourceUrl && <a href={selected.officialSourceUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-emerald-300"><ExternalLink className="h-4 w-4" /> فتح النسخة الرسمية</a>}
                   </div>
@@ -357,6 +390,14 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
           </main>
         </div>
       </div>
+    </div>
+  );
+}
+
+function UntrustedReferenceNotice() {
+  return (
+    <div className="rounded-2xl border border-rose-400/20 bg-rose-400/5 p-5 text-sm leading-7 text-rose-100">
+      هذا النص الداخلي غير معتمد حالياً لأنه يحتاج مطابقة أو تصحيحاً. تم حجبه عن العرض والنسخ والاسترجاع القضائي. استخدم المصدر الرسمي أو «مدقق المراجع» حتى تثبت النسخة النافذة.
     </div>
   );
 }
