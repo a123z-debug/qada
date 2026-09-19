@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
+import { readSession } from './_auth';
 
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
@@ -78,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const clients = getGeminiClients();
   if (clients.length === 0) return res.status(500).json({ error: 'Server configuration error.' });
 
-  const prompt = `أنت هيئة مراجعة قانونية سعودية من ثلاثة أدوار: قاضي استئناف، قاضي نقض، وقاضي مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة.\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: ${body.clientName || 'صاحب الشأن'}\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
+  const prompt = `أنت هيئة مراجعة قانونية سعودية من ثلاثة أدوار: قاضي استئناف، قاضي نقض، وقاضي مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة.\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: ${session.name || 'صاحب الشأن'}\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
 
   let raw = '';
   let lastError: unknown;
