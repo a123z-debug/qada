@@ -41,7 +41,7 @@ export interface DetailedJudgeItem {
   judgeTitle: string;
   courtCategory: string;
   verdict: 'مقبول شكلاً وموضوعاً' | 'معيب موضوعاً' | 'مرفوض شكلاً' | 'بحاجة لتصحيح جوهري' | 'خطر السقوط الشكلي' | 'لم يكتمل الفحص الآلي';
-  scoreOutOf100: number;
+  scoreOutOf100: number | null;
   errorsIdentified: string[];
   critique: string;
   specificAmendment: string;
