@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
+import { buildOfficialLegalReferenceContext } from "./src/lib/legalRetrieval";
 import {
   authErrorMessage,
   clearLegacySessionCookie,
@@ -75,8 +76,8 @@ const DEFAULT_LEGAL_SYSTEM_INSTRUCTION = `أنت "المستشار القضائ�
    - إذا لم يكن المصدر الرسمي متحققاً، صرّح بعدم اكتمال التحقق ولا تختلق نصاً أو أثراً نظامياً.
    - الأولوية في التحقق لهيئة الخبراء بمجلس الوزراء وقرارات مجلس الوزراء ومجلس الشورى، مع جريدة أم القرى للتحقق من النشر والنفاذ.
 3. [الفصل التام بين الاختصاصات القضائية]:
-   - القضاء الإداري (ديوان المظالم): عيوب القرار، المادة 8، الخطأ المرفقي، الحقوق والبدلات، العقود الإدارية.
-   - القضاء الجزائي: نظام الإجراءات الجزائية، بطلان القبض والتفتيش والتوقيف (المادتين 35 و43)، انعدام حالة التلبس، درء الشبهات.
+   - القضاء الإداري (ديوان المظالم): عيوب القرار والحقوق الوظيفية والعقود والمواعيد وفق النصوص الرسمية المسترجعة فقط.
+   - القضاء الجزائي: الإجراءات الجزائية والقبض والتفتيش والتوقيف وحالة التلبس وفق النصوص الرسمية المسترجعة فقط.
    - القضاء العام: نظام المعاملات المدنية، نظام المرافعات الشرعية، نظام الإثبات، أركان المسؤولية التقصيرية والتعويض.
 4. [جاهز للإيداع المباشر (Moeen-Ready)]: صياغة مذكرات ولوائح احترافية تبدأ بالبسملة وتنتهي بـ "مقدمه"، تتضمن الوقائع والدفوع والطلبات بشكل مرتب ومفصل.
 
@@ -451,7 +452,12 @@ async function startServer() {
         }
       );
 
-      let sysInstruction = DEFAULT_LEGAL_SYSTEM_INSTRUCTION;
+      const localReferenceContext = buildOfficialLegalReferenceContext(
+        messages.map((message: any) => String(message?.content || "")).join("\n").slice(0, 24000),
+        4
+      );
+
+      let sysInstruction = `${DEFAULT_LEGAL_SYSTEM_INSTRUCTION}\n\n${localReferenceContext}`;
 
       if (powerMode) {
         sysInstruction += `\n\n[تفعيل وضع البور القضائي الصارم - أقصى انضباط ومنع التفلسف]:
