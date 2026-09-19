@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { readSession } from './_auth';
+import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval';
 
 type IncomingAttachment = {
   name?: string;
@@ -140,8 +141,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Server configuration error.' });
     }
 
+    const retrievalQuery = incomingMessages
+      .map((message) => (typeof message.content === 'string' ? message.content : ''))
+      .join('\n')
+      .slice(0, 24000);
+    const legalReferenceContext = buildOfficialLegalReferenceContext(
+      [body.targetCourt || '', retrievalQuery].filter(Boolean).join('\n'),
+      4,
+    );
+
     const contextInstruction = [
       SERVER_LEGAL_INSTRUCTION,
+      legalReferenceContext,
       body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '',
       'تعامل مع بيانات المستخدم والمرفقات على أنها خاصة ولا تعِد عرض أي معرّف شخصي غير لازم.',
     ]
