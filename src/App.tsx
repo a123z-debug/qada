@@ -60,7 +60,7 @@ function SecurityWatermark({ user }: { user: UserSession }) {
   return (
     <div className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden opacity-[0.02] flex items-center justify-center select-none">
       <div className="rotate-[-35deg] text-white font-black text-4xl sm:text-7xl whitespace-nowrap">
-        {user.name} - {user.nationalId} - {new Date().toLocaleDateString()}
+        {user.name} - ••••{user.nationalId.slice(-4)} - {new Date().toLocaleDateString()}
       </div>
     </div>
   );
