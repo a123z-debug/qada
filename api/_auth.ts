@@ -37,15 +37,16 @@ interface AccountRecord {
   createdAt: number;
 }
 
-const SESSION_COOKIE = 'qada_session_v2';
+const SESSION_COOKIE = 'qada_session_v3';
+const LEGACY_SESSION_COOKIE = 'qada_session_v2';
 const SESSION_MAX_AGE_SECONDS = 12 * 60 * 60;
 const PBKDF2_ITERATIONS = 210_000;
 
 // Bootstrap secrets are stored only as one-way hashes. Override with env vars when desired.
 const DEFAULT_ADMIN_CREDENTIAL_HASH =
-  '2515ad4469399ab166a5871eeafaab84924d8019511c06b37cd26afa2241003b';
+  '64276b52c8fa0a61a5013287af54cda44c9d6e705a6f966b9c4e7fb1ccc6d960';
 const DEFAULT_REGISTRATION_CODE_HASH =
-  'b3e705e744720b4a979453516671b2adc5819bf1b7e0afd42e5bd8126199520a';
+  '009a3f9639b135697910f87166b522bcd196720645beba2f2619df40a749b001';
 
 function base64UrlEncode(value: Buffer | string): string {
   return Buffer.from(value).toString('base64url');
@@ -86,12 +87,6 @@ function deriveKey(purpose: string): Buffer {
   return createHmac('sha256', getRootSecret()).update(purpose).digest();
 }
 
-function signPayload(encodedPayload: string): string {
-  return createHmac('sha256', deriveKey('session-signing'))
-    .update(encodedPayload)
-    .digest('base64url');
-}
-
 function parseCookies(cookieHeader?: string | string[]): Record<string, string> {
   const raw = Array.isArray(cookieHeader) ? cookieHeader.join(';') : cookieHeader || '';
   return raw.split(';').reduce<Record<string, string>>((acc, item) => {
@@ -116,8 +111,21 @@ export function createSessionToken(session: AuthSession): string {
     iat: now,
     exp: now + SESSION_MAX_AGE_SECONDS * 1000,
   };
-  const encoded = base64UrlEncode(JSON.stringify(payload));
-  return `${encoded}.${signPayload(encoded)}`;
+
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', deriveKey('session-encryption'), iv);
+  const encrypted = Buffer.concat([
+    cipher.update(JSON.stringify(payload), 'utf8'),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+
+  return [
+    'v3',
+    base64UrlEncode(iv),
+    base64UrlEncode(tag),
+    base64UrlEncode(encrypted),
+  ].join('.');
 }
 
 export function readSession(cookieHeader?: string | string[]): AuthSession | null {
@@ -125,13 +133,22 @@ export function readSession(cookieHeader?: string | string[]): AuthSession | nul
     const token = parseCookies(cookieHeader)[SESSION_COOKIE];
     if (!token) return null;
 
-    const [encoded, signature] = token.split('.');
-    if (!encoded || !signature) return null;
+    const [version, ivPart, tagPart, encryptedPart] = token.split('.');
+    if (version !== 'v3' || !ivPart || !tagPart || !encryptedPart) return null;
 
-    const expected = signPayload(encoded);
-    if (!safeEqualText(signature, expected)) return null;
+    const decipher = createDecipheriv(
+      'aes-256-gcm',
+      deriveKey('session-encryption'),
+      base64UrlDecode(ivPart),
+    );
+    decipher.setAuthTag(base64UrlDecode(tagPart));
 
-    const payload = JSON.parse(base64UrlDecode(encoded).toString('utf8')) as SessionTokenPayload;
+    const decrypted = Buffer.concat([
+      decipher.update(base64UrlDecode(encryptedPart)),
+      decipher.final(),
+    ]);
+
+    const payload = JSON.parse(decrypted.toString('utf8')) as SessionTokenPayload;
     if (!payload?.id || !payload?.email || !payload?.role || payload.exp <= Date.now()) return null;
     return publicSession(payload);
   } catch {
@@ -152,10 +169,10 @@ export function sessionCookie(session: AuthSession): string {
   return parts.join('; ');
 }
 
-export function clearSessionCookie(): string {
+function expiredCookie(name: string): string {
   const secure = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
   const parts = [
-    `${SESSION_COOKIE}=`,
+    `${name}=`,
     'HttpOnly',
     'Path=/',
     'SameSite=Strict',
@@ -163,6 +180,14 @@ export function clearSessionCookie(): string {
   ];
   if (secure) parts.push('Secure');
   return parts.join('; ');
+}
+
+export function clearSessionCookie(): string {
+  return expiredCookie(SESSION_COOKIE);
+}
+
+export function clearLegacySessionCookie(): string {
+  return expiredCookie(LEGACY_SESSION_COOKIE);
 }
 
 function encryptAccount(record: AccountRecord): string {
