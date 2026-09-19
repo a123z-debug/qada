@@ -143,8 +143,7 @@ export function FloatingChatBot({
             { role: 'user', content: userText, attachments: pendingAttachments },
           ],
           targetCourt: getCourtLabel(),
-          clientNationalId: userSession?.nationalId,
-          clientPersonName: userSession?.name,
+clientPersonName: userSession?.name,
           powerMode: true,
         }),
       });
@@ -191,7 +190,7 @@ export function FloatingChatBot({
               ? {
                   ...m,
                   content:
-                    'وفقاً للأنظمة القضائية في المملكة العربية السعودية، يجب دائماً التحقق من الاختصاص النوعي والولائي، ومراعاة مهل الاستئناف والتظلم النظامية (60 يوماً للتظلم الوجوبي ومثلها لإيداع الدعوى الإدارية، و30 يوماً للاستئناف العام والجزائي).',
+                    'تعذر إكمال التحليل الآلي ولم يتم اعتماد أي نتيجة قانونية. أعد المحاولة، ولا تعتمد ميعاداً أو مادة نظامية قبل ظهور النص ومصدره الرسمي.',
                 }
               : m
           )
