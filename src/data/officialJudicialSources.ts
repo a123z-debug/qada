@@ -107,4 +107,17 @@ export const OFFICIAL_JUDICIAL_SOURCES: OfficialSourceEntry[] = [
     officialSourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/5d3379bd-3547-494e-9fbd-a9a700f26e24/1',
     verificationNote: 'تحقق من الاسم والحالة وتاريخ الإصدار والنشر والمرسوم الملكي وقرار مجلس الوزراء من صفحة النظام الرسمية. لا تعتمد أي نسخة تاريخية أو مادة معدلة قبل مطابقة تبويب الإصدارات في المصدر.',
   },
+  {
+    id: 'board_of_grievances_procedure_law_1435',
+    name: 'نظام المرافعات أمام ديوان المظالم',
+    category: 'قضاء وتقاضي',
+    royalDecree: 'م/3 بتاريخ 22/01/1435هـ',
+    cabinetResolution: '13 بتاريخ 08/01/1435هـ',
+    issueDateHijri: '1435-01-22',
+    publicationDateHijri: '1435-02-03',
+    status: 'ساري',
+    sourceAuthority: 'هيئة الخبراء بمجلس الوزراء',
+    officialSourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/f2f7b465-b576-4f47-a8e7-a9a700f27202/1',
+    verificationNote: 'تحقق من الاسم والحالة وتاريخ الإصدار والنشر والمرسوم الملكي وقرار مجلس الوزراء من صفحة النظام الرسمية. المادة (63) تنص على العمل بالنظام من تاريخ نشره في الجريدة الرسمية. لا يعتمد أي تعديل لاحق قبل مطابقته بإصدار رسمي.',
+  },
 ];
