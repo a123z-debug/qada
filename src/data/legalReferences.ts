@@ -1,4 +1,4 @@
-export type ReferenceVerificationStatus = 'official' | 'pending';
+export type ReferenceVerificationStatus = 'official' | 'pending' | 'needs-correction';
 
 export interface LegalReferenceSystem {
   id: string;
@@ -20,7 +20,7 @@ export interface LegalReferenceSystem {
   verificationStatus: ReferenceVerificationStatus;
 }
 
-export const LEGAL_REFERENCE_DB_VERSION = "2.0.0";
+export const LEGAL_REFERENCE_DB_VERSION = "2.1.0";
 export const LEGAL_REFERENCE_CATEGORIES = [
   {
     "id": "01_administrative",
@@ -38,6 +38,13 @@ export const LEGAL_REFERENCE_CATEGORIES = [
     "description": "أنظمة الإجراءات الجزائية، النيابة العامة، مكافحة الرشوة والتزوير، الجرائم المعلوماتية، غسل الأموال، والاحتيال المالي، والمخدرات"
   }
 ] as const;
+/**
+ * LEGACY_REFERENCE_SAFETY_NOTE:
+ * هذه السجلات التاريخية مخصصة للعرض والمراجعة فقط. أزيل اعتماد "official" عنها
+ * في 2026-09-19 بعد اكتشاف تعارضات بين بعض بياناتها ونصوص المصادر الرسمية.
+ * لا يعاد أي سجل إلى "official" إلا بعد مطابقة النص الحرفي، أداة الإصدار، التعديلات،
+ * والنسخة النافذة مع المصدر الرسمي. محرك الاسترجاع القضائي لا يعتمد هذه الطبقة حالياً.
+ */
 export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
   {
     "id": "board_of_grievances_law",
@@ -62,7 +69,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "amendmentsText": "# سجل التعديلات والأوامر القضائية - نظام ديوان المظالم\n\n- **المرسوم الملكي م/113 بتاريخ 1440/09/02هـ**: تنظيم اختصاصات التفتيش القضائي الإداري وضوابط ترقية قضاة القضاء الإداري.\n- **قرار مجلس القضاء الإداري رقم (5/1444)**: تفعيل الترافع الإلكتروني الكامل عبر منصة (معين) الرقمية لجميع درجات التقاضي الإداري.\n",
     "judicialText": "# المبادئ والسوابق القضائية - ديوان المظالم\n\n## مبدأ قضائي مستقر (رقابة المشروعية):\n- **المرجع**: المحكمة الإدارية العليا - الدائرة الأولى.\n- **رقم القرار**: 412/1443هـ\n- **المبدأ**:\n  > \"رقابة القضاء الإداري على القرار الإداري هي رقابة مشروعية تقف عند حد التحقق من قيام القرار على سببه المبرر له صدقاً وحقاً ومطابقته للنظام، دون أن تمتد إلى الحلول محل جهة الإدارة في ملاءمة اتخاذ القرار ما لم يشبه عيب إساءة استعمال السلطة أو الانحراف بها.\"\n",
     "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/5d3379bd-3547-494e-9fbd-a9a700f26e24/1",
-    "verificationStatus": "official"
+    "verificationStatus": "needs-correction"
   },
   {
     "id": "supreme_administrative_court",
@@ -162,7 +169,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "amendmentsText": "# سجل التعديلات - نظام المرافعات أمام ديوان المظالم\n\n- تعديل المادة الرابعة عشرة بشأن مدد الاعتراض بالاستئناف وجعلها ثلاثين يوماً للأحكام العادية وعشرة أيام للأحكام الصادرة في الطلبات المستعجلة.\n",
     "judicialText": "# السوابق والمبادئ القضائية - المرافعات الإدارية\n\n## مبدأ قضائي (ميعاد التظلم ووقف التنفيذ المستعجل):\n- **المحكمة الإدارية العليا**: الدائرة الإدارية الثالثة.\n- **المبدأ**:\n  > \"يشترط للقضاء بوقف تنفيذ القرار الإداري توافر ركنين مجتمعين: ركن الجدية بأن يكون ادعاء الإلغاء قائماً بحسب الظاهر على أسباب يرجح معها إلغاؤه، وركن الاستعجال بأن يترتب على تنفيذ القرار نتائج يتعذر تداركها.\"\n",
     "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/f2f7b465-b576-4f47-a8e7-a9a700f27202/1",
-    "verificationStatus": "official"
+    "verificationStatus": "needs-correction"
   },
   {
     "id": "executive_regulation_of_administrative_pleadings",
@@ -266,7 +273,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "amendmentsText": "# سجل التعديلات والقرارات السامية - نظام خدمة الأفراد\n\n- **المرسوم الملكي م/53 لعام 1441هـ**: تعديل سلم رواتب الأفراد والبدلات الفنية وإدراج التخصصات التقنية والسيبرانية العسكرية.\n- **قرار مجلس الوزراء رقم (411) لعام 1443هـ**: تعديل ضوابط صرف مكافأة نهاية الخدمة للأفراد العسكريين عند التقاعد وإضافة سنوات الخدمة في العمليات الحربية ومضاعفتها في احتساب المعاش التقاعدي العسكري.\n- **الأمر الملكي أ/21**: صرف العلاوة السنوية وتحديث جداول التشكيلات العسكرية للأفراد.\n",
     "judicialText": "# المبادئ والسوابق القضائية الصادرة من ديوان المظالم في قضايا الأفراد العسكريين\n\n## 1. مبدأ قضائي في استحقاق البدلات العسكرية (بدل الخطر ومكافحة الإرهاب):\n- **الجهة القضائية**: المحكمة الإدارية العليا - دائرة قضايا الخدمة العسكرية والمدنية.\n- **المبدأ**:\n  > \"استحقاق الفرد العسكري للبدلات الميدانية المقررة في نظام خدمة الأفراد (كبدل الإرهاب وبدل الخطر) يدور وجوداً وعدماً مع ممارسته الفعلية للمهام المبررة للصرف، ولا يسوغ للجهة العسكرية إسقاط البدل أو استرداده بأثر رجعي متى كان ثابتاً قيام الفرد بالمهام في وحدته الميدانية، ويعد قرار الحسم قراراً إدارياً مخالفاً للنظام حقيقاً بالإلغاء مع إلزام الجهة بصرف المستحقات السابقة.\"\n\n## 2. مبدأ قضائي في قرارات إنهاء خدمة الفرد العسكري:\n- **المحكمة الإدارية بالرياض - الدائرة الإدارية الثالثة**:\n  > \"إنهاء خدمة الفرد العسكري لعدم اللياقة الطبية أو لأسباب تأديبية هو قرار إداري يخضع لرقابة القضاء الإداري من حيث صحة السبب واستيفاء الإجراءات الجوهرية وعرض الحالة على اللجنة الطبية العسكرية العليا المختصة، وبطلان الإجراء يترتب عليه إلغاء القرار وإعادة الفرد لعمله وصرف رواتبه عن مدة الانقطاع غير المشروع.\"\n",
     "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1",
-    "verificationStatus": "official"
+    "verificationStatus": "needs-correction"
   },
   {
     "id": "military_officers_service_law",
@@ -416,7 +423,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "amendmentsText": "# سجل التعديلات - نظام القضاء\n\n- صدور تعديلات بتوحيد جهات التوثيق واستحداث اللوائح المتخصصة لدوائر المحكمة العليا.\n",
     "judicialText": "# المبادئ القضائية الصادرة من الهيئة العامة للمحكمة العليا\n\n## مبدأ قضائي في استقلال القضاء:\n  > \"أحكام القضاء الصادرة وفق الأصول الشرعية والنظامية حجة بما قضت به، ولا يجوز نقضها إلا بالطرق المحددة نظاماً.\"\n",
     "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/ea1765a3-dec3-41a0-a32f-a9a700f26d58/1",
-    "verificationStatus": "official"
+    "verificationStatus": "needs-correction"
   },
   {
     "id": "law_of_sharia_procedure",
@@ -441,7 +448,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "amendmentsText": "# سجل التعديلات - نظام المرافعات الشرعية\n\n- إقرار التبليغ بالوسائل الإلكترونية المعتمدة واعتباره تبليغاً لشخص المدعى عليه ومنتجاً لآثاره النظامية كاملة.\n",
     "judicialText": "# المبادئ القضائية في المرافعات الشرعية\n\n## مبدأ قضائي في الدفوع الشكلية:\n  > \"الدفع بعدم الاختصاص النوعي للمحكمة من النظام العام، يجوز الدفع به في أي مرحلة تكون عليها الدعوى، وتقضي به المحكمة من تلقاء نفسها.\"\n",
     "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/f0eaae46-9f84-40ee-815e-a9a700f268b3/1",
-    "verificationStatus": "official"
+    "verificationStatus": "needs-correction"
   },
   {
     "id": "law_of_evidence",
@@ -467,7 +474,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "amendmentsText": "# سجل التعديلات - نظام الإثبات\n\n- صدور الأدلة الإجرائية لتنظيم إجراءات الإثبات الإلكتروني ومصادقة الوثائق الرقمية.\n",
     "judicialText": "# المبادئ القضائية في نظام الإثبات\n\n## مبدأ قضائي في حجية الرسائل والمراسلات الإلكترونية:\n  > \"تعد المراسلات عبر البريد الإلكتروني وتطبيقات الهواتف الموثقة دليلاً رقمياً معتبراً في الإثبات له قوة المحررات العادية في مواجهة أطرافه ما لم يثبت خلاف ذلك.\"\n",
     "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1",
-    "verificationStatus": "official"
+    "verificationStatus": "needs-correction"
   },
   {
     "id": "enforcement_law",
@@ -493,7 +500,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "amendmentsText": "# سجل التعديلات - نظام التنفيذ\n\n- إلغاء إجراءات إيقاف الخدمات الحكومية عن المنفذ ضدهم وحصر التنفيذ في الأموال والذمة المالية والمنع من السفر.\n",
     "judicialText": "# المبادئ القضائية في قضاء التنفيذ\n\n## مبدأ قضائي في الورقة التجارية:\n  > \"السند لأمر مكتمل البيانات الشكلية سند تنفيذي واجب النفاذ بذاته، ولا يجوز لقاضي التنفيذ النظر في بواعث تحريره ما لم تكن هناك منازعة موضوعية تختص بها محكمة الموضوع.\"\n",
     "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/c81ba2f1-1bf1-443b-9b1c-a9a700f27110/1",
-    "verificationStatus": "official"
+    "verificationStatus": "needs-correction"
   },
   {
     "id": "civil_transactions_law",
@@ -698,7 +705,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
     "amendmentsText": "# سجل التعديلات - نظام الإجراءات الجزائية\n\n- تعديل مدد التوقيف واشتراط موافقة النائب العام للتمديد بعد مدد معينة.\n- إضافة أحكام التسوية الجزائية والصلح الجنائي في الجرائم غير الجسيمة.\n",
     "judicialText": "# المبادئ القضائية في الإجراءات والعدالة الجزائية\n\n## مبدأ قضائي في بطلان القبض والتفتيش:\n  > \"بطلان إجراءات القبض أو التفتيش لعدم مشروعيتها أو لانتفاء حالة التلبس أو إذن جهة التحقيق المختصة يترتب عليه بطلان الدليل المستمد منها، تأسيسياً على قاعدة أن ما بني على باطل فهو باطل.\"\n",
     "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/8f1b7079-a5f0-425d-b5e0-a9a700f26b2d/1",
-    "verificationStatus": "official"
+    "verificationStatus": "needs-correction"
   },
   {
     "id": "public_prosecution_law",
@@ -925,7 +932,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
   "amendmentsText": "تُراجع التعديلات والإصدارات من بوابة هيئة الخبراء وجريدة أم القرى قبل الاستشهاد.",
   "judicialText": "",
   "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/ae1d79bf-3716-4bc5-a85e-ada100c8a870/1",
-  "verificationStatus": "official"
+  "verificationStatus": "needs-correction"
 },
 {
   "id": "judiciary_bog_execution_mechanism",
@@ -949,7 +956,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
   "amendmentsText": "يجب ربط أي تعديل لاحق بنظام القضاء أو نظام ديوان المظالم بهذه الآلية عند تأثيره على الأحكام الانتقالية.",
   "judicialText": "",
   "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/8b59b6e9-94ff-4d7c-90df-acc60000e5ee/1",
-  "verificationStatus": "official"
+  "verificationStatus": "needs-correction"
 },
 {
   "id": "judicial_costs_law",
@@ -974,7 +981,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
   "amendmentsText": "تُراجع التعديلات من بوابة هيئة الخبراء وجريدة أم القرى.",
   "judicialText": "",
   "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/3e368087-7b31-46e7-8005-ada100b8f703/1",
-  "verificationStatus": "official"
+  "verificationStatus": "needs-correction"
 },
 {
   "id": "judicial_costs_executive_regulation",
@@ -999,7 +1006,7 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
   "amendmentsText": "تُراجع التعديلات والقرارات التنفيذية اللاحقة من المصادر الرسمية.",
   "judicialText": "",
   "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/d7e8efd3-4021-4413-8255-ae7c00f190de/1",
-  "verificationStatus": "official"
+  "verificationStatus": "needs-correction"
 },
 {
   "id": "criminal_procedure_executive_regulation",
@@ -1025,6 +1032,6 @@ export const LEGAL_REFERENCE_SYSTEMS: LegalReferenceSystem[] = [
   "amendmentsText": "تُفحص الإصدارات والتعديلات من الصفحة الرسمية قبل الاعتماد.",
   "judicialText": "",
   "officialSourceUrl": "https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9a0249b7-f835-48fa-8d1e-a9a700f1981a/1",
-  "verificationStatus": "official"
+  "verificationStatus": "needs-correction"
 }
 ];
