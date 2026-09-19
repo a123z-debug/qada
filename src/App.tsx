@@ -16,6 +16,7 @@ import { FloatingChatBot } from './components/chat/FloatingChatBot';
 import { Article8CalculatorModal } from './components/Article8CalculatorModal';
 import { CaseDossierModal } from './components/CaseDossierModal';
 import { JudgmentRepositoryModal } from './components/JudgmentRepositoryModal';
+import { LegalReferencesModal } from './components/LegalReferencesModal';
 import { PdfUploadModal } from './components/PdfUploadModal';
 import { CasePleadingStudioModal } from './components/CasePleadingStudioModal';
 import { INITIAL_JUDGMENT_RECORDS } from './data/judgmentRecords';
@@ -335,6 +336,7 @@ export default function App() {
   const [isArticle8Open, setIsArticle8Open] = useState(false);
   const [isDossierOpen, setIsDossierOpen] = useState(false);
   const [isRepositoryOpen, setIsRepositoryOpen] = useState(false);
+  const [isReferencesOpen, setIsReferencesOpen] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [pendingLaunch, setPendingLaunch] = useState<LaunchIntent | null>(null);
   const [assistantOpenSignal, setAssistantOpenSignal] = useState(0);
@@ -367,7 +369,7 @@ export default function App() {
       return;
     }
     if (intent.kind === 'repository') {
-      setIsRepositoryOpen(true);
+      setIsReferencesOpen(true);
       return;
     }
     if (intent.kind === 'dossier') {
@@ -464,7 +466,7 @@ export default function App() {
         onLogout={handleLogout}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
-        onOpenKnowledge={() => setIsRepositoryOpen(true)}
+        onOpenKnowledge={() => setIsReferencesOpen(true)}
         onOpenSearch={() => requestAssistant('ابحث لي في الأنظمة والمراجع ذات الصلة بسؤالي، واذكر السند ومصدره بوضوح: ')}
         onOpenAssistant={() => requestAssistant('')}
         onOpenReports={() => setIsDossierOpen(true)}
@@ -569,8 +571,7 @@ export default function App() {
           <button type="button" onClick={() => setIsDossierOpen(true)} className="mobile-dock-btn">
             <FolderOpen className="w-5 h-5" /><span>قضيتي</span>
           </button>
-          <button type="button" onClick={() => setIsRepositoryOpen(true)} className="mobile-dock-btn">
-            <Library className="w-5 h-5" /><span>المراجع</span>
+          <button type="button" onClick={() => setIsReferencesOpen(true)} className="mobile-dock-btn">\n            <Library className="w-5 h-5" /><span>المراجع</span>
           </button>
           <button type="button" onClick={() => requestAssistant('')} className="mobile-dock-btn">
             <Bot className="w-5 h-5" /><span>المستشار</span>
@@ -590,6 +591,11 @@ export default function App() {
 
       <Article8CalculatorModal isOpen={isArticle8Open} onClose={() => setIsArticle8Open(false)} onInsertToPrompt={() => setIsArticle8Open(false)} />
       <CaseDossierModal isOpen={isDossierOpen} onClose={() => setIsDossierOpen(false)} judgmentRecords={judgmentRecords} initialNationalId={session.nationalId} currentUser={session} />
+      <LegalReferencesModal
+        isOpen={isReferencesOpen}
+        onClose={() => setIsReferencesOpen(false)}
+        onAskExpert={(promptText) => requestAssistant(promptText)}
+      />
       <JudgmentRepositoryModal
         isOpen={isRepositoryOpen}
         onClose={() => setIsRepositoryOpen(false)}
