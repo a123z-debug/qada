@@ -15,7 +15,7 @@ function buildFallback(text: string) {
       judgeName: 'قاضي الاستئناف',
       judgeTitle: 'فحص الموضوع والوقائع والتسبيب',
       courtCategory: 'محكمة الاستئناف',
-      verdict: 'بانتظار استكمال الفحص الآلي',
+      verdict: 'لم يكتمل الفحص الآلي',
       scoreOutOf100: 80,
       errorsIdentified: [],
       critique: 'تم الحفاظ على النص الأصلي للمراجعة اليدوية.',
@@ -26,7 +26,7 @@ function buildFallback(text: string) {
       judgeName: 'قاضي المحكمة العليا',
       judgeTitle: 'رقابة النقض وبطلان الأحكام والأنظمة',
       courtCategory: 'المحكمة العليا',
-      verdict: 'بانتظار استكمال الفحص الآلي',
+      verdict: 'لم يكتمل الفحص الآلي',
       scoreOutOf100: 80,
       errorsIdentified: [],
       critique: 'يلزم تدقيق أسباب الطعن والمواد النظامية قبل الإيداع.',
@@ -37,7 +37,7 @@ function buildFallback(text: string) {
       judgeName: 'قاضي تدقيق المرفقات',
       judgeTitle: 'فحص المرفقات والبينات وتوثيق السندات',
       courtCategory: 'دائرة الإثبات والمرفقات',
-      verdict: 'بانتظار استكمال الفحص الآلي',
+      verdict: 'لم يكتمل الفحص الآلي',
       scoreOutOf100: 80,
       errorsIdentified: [],
       critique: 'تحقق من إرفاق القرارات والعقود والإشعارات ذات الصلة.',
@@ -47,7 +47,7 @@ function buildFallback(text: string) {
 
   return {
     documentType: 'محرر قضائي',
-    overallStatus: 'مكتمل ومستوفٍ للأصول',
+    overallStatus: 'تعذر إكمال الفحص الآلي',
     primaryFatalDefect: '',
     judges,
     cassationErrors: { title: 'أخطاء الطعن والنقض', items: [], severity: 'منخفضة' },
@@ -67,7 +67,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     court?: string;
     documentTitle?: string;
     clientName?: string;
-    nationalId?: string;
     attachmentsText?: string;
     uploadedFileName?: string;
   };
@@ -79,7 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const clients = getGeminiClients();
   if (clients.length === 0) return res.status(500).json({ error: 'Server configuration error.' });
 
-  const prompt = `أنت هيئة مراجعة قانونية سعودية من ثلاثة أدوار: قاضي استئناف، قاضي نقض، وقاضي مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة.\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: ${body.clientName || 'صاحب الشأن'}\nالهوية: ${body.nationalId || 'غير مسجل'}\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
+  const prompt = `أنت هيئة مراجعة قانونية سعودية من ثلاثة أدوار: قاضي استئناف، قاضي نقض، وقاضي مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة.\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: ${body.clientName || 'صاحب الشأن'}\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
 
   let raw = '';
   let lastError: unknown;
