@@ -40,6 +40,13 @@ export const OFFICIAL_JUDICIAL_REFERENCE_INDEX: OfficialJudicialReference[] = [
     publicationDateHijri: '1443-02-03',
     status: 'official-verified',
     materialIndex: ['المادة 1', 'المادة 2', 'المادة 6', 'المادة 7', 'المادة 10', 'المادة 11', 'المادة 14', 'المادة 15', 'المادة 16', 'المادة 19', 'المادة 20', 'المادة 21', 'المادة 22'],
+    regulation: {
+      name: 'اللائحة التنفيذية لنظام التنفيذ أمام ديوان المظالم',
+      instrument: 'صادرة عن مجلس القضاء الإداري؛ رقم قرار الإصدار غير مثبت في الصفحة الرسمية المسترجعة',
+      issueDateHijri: '',
+      publicationDateHijri: '',
+      officialSourceUrl: 'https://www.bog.gov.sa/knowledge-center/JudicialSystems/Regulations/Pages/RegulationsContent.aspx?RegulationTitle=%D8%A7%D9%84%D9%84%D8%A7%D8%A6%D8%AD%D8%A9+%D8%A7%D9%84%D8%AA%D9%86%D9%81%D9%8A%D8%B0%D9%8A%D8%A9+%D9%84%D9%86%D8%B8%D8%A7%D9%85+%D8%A7%D9%84%D8%AA%D9%86%D9%81%D9%8A%D8%B0+%D8%A3%D9%85%D8%A7%D9%85+%D8%AF%D9%8A%D9%88%D8%A7%D9%86+%D8%A7%D9%84%D9%85%D8%B8%D8%A7%D9%84%D9%85',
+    },
     amendments: [
       'المرسوم الملكي رقم (م/237) وتاريخ 1447/11/3هـ وقرار مجلس الوزراء رقم (746) وتاريخ 1447/10/26هـ: تعديل البند (ثالثاً) من المرسوم الملكي رقم (م/15) المتصل بالتنفيذ أمام ديوان المظالم. المصدر الرسمي: جريدة أم القرى.',
     ],
@@ -155,6 +162,13 @@ export const OFFICIAL_JUDICIAL_REFERENCE_INDEX: OfficialJudicialReference[] = [
     publicationDateHijri: '1435-02-03',
     status: 'official-verified',
     materialIndex: ['المادة 1', 'المادة 2', 'المادة 3', 'المادة 4', 'المادة 5', 'المادة 6', 'المادة 8', 'المادة 60', 'المادة 61', 'المادة 62', 'المادة 63'],
+    regulation: {
+      name: 'اللائحة التنفيذية لنظام المرافعات أمام ديوان المظالم',
+      instrument: 'صادرة عن مجلس القضاء الإداري؛ رقم قرار الإصدار غير مثبت في الصفحة الرسمية المسترجعة',
+      issueDateHijri: '',
+      publicationDateHijri: '',
+      officialSourceUrl: 'https://www.bog.gov.sa/en/AdministrativeJusticeCouncil/RulesAndRegulations/Pages/RulesAndRegulations-06.aspx',
+    },
     amendments: [
       'المرسوم الملكي رقم (م/18) وتاريخ 1442/1/15هـ: تعديل المادتين (3) و(4) في شأن وسائل التبليغ الإلكتروني.',
       'المرسوم الملكي رقم (م/43) وتاريخ 1443/5/26هـ: تعديل المادة (60) لإضافة نظام الإثبات إلى الأنظمة المطبقة فيما لم يرد فيه حكم في النظام وبما لا يتعارض مع طبيعة المنازعة الإدارية.',
@@ -169,10 +183,10 @@ export const OFFICIAL_JUDICIAL_REFERENCE_INDEX: OfficialJudicialReference[] = [
     systemName: 'نظام خدمة الأفراد',
     category: 'الخدمة العسكرية وحقوق الأفراد',
     issueInstrument: 'مرسوم ملكي رقم (م/9) وتاريخ 1397/3/24هـ',
-    cabinetResolution: 'قرار مجلس الوزراء رقم (324)؛ جريدة أم القرى تثبت أن اللائحة التنفيذية صدرت به بتاريخ 1397/3/16هـ',
+    cabinetResolution: 'قرار مجلس الوزراء رقم (324): صفحة هيئة الخبراء تعرض تاريخاً مختلفاً بين بيانات الأداة ومتن المرسوم؛ يحتاج التاريخ إلى مطابقة أصل القرار',
     issueDateHijri: '1397-03-24',
     publicationDateHijri: '',
-    status: 'official-verified',
+    status: 'needs-correction',
     materialIndex: ['المادة 4', 'المادة 28'],
     regulation: {
       name: 'اللائحة التنفيذية لنظام خدمة الأفراد',
@@ -187,7 +201,7 @@ export const OFFICIAL_JUDICIAL_REFERENCE_INDEX: OfficialJudicialReference[] = [
     ],
     versions: ['نسخة بوابة الأنظمة السعودية لنظام خدمة الأفراد', 'تعديل 1443هـ المنشور في أم القرى', 'تعديل 1445هـ المنشور في أم القرى'],
     officialSourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1',
-    verificationNote: 'تم التحقق من أصل النظام وأداته ومن تعديلي 1443هـ و1445هـ من المصادر الرسمية. تاريخ نشر أصل النظام غير مثبت في صفحة هيئة الخبراء المسترجعة؛ لذلك ترك فارغاً. النصوص القديمة غير الموثقة عن البدلات أو التقاضي أو المبادئ القضائية لا تعتمد.',
+    verificationNote: 'أصل النظام والمرسوم الملكي وتعديلا 1443هـ و1445هـ متحقق منها، لكن صفحة هيئة الخبراء تعرض لقرار مجلس الوزراء رقم (324) تاريخاً في بيانات الأداة يختلف عن التاريخ الوارد في متن المرسوم؛ لذلك وسم السجل needs-correction وفق سياسة المنصة. سجل الحقوق العسكرية المستقل يبقى مقصوراً على كل حق ثبت بمصدر رسمي مستقل.',
     textCoverage: 'partial-verified',
   },
   {
