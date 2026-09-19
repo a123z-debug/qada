@@ -1,6 +1,0 @@
-{
-  "name": "أصول القضاء",
-  "description": "منصة رقمية لفحص القضايا واللوائح والمرفقات، وتنظيم الأسانيد والمراجع النظامية ضمن مسارات القضاء الإداري والعام والجزائي.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
