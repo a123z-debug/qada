@@ -3,6 +3,15 @@ import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
+import {
+  authErrorMessage,
+  clearSessionCookie,
+  loginAccount,
+  loginAdmin,
+  readSession,
+  registerAccount,
+  sessionCookie,
+} from "./api/_auth";
 
 dotenv.config();
 
@@ -270,15 +279,82 @@ async function startServer() {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Server-side authentication. The browser never validates administrator secrets itself.
+  app.get("/api/auth", (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    const session = readSession(req.headers.cookie);
+    if (!session) {
+      res.status(401).json({ authenticated: false });
+      return;
+    }
+    res.json({ authenticated: true, session });
+  });
+
+  app.post("/api/auth", (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    const body = req.body || {};
+    const action = String(body.action || "");
+
+    try {
+      if (action === "register") {
+        const { session, accountProof } = registerAccount({
+          name: String(body.name || ""),
+          nationalId: String(body.nationalId || ""),
+          email: String(body.email || ""),
+          password: String(body.password || ""),
+          inviteCode: String(body.inviteCode || ""),
+        });
+        res.setHeader("Set-Cookie", sessionCookie(session));
+        res.status(201).json({ session, accountProof });
+        return;
+      }
+
+      if (action === "login") {
+        const session = loginAccount({
+          email: String(body.email || ""),
+          password: String(body.password || ""),
+          accountProof: String(body.accountProof || ""),
+        });
+        res.setHeader("Set-Cookie", sessionCookie(session));
+        res.json({ session });
+        return;
+      }
+
+      if (action === "admin-login") {
+        const session = loginAdmin({
+          adminCode: String(body.adminCode || ""),
+          password: String(body.password || ""),
+        });
+        res.setHeader("Set-Cookie", sessionCookie(session));
+        res.json({ session });
+        return;
+      }
+
+      res.status(400).json({ error: "عملية المصادقة غير معروفة." });
+    } catch (error) {
+      const mapped = authErrorMessage(error);
+      res.status(mapped.status).json({ error: mapped.error });
+    }
+  });
+
+  app.delete("/api/auth", (_req, res) => {
+    res.setHeader("Set-Cookie", clearSessionCookie());
+    res.status(204).end();
+  });
+
   // Chat completion endpoint with SSE streaming
   app.post("/api/chat", async (req, res) => {
+    const session = readSession(req.headers.cookie);
+    if (!session) {
+      res.status(401).json({ error: "يلزم تسجيل الدخول لاستخدام المستشار." });
+      return;
+    }
+
     const {
       messages,
-      systemInstruction,
       temperature = 0.3,
       powerMode = false,
       targetCourt,
-      clientPersonName,
     } = req.body;
 
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -341,8 +417,7 @@ async function startServer() {
         }
       );
 
-      let sysInstruction =
-        systemInstruction?.trim() || DEFAULT_LEGAL_SYSTEM_INSTRUCTION;
+      let sysInstruction = DEFAULT_LEGAL_SYSTEM_INSTRUCTION;
 
       if (powerMode) {
         sysInstruction += `\n\n[تفعيل وضع البور القضائي الصارم - أقصى انضباط ومنع التفلسف]:
@@ -357,7 +432,7 @@ async function startServer() {
       }
 
       // سياق داخلي للمستفيد مع حماية البيانات الشخصية في المخرجات
-      const activePersonName = (clientPersonName || 'صاحب الشأن').toString().trim();
+      const activePersonName = session.name.toString().trim();
 
       sysInstruction += `\n\n[سياق المعاملة الداخلي والخصوصية]
 اسم المستفيد: ${activePersonName}
@@ -418,6 +493,11 @@ async function startServer() {
 
   // Prompt enhancement endpoint
   app.post("/api/enhance-prompt", async (req, res) => {
+    const session = readSession(req.headers.cookie);
+    if (!session) {
+      res.status(401).json({ error: "يلزم تسجيل الدخول لاستخدام هذه الخدمة." });
+      return;
+    }
     const { prompt } = req.body;
 
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
@@ -448,6 +528,11 @@ async function startServer() {
 
   // Convert plain user narrative or pasted text ("صار كذا كذا") to formal Saudi legal articles & claims
   app.post("/api/convert-story", async (req, res) => {
+    const session = readSession(req.headers.cookie);
+    if (!session) {
+      res.status(401).json({ error: "يلزم تسجيل الدخول لاستخدام هذه الخدمة." });
+      return;
+    }
     const { story, court = "administrative" } = req.body;
 
     if (!story || typeof story !== "string" || !story.trim()) {
@@ -534,6 +619,11 @@ requests: (مصفوفة Array للطلبات الختامية المتوقعة �
 
   // Cassation & Judicial Audit endpoint (هيئة رقابة القضاء الموسعة: الإدارية، الجزائية، العامة - قاضيان لكل محكمة)
   app.post("/api/cassation-audit", async (req, res) => {
+    const session = readSession(req.headers.cookie);
+    if (!session) {
+      res.status(401).json({ error: "يلزم تسجيل الدخول لاستخدام هذه الخدمة." });
+      return;
+    }
     const { text, attachments, targetCourt, clientPersonName } = req.body;
 
     if ((!text || typeof text !== "string" || !text.trim()) && (!attachments || attachments.length === 0)) {
@@ -721,6 +811,11 @@ requests: (مصفوفة Array للطلبات الختامية المتوقعة �
 
   // Dedicated 3-Judge Review & Revision Endpoint (قضاة الاستئناف، المحكمة العليا/النقض، والمرفقات)
   app.post("/api/judges-review", async (req, res) => {
+    const session = readSession(req.headers.cookie);
+    if (!session) {
+      res.status(401).json({ error: "يلزم تسجيل الدخول لاستخدام هذه الخدمة." });
+      return;
+    }
     const {
       text,
       court = "administrative",
@@ -839,7 +934,7 @@ requests: (مصفوفة Array للطلبات الختامية المتوقعة �
       let userPrompt = `المعاملة القضائية المعروضة أمام الهيئة:
 - الاختصاص: ${courtNameAr}
 - العنوان: ${documentTitle}
-- المستفيد: ${clientName}
+- المستفيد: ${session.name}
 
 【تعليمات الخصوصية】
 - لا تعرض أو تكرر رقم الهوية الوطنية في التقرير أو revisedDocument.
