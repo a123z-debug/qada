@@ -22,6 +22,8 @@ import {
   LegalReferenceSystem,
 } from '../data/legalReferences';
 import { OFFICIAL_JUDICIAL_REFERENCE_INDEX } from '../data/officialJudicialReferenceIndex';
+import { OFFICIAL_JUDICIAL_REGULATIONS } from '../data/officialJudicialRegulations';
+import { OFFICIAL_JUDICIAL_AMENDMENTS } from '../data/officialJudicialAmendments';
 
 interface LegalReferencesModalProps {
   isOpen: boolean;
@@ -141,11 +143,46 @@ export function LegalReferencesModal({
     });
   }, [query]);
 
+  const officialRegulations = useMemo(() => {
+    const q = normalize(query);
+    return OFFICIAL_JUDICIAL_REGULATIONS.filter((reference) => {
+      if (!q) return true;
+      return normalize([
+        reference.parentSystem,
+        reference.regulationName,
+        reference.category,
+        reference.issueInstrument,
+        reference.materialIndex.join(' '),
+        reference.amendments.join(' '),
+        reference.versions.join(' '),
+      ].join(' ')).includes(q);
+    });
+  }, [query]);
+
+  const officialAmendments = useMemo(() => {
+    const q = normalize(query);
+    return OFFICIAL_JUDICIAL_AMENDMENTS.filter((reference) => {
+      if (!q) return true;
+      return normalize([
+        reference.systemName,
+        reference.affectedProvision,
+        reference.instrument,
+        reference.effect,
+      ].join(' ')).includes(q);
+    });
+  }, [query]);
+
   const officialVerifiedCount = OFFICIAL_JUDICIAL_REFERENCE_INDEX.filter(
     (reference) => reference.status === 'official-verified'
   ).length;
   const needsCorrectionCount = OFFICIAL_JUDICIAL_REFERENCE_INDEX.filter(
     (reference) => reference.status === 'needs-correction'
+  ).length;
+  const regulationVerifiedCount = OFFICIAL_JUDICIAL_REGULATIONS.filter(
+    (reference) => reference.status === 'official-verified'
+  ).length;
+  const amendmentVerifiedCount = OFFICIAL_JUDICIAL_AMENDMENTS.filter(
+    (reference) => reference.status === 'official-verified'
   ).length;
 
   const selected =
@@ -234,7 +271,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
             <div className="min-w-0">
               <h2 className="truncate text-base font-black sm:text-xl">مركز المراجع والأنظمة</h2>
               <p className="mt-0.5 text-[11px] text-slate-400">
-                {officialVerifiedCount} مرجعاً رسمياً موثقاً • {needsCorrectionCount} يحتاج تصحيحاً • إصدار القاعدة {LEGAL_REFERENCE_DB_VERSION}
+                {officialVerifiedCount} نظاماً/مرجعاً • {regulationVerifiedCount} لائحة/ضابطاً • {amendmentVerifiedCount} تعديلاً موثقاً • {needsCorrectionCount} يحتاج تصحيحاً • إصدار {LEGAL_REFERENCE_DB_VERSION}
               </p>
             </div>
           </div>
@@ -288,7 +325,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                   </p>
                 </div>
                 <span className="rounded-full border border-emerald-400/20 bg-slate-950/50 px-3 py-1 text-[10px] font-bold text-emerald-200">
-                  {officialReferences.length} نتيجة
+                  {officialReferences.length + officialRegulations.length + officialAmendments.length} نتيجة موثقة/مفهرسة
                 </span>
               </div>
               <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -331,6 +368,69 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                   </div>
                 ))}
               </div>
+
+              {officialRegulations.length > 0 && (
+                <div className="mt-5">
+                  <h4 className="mb-2 text-xs font-black text-cyan-200">اللوائح والضوابط الرسمية</h4>
+                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                    {officialRegulations.map((reference) => (
+                      <div key={reference.id} className={`rounded-xl border p-3 ${reference.status === 'official-verified' ? 'border-cyan-400/15 bg-slate-950/60' : 'border-rose-400/20 bg-rose-400/5'}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="text-xs font-black text-slate-100">{reference.regulationName}</div>
+                            <div className="mt-1 text-[10px] text-slate-500">يتبع: {reference.parentSystem}</div>
+                          </div>
+                          <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-bold ${reference.status === 'official-verified' ? 'bg-cyan-400/10 text-cyan-200' : 'bg-rose-400/10 text-rose-200'}`}>
+                            {reference.status === 'official-verified' ? 'موثق' : 'يحتاج تصحيح'}
+                          </span>
+                        </div>
+                        <p className="mt-2 line-clamp-2 text-[10px] leading-5 text-slate-400">{reference.issueInstrument}</p>
+                        {reference.materialIndex.length > 0 && (
+                          <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-slate-500">المواد: {reference.materialIndex.join('، ')}</p>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <a href={reference.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+                            <ExternalLink className="h-3 w-3" /> المصدر
+                          </a>
+                          <button
+                            onClick={() => {
+                              onAskExpert(`[خبير المراجع القانونية - أصول القضاء]
+راجع اللائحة/الضابط: ${reference.regulationName}
+النظام الأصل: ${reference.parentSystem}
+أداة الإصدار: ${reference.issueInstrument}
+المصدر الرسمي: ${reference.officialSourceUrl}
+المطلوب: استخرج فقط النص أو المادة أو التعديل المثبت رسمياً، وميّز بين النسخة الأصلية والنسخة المعدلة.`);
+                              onClose();
+                            }}
+                            className="text-[10px] font-bold text-cyan-300"
+                          >
+                            اسأل الخبير
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {officialAmendments.length > 0 && (
+                <div className="mt-5">
+                  <h4 className="mb-2 text-xs font-black text-amber-200">التعديلات الرسمية</h4>
+                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                    {officialAmendments.map((reference) => (
+                      <div key={reference.id} className={`rounded-xl border p-3 ${reference.status === 'official-verified' ? 'border-amber-400/15 bg-slate-950/60' : 'border-rose-400/20 bg-rose-400/5'}`}>
+                        <div className="text-xs font-black text-slate-100">{reference.systemName}</div>
+                        <div className="mt-1 text-[10px] text-amber-200">{reference.affectedProvision}</div>
+                        <p className="mt-2 line-clamp-2 text-[10px] leading-5 text-slate-400">{reference.instrument}</p>
+                        <p className="mt-1 line-clamp-3 text-[10px] leading-5 text-slate-500">{reference.effect}</p>
+                        <a href={reference.officialSourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+                          <ExternalLink className="h-3 w-3" /> المصدر الرسمي
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
             <section className="rounded-2xl border border-cyan-400/15 bg-[#07172d] p-4 select-text">
