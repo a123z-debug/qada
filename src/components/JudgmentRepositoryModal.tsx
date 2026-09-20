@@ -80,12 +80,12 @@ export function JudgmentRepositoryModal({
   const [newPersonName, setNewPersonName] = useState('');
   const [newNationalId, setNewNationalId] = useState('');
   const [newAgencyName, setNewAgencyName] = useState('');
-  const [newCourtType, setNewCourtType] = useState<CourtType>('المحكمة الإدارية');
-  const [newCircuitName, setNewCircuitName] = useState('الدائرة الإدارية الأولى');
+  const [newCourtType, setNewCourtType] = useState<CourtType | ''>('');
+  const [newCircuitName, setNewCircuitName] = useState('');
   const [newCaseNumber, setNewCaseNumber] = useState('');
   const [newJudgmentNumber, setNewJudgmentNumber] = useState('');
   const [newJudgmentDate, setNewJudgmentDate] = useState('');
-  const [newJudgmentType, setNewJudgmentType] = useState<JudgmentRecord['judgmentType']>('إلغاء قرار إداري');
+  const [newJudgmentType, setNewJudgmentType] = useState<JudgmentRecord['judgmentType']>('غير محدد');
   const [newFacts, setNewFacts] = useState('');
   const [newRulingReasons, setNewRulingReasons] = useState('');
   const [newRulingOperative, setNewRulingOperative] = useState('');
@@ -126,8 +126,8 @@ export function JudgmentRepositoryModal({
 
   const handleCreateRecord = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPersonName.trim() || !newNationalId.trim()) {
-      alert('يرجى كتابة اسم الشخص ورقم هويته الوطنية لحفظ السجل.');
+    if (!newPersonName.trim() || !newNationalId.trim() || !newCourtType) {
+      alert('يرجى كتابة اسم الشخص ورقم هويته الوطنية واختيار المحكمة لحفظ السجل.');
       return;
     }
 
@@ -148,83 +148,24 @@ export function JudgmentRepositoryModal({
       id: `rec-${newNationalId.replace(/\s+/g, '')}-${Date.now()}`,
       personName: newPersonName.trim(),
       nationalId: newNationalId.trim(),
-      agencyName: newAgencyName.trim() || 'الجهة الإدارية المدعى عليها',
+      agencyName: newAgencyName.trim(),
       courtType: newCourtType,
-      circuitName: newCircuitName.trim() || 'الدائرة القضائية المختصة',
-      caseNumber: newCaseNumber.trim() || 'قيد الإيداع',
-      judgmentNumber: newJudgmentNumber.trim() || 'ص/٠١',
-      judgmentDate: newJudgmentDate.trim() || '١٤٤٥ هـ',
+      circuitName: newCircuitName.trim(),
+      caseNumber: newCaseNumber.trim(),
+      judgmentNumber: newJudgmentNumber.trim(),
+      judgmentDate: newJudgmentDate.trim(),
       judgmentType: newJudgmentType,
-      facts: newFacts.trim() || 'وقائع الدعوى وفق صحيفة الدعوى ومذكرات الأطراف.',
-      rulingReasons: newRulingReasons.trim() || 'أسباب ومنطوق الحكم.',
-      rulingOperative: newRulingOperative.trim() || 'منطوق الحكم الصادر في النزاع.',
-      dialoguesAndExchanges: [
-        {
-          id: 'dlg-1',
-          speaker: 'المدعي (صاحب الشأن)',
-          statement: newFacts.trim().slice(0, 150) || 'طرح الدعوى والمطالبة بإلغاء القرار والتعويض.',
-          legalFlawIdentified: 'ضرورة توثيق تاريخ العلم اليقيني لضمان سلامة الميعاد الشكلي.',
-          rebuttalArg: 'الاستناد لنصوص المواد والقرارات التنظيمية الآمرة الصادرة لصالح الموظف.',
-        },
-        {
-          id: 'dlg-2',
-          speaker: 'المدعى عليه (ممثل الجهة الحكومية)',
-          statement: 'تتمسك الجهة بسلطتها التقديرية وتنظيم الصرف وفق اللائحة والاعتمادات المالية.',
-          legalFlawIdentified: 'تمترس باطل بالسلطة التقديرية يخالف النصوص الملزمة للمشروعية.',
-          rebuttalArg: 'سلطة الإدارة مقيدة بعدم المساس بالحقوق والامتناع مشوب بعيب السبب والانحراف بالسلطة.',
-        },
-        {
-          id: 'dlg-3',
-          speaker: 'القاضي / ناظر القضية',
-          statement: 'سؤال الأطراف عن استيفاء ميعاد التظلم وما إذا كان القرار قد تحصن.',
-          legalFlawIdentified: 'فحص ميعاد المادة 8 بدقة تفادياً للسقوط.',
-          rebuttalArg: 'تقديم ما يثبت قيد التظلم ورفع الدعوى داخل الآجال المقررة نظاماً.',
-        },
-      ],
-      applicableRegulations: regulations.length > 0 ? regulations : [
-        'نظام المرافعات أمام ديوان المظالم (المادتان 8 و43)',
-        'نظام ديوان المظالم الصادر بالمرسوم الملكي (م/78)',
-        'قواعد الخدمة المدنية واللائحة التنفيذية للموارد البشرية',
-      ],
-      courtPrecedents: [
-        'المبادئ القضائية المستقرة للمحكمة الإدارية العليا في تقييد سلطة الإدارة التقديرية بمبدأ المشروعية.',
-      ],
-      fatalFlawsFound: fatalFlaws.length > 0 ? fatalFlaws : [
-        'تمسك الإدارة بسلطة تقديرية غير منضبطة في مواجهة نصوص ملزمة.',
-        'إغفال مناقشة المستندات الدالة على قيام سبب الاستحقاق الفعلي.',
-      ],
-      strongestRebuttals: rebuttals.length > 0 ? rebuttals : [
-        'الدفع بثبوت مناط الاستحقاق الفعلي ومخالفة الجهة للمشروعية وعيب السبب.',
-      ],
-      caseChronology: [
-        {
-          id: `stage-init-${Date.now()}`,
-          stageLevel: 'بداية المعاملة والتظلم الوجوبي (مادة 8)',
-          courtName: 'الجهة الإدارية (التظلم الإداري)',
-          filingDate: newJudgmentDate.trim() || '١٤٤٥ هـ',
-          rulingSummary: 'إيداع التظلم الإداري استيفاءً للقيد الشكلي للمادة (8).',
-          rulingReasons: 'التظلم المباشر للوزير أو رئيس الجهة.',
-          status: 'مكتمل',
-          deadlinesNote: 'مهلة الـ 60 يوماً للتظلم والـ 60 يوماً لرفع الدعوى.',
-        },
-        {
-          id: `stage-court-${Date.now()}`,
-          stageLevel:
-            newCourtType === 'المحكمة الإدارية'
-              ? 'المحكمة الإدارية (الدرجة الأولى)'
-              : newCourtType === 'محكمة الاستئناف الإدارية'
-              ? 'محكمة الاستئناف الإدارية'
-              : 'المحكمة الإدارية العليا (النقض)',
-          courtName: newCourtType,
-          circuitNumber: newCircuitName,
-          caseNumber: newCaseNumber,
-          rulingDate: newJudgmentDate,
-          rulingSummary: newRulingOperative || 'منطوق الحكم',
-          rulingReasons: newRulingReasons || 'أسباب الحكم',
-          factsSummary: newFacts || 'وقائع النزاع',
-          status: 'قيد النظر',
-        },
-      ],
+      facts: newFacts.trim(),
+      rulingReasons: newRulingReasons.trim(),
+      rulingOperative: newRulingOperative.trim(),
+      // لا تُنشئ المنصة أقوالاً أو دفوعاً أو سوابق أو مراحل من تلقاء نفسها.
+      // كل عنصر أدناه يجب أن يكون مدخلاً من المستخدم أو معتمداً منه صراحة.
+      dialoguesAndExchanges: [],
+      applicableRegulations: regulations,
+      courtPrecedents: [],
+      fatalFlawsFound: fatalFlaws,
+      strongestRebuttals: rebuttals,
+      caseChronology: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -237,6 +178,9 @@ export function JudgmentRepositoryModal({
     setNewPersonName('');
     setNewNationalId('');
     setNewAgencyName('');
+    setNewCourtType('');
+    setNewCircuitName('');
+    setNewJudgmentType('غير محدد');
     setNewCaseNumber('');
     setNewJudgmentNumber('');
     setNewJudgmentDate('');
@@ -256,12 +200,13 @@ export function JudgmentRepositoryModal({
       id: `stage-${Date.now()}`,
       stageLevel: newStageLevel,
       courtName: newStageCourt,
-      rulingDate: newStageDate || '١٤٤٥ هـ',
-      rulingSummary: newStageRuling.trim() || 'حكم صادر في هذه المرحلة القضائية.',
-      rulingReasons: newStageReasons.trim() || 'أسباب ومنطوق الحكم.',
-      factsSummary: newStageFacts.trim() || 'وقائع المرحلة القضائية.',
-      status: 'مكتمل',
-      deadlinesNote: 'التحقق من مواعيد الطعن (30 يوماً للاستئناف والنقض).',
+      rulingDate: newStageDate.trim(),
+      rulingSummary: newStageRuling.trim(),
+      rulingReasons: newStageReasons.trim(),
+      factsSummary: newStageFacts.trim(),
+      status: 'قيد النظر',
+      // لا تُفترض مدد نظامية أو مواعيد طعن تلقائياً داخل سجل واقعي.
+      deadlinesNote: '',
     };
 
     const updatedRecord: JudgmentRecord = {
@@ -515,10 +460,12 @@ export function JudgmentRepositoryModal({
                       نوع المحكمة الصادر منها الحكم*
                     </label>
                     <select
+                      required
                       value={newCourtType}
-                      onChange={(e) => setNewCourtType(e.target.value as CourtType)}
+                      onChange={(e) => setNewCourtType(e.target.value as CourtType | '')}
                       className="w-full p-2.5 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 focus:outline-hidden focus:border-amber-500"
                     >
+                      <option value="" disabled>اختر المحكمة</option>
                       <option value="المحكمة الإدارية">المحكمة الإدارية (الدرجة الأولى)</option>
                       <option value="محكمة الاستئناف الإدارية">محكمة الاستئناف الإدارية</option>
                       <option value="المحكمة الإدارية العليا">المحكمة الإدارية العليا (النقض)</option>
@@ -527,7 +474,41 @@ export function JudgmentRepositoryModal({
 
                   <div>
                     <label className="block text-neutral-400 mb-1 font-medium">
-                      اسم الجهة الحكومية المدعى عليها*
+                      اسم الدائرة القضائية
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="مثال: الدائرة الإدارية الأولى"
+                      value={newCircuitName}
+                      onChange={(e) => setNewCircuitName(e.target.value)}
+                      className="w-full p-2.5 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 focus:outline-hidden focus:border-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">
+                      نوع الدعوى
+                    </label>
+                    <select
+                      value={newJudgmentType}
+                      onChange={(e) => setNewJudgmentType(e.target.value as JudgmentRecord['judgmentType'])}
+                      className="w-full p-2.5 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 focus:outline-hidden focus:border-amber-500"
+                    >
+                      <option value="غير محدد">غير محدد</option>
+                      <option value="إلغاء قرار إداري">إلغاء قرار إداري</option>
+                      <option value="تعويض مالي وبدلات">تعويض مالي وبدلات</option>
+                      <option value="تسوية وظيفية">تسوية وظيفية</option>
+                      <option value="تأديبي">تأديبي</option>
+                      <option value="عقود إدارية">عقود إدارية</option>
+                      <option value="رفض الدعوى">رفض الدعوى</option>
+                      <option value="عدم قبول شكلاً">عدم قبول شكلاً</option>
+                      <option value="أخرى">أخرى</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-neutral-400 mb-1 font-medium">
+                      اسم الجهة الحكومية المدعى عليها
                     </label>
                     <input
                       type="text"
