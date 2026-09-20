@@ -25,7 +25,7 @@ export const COMMERCIAL_COURTS_LAW_1441: OfficialReferenceSystem = {
     { name: 'اللائحة التنفيذية لنظام المحاكم التجارية', status: 'needs-correction', note: 'لا يعتمد نص اللائحة أو بيانات إصدارها تفصيلياً في المركز حتى تتم مطابقتها مباشرة مع النسخة الرسمية المنشورة.' },
   ],
   amendments: [
-    { label: 'التعديلات اللاحقة', status: 'needs-correction', note: 'تُفهرس كل مادة معدلة منفردة بعد مطابقة أداة التعديل والنشر الرسمي؛ لا يعتمد أي تعديل من مصدر ثانوي.' },
+    { label: 'التعديلات اللاحقة', status: 'needs-correction', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/38334008-3b70-4c6c-b3af-aba3016a8061/1', note: 'تُفهرس كل مادة معدلة منفردة بعد مطابقة أداة التعديل والنشر الرسمي؛ لا يعتمد أي تعديل من مصدر ثانوي.' },
   ],
   versions: [
     { label: 'الإصدار الأساسي 1441هـ', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/', note: 'صدر بالمرسوم الملكي م/93 بتاريخ 15/08/1441هـ بناءً على قرار مجلس الوزراء 511 بتاريخ 14/08/1441هـ، ونشر بتاريخ 24/08/1441هـ.' },
