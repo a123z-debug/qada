@@ -44,7 +44,7 @@ const PBKDF2_ITERATIONS = 210_000;
 
 // Bootstrap secrets are stored only as one-way hashes. Override with env vars when desired.
 const DEFAULT_ADMIN_CREDENTIAL_HASH =
-  '64276b52c8fa0a61a5013287af54cda44c9d6e705a6f966b9c4e7fb1ccc6d960';
+  '4b999367e80365715c601e9d36d406de28f980a5e75f9e38429322d057f3e0a2';
 
 function base64UrlEncode(value: Buffer | string): string {
   return Buffer.from(value).toString('base64url');
@@ -289,7 +289,7 @@ export function loginAccount(input: {
 
 export function loginAdmin(input: { adminCode: string; password: string }): AuthSession {
   const expected =
-    process.env.ADMIN_CREDENTIAL_HASH?.trim() || DEFAULT_ADMIN_CREDENTIAL_HASH;
+    process.env.QADA_ADMIN_CREDENTIAL_HASH_V4?.trim() || DEFAULT_ADMIN_CREDENTIAL_HASH;
   const actual = hashHex(`${input.adminCode.trim()}:${input.password}`);
   if (!safeEqualText(actual, expected)) throw new Error('INVALID_CREDENTIALS');
 
