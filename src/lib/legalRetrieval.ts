@@ -3,6 +3,14 @@ import {
   OfficialJudicialReference,
 } from '../data/officialJudicialReferenceIndex';
 import {
+  OFFICIAL_JUDICIAL_REGULATIONS,
+  OfficialJudicialRegulationReference,
+} from '../data/officialJudicialRegulations';
+import {
+  OFFICIAL_JUDICIAL_AMENDMENTS,
+  OfficialJudicialAmendment,
+} from '../data/officialJudicialAmendments';
+import {
   VERIFIED_MILITARY_PERSONNEL_RIGHTS,
   VerifiedMilitaryPersonnelRight,
 } from '../data/verifiedMilitaryPersonnelRights';
@@ -43,6 +51,30 @@ function referenceSearchText(reference: OfficialJudicialReference): string {
   ].join(' ');
 }
 
+function regulationSearchText(reference: OfficialJudicialRegulationReference): string {
+  return [
+    reference.parentSystem,
+    reference.regulationName,
+    reference.category,
+    reference.issueInstrument,
+    reference.materialIndex.join(' '),
+    reference.amendments.join(' '),
+    reference.versions.join(' '),
+    reference.verificationNote,
+  ].join(' ');
+}
+
+function amendmentSearchText(amendment: OfficialJudicialAmendment): string {
+  return [
+    amendment.systemName,
+    amendment.affectedProvision,
+    amendment.instrument,
+    amendment.publicationDateHijri,
+    amendment.effect,
+    amendment.verificationNote,
+  ].join(' ');
+}
+
 function rightSearchText(right: VerifiedMilitaryPersonnelRight): string {
   return [
     right.title,
@@ -76,6 +108,34 @@ function scoreReference(reference: OfficialJudicialReference, queryTokens: strin
     if (name.includes(token)) score += 8;
     if (category.includes(token)) score += 3;
     if (materialIndex.includes(token)) score += 4;
+  }
+  return score;
+}
+
+function scoreRegulation(reference: OfficialJudicialRegulationReference, queryTokens: string[]): number {
+  if (reference.status !== 'official-verified' || !reference.officialSourceUrl) return -1;
+  const name = normalizeArabic(reference.regulationName);
+  const parent = normalizeArabic(reference.parentSystem);
+  const materialIndex = normalizeArabic(reference.materialIndex.join(' '));
+  let score = scoreText(regulationSearchText(reference), queryTokens);
+
+  for (const token of queryTokens) {
+    if (name.includes(token)) score += 8;
+    if (parent.includes(token)) score += 5;
+    if (materialIndex.includes(token)) score += 4;
+  }
+  return score;
+}
+
+function scoreAmendment(amendment: OfficialJudicialAmendment, queryTokens: string[]): number {
+  if (amendment.status !== 'official-verified' || !amendment.officialSourceUrl) return -1;
+  const systemName = normalizeArabic(amendment.systemName);
+  const provision = normalizeArabic(amendment.affectedProvision);
+  let score = scoreText(amendmentSearchText(amendment), queryTokens);
+
+  for (const token of queryTokens) {
+    if (systemName.includes(token)) score += 7;
+    if (provision.includes(token)) score += 5;
   }
   return score;
 }
@@ -119,6 +179,30 @@ export function retrieveOfficialLegalReferences(query: string, limit = 5) {
     }));
 }
 
+export function retrieveOfficialJudicialRegulations(query: string, limit = 4) {
+  const queryTokens = tokens(query);
+  if (queryTokens.length === 0) return [];
+
+  return OFFICIAL_JUDICIAL_REGULATIONS
+    .map((reference) => ({ reference, score: scoreRegulation(reference, queryTokens) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ reference, score }) => ({ ...reference, score }));
+}
+
+export function retrieveOfficialJudicialAmendments(query: string, limit = 4) {
+  const queryTokens = tokens(query);
+  if (queryTokens.length === 0) return [];
+
+  return OFFICIAL_JUDICIAL_AMENDMENTS
+    .map((amendment) => ({ amendment, score: scoreAmendment(amendment, queryTokens) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ amendment, score }) => ({ ...amendment, score }));
+}
+
 export function retrieveVerifiedMilitaryPersonnelRights(query: string, limit = 4) {
   const queryTokens = tokens(query);
   if (queryTokens.length === 0) return [];
@@ -133,9 +217,11 @@ export function retrieveVerifiedMilitaryPersonnelRights(query: string, limit = 4
 
 export function buildOfficialLegalReferenceContext(query: string, limit = 5): string {
   const refs = retrieveOfficialLegalReferences(query, limit);
+  const regulations = retrieveOfficialJudicialRegulations(query, 4);
+  const amendments = retrieveOfficialJudicialAmendments(query, 4);
   const militaryRights = retrieveVerifiedMilitaryPersonnelRights(query, 4);
 
-  if (refs.length === 0 && militaryRights.length === 0) {
+  if (refs.length === 0 && regulations.length === 0 && amendments.length === 0 && militaryRights.length === 0) {
     return [
       '[المراجع الرسمية المسترجعة]',
       'لم يعثر الفهرس الرسمي الداخلي على مرجع موثق ذي صلة كافية.',
@@ -144,7 +230,7 @@ export function buildOfficialLegalReferenceContext(query: string, limit = 5): st
   }
 
   const referenceBlocks = refs.map((ref, index) => [
-    `[مرجع رسمي ${index + 1}]`,
+    `[نظام/مرجع رسمي ${index + 1}]`,
     `الاسم: ${ref.name}`,
     `التصنيف: ${ref.category}`,
     ref.issueInstrument ? `أداة الإصدار: ${ref.issueInstrument}` : '',
@@ -164,6 +250,31 @@ export function buildOfficialLegalReferenceContext(query: string, limit = 5): st
     `ملاحظة التحقق: ${ref.verificationNote}`,
   ].filter(Boolean).join('\n'));
 
+  const regulationBlocks = regulations.map((reference, index) => [
+    `[لائحة/ضابط رسمي ${index + 1}]`,
+    `النظام الأصل: ${reference.parentSystem}`,
+    `الاسم: ${reference.regulationName}`,
+    `أداة الإصدار: ${reference.issueInstrument}`,
+    reference.issueDateHijri ? `تاريخ الإصدار: ${reference.issueDateHijri}هـ` : '',
+    reference.publicationDateHijri ? `تاريخ النشر: ${reference.publicationDateHijri}هـ` : 'تاريخ النشر: غير مثبت في الفهرس',
+    `تغطية النص: ${reference.textCoverage}`,
+    reference.materialIndex.length ? `المواد المفهرسة: ${reference.materialIndex.join('، ')}` : '',
+    reference.amendments.length ? `التعديلات الموثقة:\n- ${reference.amendments.join('\n- ')}` : '',
+    `المصدر الرسمي: ${reference.officialSourceUrl}`,
+    `ملاحظة التحقق: ${reference.verificationNote}`,
+  ].filter(Boolean).join('\n'));
+
+  const amendmentBlocks = amendments.map((amendment, index) => [
+    `[تعديل رسمي ${index + 1}]`,
+    `النظام/اللائحة: ${amendment.systemName}`,
+    `الحكم المتأثر: ${amendment.affectedProvision}`,
+    `أداة التعديل: ${amendment.instrument}`,
+    amendment.publicationDateHijri ? `تاريخ النشر: ${amendment.publicationDateHijri}هـ` : '',
+    `الأثر الموثق: ${amendment.effect}`,
+    `المصدر الرسمي: ${amendment.officialSourceUrl}`,
+    `ملاحظة التحقق: ${amendment.verificationNote}`,
+  ].filter(Boolean).join('\n'));
+
   const rightsBlocks = militaryRights.map((right, index) => [
     `[حق/ضمانة عسكرية موثقة ${index + 1}]`,
     `العنوان: ${right.title}`,
@@ -178,10 +289,12 @@ export function buildOfficialLegalReferenceContext(query: string, limit = 5): st
 
   return [
     '[المراجع الرسمية المسترجعة من مركز المراجع]',
-    'طبقة الاسترجاع هذه لا تستخدم scratch/legal_database ولا النصوص القديمة الموسومة needs-correction.',
+    'يشمل الاسترجاع الآن الأنظمة واللوائح والضوابط والتعديلات الموثقة، ولا يستخدم scratch/legal_database ولا أي سجل حالته needs-correction.',
     'لا يوجد نص حرفي صالح للاقتباس لمجرد وجود رابط رسمي؛ لا تنقل نص مادة حرفياً إلا إذا كانت تغطية النص full-verified أو كان النص الرسمي قد استرجع وتحقق منه في نفس الطلب.',
     'عند وجود حق أو ميزة للأفراد العسكريين يجب عرض شروطها وقيودها من المصدر نفسه، وعدم تعميمها خارج نطاقها.',
     ...referenceBlocks,
+    ...regulationBlocks,
+    ...amendmentBlocks,
     ...rightsBlocks,
   ].join('\n\n');
 }
