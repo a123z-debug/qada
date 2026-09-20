@@ -74,10 +74,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (action === 'register') {
       const { session, accountProof } = registerAccount({
         name: String(body.name || ''),
-        nationalId: String(body.nationalId || ''),
         email: String(body.email || ''),
         password: String(body.password || ''),
-        inviteCode: String(body.inviteCode || ''),
       });
       setFreshSessionCookies(res, sessionCookie(session));
       return res.status(201).json({ session, accountProof });

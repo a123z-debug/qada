@@ -39,8 +39,6 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [nationalId, setNationalId] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
   const [adminCode, setAdminCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -61,7 +59,6 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password;
     const cleanName = name.trim();
-    const cleanNationalId = nationalId.trim().replace(/\D/g, '');
 
     try {
       if (mode === 'admin') {
@@ -99,7 +96,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       if (mode === 'login') {
         const accountProof = readAccountProofs()[cleanEmail];
         if (!accountProof) {
-          setError('بيانات الحساب الآمنة غير موجودة في هذا المتصفح. أنشئ الحساب أولاً باستخدام رمز الدعوة.');
+          setError('بيانات الحساب الآمنة غير موجودة في هذا المتصفح. أنشئ الحساب أولاً على هذا الجهاز.');
           return;
         }
 
@@ -125,13 +122,8 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         return;
       }
 
-      if (cleanName.length < 3 || cleanNationalId.length !== 10) {
-        setError('يرجى إدخال الاسم ورقم الهوية المكون من 10 أرقام.');
-        return;
-      }
-
-      if (!inviteCode.trim()) {
-        setError('رمز الدعوة مطلوب لإنشاء مستخدم جديد.');
+      if (cleanName.length < 3) {
+        setError('يرجى إدخال الاسم الكامل.');
         return;
       }
 
@@ -147,10 +139,8 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
         body: JSON.stringify({
           action: 'register',
           name: cleanName,
-          nationalId: cleanNationalId,
           email: cleanEmail,
           password: cleanPassword,
-          inviteCode: inviteCode.trim(),
         }),
       });
 
@@ -211,7 +201,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               {isAdmin
                 ? 'أدخل رمز الإدارة وكلمة المرور. لا تُخزن بيانات الإدارة في الواجهة.'
                 : isRegister
-                  ? 'أنشئ حسابك برمز الدعوة. كلمة المرور لا تُحفظ داخل المتصفح.'
+                  ? 'أنشئ حسابك بالاسم والبريد الإلكتروني وكلمة المرور.'
                   : 'أدخل البريد الإلكتروني وكلمة المرور للمتابعة.'}
             </p>
           </div>
@@ -223,17 +213,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                   <label htmlFor="register-name" className="block text-xs font-bold text-neutral-300 mb-1.5">الاسم الكامل</label>
                   <input id="register-name" value={name} onChange={(event) => { setName(event.target.value); resetError(); }} className="w-full px-4 py-3 bg-neutral-950 border border-neutral-750 rounded-xl text-sm" placeholder="اكتب الاسم الكامل" required />
                 </div>
-                <div>
-                  <label htmlFor="register-national-id" className="block text-xs font-bold text-neutral-300 mb-1.5">رقم الهوية الوطنية</label>
-                  <input id="register-national-id" value={nationalId} onChange={(event) => { setNationalId(event.target.value); resetError(); }} maxLength={10} inputMode="numeric" autoComplete="off" className="w-full px-4 py-3 bg-neutral-950 border border-neutral-750 rounded-xl text-sm font-mono text-center" placeholder="10 أرقام" required />
-                </div>
-                <div>
-                  <label htmlFor="register-invite-code" className="block text-xs font-bold text-neutral-300 mb-1.5">رمز الدعوة</label>
-                  <div className="relative">
-                    <input id="register-invite-code" value={inviteCode} onChange={(event) => { setInviteCode(event.target.value); resetError(); }} autoComplete="off" className="w-full px-4 py-3 pl-11 bg-neutral-950 border border-neutral-750 rounded-xl text-sm" placeholder="رمز الدعوة المخصص" required />
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-                  </div>
-                </div>
+
               </>
             )}
 

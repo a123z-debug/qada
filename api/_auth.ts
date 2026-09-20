@@ -30,7 +30,7 @@ interface SessionTokenPayload extends AuthSession {
 interface AccountRecord {
   version: 1;
   name: string;
-  nationalId: string;
+  nationalId?: string;
   email: string;
   passwordSalt: string;
   passwordHash: string;
@@ -45,8 +45,6 @@ const PBKDF2_ITERATIONS = 210_000;
 // Bootstrap secrets are stored only as one-way hashes. Override with env vars when desired.
 const DEFAULT_ADMIN_CREDENTIAL_HASH =
   '64276b52c8fa0a61a5013287af54cda44c9d6e705a6f966b9c4e7fb1ccc6d960';
-const DEFAULT_REGISTRATION_CODE_HASH =
-  '009a3f9639b135697910f87166b522bcd196720645beba2f2619df40a749b001';
 
 function base64UrlEncode(value: Buffer | string): string {
   return Buffer.from(value).toString('base64url');
@@ -235,7 +233,7 @@ function createUserSession(record: AccountRecord): AuthSession {
     id: `user-${stableId}`,
     name: record.name,
     personName: record.name,
-    nationalId: record.nationalId,
+    nationalId: record.nationalId || '',
     email: record.email,
     role: 'user',
     loginMethod: 'email_password',
@@ -245,33 +243,21 @@ function createUserSession(record: AccountRecord): AuthSession {
 
 export function registerAccount(input: {
   name: string;
-  nationalId: string;
   email: string;
   password: string;
-  inviteCode: string;
 }): { session: AuthSession; accountProof: string } {
   const name = input.name.trim();
-  const nationalId = input.nationalId.replace(/\D/g, '');
   const email = normalizeEmail(input.email);
   const password = input.password;
-  const inviteCode = input.inviteCode.trim();
 
   if (name.length < 3) throw new Error('INVALID_NAME');
-  if (!/^\d{10}$/.test(nationalId)) throw new Error('INVALID_NATIONAL_ID');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('INVALID_EMAIL');
   if (password.length < 10) throw new Error('WEAK_PASSWORD');
-
-  const expectedInviteHash =
-    process.env.REGISTRATION_CODE_HASH?.trim() || DEFAULT_REGISTRATION_CODE_HASH;
-  if (!safeEqualText(hashHex(inviteCode), expectedInviteHash)) {
-    throw new Error('INVALID_INVITE_CODE');
-  }
 
   const salt = randomBytes(16).toString('hex');
   const record: AccountRecord = {
     version: 1,
     name,
-    nationalId,
     email,
     passwordSalt: salt,
     passwordHash: passwordHash(password, salt),
@@ -322,13 +308,12 @@ export function loginAdmin(input: { adminCode: string; password: string }): Auth
 
 export function authErrorMessage(error: unknown): { status: number; error: string } {
   const code = error instanceof Error ? error.message : '';
-  if (code === 'INVALID_INVITE_CODE') return { status: 403, error: 'رمز الدعوة غير صحيح.' };
   if (code === 'WEAK_PASSWORD') return { status: 400, error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' };
-  if (code === 'INVALID_NAME' || code === 'INVALID_NATIONAL_ID' || code === 'INVALID_EMAIL') {
+  if (code === 'INVALID_NAME' || code === 'INVALID_EMAIL') {
     return { status: 400, error: 'بيانات التسجيل غير صحيحة.' };
   }
   if (code === 'INVALID_ACCOUNT_PROOF') {
-    return { status: 401, error: 'بيانات هذا الحساب غير موجودة في هذا المتصفح. أعد إنشاء الحساب باستخدام رمز الدعوة.' };
+    return { status: 401, error: 'بيانات هذا الحساب غير موجودة في هذا المتصفح. أعد إنشاء الحساب على هذا الجهاز.' };
   }
   if (code === 'INVALID_CREDENTIALS') return { status: 401, error: 'بيانات الدخول غير صحيحة.' };
   if (code.includes('AUTH_SECRET')) return { status: 503, error: 'إعداد المصادقة على الخادم غير مكتمل.' };
