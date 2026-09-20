@@ -62,7 +62,7 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 
     try {
       if (mode === 'admin') {
-        const response = await fetch('/api/auth', {
+        const response = await fetch('/api/admin-auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
