@@ -1,0 +1,9 @@
+name: Smoke Guest Session
+on:
+  workflow_dispatch:
+jobs:
+  guest:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -i -X POST https://promptmaster-nine.vercel.app/api/guest-session
