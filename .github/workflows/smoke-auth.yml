@@ -1,0 +1,22 @@
+name: Smoke Auth Endpoint
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  smoke-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check GET /api/auth
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sS -D /tmp/headers.txt -o /tmp/body.txt https://promptmaster-nine.vercel.app/api/auth || true
+          echo "=== HEADERS ==="
+          cat /tmp/headers.txt
+          echo "=== BODY ==="
+          head -c 1000 /tmp/body.txt || true
+          echo
+          grep -qi "application/json" /tmp/headers.txt
