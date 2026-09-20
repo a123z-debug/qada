@@ -1,0 +1,10 @@
+name: Smoke Auth Helper
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -i https://promptmaster-nine.vercel.app/api/ping-auth-helper
