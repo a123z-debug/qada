@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   authErrorMessage,
   clearLegacySessionCookie,
@@ -15,7 +14,7 @@ const attempts = new Map<string, AttemptEntry>();
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const ATTEMPT_MAX = 12;
 
-function clientKey(req: VercelRequest, action: string): string {
+function clientKey(req: any, action: string): string {
   const forwarded = req.headers['x-forwarded-for'];
   const rawIp = Array.isArray(forwarded) ? forwarded[0] : forwarded || req.socket?.remoteAddress || 'unknown';
   const ip = String(rawIp).split(',')[0].trim().slice(0, 80);
@@ -36,11 +35,11 @@ function allowAttempt(key: string): { allowed: boolean; retryAfter: number } {
   return { allowed: true, retryAfter: 0 };
 }
 
-function setFreshSessionCookies(res: VercelResponse, cookie: string) {
+function setFreshSessionCookies(res: any, cookie: string) {
   res.setHeader('Set-Cookie', [clearLegacySessionCookie(), cookie]);
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'GET') {
