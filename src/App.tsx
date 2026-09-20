@@ -332,8 +332,18 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
 // ==========================================
 export default function App() {
   const [showLandingPage, setShowLandingPage] = useState(true);
-  const [session, setSession] = useState<UserSession | null>(null);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [session, setSession] = useState<UserSession | null>({
+    id: 'open-access',
+    name: 'مستخدم المنصة',
+    personName: 'مستخدم المنصة',
+    email: 'open-access@qada.local',
+    nationalId: '',
+    role: 'user',
+    agency: 'أصول القضاء',
+    loginMethod: 'email_password',
+    loginAt: Date.now(),
+  });
+  const [sessionChecked, setSessionChecked] = useState(true);
   const [activeCourt, setActiveCourt] = useState<CourtJurisdiction | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -362,31 +372,8 @@ export default function App() {
   }, [session?.id]);
 
   useEffect(() => {
-    // Purge legacy shared/client-trusted stores. Access now starts with a server-issued guest session.
     localStorage.removeItem('diwan_user_session_v1');
     localStorage.removeItem(LEGACY_JUDGMENT_RECORDS_STORAGE_KEY);
-
-    let cancelled = false;
-    fetch('/api/guest-session', {
-      method: 'POST',
-      credentials: 'same-origin',
-      cache: 'no-store',
-    })
-      .then(async (response) => {
-        if (!response.ok) return null;
-        const payload = await response.json();
-        return payload?.session as UserSession | undefined;
-      })
-      .then((restoredSession) => {
-        if (!cancelled && restoredSession) setSession(restoredSession);
-      })
-      .finally(() => {
-        if (!cancelled) setSessionChecked(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const requestAssistant = (prefill = '', attachments: Attachment[] = []) => {
