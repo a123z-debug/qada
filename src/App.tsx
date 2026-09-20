@@ -333,8 +333,18 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
 // ==========================================
 export default function App() {
   const [showLandingPage, setShowLandingPage] = useState(true);
-  const [session, setSession] = useState<UserSession | null>(null);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [session, setSession] = useState<UserSession | null>({
+    id: 'temporary-access',
+    name: 'دخول مؤقت',
+    personName: 'دخول مؤقت',
+    email: 'temporary@qada.local',
+    nationalId: '',
+    role: 'user',
+    agency: 'أصول القضاء',
+    loginMethod: 'email_password',
+    loginAt: Date.now(),
+  });
+  const [sessionChecked, setSessionChecked] = useState(true);
   const [activeCourt, setActiveCourt] = useState<CourtJurisdiction | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
