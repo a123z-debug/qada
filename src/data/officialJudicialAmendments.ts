@@ -79,4 +79,16 @@ export const OFFICIAL_JUDICIAL_AMENDMENTS: OfficialJudicialAmendment[] = [
     officialSourceUrl: 'https://www.uqn.gov.sa/decisions-and-regulations/royal-decrees/4000866',
     verificationNote: 'تم التحقق من المرسوم الملكي م/237 ومن قرار مجلس الوزراء 746 ومن تاريخ النشر في أم القرى. لا يُعامل النظام السابق م/53 كملغى كلياً في الفهرس دون مراعاة الأحكام الانتقالية الصريحة، ولا يعتمد تاريخ نفاذ النظام الجديد من هذا السجل ما لم يثبت من نص النظام المنشور.',
   },
+  {
+    id: 'administrative-enforcement-regulation-17-amendment-1447',
+    systemName: 'اللائحة التنفيذية لنظام التنفيذ أمام ديوان المظالم',
+    affectedProvision: 'المادة (5/17) والمادة (6/17)',
+    instrument: 'قرار مجلس القضاء الإداري رقم (19/1446/عاشراً) وتاريخ 1446/12/29هـ',
+    publicationDateHijri: '1447-01-30',
+    effect: 'تعديل المادة (5/17) وحذف المادة (6/17) من اللائحة التنفيذية لنظام التنفيذ أمام ديوان المظالم.',
+    status: 'official-verified',
+    officialSourceAuthority: 'جريدة أم القرى',
+    officialSourceUrl: 'https://www.uqn.gov.sa/details?p=27295',
+    verificationNote: 'تم التحقق من رقم قرار مجلس القضاء الإداري وتاريخه وتاريخ النشر ومن كون التغيير تعديلاً للمادة (5/17) وحذفاً للمادة (6/17) مباشرة من جريدة أم القرى. النص النافذ للمادة المعدلة يرجع إلى النشر الرسمي.',
+  },
 ];
