@@ -8,7 +8,7 @@ import {
   readSession,
   registerAccount,
   sessionCookie,
-} from './_auth';
+} from './_auth.ts';
 
 type AttemptEntry = { count: number; resetAt: number };
 const attempts = new Map<string, AttemptEntry>();
