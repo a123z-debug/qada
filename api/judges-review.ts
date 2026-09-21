@@ -5,6 +5,7 @@ import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts'
 import { readActiveSession } from './session.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 import { redactDirectIdentifiers } from './_privacy.ts';
+import { withTimeout } from './_async.ts';
 
 type IncomingAttachment = {
   name?: string;
@@ -49,6 +50,7 @@ async function generateReviewViaGateway(prompt: string): Promise<string> {
 
   const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
     method: 'POST',
+    signal: AbortSignal.timeout(25_000),
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -145,22 +147,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const clients = getGeminiClients();
     const models = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
-    for (const client of clients) {
+    let attempts = 0;
+    outer: for (const client of clients) {
       for (const model of models) {
+        if (attempts >= 5) break outer;
+        attempts += 1;
         try {
-          const response = await client.models.generateContent({
+          const response = await withTimeout(client.models.generateContent({
             model,
             contents: attachmentParts.length > 0
               ? [{ role: 'user', parts: [...attachmentParts, { text: prompt }] }]
               : prompt,
-          });
+          }), 28_000, 'AI_REVIEW_TIMEOUT');
           raw = response.text?.trim() || '';
-          if (raw) break;
+          if (raw) break outer;
         } catch (error) {
           lastError = error;
         }
       }
-      if (raw) break;
     }
   }
 
