@@ -167,20 +167,21 @@ export function AdministrativeWorkspace({
 
   // Generation Handler triggered ONLY by explicit "صياغة المذكرة" button
   const handleGenerateDocument = async () => {
-    const cleanNationalId = nationalId.trim().replace(/\D/g, '');
     if (
       claimantName.trim().length < 3 ||
-      cleanNationalId.length !== 10 ||
       !defendantAgency.trim() ||
-      !grievanceDate.trim() ||
       !disputedDecision.trim()
     ) {
-      window.alert('يرجى إكمال اسم صاحب الحق ورقم الهوية والجهة وتاريخ التظلم وموضوع الدعوى قبل الصياغة.');
+      window.alert('يرجى إكمال اسم صاحب الشأن والجهة وموضوع النزاع قبل الصياغة.');
       return;
     }
 
     setIsGenerating(true);
     setGeneratedOutput('');
+
+    const storyAddon = userStory.trim()
+      ? `\n\n[سرد المستخدم أو النص المنسوخ]:\n"""\n${userStory}\n"""\nالمطلوب: تنظيم الوقائع وتكييفها دون افتراض مادة أو مرسوم أو ميعاد؛ استخدم فقط المراجع الرسمية التي يسترجعها الخادم.`
+      : '';
 
     const sharedRules = `قواعد إلزامية:
 - لا تفترض أن التظلم مطلوب أو أن الدعوى مقبولة شكلاً قبل تحديد نوع الدعوى والنص النافذ.
