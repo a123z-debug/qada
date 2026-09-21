@@ -58,11 +58,11 @@ export function AdministrativeWorkspace({
     return {
       claimantName: userSession?.name || '',
       nationalId: userSession?.nationalId || '',
-      defendantAgency: 'وزارة الدفاع (قيادة القوات البرية الملكية السعودية)',
-      disputedDecision: 'القرار السلبي بالامتناع عن صرف بدل مكافحة الإرهاب والعمليات والجمع بين العلاوتين وفق المرسوم (م/37)',
-      grievanceDate: '1445/05/15هـ',
-      legalBases: 'المرسوم الملكي الكريم رقم (م/37) وتاريخ 1430/06/30هـ المعدل للمادة (17/ب) من نظام خدمة الأفراد، ومحاضر هيئة الخبراء بمجلس الوزراء رقم (198) لعام 1430هـ، وقرار مجلس الشورى (63/92)، والمادة (8) من نظام المرافعات أمام ديوان المظالم.',
-      claimRequests: '1. إلغاء القرار الإداري السلبي المطعون فيه بالامتناع عن الصرف.\n2. إلزام الجهة الإدارية المدعى عليها بصرف بدل مكافحة الإرهاب بنسبة 25% وبدل العمليات بأثر رجعي.\n3. إلزام الجهة بتنفيذ المرسوم الملكي (م/37) والجمع بين العلاوتين نظاماً.',
+      defendantAgency: '',
+      disputedDecision: 'اكتب القرار أو الإجراء الإداري محل النزاع كما ورد في المستندات.',
+      grievanceDate: '',
+      legalBases: 'لم يتم التحقق من سند نظامي بعد. استخدم أداة التكييف أو البحث الرسمي لإضافة مراجع متحققة.',
+      claimRequests: 'اكتب الطلبات التي تريد بحثها، وسيتم فحص مدى ملاءمتها لنوع الدعوى والمرحلة والمستندات.',
       userStory: '',
       uploadedFileName: '',
       uploadedFileText: '',
@@ -182,42 +182,56 @@ export function AdministrativeWorkspace({
     setIsGenerating(true);
     setGeneratedOutput('');
 
-    let promptContent = '';
-    const storyAddon = userStory.trim()
-      ? `\n\n[سرد العميل أو النص المنسوخ لما حدث (صار كذا كذا)]:\n"""\n${userStory}\n"""\nمهمتك تحويل هذا السرد البسيط إلى أسانيد ووقائع نظامية رفيعة ومطابقة لأحكام ديوان المظالم والمرسوم م/37 والأنظمة السعودية.`
-      : '';
+    const sharedRules = `قواعد إلزامية:
+- لا تفترض أن التظلم مطلوب أو أن الدعوى مقبولة شكلاً قبل تحديد نوع الدعوى والنص النافذ.
+- لا تذكر مادة أو مرسوماً أو قراراً أو ميعاداً من الذاكرة.
+- استخدم فقط الأسانيد الرسمية المسترجعة من الخادم، واذكر ما يحتاج تحققاً.
+- لا تعرض رقم الهوية الوطنية في المخرجات.
+- صغ النتيجة كمسودة للمراجعة البشرية، لا كضمان لقبول الدعوى.`;
 
+    let promptContent = '';
     if (currentService === 'administrative_claim') {
-      promptContent = `بصفتك مستشاراً قضائياً خبيراً في ديوان المظالم بالمملكة العربية السعودية، قم بصياغة (لائحة دعوى إدارية) نموذجية مكتملة الأركان وفق نظام المرافعات أمام ديوان المظالم ولائحته التنفيذية بالبيانات التالية:
-المدعي: ${claimantName} - رقم الهوية: ${nationalId}
+      promptContent = `صغ مسودة لائحة دعوى إدارية للمراجعة:
+المدعي: ${claimantName}
 الجهة المدعى عليها: ${defendantAgency}
-موضوع الدعوى والقرار المطعون فيه: ${disputedDecision}
-تاريخ التظلم الإداري الوجوبي (مادة 8): ${grievanceDate}
-الأسانيد النظامية والشرعية: ${legalBases}
+موضوع النزاع: ${disputedDecision}
+تاريخ التظلم أو المخاطبة إن وجد: ${grievanceDate || 'غير محدد'}
+الأسانيد المدخلة أو المستخرجة: ${legalBases}
 ${storyAddon}
-${uploadedFileText ? `بيانات المرفقات المودعة: ${uploadedFileText}` : ''}
-الطلبات الختامية:
+${uploadedFileText ? `بيانات المرفقات: ${uploadedFileText}` : ''}
+الطلبات المراد بحثها:
 ${claimRequests}
 
-اجعل الصياغة رصينة، تبدأ بالبسملة، وتوجه إلى فضيلة رئيس وأعضاء الدائرة الإدارية بالمحكمة الإدارية، واذكر الوقائع بدقة، ثم الأسانيد (مع إبراز عدم جواز تعطيل المرسوم الملكي م/37 وحظر تنصل الإدارة من تشريع شاركت في إقراره)، ثم الطلبات، والتوقيع.`;
+${sharedRules}`;
     } else if (currentService === 'administrative_appeal') {
-      promptContent = `بصفتك خبيراً في الطعون الإدارية، قم بصياغة (لائحة اعتراض واستئناف حكم إداري) أمام محكمة الاستئناف الإدارية بديوان المظالم.
-المستأنف: ${claimantName} (هوية: ${nationalId})
+      promptContent = `صغ مسودة اعتراض أو استئناف إداري للمراجعة، وحدد أولاً ما يلزم التحقق منه من الحكم والتبليغ والميعاد وأسباب الاعتراض.
+المستأنف: ${claimantName}
 المستأنف ضدها: ${defendantAgency}
-موضوع الاستئناف: الطعن على الحكم الابتدائي لقصوره في التسبيب ومخالفته لصريح المرسوم الملكي (م/37) لعام 1430هـ وقرار الشورى 63/92.
+موضوع النزاع: ${disputedDecision}
+الأسانيد المدخلة أو المستخرجة: ${legalBases}
 ${storyAddon}
-الأسانيد والمرفقات: ${legalBases} ${uploadedFileText ? `\nالمرفقات: ${uploadedFileText}` : ''}
-الطلبات: ${claimRequests}`;
+${uploadedFileText ? `المرفقات: ${uploadedFileText}` : ''}
+الطلبات المراد بحثها: ${claimRequests}
+
+${sharedRules}`;
     } else if (currentService === 'administrative_memo') {
-      promptContent = `قم بصياغة (مذكرة رد ومرافعة جوابية) أمام المحكمة الإدارية تدحض تمسك ممثل ${defendantAgency} بالقرارات القديمة لعام 1425هـ واحتجاجه بحظر الجمع، وإثبات نسخ هذا الحظر بالمرسوم الملكي النافذ (م/37) وقواعد تدرج القواعد القانونية.
+      promptContent = `صغ مسودة مذكرة رد ومرافعة جوابية أمام المحكمة الإدارية، واعتمد فقط على الوقائع والمستندات والأسانيد التي يمكن التحقق منها.
 المدعي: ${claimantName}
-${storyAddon}
-الطلبات: ${claimRequests}`;
-    } else {
-      promptContent = `قدم صياغة قانونية متكاملة لـ (رفع مرفقات ومذكرة إيداع بينات) أمام ديوان المظالم تتضمن تفنيد المستند (${uploadedFileName || 'القرار المطعون فيه'}) ومطابقته للمرسوم الملكي م/37.
-المدعي: ${claimantName} - الهوية: ${nationalId}
 الجهة: ${defendantAgency}
-${storyAddon}`;
+موضوع النزاع: ${disputedDecision}
+الأسانيد المدخلة أو المستخرجة: ${legalBases}
+${storyAddon}
+الطلبات المراد بحثها: ${claimRequests}
+
+${sharedRules}`;
+    } else {
+      promptContent = `صغ مسودة مذكرة إيداع ومراجعة للمرفقات في قضية إدارية، واربط كل ملاحظة بما يظهر فعلاً في المستند.
+صاحب الشأن: ${claimantName}
+الجهة: ${defendantAgency}
+المرفق: ${uploadedFileName || 'مرفقات القضية'}
+${storyAddon}
+
+${sharedRules}`;
     }
 
     try {
@@ -227,7 +241,6 @@ ${storyAddon}`;
         body: JSON.stringify({
           messages: [{ role: 'user', content: promptContent }],
           targetCourt: 'المحكمة الإدارية',
-          clientNationalId: nationalId,
           clientPersonName: claimantName,
           powerMode: true,
         }),
@@ -267,7 +280,19 @@ ${storyAddon}`;
       }
 
       if (!fullText) {
-        fullText = `بسم الله الرحمن الرحيم\n\nلدى فضيلة رئيس وأعضاء الدائرة الإدارية بالمحكمة الإدارية الموقرين\n\nالسلام عليكم ورحمة الله وبركاته،، وبعد:\n\nموضوع الدعوى: المطالبة بإلغاء القرار الإداري السلبي بالامتناع عن صرف البدلات المقررة نظاماً.\n\nالمدعي: ${claimantName} - سجل مدني: (${nationalId})\nالمدعى عليها: ${defendantAgency}\n\nأولاً: في الشكل:\nحيث تظلم المدعي أمام الجهة المدعى عليها بتاريخ ${grievanceDate} استيفاءً للقيد الإجرائي المنصوص عليه في المادة (8) من نظام ديوان المظالم، ومضى الميعاد النظامي دون جدوى، فتكون الدعوى مقبولة شكلاً لاستيفائها كافة شرائطها المقررة.\n\nثانياً: في الموضوع:\n1. استحقاق المدعي الثابت وفق المرسوم الملكي الكريم رقم (م/37) وتاريخ 1430/06/30هـ المعدل للمادة (17/ب) من نظام خدمة الأفراد بجواز الجمع.\n2. ما أثبتته محاضر هيئة الخبراء بمجلس الوزراء رقم (198) لعام 1430هـ بمصادقة ممثلي وزارتي الدفاع والمالية، وقرار مجلس الشورى رقم (63/92).\n\nبناءً عليه، يطلب المدعي الحكم بـ:\n${claimRequests}\n\nوتقبلوا وافر التحية والتقدير،،\nالمدعي: ${claimantName}`;
+        fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
+
+بيانات العمل المحفوظة:
+- صاحب الشأن: ${claimantName}
+- الجهة: ${defendantAgency}
+- موضوع النزاع: ${disputedDecision}
+- تاريخ التظلم/المخاطبة المدخل: ${grievanceDate || 'غير محدد'}
+- الأسانيد المدخلة أو المستخرجة سابقاً — تحتاج تحققاً:
+${legalBases}
+- الطلبات المراد بحثها:
+${claimRequests}
+
+أعد المحاولة بعد عودة الخدمة، ثم راجع المصادر الرسمية قبل اعتماد أي سند.`;
         setGeneratedOutput(fullText);
       }
 
@@ -275,9 +300,20 @@ ${storyAddon}`;
       setIsReviewMode(true);
     } catch (error) {
       console.error('Error generating document:', error);
-      const fallbackText = `بسم الله الرحمن الرحيم\n\nلدى المحكمة الإدارية الموقرة\n\nالمدعي: ${claimantName} - الهوية: (${nationalId})\nالمدعى عليها: ${defendantAgency}\nالموضوع: دعوى إلغاء قرار إداري والتعويض.\n\nالأسانيد:\n- المرسوم الملكي رقم (م/37) وتاريخ 1430/06/30هـ.\n- قرار مجلس الشورى 63/92 ومحضر الخبراء رقم 198.\n\nالطلبات:\n${claimRequests}\n\nمقدمه: ${claimantName}`;
+      const fallbackText = `تعذر إكمال الصياغة الآلية، ولم تُنشأ أسانيد بديلة.
+
+صاحب الشأن: ${claimantName}
+الجهة: ${defendantAgency}
+موضوع النزاع: ${disputedDecision}
+
+الأسانيد المدخلة أو المستخرجة سابقاً — تحتاج تحققاً:
+${legalBases}
+
+الطلبات المراد بحثها:
+${claimRequests}`;
       setGeneratedOutput(fallbackText);
       setIsReviewMode(true);
+
     } finally {
       setIsGenerating(false);
     }
@@ -461,7 +497,7 @@ ${storyAddon}`;
                     <p className="mt-1 text-xs leading-relaxed text-neutral-200">{pendingAdaptation.subject || pendingAdaptation.disputedSubject}</p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3">
-                    <span className="text-[10px] font-bold text-neutral-400">الأسانيد المتوقعة</span>
+                    <span className="text-[10px] font-bold text-neutral-400">المراجع الرسمية المتاحة</span>
                     <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.legal_bases?.map((basis) => `- ${basis}`).join('\n') || pendingAdaptation.legalBases}</p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3">
@@ -514,7 +550,7 @@ ${storyAddon}`;
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-neutral-300">تاريخ التظلم الإداري (م/8):</label>
+                  <label className="text-[11px] font-semibold text-neutral-300">تاريخ التظلم أو المخاطبة الإدارية:</label>
                   <input
                     type="text"
                     value={grievanceDate}
@@ -547,7 +583,7 @@ ${storyAddon}`;
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-semibold text-neutral-300">الأسانيد النظامية والمواد المستند إليها:</label>
                   {isAutoFilled && (
-                    <span className="text-[10px] text-amber-400 font-bold animate-pulse">مستخرجة نظامياً ✓</span>
+                    <span className="text-[10px] text-amber-400 font-bold animate-pulse">مرتبطة بمراجع رسمية ✓</span>
                   )}
                 </div>
                 <textarea
@@ -589,8 +625,8 @@ ${storyAddon}`;
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-slate-300 text-sm backdrop-blur-sm">
-                <span className="text-xs text-amber-400/80 block mb-1">الأسانيد النظامية والمواد المستند إليها (كمثال توضيحي):</span>
-                <p className="opacity-80">المرسوم الملكي الكريم رقم (م/37) وتاريخ 1430/06/30هـ...</p>
+                <span className="text-xs text-amber-400/80 block mb-1">تنبيه مرجعي:</span>
+                <p className="opacity-80">لا تعتمد أي مادة أو مرسوم أو ميعاد ما لم يظهر معه مصدر رسمي وحالة تحقق واضحة.</p>
               </div>
             </div>
           </div>
