@@ -268,6 +268,8 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
   const [historyError, setHistoryError] = useState('');
   const [health, setHealth] = useState<PlatformHealth | null>(null);
   const [healthError, setHealthError] = useState('');
+  const [selfTestRunning, setSelfTestRunning] = useState(false);
+  const [selfTestError, setSelfTestError] = useState('');
 
   const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
 
@@ -325,6 +327,65 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
       window.clearInterval(timer);
     };
   }, []);
+
+  const runLiveAgentSelfTest = async () => {
+    if (selfTestRunning) return;
+    setSelfTestRunning(true);
+    setSelfTestError('');
+
+    const documentTitle = 'اختبار تشغيلي حي لوكلاء QADA';
+    const text = [
+      'هذا مستند اختبار تقني داخلي وليس قضية حقيقية ولا رأياً قانونياً.',
+      'اختبر قراءة المستند والتوجيه والوقائع والاختصاص والتكييف والإثبات والتسبيب والإجراءات والدفوع والمراجعة النهائية.',
+      'يجب كذلك تشغيل مسارات المصادر ذات الصلة بعبارات: ديوان المظالم، نظام خدمة الأفراد، مرسوم ملكي، قرار مجلس الوزراء، تعديل نظام، ومبدأ قضائي أو حكم سابق.',
+      'لا تستنتج حقاً أو التزاماً من هذا النص؛ الغرض قياس جاهزية الوكلاء ومسارات التحقق فقط.',
+    ].join('\n');
+
+    try {
+      const response = await fetch('/api/admin-analysis', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentTitle,
+          court: 'اختبار تشغيلي متعدد المصادر',
+          text,
+          attachments: [],
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload?.error || 'تعذر تشغيل الاختبار الحي للوكلاء.');
+
+      const snapshot: RuntimeSnapshot = {
+        runId: 'selftest-' + Date.now(),
+        documentTitle,
+        analyzedAt: payload?.meta?.analyzedAt || new Date().toISOString(),
+        agentRuns: Array.isArray(payload?.agentRuns) ? payload.agentRuns : [],
+        sourcePackets: Array.isArray(payload?.sourcePackets) ? payload.sourcePackets : [],
+        meta: payload?.meta || {},
+      };
+
+      setRuntime(snapshot);
+      setHistory((current) => [snapshot, ...current].slice(0, 20));
+      setFilter('last-run');
+      setSelectedId('qada-core');
+
+      const historyResponse = await fetch('/api/admin-runs', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ snapshot }),
+      });
+      if (!historyResponse.ok) {
+        const historyPayload = await historyResponse.json().catch(() => ({}));
+        throw new Error(historyPayload?.error || 'اكتمل الاختبار لكن تعذر حفظ سجله المركزي.');
+      }
+    } catch (error) {
+      setSelfTestError(error instanceof Error ? error.message : 'تعذر تشغيل الاختبار الحي للوكلاء.');
+    } finally {
+      setSelfTestRunning(false);
+    }
+  };
 
   const runtimeById = useMemo(() => {
     const map = new Map<string, RuntimeAgentRun>();
@@ -401,6 +462,20 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
                 تعذر تحميل سجل التشغيل المركزي: {historyError}
               </div>
             )}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void runLiveAgentSelfTest()}
+                disabled={selfTestRunning || !health?.services?.geminiConfigured}
+                className="min-h-10 inline-flex items-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-3 text-[10px] font-black text-cyan-100 hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                title="يشغل اختباراً فعلياً لمسارات التحليل والمصادر ويسجل النتيجة في سجل التشغيل"
+              >
+                <Activity className={`h-3.5 w-3.5 ${selfTestRunning ? 'animate-pulse' : ''}`} />
+                {selfTestRunning ? 'جاري اختبار الوكلاء...' : 'اختبار حي لجميع الوكلاء'}
+              </button>
+              {selfTestError && <span className="text-[10px] font-bold text-rose-300">{selfTestError}</span>}
+            </div>
+
             <div className={
               'mt-2 rounded-xl border px-3 py-2 text-[10px] ' +
               (health?.ready
