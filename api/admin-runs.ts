@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readSession } from './session.ts';
+import { readActiveSession } from './session.ts';
 import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 import { protectJson, unprotectJson } from './_secureStore.ts';
@@ -29,7 +29,7 @@ function sanitizeSnapshot(input: unknown): AdminRunSnapshot {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
-  const session = readSession(req.headers?.cookie);
+  const session = await readActiveSession(req.headers?.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
   if (session.role !== 'admin') return res.status(403).json({ error: 'ADMIN_ONLY' });
   if (!isRedisConfigured()) return res.status(503).json({ error: 'AUDIT_STORE_UNAVAILABLE' });
