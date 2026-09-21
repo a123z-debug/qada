@@ -23,6 +23,7 @@ import {
   ScanSearch,
   Search,
   SearchCheck,
+  Settings,
   ShieldCheck,
   Sparkles,
   Workflow,
@@ -122,13 +123,14 @@ const CANVAS_WIDTH = 1600;
 const CANVAS_HEIGHT = 1080;
 
 const nodes: AgentNode[] = [
-  { id: 'auth', title: 'المصادقة والحساب', subtitle: 'دخول وصلاحيات', x: 45, y: 42, width: 180, height: 74, status: 'linked', tone: 'cyan', icon: ShieldCheck, detail: 'بوابة الدخول والجلسات وتحديد صلاحية المستخدم أو المشرف.' },
-  { id: 'search', title: 'البحث القانوني', subtitle: 'استرجاع وبحث', x: 265, y: 42, width: 180, height: 74, status: 'linked', tone: 'cyan', icon: Search, detail: 'مسار البحث في الأنظمة والمراجع وربط السؤال بالمصادر المتاحة.' },
-  { id: 'laws', title: 'الأنظمة والتشريعات', subtitle: 'نصوص ومراجع', x: 485, y: 42, width: 180, height: 74, status: 'linked', tone: 'cyan', icon: BookOpenCheck, detail: 'طبقة النصوص النظامية والمراجع الرسمية المفهرسة داخل المنصة.' },
-  { id: 'judgments', title: 'الأحكام والقرارات', subtitle: 'تحليل ومستودع', x: 705, y: 42, width: 180, height: 74, status: 'linked', tone: 'cyan', icon: Gavel, detail: 'إدارة الأحكام والسوابق وتحليل الحكم والقرارات المرتبطة بالقضية.' },
-  { id: 'references', title: 'المراجع والمصادر', subtitle: 'توثيق رسمي', x: 925, y: 42, width: 180, height: 74, status: 'linked', tone: 'cyan', icon: Database, detail: 'المصادر الرسمية التي يعتمد عليها محرك الاسترجاع والتحقق.' },
-  { id: 'cases', title: 'القضايا والملفات', subtitle: 'ملف القضية', x: 1145, y: 42, width: 180, height: 74, status: 'linked', tone: 'amber', icon: Layers3, detail: 'مستودع ملف القضية والمرفقات والتسلسل الزمني والمواد المرتبطة.' },
-  { id: 'advisor', title: 'المستشار القضائي', subtitle: 'واجهة الذكاء', x: 1365, y: 42, width: 190, height: 74, status: 'linked', tone: 'emerald', icon: Bot, detail: 'واجهة المحادثة الحالية وربط الأسئلة بالمحرك والمراجع.' },
+  { id: 'auth', title: 'المصادقة والحساب', subtitle: 'دخول وصلاحيات', x: 35, y: 42, width: 165, height: 74, status: 'linked', tone: 'cyan', icon: ShieldCheck, detail: 'بوابة الدخول والجلسات وتحديد صلاحية المستخدم أو المشرف.' },
+  { id: 'search', title: 'البحث القانوني', subtitle: 'استرجاع وبحث', x: 225, y: 42, width: 165, height: 74, status: 'linked', tone: 'cyan', icon: Search, detail: 'مسار البحث في الأنظمة والمراجع وربط السؤال بالمصادر المتاحة.' },
+  { id: 'laws', title: 'الأنظمة والتشريعات', subtitle: 'نصوص ومراجع', x: 415, y: 42, width: 165, height: 74, status: 'linked', tone: 'cyan', icon: BookOpenCheck, detail: 'طبقة النصوص النظامية والمراجع الرسمية المفهرسة داخل المنصة.' },
+  { id: 'judgments', title: 'الأحكام والقرارات', subtitle: 'تحليل ومستودع', x: 605, y: 42, width: 165, height: 74, status: 'linked', tone: 'cyan', icon: Gavel, detail: 'إدارة الأحكام والسوابق وتحليل الحكم والقرارات المرتبطة بالقضية.' },
+  { id: 'references', title: 'المراجع والمصادر', subtitle: 'توثيق رسمي', x: 795, y: 42, width: 165, height: 74, status: 'linked', tone: 'cyan', icon: Database, detail: 'المصادر الرسمية التي يعتمد عليها محرك الاسترجاع والتحقق.' },
+  { id: 'cases', title: 'القضايا والملفات', subtitle: 'ملف القضية', x: 985, y: 42, width: 165, height: 74, status: 'linked', tone: 'amber', icon: Layers3, detail: 'مستودع ملف القضية والمرفقات والتسلسل الزمني والمواد المرتبطة.' },
+  { id: 'advisor', title: 'المستشار القضائي', subtitle: 'واجهة الذكاء', x: 1175, y: 42, width: 165, height: 74, status: 'linked', tone: 'emerald', icon: Bot, detail: 'واجهة المحادثة الحالية وربط الأسئلة بالمحرك والمراجع.' },
+  { id: 'settings', title: 'الإعدادات', subtitle: 'أمان وتفضيلات', x: 1365, y: 42, width: 190, height: 74, status: 'linked', tone: 'cyan', icon: Settings, detail: 'إعدادات الحساب والأمان والتنبيهات والتفضيلات التي يديرها المستخدم أو المشرف حسب الصلاحية.' },
 
   { id: 'document-reader', title: 'قارئ المستندات', subtitle: 'PDF / صور / نص', x: 55, y: 220, width: 210, height: 80, status: 'linked', tone: 'amber', icon: FileSearch, detail: 'يستقبل الحكم أو المذكرة أو المرفق ويجهز المحتوى للتحليل.' },
   { id: 'case-router', title: 'موجّه القضية', subtitle: 'تحديد المسار', x: 310, y: 220, width: 210, height: 80, status: 'linked', tone: 'cyan', icon: GitBranch, detail: 'يحدد الاختصاص ونوع المستند والوكلاء المطلوب تشغيلهم لكل قضية.' },
@@ -181,6 +183,7 @@ const edges: Edge[] = [
   { from: 'references', to: 'official-source' },
   { from: 'cases', to: 'case-router' },
   { from: 'advisor', to: 'qada-core' },
+  { from: 'settings', to: 'auth' },
   { from: 'document-reader', to: 'case-router' },
   { from: 'case-router', to: 'qada-core' },
   { from: 'src-bog', to: 'qada-core' },
@@ -403,7 +406,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
     if (!health?.services) return node.status;
     const services = health.services;
 
-    if (node.id === 'auth') {
+    if (node.id === 'auth' || node.id === 'settings') {
       return services.authConfigured && services.adminConfigured ? 'linked' : 'error';
     }
     if (['advisor', 'qada-core', 'document-reader'].includes(node.id)) {
@@ -564,6 +567,18 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
 
               <div className="absolute left-[26px] top-[20px] rounded-xl border border-cyan-400/15 bg-slate-950/80 px-3 py-2 text-[11px] font-bold text-cyan-200">
                 منصة QADA العامة
+              </div>
+              <div className="absolute left-[250px] top-[132px] flex items-center gap-2 rounded-xl border border-cyan-400/10 bg-slate-950/70 px-3 py-2 text-[9px] font-bold text-slate-400">
+                <span className="text-cyan-200">مستخدمو المنصة</span>
+                <span>القاضي</span>
+                <span>•</span>
+                <span>المحامي</span>
+                <span>•</span>
+                <span>المتقاضي</span>
+                <span>•</span>
+                <span>الباحث القانوني</span>
+                <span>•</span>
+                <span>المراجع</span>
               </div>
               <div className="absolute left-[45px] top-[175px] rounded-lg border border-amber-400/15 bg-amber-500/5 px-2.5 py-1.5 text-[10px] font-black text-amber-200">
                 مختبر البيانات والأدلة
