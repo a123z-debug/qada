@@ -66,6 +66,7 @@ type RuntimeAgentRun = {
 };
 
 type RuntimeSnapshot = {
+  runId?: string;
   documentTitle?: string;
   analyzedAt?: string;
   agentRuns?: RuntimeAgentRun[];
@@ -206,15 +207,24 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
   const [filter, setFilter] = useState<'all' | 'admin' | 'linked' | 'planned' | 'last-run'>('all');
   const [selectedId, setSelectedId] = useState('qada-core');
   const [runtime, setRuntime] = useState<RuntimeSnapshot | null>(null);
+  const [history, setHistory] = useState<RuntimeSnapshot[]>([]);
 
   const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem('qada_admin_agent_runtime_v2');
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as RuntimeSnapshot;
-      if (parsed && Array.isArray(parsed.agentRuns)) setRuntime(parsed);
+      if (raw) {
+        const parsed = JSON.parse(raw) as RuntimeSnapshot;
+        if (parsed && Array.isArray(parsed.agentRuns)) setRuntime(parsed);
+      }
+      const rawHistory = localStorage.getItem('qada_admin_agent_run_history_v1');
+      if (rawHistory) {
+        const parsedHistory = JSON.parse(rawHistory) as RuntimeSnapshot[];
+        if (Array.isArray(parsedHistory)) {
+          setHistory(parsedHistory.filter((item) => item && Array.isArray(item.agentRuns)).slice(0, 20));
+        }
+      }
     } catch {}
   }, []);
 
@@ -264,11 +274,35 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
             </div>
             {runtime && (
               <div className="mt-2 rounded-xl border border-emerald-400/15 bg-emerald-500/5 px-3 py-2 text-[10px] text-slate-400">
-                آخر تشغيل: <span className="font-bold text-slate-200">{runtime.documentTitle || 'تحليل قضائي'}</span>
-                {runtime.analyzedAt && <span> • {new Date(runtime.analyzedAt).toLocaleString('ar-SA')}</span>}
-                <span> • مكتمل {runtime.meta?.completedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'success').length ?? 0}</span>
-                <span> • تحذير {runtime.meta?.warningAgents ?? runtime.agentRuns?.filter((run) => run.status === 'warning').length ?? 0}</span>
-                <span> • متعثر {runtime.meta?.failedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'error').length ?? 0}</span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    التشغيل المعروض: <span className="font-bold text-slate-200">{runtime.documentTitle || 'تحليل قضائي'}</span>
+                    {runtime.analyzedAt && <span> • {new Date(runtime.analyzedAt).toLocaleString('ar-SA')}</span>}
+                    <span> • مكتمل {runtime.meta?.completedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'success').length ?? 0}</span>
+                    <span> • تحذير {runtime.meta?.warningAgents ?? runtime.agentRuns?.filter((run) => run.status === 'warning').length ?? 0}</span>
+                    <span> • متعثر {runtime.meta?.failedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'error').length ?? 0}</span>
+                  </div>
+                  {history.length > 1 && (
+                    <select
+                      value={runtime.runId || ''}
+                      onChange={(event) => {
+                        const selectedRun = history.find((item) => item.runId === event.target.value);
+                        if (selectedRun) {
+                          setRuntime(selectedRun);
+                          setFilter('last-run');
+                          setSelectedId('qada-core');
+                        }
+                      }}
+                      className="max-w-[260px] rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] font-bold text-slate-300 outline-none focus:border-cyan-400/50"
+                    >
+                      {history.map((item, index) => (
+                        <option key={item.runId || index} value={item.runId || ''}>
+                          {item.documentTitle || 'تحليل قضائي'} — {item.analyzedAt ? new Date(item.analyzedAt).toLocaleString('ar-SA') : 'بدون تاريخ'}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
             )}
           </div>
