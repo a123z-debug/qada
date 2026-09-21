@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
+import { readSession } from './session.ts';
 
 type Court = 'administrative' | 'general' | 'criminal';
 
@@ -25,6 +26,11 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  const session = readSession(req.headers?.cookie);
+  if (!session) {
+    return res.status(401).json({ error: 'AUTH_REQUIRED' });
   }
 
   const body = (req.body ?? {}) as { query?: string; court?: Court };

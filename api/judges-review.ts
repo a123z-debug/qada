@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
+import { readSession } from './session.ts';
 
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
@@ -51,6 +52,11 @@ async function generateReviewViaGateway(prompt: string): Promise<string> {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+  const session = readSession(req.headers?.cookie);
+  if (!session) {
+    return res.status(401).json({ error: 'AUTH_REQUIRED' });
+  }
 
   const body = (req.body ?? {}) as {
     text?: string;
