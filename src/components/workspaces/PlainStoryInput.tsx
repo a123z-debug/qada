@@ -5,6 +5,13 @@ export interface LegalAdaptationResult {
   subject: string;
   legal_bases: string[];
   requests: string[];
+  verification?: {
+    officialSources: number;
+    verifiedArticles: number;
+    blockers: string[];
+    literalQuotationReady: boolean;
+    precedentCorpusReady: boolean;
+  };
   // Backwards compatibility formatted strings:
   disputedSubject?: string;
   legalBases?: string;
@@ -75,7 +82,11 @@ export function PlainStoryInput({
 
       const data: LegalAdaptationResult = await response.json();
       onApplyExtractedData(data);
-      setSuccessMessage('تم إعداد التكييف النظامي والأسانيد والطلبات للمراجعة أمامك 🪄');
+      setSuccessMessage(
+        data.legal_bases.length > 0
+          ? `تم إعداد التكييف وربطه بـ ${data.legal_bases.length} مراجع رسمية متاحة للمراجعة 🪄`
+          : 'تم إعداد التكييف والطلبات، ولم يظهر سند رسمي مطابق بدرجة كافية؛ راجع المراجع قبل الاعتماد.'
+      );
       setTimeout(() => setSuccessMessage(null), 4500);
     } catch (err: any) {
       setErrorMessage(err.message || 'حدث خطأ أثناء استخراج المواد');
@@ -115,7 +126,7 @@ export function PlainStoryInput({
               <span>ما تعرف المواد؟ اكتب وش صار معك ببساطة أو انسخ النص</span>
             </h4>
             <p className="text-[11px] text-neutral-400">
-              سردك باللغة العادية يتم تكييفه تلقائياً واستخراج مواده ونصوصه من القوانين السعودية
+              يُحوَّل سردك إلى تكييف مبدئي، ثم تُربط به المراجع الرسمية التي استطاعت المنصة التحقق منها
             </p>
           </div>
         </div>
@@ -141,7 +152,7 @@ export function PlainStoryInput({
             className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Sparkles className="w-4 h-4" />
-            <span>{isExtracting ? 'جاري التكييف...' : 'استخراج الأسانيد والمواد النظامية تلقائياً 🪄'}</span>
+            <span>{isExtracting ? 'جاري التكييف والتحقق...' : 'تكييف القصة وربطها بالمراجع الرسمية 🪄'}</span>
           </button>
         </div>
       </div>
