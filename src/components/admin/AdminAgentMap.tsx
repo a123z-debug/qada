@@ -58,7 +58,7 @@ type Edge = {
 type RuntimeAgentRun = {
   id: string;
   label: string;
-  status: 'success' | 'error';
+  status: 'success' | 'warning' | 'error';
   durationMs: number;
   model?: string;
   summary: string;
@@ -70,6 +70,7 @@ type RuntimeSnapshot = {
   agentRuns?: RuntimeAgentRun[];
   meta?: {
     completedAgents?: number;
+    warningAgents?: number;
     failedAgents?: number;
     architecture?: string;
   };
@@ -90,10 +91,10 @@ const nodes: AgentNode[] = [
   { id: 'document-reader', title: 'قارئ المستندات', subtitle: 'PDF / صور / نص', x: 55, y: 220, width: 210, height: 80, status: 'linked', tone: 'amber', icon: FileSearch, detail: 'يستقبل الحكم أو المذكرة أو المرفق ويجهز المحتوى للتحليل.' },
   { id: 'case-router', title: 'موجّه القضية', subtitle: 'تحديد المسار', x: 310, y: 220, width: 210, height: 80, status: 'planned', tone: 'cyan', icon: GitBranch, detail: 'يحدد الاختصاص ونوع المستند والوكلاء المطلوب تشغيلهم لكل قضية.' },
 
-  { id: 'src-bog', title: 'ديوان المظالم', subtitle: 'النظام والمرافعات', x: 365, y: 345, width: 190, height: 68, status: 'planned', tone: 'amber', icon: Landmark, detail: 'وكيل مرجعي لمنظومة ديوان المظالم ونظام المرافعات والتنفيذ واللوائح.' },
-  { id: 'src-personnel', title: 'نظام خدمة الأفراد', subtitle: 'حقوق عسكرية', x: 365, y: 430, width: 190, height: 68, status: 'planned', tone: 'amber', icon: BadgeCheck, detail: 'وكيل متخصص بنظام خدمة الأفراد ولوائحه وتعديلاته وحقوق العسكريين.' },
-  { id: 'src-royal', title: 'الأوامر والمراسيم', subtitle: 'ملكية وسامية', x: 365, y: 515, width: 190, height: 68, status: 'planned', tone: 'amber', icon: FileText, detail: 'وكيل يجمع الأوامر والمراسيم والقرارات الرسمية ذات الصلة ويحدد أثرها.' },
-  { id: 'src-precedents', title: 'المبادئ والأحكام', subtitle: 'سوابق قضائية', x: 365, y: 600, width: 190, height: 68, status: 'planned', tone: 'amber', icon: Scale, detail: 'وكيل لاستخراج المبادئ والأحكام ذات الصلة مع الفصل بين النص النظامي والاجتهاد القضائي.' },
+  { id: 'src-bog', title: 'ديوان المظالم', subtitle: 'النظام والمرافعات', x: 365, y: 345, width: 190, height: 68, status: 'linked', tone: 'amber', icon: Landmark, detail: 'وكيل مرجعي لمنظومة ديوان المظالم ونظام المرافعات والتنفيذ واللوائح.' },
+  { id: 'src-personnel', title: 'نظام خدمة الأفراد', subtitle: 'حقوق عسكرية', x: 365, y: 430, width: 190, height: 68, status: 'warning', tone: 'amber', icon: BadgeCheck, detail: 'وكيل متخصص بنظام خدمة الأفراد ولوائحه وتعديلاته وحقوق العسكريين.' },
+  { id: 'src-royal', title: 'الأوامر والمراسيم', subtitle: 'ملكية وسامية', x: 365, y: 515, width: 190, height: 68, status: 'linked', tone: 'amber', icon: FileText, detail: 'وكيل يجمع الأوامر والمراسيم والقرارات الرسمية ذات الصلة ويحدد أثرها.' },
+  { id: 'src-precedents', title: 'المبادئ والأحكام', subtitle: 'سوابق قضائية', x: 365, y: 600, width: 190, height: 68, status: 'warning', tone: 'amber', icon: Scale, detail: 'وكيل لاستخراج المبادئ والأحكام ذات الصلة مع الفصل بين النص النظامي والاجتهاد القضائي.' },
 
   { id: 'qada-core', title: 'QADA AI', subtitle: 'محرك التحليل القضائي', x: 690, y: 380, width: 220, height: 118, status: 'linked', tone: 'cyan', icon: Sparkles, detail: 'نواة التوجيه والتحليل التي تستقبل مدخلات القضية وتوزعها على الوكلاء المختصين.' },
 
@@ -104,9 +105,9 @@ const nodes: AgentNode[] = [
   { id: 'reasoning', title: 'محلل التسبيب', subtitle: 'منطق الحكم', x: 980, y: 400, width: 190, height: 68, status: 'planned', tone: 'emerald', icon: Workflow, detail: 'يفحص تسلسل التسبيب وعلاقة الأسباب بالمنطوق والطلبات والوقائع.' },
   { id: 'procedure', title: 'محلل الإجراءات', subtitle: 'مواعيد وشكل', x: 1190, y: 400, width: 190, height: 68, status: 'planned', tone: 'emerald', icon: Gauge, detail: 'يفحص المواعيد والإجراءات والقبول الشكلي والمتطلبات النظامية.' },
 
-  { id: 'official-source', title: 'مدقق المصدر الرسمي', subtitle: 'مصدر وهوية النص', x: 980, y: 515, width: 190, height: 68, status: 'planned', tone: 'amber', icon: SearchCheck, detail: 'يتحقق أن المرجع المستخدم صادر من مصدر رسمي محدد وقابل للتتبع.' },
-  { id: 'exact-text', title: 'مدقق النص الحرفي', subtitle: 'كل حرف ورقم', x: 1190, y: 515, width: 190, height: 68, status: 'planned', tone: 'amber', icon: ScanSearch, detail: 'يطابق النص الحرفي للمادة أو الحكم ويمنع الاقتباس التقريبي.' },
-  { id: 'amendments', title: 'مدقق السريان', subtitle: 'تعديل / إلغاء / نسخ', x: 980, y: 600, width: 190, height: 68, status: 'planned', tone: 'amber', icon: Activity, detail: 'يتحقق من النسخة السارية والتعديل والإلغاء والنفاذ الزمني للنص.' },
+  { id: 'official-source', title: 'مدقق المصدر الرسمي', subtitle: 'مصدر وهوية النص', x: 980, y: 515, width: 190, height: 68, status: 'linked', tone: 'amber', icon: SearchCheck, detail: 'يتحقق أن المرجع المستخدم صادر من مصدر رسمي محدد وقابل للتتبع.' },
+  { id: 'exact-text', title: 'مدقق النص الحرفي', subtitle: 'كل حرف ورقم', x: 1190, y: 515, width: 190, height: 68, status: 'warning', tone: 'amber', icon: ScanSearch, detail: 'يطابق النص الحرفي للمادة أو الحكم ويمنع الاقتباس التقريبي.' },
+  { id: 'amendments', title: 'مدقق السريان', subtitle: 'تعديل / إلغاء / نسخ', x: 980, y: 600, width: 190, height: 68, status: 'linked', tone: 'amber', icon: Activity, detail: 'يتحقق من النسخة السارية والتعديل والإلغاء والنفاذ الزمني للنص.' },
   { id: 'conflicts', title: 'كاشف التعارض', subtitle: 'تناقض النصوص والنتائج', x: 1190, y: 600, width: 190, height: 68, status: 'planned', tone: 'amber', icon: AlertTriangle, detail: 'يكشف التعارض بين المراجع أو بين التحليل والوقائع أو بين أسباب الحكم ومنطوقه.' },
 
   { id: 'final-review', title: 'المراجع النهائي', subtitle: 'اعتماد داخلي', x: 1410, y: 365, width: 165, height: 90, status: 'planned', tone: 'violet', icon: CheckCircle2, detail: 'يجمع النتائج ويتأكد من اكتمال التحقق قبل السماح بإخراج التقرير.' },
@@ -115,13 +116,13 @@ const nodes: AgentNode[] = [
   { id: 'admin-entry', title: 'غرفة التحليل للأدمن', subtitle: 'مدخل خاص ومقيد', x: 85, y: 760, width: 240, height: 82, status: 'linked', tone: 'violet', icon: LockKeyhole, adminOnly: true, detail: 'مدخل منفصل للمشرف لتحليل حكم أو مذكرة بشكل أعمق من واجهة المستخدم العامة.' },
   { id: 'judgment-audit', title: 'إيجنت تحليل الأحكام', subtitle: 'الحكم كاملاً', x: 380, y: 735, width: 205, height: 74, status: 'linked', tone: 'violet', icon: Gavel, adminOnly: true, detail: 'يمثل المسار الحالي لمراجعة الحكم، وسيتم توسيعه إلى فحص تشريعي وقضائي وإجرائي كامل.' },
   { id: 'memo-audit', title: 'إيجنت تحليل المذكرات', subtitle: 'دعوى ودفاع', x: 380, y: 830, width: 205, height: 74, status: 'planned', tone: 'violet', icon: FileSearch, adminOnly: true, detail: 'يفكك المذكرة ويحدد الادعاءات والأسانيد والدفوع والنواقص قبل المراجعة النهائية.' },
-  { id: 'legislative-flaws', title: 'كشف العيوب التشريعية', subtitle: 'نص وسريان', x: 660, y: 720, width: 205, height: 68, status: 'planned', tone: 'rose', icon: AlertTriangle, adminOnly: true, detail: 'يكشف مخالفة النصوص أو تطبيق نص غير ساري أو إغفال النص الواجب التطبيق.' },
+  { id: 'legislative-flaws', title: 'كشف العيوب التشريعية', subtitle: 'نص وسريان', x: 660, y: 720, width: 205, height: 68, status: 'linked', tone: 'rose', icon: AlertTriangle, adminOnly: true, detail: 'يكشف مخالفة النصوص أو تطبيق نص غير ساري أو إغفال النص الواجب التطبيق.' },
   { id: 'judicial-flaws', title: 'كشف العيوب القضائية', subtitle: 'مبادئ وتسبيب', x: 660, y: 805, width: 205, height: 68, status: 'planned', tone: 'rose', icon: Scale, adminOnly: true, detail: 'يفحص مخالفة المبادئ والتناقض مع السوابق ذات الصلة دون تحويل السابقة إلى نص ملزم تلقائياً.' },
-  { id: 'procedural-flaws', title: 'كشف العيوب الإجرائية', subtitle: 'شكل ومواعيد', x: 660, y: 890, width: 205, height: 68, status: 'planned', tone: 'rose', icon: XCircle, adminOnly: true, detail: 'يفحص الاختصاص والمواعيد والإجراءات والإعلانات والدفوع الشكلية.' },
+  { id: 'procedural-flaws', title: 'كشف العيوب الإجرائية', subtitle: 'شكل ومواعيد', x: 660, y: 890, width: 205, height: 68, status: 'linked', tone: 'rose', icon: XCircle, adminOnly: true, detail: 'يفحص الاختصاص والمواعيد والإجراءات والإعلانات والدفوع الشكلية.' },
   { id: 'evidence-flaws', title: 'فحص الإثبات', subtitle: 'فجوات وتناقضات', x: 930, y: 720, width: 205, height: 68, status: 'planned', tone: 'rose', icon: FileCheck2, adminOnly: true, detail: 'يكشف الوقائع غير المسندة والدليل غير المنتج والتناقض بين المستندات.' },
-  { id: 'reasoning-flaws', title: 'فحص التكييف والتسبيب', subtitle: 'سبب ومنطوق', x: 930, y: 805, width: 205, height: 68, status: 'planned', tone: 'rose', icon: Workflow, adminOnly: true, detail: 'يفحص صحة التكييف وارتباط الأسباب بالمنطوق وأي قفزة منطقية في الحكم.' },
+  { id: 'reasoning-flaws', title: 'فحص التكييف والتسبيب', subtitle: 'سبب ومنطوق', x: 930, y: 805, width: 205, height: 68, status: 'linked', tone: 'rose', icon: Workflow, adminOnly: true, detail: 'يفحص صحة التكييف وارتباط الأسباب بالمنطوق وأي قفزة منطقية في الحكم.' },
   { id: 'rebuttal-review', title: 'مراجعة الدفوع والردود', subtitle: 'نقاط القوة والقصور', x: 930, y: 890, width: 205, height: 68, status: 'planned', tone: 'violet', icon: Scale, adminOnly: true, detail: 'يرتب نقاط الاعتراض والردود الممكنة ويبين سند كل نقطة وحدودها.' },
-  { id: 'admin-final', title: 'التقرير التحليلي للأدمن', subtitle: 'نتيجة داخلية غير عامة', x: 1245, y: 790, width: 270, height: 110, status: 'planned', tone: 'violet', icon: FileCheck2, adminOnly: true, detail: 'يجمع العيوب والمراجع والأثر المحتمل وما يحتاج إلى تحقق بشري في تقرير واحد خاص بالأدمن.' },
+  { id: 'admin-final', title: 'التقرير التحليلي للأدمن', subtitle: 'نتيجة داخلية غير عامة', x: 1245, y: 790, width: 270, height: 110, status: 'linked', tone: 'violet', icon: FileCheck2, adminOnly: true, detail: 'يجمع العيوب والمراجع والأثر المحتمل وما يحتاج إلى تحقق بشري في تقرير واحد خاص بالأدمن.' },
 ];
 
 const edges: Edge[] = [
@@ -265,6 +266,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
                 آخر تشغيل: <span className="font-bold text-slate-200">{runtime.documentTitle || 'تحليل قضائي'}</span>
                 {runtime.analyzedAt && <span> • {new Date(runtime.analyzedAt).toLocaleString('ar-SA')}</span>}
                 <span> • مكتمل {runtime.meta?.completedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'success').length ?? 0}</span>
+                <span> • تحذير {runtime.meta?.warningAgents ?? runtime.agentRuns?.filter((run) => run.status === 'warning').length ?? 0}</span>
                 <span> • متعثر {runtime.meta?.failedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'error').length ?? 0}</span>
               </div>
             )}
@@ -344,7 +346,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
                 const Icon = node.icon;
                 const runtimeRun = runtimeById.get(node.id);
                 const effectiveStatus: AgentStatus = runtimeRun
-                  ? (runtimeRun.status === 'success' ? 'completed' : 'error')
+                  ? (runtimeRun.status === 'success' ? 'completed' : runtimeRun.status === 'warning' ? 'warning' : 'error')
                   : node.status;
                 const meta = statusMeta[effectiveStatus];
                 const visible = visibleIds.has(node.id);
@@ -392,7 +394,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
               <span className="text-[10px] font-black text-slate-500">تفاصيل العقدة</span>
               <h3 className="mt-1 text-base font-black text-white">{selected.title}</h3>
             </div>
-            <span className={'h-3 w-3 rounded-full ' + statusMeta[runtimeById.get(selected.id) ? (runtimeById.get(selected.id)?.status === 'success' ? 'completed' : 'error') : selected.status].dot} />
+            <span className={'h-3 w-3 rounded-full ' + statusMeta[runtimeById.get(selected.id) ? (runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : 'error') : selected.status].dot} />
           </div>
 
           <p className="mt-3 text-xs leading-6 text-slate-400">{selected.detail}</p>
@@ -401,7 +403,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
             <DetailRow
               label="الحالة"
               value={runtimeById.get(selected.id)
-                ? statusMeta[runtimeById.get(selected.id)?.status === 'success' ? 'completed' : 'error'].label
+                ? statusMeta[runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : 'error'].label
                 : statusMeta[selected.status].label}
             />
             <DetailRow label="النطاق" value={selected.adminOnly ? 'خاص بالأدمن' : 'منصة عامة / محرك'} />
