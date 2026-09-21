@@ -10,6 +10,7 @@ import {
 import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 import { protectJson, unprotectJson } from './_secureStore.ts';
+import { recordAuditEvent } from './_audit.ts';
 
 export type SessionRole = 'admin' | 'user';
 
@@ -415,10 +416,19 @@ export default async function handler(req: any, res: any) {
   }
 
   if (req.method === 'DELETE') {
+    const current = readSession(req.headers?.cookie);
     res.setHeader('Set-Cookie', [
       expiredCookie(SESSION_COOKIE),
       ...OLD_SESSION_COOKIES.map(expiredCookie),
     ]);
+    if (current) {
+      await recordAuditEvent({
+        actorId: current.id,
+        actorRole: current.role,
+        action: 'auth.logout',
+        outcome: 'success',
+      });
+    }
     return res.status(204).end();
   }
 
@@ -476,6 +486,13 @@ export default async function handler(req: any, res: any) {
       ...OLD_SESSION_COOKIES.map(expiredCookie),
       cookieForSession(session),
     ]);
+
+    await recordAuditEvent({
+      actorId: session.id,
+      actorRole: session.role,
+      action: action === 'register' ? 'auth.register' : action === 'admin-login' ? 'auth.admin-login' : 'auth.login',
+      outcome: 'success',
+    });
 
     return res.status(200).json({ session });
   } catch (error) {
