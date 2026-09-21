@@ -262,7 +262,13 @@ function edgePath(from: AgentNode, to: AgentNode) {
   return 'M ' + sx + ' ' + sy + ' C ' + mx + ' ' + sy + ', ' + mx + ' ' + ty + ', ' + tx + ' ' + ty;
 }
 
-export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () => void }) {
+export function AdminAgentMap({
+  onOpenAnalysisRoom,
+  onNavigateNode,
+}: {
+  onOpenAnalysisRoom?: () => void;
+  onNavigateNode?: (nodeId: string) => void;
+}) {
   const [zoom, setZoom] = useState(0.82);
   const [filter, setFilter] = useState<'all' | 'admin' | 'linked' | 'planned' | 'last-run'>('all');
   const [selectedId, setSelectedId] = useState('qada-core');
@@ -275,6 +281,20 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
   const [selfTestError, setSelfTestError] = useState('');
 
   const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
+  const navigableNodeIds = new Set([
+    'auth',
+    'settings',
+    'search',
+    'laws',
+    'judgments',
+    'references',
+    'cases',
+    'advisor',
+    'drafting',
+    'editor-tool',
+    'final-output',
+  ]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -449,7 +469,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
             </div>
             <h2 className="mt-3 text-xl sm:text-2xl font-black text-white">خريطة الوكلاء وغرفة العمليات</h2>
             <p className="mt-1 max-w-3xl text-xs sm:text-sm leading-6 text-slate-400">
-              هذه الصفحة هي البنية التنفيذية للخريطة المعتمدة. الأخضر يعني أن المسار موجود حالياً في المنصة، والرمادي يعني أن الوكيل مرسوم وجاهز للربط في المراحل التالية. عند ربط التتبع الحي ستظهر هنا حالات التشغيل والأخطاء لكل وكيل.
+              هذه الصفحة هي البنية التنفيذية للخريطة المعتمدة. حالات التشغيل وسجل الأخطاء والمصادر مرتبطة فعلياً بالتشغيل المركزي، ويمكن فتح الوحدات الرئيسية مباشرة من العقد المرتبطة بها.
             </p>
           </div>
 
@@ -757,6 +777,17 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
           <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-500/5 p-3 text-[11px] leading-5 text-amber-100/80">
             الخريطة مرتبطة الآن بسجل التشغيل وفحص الجاهزية الخادمي. العقدة قد تتحول إلى تحذير أو خطأ إذا تعطل الذكاء أو Redis أو مفاتيح الحماية، ولا تُعرض حالة نجاح ثابتة عند فشل البنية.
           </div>
+
+          {onNavigateNode && navigableNodeIds.has(selected.id) && (
+            <button
+              type="button"
+              onClick={() => onNavigateNode(selected.id)}
+              className="mt-3 min-h-12 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/35 bg-cyan-500/10 px-4 text-xs font-black text-cyan-100 hover:bg-cyan-500/20 hover:border-cyan-300/60 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>فتح الوحدة الفعلية</span>
+            </button>
+          )}
 
           {onOpenAnalysisRoom && (selected.adminOnly || selected.id === 'qada-core' || selected.id === 'judgments') && (
             <button
