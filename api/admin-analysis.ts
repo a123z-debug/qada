@@ -4,6 +4,7 @@ import { readActiveSession } from './session.ts';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 import { recordAuditEvent } from './_audit.ts';
+import { redactDirectIdentifiers } from './_privacy.ts';
 
 type IncomingAttachment = {
   name?: string;
@@ -456,7 +457,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const session = readSession(req.headers.cookie);
+  const session = await readActiveSession(req.headers.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
   if (session.role !== 'admin') return res.status(403).json({ error: 'ADMIN_ONLY' });
 
@@ -472,7 +473,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = (req.body ?? {}) as AdminAnalysisRequest;
-  const inputText = typeof body.text === 'string' ? body.text.trim().slice(0, 45000) : '';
+  const rawInputText = typeof body.text === 'string' ? body.text.trim().slice(0, 45000) : '';
+  const inputText = redactDirectIdentifiers(rawInputText).text;
   const attachments = cleanAttachments(Array.isArray(body.attachments) ? body.attachments : []);
 
   if (!inputText && attachments.length === 0) {
