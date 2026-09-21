@@ -221,13 +221,21 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
       setAgentRuns(nextAgentRuns);
       setSourcePackets(nextSourcePackets);
       try {
-        localStorage.setItem('qada_admin_agent_runtime_v2', JSON.stringify({
+        const snapshot = {
+          runId: `run-${Date.now()}`,
           documentTitle: documentTitle.trim() || nextReport.documentType || 'تحليل قضائي',
           analyzedAt: nextMeta?.analyzedAt || new Date().toISOString(),
           agentRuns: nextAgentRuns,
           sourcePackets: nextSourcePackets,
           meta: nextMeta,
-        }));
+        };
+        localStorage.setItem('qada_admin_agent_runtime_v2', JSON.stringify(snapshot));
+
+        const historyKey = 'qada_admin_agent_run_history_v1';
+        const rawHistory = localStorage.getItem(historyKey);
+        const history = rawHistory ? JSON.parse(rawHistory) : [];
+        const safeHistory = Array.isArray(history) ? history : [];
+        localStorage.setItem(historyKey, JSON.stringify([snapshot, ...safeHistory].slice(0, 20)));
       } catch {}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر إكمال التحليل.');
