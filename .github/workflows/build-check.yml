@@ -20,4 +20,5 @@ jobs:
       - run: npm run test:legal-ui-safety
       - run: npm run test:auth-consistency
       - run: npm run test:api-auth
+      - run: npm run test:privacy-storage
       - run: npm run build
