@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
@@ -8,6 +8,9 @@ import {
   FileSearch,
   FileText,
   ExternalLink,
+  Download,
+  History,
+  Printer,
   Gavel,
   LoaderCircle,
   LockKeyhole,
@@ -71,6 +74,16 @@ type AnalysisMeta = {
   verifiedArticles?: number;
   sourceBlockers?: number;
   architecture?: string;
+};
+
+type SavedAnalysisRun = {
+  runId?: string;
+  documentTitle?: string;
+  analyzedAt?: number | string;
+  report?: AdminAnalysisReport;
+  agentRuns?: AgentRun[];
+  sourcePackets?: SourcePacket[];
+  meta?: AnalysisMeta | null;
 };
 
 type SourcePacket = {
@@ -141,6 +154,73 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([]);
   const [sourcePackets, setSourcePackets] = useState<SourcePacket[]>([]);
   const [historyWarning, setHistoryWarning] = useState('');
+  const [history, setHistory] = useState<SavedAnalysisRun[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedHistoryId, setSelectedHistoryId] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setHistoryLoading(true);
+
+    fetch('/api/admin-runs', {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload?.error || 'تعذر تحميل سجل التحليلات.');
+        return Array.isArray(payload?.runs) ? payload.runs as SavedAnalysisRun[] : [];
+      })
+      .then((runs) => {
+        if (!cancelled) setHistory(runs.filter((item) => item && item.runId).slice(0, 20));
+      })
+      .catch((historyError) => {
+        if (!cancelled) setHistoryWarning(historyError instanceof Error ? historyError.message : 'تعذر تحميل سجل التحليلات.');
+      })
+      .finally(() => {
+        if (!cancelled) setHistoryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function openSavedRun(runId: string) {
+    const saved = history.find((item) => item.runId === runId);
+    if (!saved) return;
+
+    setSelectedHistoryId(runId);
+    setDocumentTitle(saved.documentTitle || '');
+    setReport(saved.report || null);
+    setMeta(saved.meta || null);
+    setAgentRuns(Array.isArray(saved.agentRuns) ? saved.agentRuns : []);
+    setSourcePackets(Array.isArray(saved.sourcePackets) ? saved.sourcePackets : []);
+    setActiveCategory('الكل');
+    setError('');
+  }
+
+  function exportCurrentReport() {
+    if (!report) return;
+    const payload = {
+      documentTitle: documentTitle || report.documentType || 'تحليل قضائي',
+      exportedAt: new Date().toISOString(),
+      meta,
+      agentRuns,
+      sourcePackets,
+      report,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `qada-analysis-${Date.now()}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }
 
   const categories = useMemo(() => {
     const set = new Set((report?.issues || []).map((issue) => issue.category));
@@ -231,10 +311,11 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
       setMeta(nextMeta);
       setAgentRuns(nextAgentRuns);
       setSourcePackets(nextSourcePackets);
-      const snapshot = {
+      const snapshot: SavedAnalysisRun = {
         runId: `run-${Date.now()}`,
         documentTitle: documentTitle.trim() || nextReport.documentType || 'تحليل قضائي',
         analyzedAt: nextMeta?.analyzedAt || Date.now(),
+        report: nextReport,
         agentRuns: nextAgentRuns,
         sourcePackets: nextSourcePackets,
         meta: nextMeta,
@@ -250,6 +331,8 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
           const historyPayload = await historyResponse.json().catch(() => ({}));
           throw new Error(historyPayload?.error || 'تعذر حفظ أثر التشغيل.');
         }
+        setHistory((current) => [snapshot, ...current.filter((item) => item.runId !== snapshot.runId)].slice(0, 20));
+        setSelectedHistoryId(snapshot.runId || '');
       } catch (historyError) {
         setHistoryWarning(historyError instanceof Error ? historyError.message : 'تعذر حفظ أثر التشغيل.');
       }
@@ -280,10 +363,42 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          <button type="button" onClick={onBack} className="min-h-11 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 text-xs font-black text-slate-300 hover:text-white">
-            <ArrowRight className="h-4 w-4" />
-            العودة إلى خريطة الوكلاء
-          </button>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {history.length > 0 && (
+              <label className="relative">
+                <History className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <select
+                  value={selectedHistoryId}
+                  onChange={(event) => openSavedRun(event.target.value)}
+                  className="min-h-11 max-w-[320px] rounded-xl border border-slate-700 bg-slate-900 py-2 pl-3 pr-9 text-xs font-bold text-slate-300 outline-none focus:border-violet-400/60"
+                  aria-label="فتح تحليل سابق"
+                >
+                  <option value="">{historyLoading ? 'جاري تحميل السجل...' : 'فتح تحليل سابق'}</option>
+                  {history.map((item, index) => (
+                    <option key={item.runId || index} value={item.runId || ''}>
+                      {item.documentTitle || 'تحليل قضائي'} — {item.analyzedAt ? new Date(item.analyzedAt).toLocaleString('ar-SA') : 'بدون تاريخ'}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {report && (
+              <>
+                <button type="button" onClick={exportCurrentReport} className="min-h-11 inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 text-xs font-black text-cyan-200 hover:bg-cyan-500/15">
+                  <Download className="h-4 w-4" />
+                  تصدير JSON
+                </button>
+                <button type="button" onClick={() => window.print()} className="min-h-11 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 text-xs font-black text-slate-300 hover:text-white">
+                  <Printer className="h-4 w-4" />
+                  طباعة
+                </button>
+              </>
+            )}
+            <button type="button" onClick={onBack} className="min-h-11 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 text-xs font-black text-slate-300 hover:text-white">
+              <ArrowRight className="h-4 w-4" />
+              العودة إلى خريطة الوكلاء
+            </button>
+          </div>
         </div>
       </div>
 
