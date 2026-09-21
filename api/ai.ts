@@ -70,33 +70,38 @@ export default async function handler(req: any, res: any) {
         ...messages.map((item) => `${item.role === 'assistant' ? 'المستشار' : 'المستخدم'}: ${item.content}`),
       ].join('\n\n');
 
-      for (const geminiKey of geminiKeys) {
-        const response = await fetch(
-          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
-          {
-            method: 'POST',
-            headers: {
-              'x-goog-api-key': geminiKey,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: transcript }] }],
-              generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
-            }),
-          },
-        );
+      const geminiModels = ['gemini-3.8-flash', 'gemini-3.5-flash'];
 
-        if (response.ok) {
-          const payload: any = await response.json();
-          reply = payload?.candidates?.[0]?.content?.parts
-            ?.map((part: any) => typeof part?.text === 'string' ? part.text : '')
-            .join('')
-            .trim() || '';
-          if (reply) break;
-        } else {
-          const detail = await response.text().catch(() => '');
-          console.error('Gemini HTTP error:', response.status, detail.slice(0, 500));
+      for (const geminiKey of geminiKeys) {
+        for (const model of geminiModels) {
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+            {
+              method: 'POST',
+              headers: {
+                'x-goog-api-key': geminiKey,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: transcript }] }],
+                generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
+              }),
+            },
+          );
+
+          if (response.ok) {
+            const payload: any = await response.json();
+            reply = payload?.candidates?.[0]?.content?.parts
+              ?.map((part: any) => typeof part?.text === 'string' ? part.text : '')
+              .join('')
+              .trim() || '';
+            if (reply) break;
+          } else {
+            const detail = await response.text().catch(() => '');
+            console.error('Gemini HTTP error:', response.status, model, detail.slice(0, 500));
+          }
         }
+        if (reply) break;
       }
     }
 
