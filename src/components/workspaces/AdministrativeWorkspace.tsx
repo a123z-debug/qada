@@ -264,7 +264,7 @@ ${sharedRules}`;
         throw new Error('فشل توليد المذكرة من الخادم');
       }
 
-      const fullText = await consumeTextSse(response, (text) => setGeneratedOutput(text));
+      let fullText = await consumeTextSse(response, (text) => setGeneratedOutput(text));
 
       if (!fullText) {
         fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
