@@ -5,6 +5,7 @@ import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts'
 import { readActiveSession } from './session.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 import { redactDirectIdentifiers } from './_privacy.ts';
+import { withTimeout } from './_async.ts';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -77,6 +78,7 @@ async function generateViaGateway(messages: IncomingMessage[], systemInstruction
 
   const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
     method: 'POST',
+    signal: AbortSignal.timeout(20_000),
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -216,20 +218,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const models = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
       let response: any;
 
-      for (const ai of clients) {
+      let attempts = 0;
+      outer: for (const ai of clients) {
         for (const model of models) {
+          if (attempts >= 5) break outer;
+          attempts += 1;
           try {
-            response = await ai.models.generateContent({
+            response = await withTimeout(ai.models.generateContent({
               model,
               contents: contents as any,
               config: { systemInstruction: contextInstruction, temperature: 0.2 },
-            });
-            break;
+            }), 25_000, 'AI_CHAT_TIMEOUT');
+            break outer;
           } catch (error) {
             lastError = error;
           }
         }
-        if (response) break;
       }
 
       reply = response?.text
