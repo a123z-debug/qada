@@ -30,6 +30,9 @@ interface JudgesSourceAudit {
   blockers: string[];
   literalQuotationReady: boolean;
   precedentCorpusReady: boolean;
+  introducedMarkers?: string[];
+  unsupportedMarkers?: string[];
+  blockedRevision?: boolean;
 }
 
 interface JudgesCassationReviewPanelProps {
@@ -63,6 +66,7 @@ export function JudgesCassationReviewPanel({
   const [expandedJudge, setExpandedJudge] = useState<string | null>('judge_cassation');
 
   const reviewFailed = report?.overallStatus === 'تعذر إكمال الفحص الآلي';
+  const revisionBlocked = Boolean(sourceAudit?.blockedRevision);
   const isSoundDocument =
     !reviewFailed &&
     ((report?.cassationErrors?.items?.length === 0 && report?.claimErrors?.items?.length === 0) ||
@@ -100,8 +104,13 @@ export function JudgesCassationReviewPanel({
   };
 
   const handleApplyFull = (text: string) => {
+    if (revisionBlocked) {
+      setAppliedNotification('لم تُطبق الصياغة: بوابة التحقق رصدت إحالات قانونية جديدة غير متحققة.');
+      setTimeout(() => setAppliedNotification(null), 5000);
+      return;
+    }
     onApplyFullRevision(text);
-    setAppliedNotification('تم تطبيق الصياغة المنقحة بالكامل في المحرر بنجاح ✓');
+    setAppliedNotification('تم تطبيق الصياغة المنقحة في المحرر ✓');
     setTimeout(() => setAppliedNotification(null), 4000);
   };
 
@@ -249,6 +258,16 @@ export function JudgesCassationReviewPanel({
                   ))}
                 </ul>
               )}
+              {sourceAudit.blockedRevision && (
+                <div className="mt-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-2 text-[11px] font-bold text-rose-200">
+                  أوقفت بوابة التحقق تطبيق المسودة المنقحة لأنها أدخلت إحالات قانونية جديدة لم تثبت في حزمة المصادر الرسمية.
+                  {sourceAudit.unsupportedMarkers?.length ? (
+                    <div className="mt-1 font-normal text-rose-100/75">
+                      {sourceAudit.unsupportedMarkers.slice(0, 4).join(' • ')}
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -330,10 +349,17 @@ export function JudgesCassationReviewPanel({
           {activeTab === 'revised' && (
             <button
               onClick={() => handleApplyFull(effectiveText)}
-              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+              disabled={revisionBlocked}
+              className={
+                'px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md ' +
+                (revisionBlocked
+                  ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 cursor-pointer')
+              }
+              title={revisionBlocked ? 'محظور حتى يتم التحقق من الإحالات القانونية الجديدة' : 'تطبيق المسودة المنقحة في المحرر'}
             >
               <Check className="w-3.5 h-3.5" />
-              <span>تطبيق في المحرر</span>
+              <span>{revisionBlocked ? 'التطبيق محظور مرجعياً' : 'تطبيق في المحرر'}</span>
             </button>
           )}
         </div>
