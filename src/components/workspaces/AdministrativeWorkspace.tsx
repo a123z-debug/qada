@@ -329,7 +329,7 @@ ${sharedRules}`;
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-neutral-100">بؤرة القضايا الإدارية</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                عزل تام
+                معزول حسب الحساب
               </span>
             </div>
             <p className="text-xs text-neutral-400">
