@@ -4,6 +4,30 @@ import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
 import { readSession } from './session.ts';
 
+type IncomingAttachment = {
+  name?: string;
+  type?: string;
+  data?: string;
+};
+
+function normalizeAttachment(att: IncomingAttachment): { inlineData: { mimeType: string; data: string } } | null {
+  const data = typeof att?.data === 'string' ? att.data.trim() : '';
+  if (!data) return null;
+
+  const name = String(att?.name || '').toLowerCase();
+  let mimeType = String(att?.type || '').trim().toLowerCase();
+  if (mimeType === 'application/octet-stream' || !mimeType.includes('/')) {
+    if (name.endsWith('.pdf')) mimeType = 'application/pdf';
+    else if (name.endsWith('.png')) mimeType = 'image/png';
+    else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) mimeType = 'image/jpeg';
+    else if (name.endsWith('.webp')) mimeType = 'image/webp';
+  }
+
+  if (!['application/pdf', 'image/png', 'image/jpeg', 'image/webp'].includes(mimeType)) return null;
+  const base64 = data.startsWith('data:') && data.includes(',') ? data.slice(data.indexOf(',') + 1) : data;
+  return { inlineData: { mimeType, data: base64 } };
+}
+
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
     .map((index) => process.env[`GEMINI_API_KEY${index === 1 ? '' : `_${index}`}`]?.trim())
@@ -65,11 +89,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     clientName?: string;
     attachmentsText?: string;
     uploadedFileName?: string;
+    attachments?: IncomingAttachment[];
   };
 
   if (!body.text || typeof body.text !== 'string' || !body.text.trim()) {
     return res.status(400).json({ error: 'نص المذكرة القضائية مطلوب.' });
   }
+
+  const attachmentParts = (Array.isArray(body.attachments) ? body.attachments : [])
+    .map(normalizeAttachment)
+    .filter((part): part is { inlineData: { mimeType: string; data: string } } => Boolean(part));
 
   const sourceBundle = runLegalSourceAgents(
     `${body.court || ''}\n${body.documentTitle || ''}\n${body.text.slice(0, 16000)}`,
@@ -88,7 +117,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let lastError: unknown;
 
   try {
-    raw = await generateReviewViaGateway(prompt);
+    // The gateway request is text-only here. If binary evidence exists, use Gemini
+    // directly so the review agent actually reads the PDF/image bytes.
+    raw = attachmentParts.length === 0 ? await generateReviewViaGateway(prompt) : '';
   } catch (error) {
     lastError = error;
     console.error('AI Gateway review failed:', error instanceof Error ? error.message : error);
@@ -101,7 +132,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const client of clients) {
       for (const model of models) {
         try {
-          const response = await client.models.generateContent({ model, contents: prompt });
+          const response = await client.models.generateContent({
+            model,
+            contents: attachmentParts.length > 0
+              ? [{ role: 'user', parts: [...attachmentParts, { text: prompt }] }]
+              : prompt,
+          });
           raw = response.text?.trim() || '';
           if (raw) break;
         } catch (error) {
