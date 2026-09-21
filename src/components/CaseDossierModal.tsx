@@ -128,7 +128,7 @@ export function CaseDossierModal({
           <aside className="min-h-0 border-b border-slate-800 bg-slate-900/50 p-3 lg:border-b-0 lg:border-l">
             <div className="mb-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3 text-[11px] leading-5 text-slate-400">
               <div className="mb-1 flex items-center gap-2 font-black text-emerald-300">
-                <ShieldCheck className="h-4 w-4" /> عزل الملفات مفعل
+                <ShieldCheck className="h-4 w-4" /> يعرض بيانات الحساب الحالي فقط
               </div>
               لا يمكن فتح ملف بمجرد معرفة رقم هوية. تظهر هنا فقط السجلات التابعة للجلسة الحالية.
             </div>
