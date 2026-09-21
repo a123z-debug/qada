@@ -56,6 +56,7 @@ type AgentRun = {
   durationMs: number;
   model?: string;
   summary: string;
+  blockers?: string[];
 };
 
 type AnalysisMeta = {
@@ -435,6 +436,16 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                           <span>{(run.durationMs / 1000).toFixed(1)}ث</span>
                           {run.model && <><span>•</span><span>{run.model}</span></>}
                         </div>
+                        {run.blockers?.length ? (
+                          <div className="mt-2 rounded-lg border border-amber-400/15 bg-amber-500/5 p-2">
+                            <div className="text-[9px] font-black text-amber-200">سبب التحذير / ما ينقص التحقق</div>
+                            <ul className="mt-1 space-y-1">
+                              {run.blockers.slice(0, 4).map((blocker, blockerIndex) => (
+                                <li key={blockerIndex} className="text-[9px] leading-5 text-amber-100/70">• {blocker}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
                       </div>
                     ))}
                   </div>
