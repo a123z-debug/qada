@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { readSession } from './_auth';
 import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval';
 
 type IncomingAttachment = {
@@ -102,12 +101,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const session = readSession(req.headers.cookie);
-  if (!session) {
-    return res.status(401).json({ error: 'يلزم تسجيل الدخول لاستخدام المستشار.' });
-  }
+  const forwarded = req.headers['x-forwarded-for'];
+  const rawIp = Array.isArray(forwarded)
+    ? forwarded[0]
+    : forwarded || req.socket?.remoteAddress || 'anonymous';
+  const clientId = String(rawIp).split(',')[0].trim().slice(0, 80);
 
-  const limit = checkRateLimit(session.id);
+  const limit = checkRateLimit(clientId);
   if (!limit.allowed) {
     res.setHeader('Retry-After', String(limit.retryAfterSeconds));
     return res.status(429).json({ error: 'تم تجاوز حد الاستخدام المؤقت. حاول لاحقاً.' });
