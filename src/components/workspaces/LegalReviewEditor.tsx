@@ -74,6 +74,8 @@ interface JudgesSourceAudit {
   introducedMarkers?: string[];
   unsupportedMarkers?: string[];
   blockedRevision?: boolean;
+  blockedSpecificAmendments?: number;
+  blockedAmendmentMarkers?: string[];
 }
 
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
