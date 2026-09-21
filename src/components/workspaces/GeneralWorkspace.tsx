@@ -306,7 +306,7 @@ ${claimDemands}`;
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-neutral-100">بؤرة المحاكم العامة</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                عزل تام
+                مسودة خاصة بالحساب الحالي
               </span>
             </div>
             <p className="text-xs text-neutral-400">
@@ -347,7 +347,7 @@ ${claimDemands}`;
               <div>
                 <h3 className="text-lg font-bold text-neutral-100">رفع مرفقات وعقود المحاكم العامة</h3>
                 <p className="text-xs text-neutral-400">
-                  تُحفظ المستندات في مسودة العمل محلياً دون أي استهلاك للرصيد، ولا يتم التوليد إلا بالضغط على الزر أدناه
+                  ملفات TXT المضافة هنا تحفظ في تخزين هذا المتصفح للحساب الحالي. استخدم زر PDF/صورة لإرسال المستند للمحادثة عند الحاجة.
                 </p>
               </div>
             </div>
@@ -430,7 +430,7 @@ ${claimDemands}`;
                 </h3>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                حفظ محلي (LocalStorage)
+                حفظ محلي على هذا المتصفح
               </span>
             </div>
 
