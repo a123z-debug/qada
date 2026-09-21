@@ -26,6 +26,7 @@ type AnalysisIssue = {
   documentSegment: string;
   analysis: string;
   legalBasis: string;
+  sourceUrls: string[];
   sourceStatus: string;
   impact: string;
   verificationNeeded: boolean;
@@ -619,6 +620,23 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                       <InfoBox title="السند/المرجع" text={issue.legalBasis || 'لم يحدد سند متحقق.'} />
                       <InfoBox title="حالة المصدر" text={issue.sourceStatus || 'غير متحقق'} highlight />
                     </div>
+
+                    {issue.sourceUrls?.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {issue.sourceUrls.map((url, sourceIndex) => (
+                          <a
+                            key={url + sourceIndex}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 bg-cyan-500/5 px-2.5 py-1.5 text-[9px] font-black text-cyan-300 hover:bg-cyan-500/10"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            المصدر الرسمي {sourceIndex + 1}
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>
