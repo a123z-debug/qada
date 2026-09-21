@@ -290,7 +290,7 @@ ${sharedRules}`;
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-neutral-100">بؤرة المحاكم العامة</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                عزل تام
+                معزول حسب الحساب
               </span>
             </div>
             <p className="text-xs text-neutral-400">
