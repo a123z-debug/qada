@@ -229,24 +229,37 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
   const [selectedId, setSelectedId] = useState('qada-core');
   const [runtime, setRuntime] = useState<RuntimeSnapshot | null>(null);
   const [history, setHistory] = useState<RuntimeSnapshot[]>([]);
+  const [historyError, setHistoryError] = useState('');
 
   const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('qada_admin_agent_runtime_v2');
-      if (raw) {
-        const parsed = JSON.parse(raw) as RuntimeSnapshot;
-        if (parsed && Array.isArray(parsed.agentRuns)) setRuntime(parsed);
-      }
-      const rawHistory = localStorage.getItem('qada_admin_agent_run_history_v1');
-      if (rawHistory) {
-        const parsedHistory = JSON.parse(rawHistory) as RuntimeSnapshot[];
-        if (Array.isArray(parsedHistory)) {
-          setHistory(parsedHistory.filter((item) => item && Array.isArray(item.agentRuns)).slice(0, 20));
-        }
-      }
-    } catch {}
+    let cancelled = false;
+    setHistoryError('');
+
+    fetch('/api/admin-runs', {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload?.error || 'تعذر تحميل سجل التشغيل.');
+        return Array.isArray(payload?.runs) ? payload.runs as RuntimeSnapshot[] : [];
+      })
+      .then((runs) => {
+        if (cancelled) return;
+        const safeRuns = runs.filter((item) => item && Array.isArray(item.agentRuns)).slice(0, 20);
+        setHistory(safeRuns);
+        setRuntime(safeRuns[0] || null);
+      })
+      .catch((error) => {
+        if (!cancelled) setHistoryError(error instanceof Error ? error.message : 'تعذر تحميل سجل التشغيل.');
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const runtimeById = useMemo(() => {
@@ -299,6 +312,11 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
               <SummaryCard label="قيد الربط" value={counts.planned} tone="slate" />
               <SummaryCard label="غرفة الأدمن" value={counts.admin} tone="violet" />
             </div>
+            {historyError && (
+              <div className="mt-2 rounded-xl border border-amber-400/20 bg-amber-500/5 px-3 py-2 text-[10px] font-bold text-amber-200">
+                تعذر تحميل سجل التشغيل المركزي: {historyError}
+              </div>
+            )}
             {runtime && (
               <div className="mt-2 rounded-xl border border-emerald-400/15 bg-emerald-500/5 px-3 py-2 text-[10px] text-slate-400">
                 <div className="flex flex-wrap items-center justify-between gap-2">
