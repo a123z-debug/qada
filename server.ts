@@ -7,6 +7,8 @@ import { buildOfficialLegalReferenceContext } from "./src/lib/legalRetrieval";
 import judgesReviewHandler from "./api/judges-review";
 import adminAnalysisHandler from "./api/admin-analysis";
 import legalSourceSearchHandler from "./api/legal-source-search";
+import sessionHandler from "./api/session";
+import aiHandler from "./api/ai";
 import {
   authErrorMessage,
   clearLegacySessionCookie,
@@ -857,8 +859,16 @@ requests: (مصفوفة Array للطلبات الختامية المتوقعة �
     }
   });
 
-  // Local development delegates critical legal routes to the same handlers used by Vercel.
-  // This prevents the local copy from drifting into a different legal-analysis behavior.
+  // Local development delegates critical application routes to the same handlers used by Vercel.
+  // This prevents the local copy from drifting into a different auth or legal-analysis behavior.
+  app.all("/api/session", (req, res) => {
+    void sessionHandler(req as any, res as any);
+  });
+
+  app.post("/api/ai", (req, res) => {
+    void aiHandler(req as any, res as any);
+  });
+
   app.post("/api/legal-source-search", (req, res) => {
     void legalSourceSearchHandler(req as any, res as any);
   });
