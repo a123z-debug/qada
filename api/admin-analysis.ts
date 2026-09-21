@@ -204,6 +204,7 @@ function normalizeIssue(issue: any, index: number) {
     documentSegment: String(issue?.documentSegment || '').slice(0, 1800),
     analysis: String(issue?.analysis || '').slice(0, 4000),
     legalBasis: String(issue?.legalBasis || '').slice(0, 2500),
+    sourceUrls: stringList(issue?.sourceUrls, 8, 1000),
     sourceStatus: String(issue?.sourceStatus || 'غير متحقق').slice(0, 160),
     impact: String(issue?.impact || '').slice(0, 1800),
     verificationNeeded: Boolean(issue?.verificationNeeded),
@@ -235,14 +236,28 @@ function enforceVerificationGate(report: ReturnType<typeof normalizeReport>, ver
   blockers: string[];
   literalQuotationReady: boolean;
   precedentCorpusReady: boolean;
-}) {
+}, allowedSourceUrls: string[]) {
   const queue = new Set(report.verificationQueue);
   for (const blocker of verification.blockers) queue.add(blocker);
 
+  const allowedUrls = new Set(allowedSourceUrls.filter(Boolean));
   const issues = report.issues.map((issue) => {
     let sourceStatus = issue.sourceStatus;
     let verificationNeeded = issue.verificationNeeded;
     let legalBasis = issue.legalBasis;
+    const originalSourceUrls = Array.isArray(issue.sourceUrls) ? issue.sourceUrls : [];
+    const sourceUrls = originalSourceUrls.filter((url) => allowedUrls.has(url));
+
+    if (sourceUrls.length !== originalSourceUrls.length) {
+      verificationNeeded = true;
+      queue.add('أزال مدقق المصدر رابطاً غير موجود في حزمة المصادر الرسمية المسترجعة؛ لا يعتمد أي رابط يولده النموذج من تلقاء نفسه.');
+    }
+
+    if (sourceStatus === 'متحقق من السياق الرسمي' && sourceUrls.length === 0) {
+      sourceStatus = 'التحقق الحرفي مطلوب';
+      verificationNeeded = true;
+      queue.add('وُسمت نقطة بأنها متحققة دون إرفاق رابط مصدر من الحزمة الرسمية؛ خُفضت حالة التحقق آلياً.');
+    }
 
     if (sourceStatus === 'متحقق من السياق الرسمي' && verification.officialSources === 0) {
       sourceStatus = 'مصدر غير مكتمل';
@@ -272,6 +287,7 @@ function enforceVerificationGate(report: ReturnType<typeof normalizeReport>, ver
     return {
       ...issue,
       legalBasis,
+      sourceUrls,
       sourceStatus,
       verificationNeeded,
     };
@@ -355,6 +371,7 @@ const ISSUE_SCHEMA = `كل issue يجب أن يكون بهذا الشكل:
   "documentSegment": "الموضع من المستند إن وجد",
   "analysis": "...",
   "legalBasis": "السند المتحقق أو وصف ما يحتاج تحققاً",
+  "sourceUrls": ["روابط المصادر الرسمية فقط من حزمة المصدر، دون اختراع روابط"],
   "sourceStatus": "متحقق من السياق الرسمي|وارد في المستند فقط|التحقق الحرفي مطلوب|مصدر غير مكتمل",
   "impact": "الأثر المحتمل دون جزم غير مسند",
   "verificationNeeded": true
@@ -450,6 +467,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 - إذا لم يكتمل التحقق، اجعل verificationNeeded=true واكتب ذلك بوضوح.
 - لا تجزم بالبطلان أو النقض أو القبول؛ صف الأثر المحتمل فقط.
 - لا تعرض بيانات هوية شخصية غير لازمة.
+- sourceUrls يجب أن تحتوي فقط على روابط موجودة حرفياً في حزمة وكلاء المراجع؛ لا تنشئ رابطاً جديداً ولا تكمل رابطاً ناقصاً.
 ${ISSUE_SCHEMA}`;
 
   const specialistInput = `بيانات الإدخال:
@@ -623,7 +641,14 @@ ${ISSUE_SCHEMA}`,
         rebuttal: rebuttal.data,
       });
 
-  const report = enforceVerificationGate(rawReport, sourceBundle.verification);
+  const allowedSourceUrls = Array.from(new Set(
+    sourceBundle.packets.flatMap((packet) => [
+      ...packet.references.map((reference) => reference.sourceUrl),
+      ...packet.verifiedArticles.map((article) => article.sourceUrl),
+    ]).filter(Boolean)
+  ));
+
+  const report = enforceVerificationGate(rawReport, sourceBundle.verification, allowedSourceUrls);
 
   const sourceRuns: AgentRun[] = sourceBundle.runs.map((run) => ({
     id: run.id,
