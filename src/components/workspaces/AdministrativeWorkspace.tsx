@@ -328,6 +328,7 @@ ${claimRequests}`;
         nationalId={nationalId}
         uploadedFileName={uploadedFileName}
         uploadedFileText={uploadedFileText}
+        uploadedAttachments={uploadedAttachment ? [uploadedAttachment] : []}
         onBackToEdit={() => setIsReviewMode(false)}
         onContentChange={(updated) => setGeneratedOutput(updated)}
       />
