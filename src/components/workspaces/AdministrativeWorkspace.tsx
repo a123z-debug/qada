@@ -257,7 +257,6 @@ ${sharedRules}`;
             attachments: uploadedAttachment ? [uploadedAttachment] : [],
           }],
           targetCourt: 'المحكمة الإدارية',
-          clientPersonName: claimantName,
           powerMode: true,
         }),
       });
