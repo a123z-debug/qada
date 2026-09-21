@@ -18,6 +18,7 @@ import { Attachment, UserSession } from '../../types';
 import { LegalReviewEditor } from './LegalReviewEditor';
 import { LegalAdaptationResult, PlainStoryInput } from './PlainStoryInput';
 import { readFileAsAttachment } from '../../lib/clientAttachments';
+import { readSseTextResponse } from '../../lib/readSseTextResponse';
 
 interface GeneralWorkspaceProps {
   service: string | null;
@@ -224,34 +225,9 @@ ${sharedRules}`;
 
       if (!response.ok) throw new Error('فشل التوليد');
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const dataStr = line.slice(6).trim();
-              if (dataStr === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(dataStr);
-                if (parsed.text) {
-                  fullText += parsed.text;
-                  setGeneratedOutput(fullText);
-                }
-              } catch {
-                fullText += dataStr;
-                setGeneratedOutput(fullText);
-              }
-            }
-          }
-        }
-      }
+      let fullText = await readSseTextResponse(response, (nextText) => {
+        setGeneratedOutput(nextText);
+      });
 
       if (!fullText) {
         fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
