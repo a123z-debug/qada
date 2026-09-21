@@ -1,0 +1,21 @@
+name: Smoke AI Gateway
+on:
+  push:
+    branches: [master]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for production alias
+        run: sleep 20
+      - name: Test chat endpoint
+        run: |
+          set -e
+          code=$(curl -sS -o /tmp/ai.txt -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -d '{"message":"اكتب كلمة تم فقط"}' \
+            https://promptmaster-nine.vercel.app/api/chat)
+          echo "HTTP=$code"
+          head -c 1500 /tmp/ai.txt || true
+          echo
+          test "$code" = "200"
