@@ -4,6 +4,7 @@ import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
 import { readSession } from './session.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
+import { redactDirectIdentifiers } from './_privacy.ts';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -120,7 +121,7 @@ function trustedUserMessages(messages: IncomingMessage[]): IncomingMessage[] {
     .slice(-8)
     .map((message) => ({
       role: 'user',
-      content: typeof message.content === 'string' ? message.content : '',
+      content: typeof message.content === 'string' ? redactDirectIdentifiers(message.content).text : '',
       attachments: Array.isArray(message.attachments) ? message.attachments : [],
     }));
 }
