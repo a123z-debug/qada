@@ -34,6 +34,7 @@ interface ChatMsg {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  attachments?: Attachment[];
 }
 
 export function FloatingChatBot({
@@ -121,6 +122,7 @@ export function FloatingChatBot({
       role: 'user',
       content: userText,
       timestamp: Date.now(),
+      attachments: pendingAttachments.length ? [...pendingAttachments] : undefined,
     };
 
     const assistantMsgId = `ast-${Date.now()}`;
@@ -140,7 +142,11 @@ export function FloatingChatBot({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [
-            ...messages.map((m) => ({ role: m.role, content: m.content })),
+            ...messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+              attachments: m.attachments,
+            })),
             { role: 'user', content: userText, attachments: pendingAttachments },
           ],
           targetCourt: getCourtLabel(),
