@@ -15,7 +15,8 @@
     "test:api-auth": "tsx scripts/smoke-api-auth.ts",
     "test:auth-consistency": "tsx scripts/smoke-auth-consistency.ts",
     "test:privacy-storage": "tsx scripts/smoke-privacy-storage.ts",
-    "test:multimodal-evidence": "tsx scripts/smoke-multimodal-evidence.ts"
+    "test:multimodal-evidence": "tsx scripts/smoke-multimodal-evidence.ts",
+    "audit:prod": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
