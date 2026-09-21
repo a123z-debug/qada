@@ -33,7 +33,7 @@ interface AdministrativeWorkspaceProps {
   onOpenPdfModal?: () => void;
 }
 
-const STORAGE_KEY = 'diwan_administrative_draft_v2';
+const STORAGE_KEY_PREFIX = 'diwan_administrative_draft_v3';
 
 export function AdministrativeWorkspace({
   service = 'administrative_claim',
@@ -44,11 +44,12 @@ export function AdministrativeWorkspace({
   onOpenPdfModal,
 }: AdministrativeWorkspaceProps) {
   const currentService = service || 'administrative_claim';
+  const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
 
   // Restore Draft from LocalStorage on mount
   const getInitialState = () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       if (saved) {
         return JSON.parse(saved);
       }
@@ -129,7 +130,7 @@ export function AdministrativeWorkspace({
         uploadedFileText,
         generatedOutput,
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
       const now = new Date();
       setLastSavedTime(`تم الحفظ في ${now.toLocaleTimeString('ar-SA')}`);
     } catch {
