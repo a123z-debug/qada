@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { listUserAccounts, readSession, setUserAccountDisabled } from './session.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
+import { recordAuditEvent } from './_audit.ts';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
@@ -27,6 +28,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'INVALID_ACCOUNT_UPDATE' });
       }
       const user = await setUserAccountDisabled(userId, body.disabled);
+      await recordAuditEvent({
+        actorId: session.id,
+        actorRole: session.role,
+        action: body.disabled ? 'user.disable' : 'user.enable',
+        targetType: 'user',
+        targetId: userId,
+        outcome: 'success',
+      });
       return res.status(200).json({ user });
     }
 
