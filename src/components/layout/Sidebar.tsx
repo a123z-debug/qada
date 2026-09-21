@@ -21,7 +21,8 @@ import {
   Search,
   Clock,
   GitCompare,
-  Network
+  Network,
+  Users
 } from 'lucide-react';
 import { UserSession } from '../../types';
 
@@ -125,6 +126,7 @@ interface SidebarProps {
   onOpenReports?: () => void;
   onOpenAdminMap?: () => void;
   onOpenAdminAnalysis?: () => void;
+  onOpenAdminUsers?: () => void;
 }
 
 export function Sidebar({
@@ -142,6 +144,7 @@ export function Sidebar({
   onOpenReports,
   onOpenAdminMap,
   onOpenAdminAnalysis,
+  onOpenAdminUsers,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
 
@@ -428,6 +431,23 @@ export function Sidebar({
                 <span>غرفة تحليل الأحكام والمذكرات</span>
               </span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/20">ADMIN</span>
+            </button>
+          )}
+
+          {userSession?.role === 'admin' && onOpenAdminUsers && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenAdminUsers();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className="min-h-12 w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-black text-cyan-200 border border-cyan-400/30 bg-cyan-500/10 hover:bg-cyan-500/15 hover:border-cyan-300/50 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <Users className="w-4 h-4 text-cyan-300" />
+                <span>إدارة المستخدمين</span>
+              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/20">ADMIN</span>
             </button>
           )}
         </div>
