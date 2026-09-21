@@ -67,10 +67,19 @@ export function JudgesCassationReviewPanel({
 
   const reviewFailed = report?.overallStatus === 'تعذر إكمال الفحص الآلي';
   const revisionBlocked = Boolean(sourceAudit?.blockedRevision);
-  const isSoundDocument =
+  const hasCassationErrors = (report?.cassationErrors?.items?.length || 0) > 0;
+  const hasClaimErrors = (report?.claimErrors?.items?.length || 0) > 0;
+  const hasAttachmentErrors = (report?.attachmentErrors?.items?.length || 0) > 0;
+  const hasMissingAttachments = (report?.attachmentErrors?.missingRequiredDocs?.length || 0) > 0;
+  const isSoundDocument = Boolean(
+    report &&
     !reviewFailed &&
-    ((report?.cassationErrors?.items?.length === 0 && report?.claimErrors?.items?.length === 0) ||
-      report?.overallStatus === 'جاهز للإيداع');
+    !revisionBlocked &&
+    !hasCassationErrors &&
+    !hasClaimErrors &&
+    !hasAttachmentErrors &&
+    !hasMissingAttachments
+  );
 
   // Safeguard: Always use the complete text; never allow truncated or reduced versions
   const effectiveText =
