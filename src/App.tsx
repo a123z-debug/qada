@@ -46,18 +46,51 @@ function SecurityWatermark({ user }: { user: UserSession }) {
 // 2. مكون المدير الذكي (System Agent Presence)
 // ==========================================
 function SystemAgentBar() {
+  const [health, setHealth] = useState<'checking' | 'ready' | 'degraded'>('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const check = async () => {
+      try {
+        const response = await fetch('/api/health', { cache: 'no-store' });
+        const payload = await response.json().catch(() => ({}));
+        if (!cancelled) setHealth(response.ok && payload?.ready ? 'ready' : 'degraded');
+      } catch {
+        if (!cancelled) setHealth('degraded');
+      }
+    };
+
+    void check();
+    const timer = window.setInterval(() => void check(), 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  const ready = health === 'ready';
+  const checking = health === 'checking';
+  const dotClass = ready ? 'bg-emerald-400' : checking ? 'bg-slate-400' : 'bg-amber-400';
+  const statusText = ready ? 'مركز التحليل جاهز' : checking ? 'جاري فحص الخدمات' : 'بعض الخدمات تحتاج إعداداً';
+  const detailText = ready
+    ? 'المصادقة والذكاء والمخزن الموزع تستجيب بصورة صحيحة.'
+    : checking
+      ? 'يتم التحقق من حالة المكونات الخادمية...'
+      : 'لن تعرض المنصة حالة اتصال ناجحة قبل اجتياز فحص الجاهزية.';
+
   return (
     <div className="hidden lg:flex bg-[#041126]/95 border-b border-cyan-400/15 px-4 py-2 items-center justify-between text-xs backdrop-blur-xl sticky top-0 z-40 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
       <div className="flex items-center gap-3">
         <div className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-400"></span>
+          {ready && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />}
+          <span className={`relative inline-flex rounded-full h-3 w-3 ${dotClass}`} />
         </div>
-        <span className="text-cyan-200 font-bold">مركز التحليل متصل:</span>
-        <span className="text-slate-300">مساحة القضية جاهزة للمراجعة والتحليل...</span>
+        <span className={`font-bold ${ready ? 'text-emerald-200' : checking ? 'text-slate-300' : 'text-amber-200'}`}>{statusText}:</span>
+        <span className="text-slate-300">{detailText}</span>
       </div>
       <div className="hidden sm:flex items-center gap-2 text-slate-400">
-        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+        <ShieldCheck className={`w-4 h-4 ${ready ? 'text-emerald-400' : 'text-slate-500'}`} />
         <span>جلسة دخول خادمية محمية</span>
       </div>
     </div>
