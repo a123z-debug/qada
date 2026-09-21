@@ -186,6 +186,10 @@ function accountIndexKey() {
   return `${redisPrefix()}:accounts:index`;
 }
 
+function accountIdKey(userId: string) {
+  return `${redisPrefix()}:account-id:${sha256(userId)}`;
+}
+
 function encodeAccount(record: AccountRecord) {
   return encryptJson(record, 'account-record', 'a2');
 }
@@ -229,6 +233,7 @@ async function createAccount(nameInput: string, emailInput: string, password: st
     const result = await redisCommand(['SET', key, encoded, 'NX']);
     if (result !== 'OK') throw new Error('ACCOUNT_EXISTS');
     await redisCommand(['SADD', accountIndexKey(), key]);
+    await redisCommand(['SET', accountIdKey(record.id), key]);
     return record;
   }
 
@@ -255,6 +260,81 @@ async function loginUser(emailInput: string, password: string): Promise<AuthSess
     role: 'user',
     loginMethod: 'email_password',
     loginAt: Date.now(),
+  };
+}
+
+export type AdminAccountSummary = {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: number;
+  disabled: boolean;
+  disabledAt?: number;
+};
+
+export async function listUserAccounts(): Promise<AdminAccountSummary[]> {
+  if (!isRedisConfigured()) throw new Error('ACCOUNT_STORE_UNAVAILABLE');
+  const members = await redisCommand(['SMEMBERS', accountIndexKey()]);
+  const keys = Array.isArray(members) ? members.filter((item): item is string => typeof item === 'string') : [];
+  if (!keys.length) return [];
+
+  const values = await redisCommand(['MGET', ...keys]);
+  const records = (Array.isArray(values) ? values : [])
+    .map((value) => decodeAccount(typeof value === 'string' ? value : ''))
+    .filter((value): value is AccountRecord => Boolean(value));
+
+  return records
+    .map((record) => ({
+      id: record.id,
+      name: record.name,
+      email: record.email,
+      createdAt: record.createdAt,
+      disabled: Boolean(record.disabledAt),
+      ...(record.disabledAt ? { disabledAt: record.disabledAt } : {}),
+    }))
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+async function findAccountKeyById(userId: string): Promise<string | null> {
+  const mapped = await redisCommand(['GET', accountIdKey(userId)]);
+  if (typeof mapped === 'string' && mapped) return mapped;
+
+  const members = await redisCommand(['SMEMBERS', accountIndexKey()]);
+  const keys = Array.isArray(members) ? members.filter((item): item is string => typeof item === 'string') : [];
+  if (!keys.length) return null;
+  const values = await redisCommand(['MGET', ...keys]);
+
+  for (let index = 0; index < keys.length; index += 1) {
+    const record = decodeAccount(typeof values?.[index] === 'string' ? values[index] : '');
+    if (record?.id === userId) {
+      await redisCommand(['SET', accountIdKey(userId), keys[index]]);
+      return keys[index];
+    }
+  }
+  return null;
+}
+
+export async function setUserAccountDisabled(userId: string, disabled: boolean): Promise<AdminAccountSummary> {
+  if (!isRedisConfigured()) throw new Error('ACCOUNT_STORE_UNAVAILABLE');
+  const key = await findAccountKeyById(userId);
+  if (!key) throw new Error('ACCOUNT_NOT_FOUND');
+
+  const record = decodeAccount(await redisCommand(['GET', key]));
+  if (!record) throw new Error('ACCOUNT_NOT_FOUND');
+
+  const updated: AccountRecord = {
+    ...record,
+    ...(disabled ? { disabledAt: Date.now() } : { disabledAt: undefined }),
+  };
+  await redisCommand(['SET', key, encodeAccount(updated)]);
+
+  return {
+    id: updated.id,
+    name: updated.name,
+    email: updated.email,
+    createdAt: updated.createdAt,
+    disabled: Boolean(updated.disabledAt),
+    ...(updated.disabledAt ? { disabledAt: updated.disabledAt } : {}),
   };
 }
 
