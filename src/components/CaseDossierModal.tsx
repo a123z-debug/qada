@@ -32,8 +32,7 @@ export function CaseDossierModal({
 
   const visibleRecords = useMemo(() => {
     if (!currentUser) return [];
-    if (currentUser.role === 'admin') return judgmentRecords;
-    return judgmentRecords.filter((record) => record.nationalId === currentUser.nationalId);
+    return judgmentRecords;
   }, [judgmentRecords, currentUser]);
 
   useEffect(() => {
@@ -46,7 +45,7 @@ export function CaseDossierModal({
   if (!isOpen) return null;
 
   const selected = visibleRecords.find((record) => record.id === selectedId) || null;
-  const identityMarker = currentUser?.nationalId ? `•••• ${currentUser.nationalId.slice(-4)}` : 'إدارة';
+  const identityMarker = currentUser?.role === 'admin' ? 'ADMIN' : currentUser?.email || 'مستخدم';
 
   const printableText = selected
     ? [
@@ -115,7 +114,7 @@ export function CaseDossierModal({
             <div className="min-w-0">
               <h2 className="truncate text-base font-black sm:text-lg">قضيتي — ملف مرتبط بالجلسة الآمنة</h2>
               <p className="text-[11px] text-slate-400">
-                المستخدم: {currentUser?.name || 'غير معروف'} • الهوية: {identityMarker}
+                المستخدم: {currentUser?.name || 'غير معروف'} • الحساب: {identityMarker}
               </p>
             </div>
           </div>
@@ -130,7 +129,7 @@ export function CaseDossierModal({
               <div className="mb-1 flex items-center gap-2 font-black text-emerald-300">
                 <ShieldCheck className="h-4 w-4" /> عزل الملفات مفعل
               </div>
-              لا يمكن فتح ملف بمجرد معرفة رقم هوية. تظهر هنا فقط السجلات التابعة للجلسة الحالية.
+              تظهر هنا السجلات التي أعادها مخزن القضايا للجلسة الحالية فقط؛ عزل الملكية يطبق على الخادم.
             </div>
 
             <div className="space-y-2 overflow-y-auto">
