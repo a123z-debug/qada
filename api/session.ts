@@ -91,13 +91,14 @@ function safeEqual(a: string, b: string) {
 }
 
 function rootSecret() {
-  const explicit = process.env.AUTH_SECRET?.trim() || process.env.GEMINI_API_KEY?.trim();
+  const explicit = process.env.AUTH_SECRET?.trim();
   if (explicit) {
     return createHash('sha256').update(`qada-session-v4:${explicit}`).digest();
   }
 
-  // Vercel-safe fallback: stable for the lifetime of one deployment.
-  // Sessions are intentionally invalidated by the next deployment.
+  // Never derive authentication keys from AI provider credentials.
+  // This deployment-scoped fallback keeps auth functional when AUTH_SECRET is
+  // not configured yet, but sessions are intentionally invalidated by deploys.
   const deploymentScope = [
     process.env.VERCEL_PROJECT_ID,
     process.env.VERCEL_DEPLOYMENT_ID,

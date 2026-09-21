@@ -23,6 +23,7 @@ import { printLegalMemo } from '../../utils/printMemo';
 import { UserSession } from '../../types';
 import { LegalReviewEditor } from './LegalReviewEditor';
 import { LegalAdaptationResult, PlainStoryInput } from './PlainStoryInput';
+import { consumeTextSse } from '../../lib/consumeTextSse';
 
 interface AdministrativeWorkspaceProps {
   service: string | null;
@@ -154,6 +155,17 @@ export function AdministrativeWorkspace({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isPlainText = file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt');
+    if (!isPlainText) {
+      window.alert('هذا الحقل يقرأ ملفات TXT فقط. استخدم زر PDF/صورة لإرسال المستند الثنائي إلى المحادثة.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 512 * 1024) {
+      window.alert('ملف TXT أكبر من 512 كيلوبايت. اختصره أو أرسله على أجزاء.');
+      e.target.value = '';
+      return;
+    }
     setUploadedFileName(file.name);
 
     const reader = new FileReader();
@@ -252,34 +264,7 @@ ${sharedRules}`;
         throw new Error('فشل توليد المذكرة من الخادم');
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const dataStr = line.slice(6).trim();
-              if (dataStr === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(dataStr);
-                if (parsed.text) {
-                  fullText += parsed.text;
-                  setGeneratedOutput(fullText);
-                }
-              } catch {
-                fullText += dataStr;
-                setGeneratedOutput(fullText);
-              }
-            }
-          }
-        }
-      }
+      let fullText = await consumeTextSse(response, (text) => setGeneratedOutput(text));
 
       if (!fullText) {
         fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
@@ -359,7 +344,7 @@ ${claimRequests}`;
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-neutral-100">بؤرة القضايا الإدارية</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                عزل تام
+                مسودة خاصة بالحساب الحالي
               </span>
             </div>
             <p className="text-xs text-neutral-400">
@@ -401,15 +386,25 @@ ${claimRequests}`;
               <div>
                 <h3 className="text-lg font-bold text-neutral-100">رفع مرفقات وقرارات القضية</h3>
                 <p className="text-xs text-neutral-400">
-                  يتم حفظ المرفقات في مسودة العمل محلياً دون استهلاك رصيد أو تشغيل تلقائي للذكاء الاصطناعي
+                  ملفات TXT المضافة هنا تحفظ في تخزين هذا المتصفح للحساب الحالي. استخدم زر PDF/صورة لإرسال المستند للمحادثة عند الحاجة.
                 </p>
               </div>
             </div>
-            <label className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow">
-              <UploadCloud className="w-4 h-4" />
-              <span>اختيار ملف من الجهاز</span>
-              <input type="file" onChange={handleFileUpload} className="hidden" accept=".pdf,.doc,.docx,.txt,image/*" />
-            </label>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={onOpenPdfModal}
+                disabled={!onOpenPdfModal}
+                className="px-4 py-2 rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-200 text-xs font-bold disabled:opacity-40"
+              >
+                PDF / صورة للمحادثة
+              </button>
+              <label className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow">
+                <UploadCloud className="w-4 h-4" />
+                <span>إضافة TXT للمسودة</span>
+                <input type="file" onChange={handleFileUpload} className="hidden" accept=".txt,text/plain" />
+              </label>
+            </div>
           </div>
 
           {uploadedFileName && (

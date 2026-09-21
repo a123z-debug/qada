@@ -84,39 +84,26 @@ export function WelcomeScreen({
             </div>
           </div>
 
-          {/* لوحة مصغرة تمثل ملف القضية الرقمي */}
+          {/* لوحة إرشادية بلا درجات أو بيانات قضية وهمية */}
           <div className="w-full md:w-80 bg-slate-950/80 border border-amber-500/30 rounded-2xl p-5 shadow-2xl backdrop-blur-md shrink-0">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
               <span className="font-bold text-xs text-amber-400 flex items-center gap-1.5">
-                <FolderOpen className="w-4 h-4" /> مساحة قضيتي النشطة
+                <FolderOpen className="w-4 h-4" /> مسار مراجعة القضية
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">
-                قيد المراجعة
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
+                يبدأ من بياناتك
               </span>
             </div>
 
-            <div className="space-y-2.5 text-xs">
-              <div className="flex items-center justify-between text-slate-300">
-                <span>سلامة البناء القضائي:</span>
-                <span className="font-bold text-amber-400 font-mono">78%</span>
+            <div className="space-y-2.5 text-[11px]">
+              <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-slate-300">
+                <span className="font-bold text-amber-300">1.</span> أدخل الوقائع والطلبات كما حدثت دون افتراضات.
               </div>
-              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-amber-500 h-full rounded-full" style={{ width: '78%' }}></div>
+              <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-slate-300">
+                <span className="font-bold text-cyan-300">2.</span> اربط كل سند بالمصدر الرسمي وحالة التحقق.
               </div>
-
-              <div className="space-y-1.5 pt-2 text-[11px]">
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>✓ لائحة الدعوى:</span>
-                  <span className="text-emerald-400">مكتملة</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>⚠ المستندات والمرفقات:</span>
-                  <span className="text-amber-400">تحتاج مراجعة</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-400">
-                  <span>🔴 النقاط الحرجة:</span>
-                  <span className="text-rose-400">3 نقاط</span>
-                </div>
+              <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-3 text-slate-300">
+                <span className="font-bold text-emerald-300">3.</span> افحص المرفقات والدفوع ثم راجع المسودة قبل التقديم.
               </div>
             </div>
           </div>

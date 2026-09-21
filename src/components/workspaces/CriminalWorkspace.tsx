@@ -17,10 +17,12 @@ import {
 import { UserSession } from '../../types';
 import { LegalReviewEditor } from './LegalReviewEditor';
 import { LegalAdaptationResult, PlainStoryInput } from './PlainStoryInput';
+import { consumeTextSse } from '../../lib/consumeTextSse';
 
 interface CriminalWorkspaceProps {
   service: string | null;
   userSession?: UserSession | null;
+  onOpenPdfModal?: () => void;
 }
 
 const STORAGE_KEY_PREFIX = 'diwan_criminal_draft_v3';
@@ -28,6 +30,7 @@ const STORAGE_KEY_PREFIX = 'diwan_criminal_draft_v3';
 export function CriminalWorkspace({
   service = 'criminal_defense',
   userSession,
+  onOpenPdfModal,
 }: CriminalWorkspaceProps) {
   const currentService = service || 'criminal_defense';
   const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
@@ -132,6 +135,17 @@ export function CriminalWorkspace({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isPlainText = file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt');
+    if (!isPlainText) {
+      window.alert('هذا الحقل يقرأ ملفات TXT فقط. استخدم زر PDF/صورة لإرسال المحضر أو الصورة إلى المحادثة.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 512 * 1024) {
+      window.alert('ملف TXT أكبر من 512 كيلوبايت. اختصره أو أرسله على أجزاء.');
+      e.target.value = '';
+      return;
+    }
     setUploadedFileName(file.name);
 
     const reader = new FileReader();
@@ -210,34 +224,7 @@ ${sharedRules}`;
 
       if (!response.ok) throw new Error('فشل التوليد');
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const dataStr = line.slice(6).trim();
-              if (dataStr === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(dataStr);
-                if (parsed.text) {
-                  fullText += parsed.text;
-                  setGeneratedOutput(fullText);
-                }
-              } catch {
-                fullText += dataStr;
-                setGeneratedOutput(fullText);
-              }
-            }
-          }
-        }
-      }
+      let fullText = await consumeTextSse(response, (text) => setGeneratedOutput(text));
 
       if (!fullText) {
         fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
@@ -315,7 +302,7 @@ ${defenseDemands}`;
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-neutral-100">بؤرة المحاكم الجزائية</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                عزل تام
+                مسودة خاصة بالحساب الحالي
               </span>
             </div>
             <p className="text-xs text-neutral-400">
@@ -356,15 +343,25 @@ ${defenseDemands}`;
               <div>
                 <h3 className="text-lg font-bold text-neutral-100">رفع مرفقات ومحاضر المحاكم الجزائية</h3>
                 <p className="text-xs text-neutral-400">
-                  تُحفظ محاضر الضبط والتحقيق في مسودة العمل محلياً دون تشغيل الـ API إلا بالضغط على الزر أدناه
+                  ملفات TXT المضافة هنا تحفظ في تخزين هذا المتصفح للحساب الحالي. استخدم زر PDF/صورة لإرسال المستند للمحادثة عند الحاجة.
                 </p>
               </div>
             </div>
-            <label className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-neutral-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow">
-              <UploadCloud className="w-4 h-4" />
-              <span>اختيار محضر / تقرير</span>
-              <input type="file" onChange={handleFileUpload} className="hidden" accept=".pdf,.doc,.docx,.txt,image/*" />
-            </label>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={onOpenPdfModal}
+                disabled={!onOpenPdfModal}
+                className="px-4 py-2 rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-200 text-xs font-bold disabled:opacity-40"
+              >
+                PDF / صورة للمحادثة
+              </button>
+              <label className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-neutral-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow">
+                <UploadCloud className="w-4 h-4" />
+                <span>إضافة TXT للمسودة</span>
+                <input type="file" onChange={handleFileUpload} className="hidden" accept=".txt,text/plain" />
+              </label>
+            </div>
           </div>
 
           {uploadedFileName && (
@@ -429,7 +426,7 @@ ${defenseDemands}`;
                 </h3>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/30">
-                حفظ محلي (LocalStorage)
+                حفظ محلي على هذا المتصفح
               </span>
             </div>
 

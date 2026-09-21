@@ -21,6 +21,10 @@ assert(
   'active session cookie must remain qada_session_v4',
 );
 assert(
+  !/AUTH_SECRET\?\.trim\(\)\s*\|\|\s*process\.env\.GEMINI_API_KEY/.test(sessionApi),
+  'session encryption must not fall back to Gemini credentials',
+);
+assert(
   sessionApi.includes("const OLD_SESSION_COOKIES = ['qada_session_v3', 'qada_session_v2'];"),
   'session handler must explicitly clear known legacy cookies',
 );

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { CourtJurisdiction } from '../layout/Sidebar';
 import { Attachment, UserSession } from '../../types';
+import { consumeTextSse } from '../../lib/consumeTextSse';
 
 interface FloatingChatBotProps {
   activeCourt: CourtJurisdiction | null;
@@ -33,6 +34,7 @@ interface ChatMsg {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  attachments?: Attachment[];
 }
 
 export function FloatingChatBot({
@@ -120,6 +122,7 @@ export function FloatingChatBot({
       role: 'user',
       content: userText,
       timestamp: Date.now(),
+      attachments: pendingAttachments.length ? [...pendingAttachments] : undefined,
     };
 
     const assistantMsgId = `ast-${Date.now()}`;
@@ -139,7 +142,11 @@ export function FloatingChatBot({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [
-            ...messages.map((m) => ({ role: m.role, content: m.content })),
+            ...messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+              attachments: m.attachments,
+            })),
             { role: 'user', content: userText, attachments: pendingAttachments },
           ],
           targetCourt: getCourtLabel(),
@@ -150,38 +157,11 @@ clientPersonName: userSession?.name,
 
       if (!response.ok) throw new Error('فشل إرسال الرسالة');
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let streamText = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const dataStr = line.slice(6).trim();
-              if (dataStr === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(dataStr);
-                if (parsed.text) {
-                  streamText += parsed.text;
-                  setMessages((prev) =>
-                    prev.map((m) => (m.id === assistantMsgId ? { ...m, content: streamText } : m))
-                  );
-                }
-              } catch {
-                streamText += dataStr;
-                setMessages((prev) =>
-                  prev.map((m) => (m.id === assistantMsgId ? { ...m, content: streamText } : m))
-                );
-              }
-            }
-          }
-        }
-      }
+      const streamText = await consumeTextSse(response, (text) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantMsgId ? { ...m, content: text } : m))
+        );
+      });
 
       if (!streamText) {
         setMessages((prev) =>

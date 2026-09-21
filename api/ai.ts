@@ -31,10 +31,21 @@ export default async function handler(req: any, res: any) {
     return res.status(503).json({ error: 'AI_AUTH_UNAVAILABLE' });
   }
 
+  type IncomingAttachment = {
+    name?: string;
+    type?: string;
+    data?: string;
+  };
+  type IncomingMessage = {
+    role?: string;
+    content?: string;
+    attachments?: IncomingAttachment[];
+  };
+
   const body = (req.body ?? {}) as {
     message?: string;
-    messages?: Array<{ role?: string; content?: string }>;
-    history?: Array<{ role?: string; content?: string }>;
+    messages?: IncomingMessage[];
+    history?: IncomingMessage[];
     targetCourt?: string;
   };
 
@@ -47,16 +58,40 @@ export default async function handler(req: any, res: any) {
           : []),
       ];
 
+  const allowedMime = new Set(['application/pdf', 'image/png', 'image/jpeg', 'image/webp']);
+  const sanitizeAttachment = (attachment: IncomingAttachment) => {
+    const name = String(attachment?.name || '').toLowerCase();
+    let mimeType = String(attachment?.type || '').toLowerCase();
+    if (!allowedMime.has(mimeType)) {
+      if (name.endsWith('.pdf')) mimeType = 'application/pdf';
+      else if (name.endsWith('.png')) mimeType = 'image/png';
+      else if (name.endsWith('.jpg') || name.endsWith('.jpeg')) mimeType = 'image/jpeg';
+      else if (name.endsWith('.webp')) mimeType = 'image/webp';
+    }
+    const rawData = typeof attachment?.data === 'string' ? attachment.data.trim() : '';
+    if (!allowedMime.has(mimeType) || !rawData) return null;
+    return {
+      mimeType,
+      data: rawData.includes(',') ? rawData.slice(rawData.indexOf(',') + 1) : rawData,
+      name: attachment?.name || 'مرفق',
+    };
+  };
+
   const messages = sourceMessages
     .map((item) => ({
       role: item.role === 'assistant' || item.role === 'model' ? 'assistant' : 'user',
       content: typeof item.content === 'string' ? item.content.trim().slice(0, 12000) : '',
+      attachments: (Array.isArray(item.attachments) ? item.attachments : [])
+        .map(sanitizeAttachment)
+        .filter(Boolean) as Array<{ mimeType: string; data: string; name: string }>,
     }))
-    .filter((item) => item.content);
+    .filter((item) => item.content || item.attachments.length > 0);
 
   if (!messages.length) {
     return res.status(400).json({ error: 'Invalid request payload.' });
   }
+
+  const hasAttachments = messages.some((item) => item.attachments.length > 0);
 
   const retrievalQuery = [
     body.targetCourt || '',
@@ -76,10 +111,22 @@ export default async function handler(req: any, res: any) {
     let reply = '';
 
     if (geminiKeys.length > 0) {
-      const transcript = [
-        system,
-        ...messages.map((item) => `${item.role === 'assistant' ? 'المستشار' : 'المستخدم'}: ${item.content}`),
-      ].join('\n\n');
+      const geminiContents = messages.map((item) => {
+        const parts: any[] = [];
+        if (item.content) parts.push({ text: item.content });
+        for (const attachment of item.attachments) {
+          parts.push({
+            inlineData: {
+              mimeType: attachment.mimeType,
+              data: attachment.data,
+            },
+          });
+        }
+        return {
+          role: item.role === 'assistant' ? 'model' : 'user',
+          parts,
+        };
+      });
 
       const geminiModels = ['gemini-3.8-flash', 'gemini-3.5-flash'];
 
@@ -94,7 +141,8 @@ export default async function handler(req: any, res: any) {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                contents: [{ role: 'user', parts: [{ text: transcript }] }],
+                systemInstruction: { parts: [{ text: system }] },
+                contents: geminiContents,
                 generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
               }),
             },
@@ -116,7 +164,7 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    if (!reply && gatewayToken) {
+    if (!reply && gatewayToken && !hasAttachments) {
       const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -143,7 +191,11 @@ export default async function handler(req: any, res: any) {
     }
 
     if (!reply) {
-      return res.status(502).json({ error: 'AI_PROVIDER_REQUEST_FAILED' });
+      return res.status(502).json({
+        error: hasAttachments
+          ? 'AI_ATTACHMENT_ANALYSIS_UNAVAILABLE'
+          : 'AI_PROVIDER_REQUEST_FAILED',
+      });
     }
 
     const citationGuard = guardIntroducedLegalCitations(retrievalQuery, reply, sourceBundle.context);

@@ -12,7 +12,8 @@
     "test:legal-sources": "tsx scripts/smoke-legal-source-agents.ts",
     "test:legal-guard": "tsx scripts/smoke-legal-citation-guard.ts",
     "test:legal-ui-safety": "tsx scripts/smoke-legal-ui-safety.ts",
-    "test:auth-consistency": "tsx scripts/smoke-auth-consistency.ts"
+    "test:auth-consistency": "tsx scripts/smoke-auth-consistency.ts",
+    "test:sse-buffer": "tsx scripts/smoke-sse-buffer.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

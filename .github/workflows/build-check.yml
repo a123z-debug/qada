@@ -19,4 +19,5 @@ jobs:
       - run: npm run test:legal-guard
       - run: npm run test:legal-ui-safety
       - run: npm run test:auth-consistency
+      - run: npm run test:sse-buffer
       - run: npm run build
