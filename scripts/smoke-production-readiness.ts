@@ -1,0 +1,49 @@
+import fs from 'node:fs';
+
+function assert(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
+
+const env = fs.readFileSync('.env.example', 'utf8');
+for (const key of ['AUTH_SECRET', 'DATA_SECRET', 'QADA_ADMIN_CREDENTIAL_HASH_V4', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN']) {
+  assert(env.includes(key + '='), '.env.example missing ' + key);
+}
+
+const health = fs.readFileSync('api/health.ts', 'utf8');
+assert(health.includes("hasLongSecret('AUTH_SECRET')"), 'health must require AUTH_SECRET');
+assert(health.includes("hasLongSecret('DATA_SECRET')"), 'health must require DATA_SECRET');
+assert(health.includes('geminiConfigured'), 'health must verify Gemini for multimodal evidence');
+assert(health.includes('redisReachable'), 'health must verify Redis reachability');
+
+const server = fs.readFileSync('server.ts', 'utf8');
+assert(server.includes("import healthHandler from './api/health';"), 'local server must reuse production health handler');
+assert(server.includes("app.get('/api/health'"), 'local health route missing');
+assert(server.includes("express.json({ limit: '4mb' })"), 'local JSON payload limit must match serverless design');
+
+const apiDir = fs.readdirSync('api').filter((name) => name.endsWith('.ts'));
+for (const name of apiDir) {
+  const source = fs.readFileSync('api/' + name, 'utf8');
+  assert(!source.includes('new Map<string, RateEntry>'), name + ': legacy in-memory rate limiter found');
+}
+
+const srcFiles = [
+  'src/App.tsx',
+  'src/components/LoginScreen.tsx',
+  'src/components/admin/AdminAnalysisRoom.tsx',
+  'src/components/admin/AdminAgentMap.tsx',
+];
+for (const file of srcFiles) {
+  const source = fs.readFileSync(file, 'utf8');
+  assert(!source.includes('qada_account_proofs_v1'), file + ': browser account proof returned');
+  assert(!source.includes("localStorage.setItem('qada_admin_agent_runtime"), file + ': admin runtime persisted locally');
+  assert(!source.includes("localStorage.setItem('qada_admin_agent_run_history"), file + ': admin run history persisted locally');
+}
+
+const app = fs.readFileSync('src/App.tsx', 'utf8');
+assert(!app.includes('مركز التحليل متصل:'), 'static connected status must not return');
+
+const secureStore = fs.readFileSync('api/_secureStore.ts', 'utf8');
+assert(secureStore.includes("process.env.DATA_SECRET"), 'persistent encryption must use DATA_SECRET');
+assert(!secureStore.includes('process.env.DATA_SECRET || process.env.AUTH_SECRET'), 'persistent encryption must not fall back to AUTH_SECRET');
+
+console.log(JSON.stringify({ ok: true, apiFilesChecked: apiDir.length, readinessGate: true }, null, 2));
