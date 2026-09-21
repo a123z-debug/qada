@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { listUserAccounts, readSession, setUserAccountDisabled } from './session.ts';
+import { listUserAccounts, readActiveSession, setUserAccountDisabled } from './session.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 import { recordAuditEvent } from './_audit.ts';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
-  const session = readSession(req.headers?.cookie);
+  const session = await readActiveSession(req.headers?.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
   if (session.role !== 'admin') return res.status(403).json({ error: 'ADMIN_ONLY' });
 
