@@ -21,42 +21,12 @@ import { PdfUploadModal } from './components/PdfUploadModal';
 import { CasePleadingStudioModal } from './components/CasePleadingStudioModal';
 import { AdminAgentMap } from './components/admin/AdminAgentMap';
 import { AdminAnalysisRoom } from './components/admin/AdminAnalysisRoom';
-import { INITIAL_JUDGMENT_RECORDS } from './data/judgmentRecords';
-
-const LEGACY_JUDGMENT_RECORDS_STORAGE_KEY = 'diwan_judgment_records_v1';
-
-function judgmentRecordsStorageKey(session: UserSession): string {
-  return `diwan_judgment_records_v2_${session.id}`;
-}
-
 type LaunchIntent =
   | { kind: 'dashboard' }
   | { kind: 'service'; court: CourtJurisdiction; service: string }
   | { kind: 'repository' }
   | { kind: 'dossier' }
   | { kind: 'assistant'; prefill?: string };
-
-function readStorage<T>(key: string, fallback: T): T {
-  try {
-    const raw = sessionStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw) as T;
-    return parsed ?? fallback;
-  } catch (error) {
-    console.error(`Storage read failed for ${key}:`, error);
-    return fallback;
-  }
-}
-
-function writeStorage<T>(key: string, value: T) {
-  try {
-    sessionStorage.setItem(key, JSON.stringify(value));
-    return true;
-  } catch (error) {
-    console.error(`Storage write failed for ${key}:`, error);
-    return false;
-  }
-}
 
 // ==========================================
 // 1. مكون العلامة المائية الأمنية (Dynamic Watermark)
@@ -354,25 +324,52 @@ export default function App() {
   const [isAdminMapOpen, setIsAdminMapOpen] = useState(false);
   const [isAdminAnalysisOpen, setIsAdminAnalysisOpen] = useState(false);
 
-  const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>(INITIAL_JUDGMENT_RECORDS);
+  const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>([]);
+  const [caseStoreError, setCaseStoreError] = useState('');
 
   useEffect(() => {
     if (!session) {
       setJudgmentRecords([]);
+      setCaseStoreError('');
       return;
     }
-    const scopedKey = judgmentRecordsStorageKey(session);
-    const saved = readStorage<JudgmentRecord[] | null>(scopedKey, null);
-    setJudgmentRecords(Array.isArray(saved) ? saved : INITIAL_JUDGMENT_RECORDS);
-  }, [session?.id]);
+
+    let cancelled = false;
+    const scope = session.role === 'admin' ? '?scope=all' : '';
+    setCaseStoreError('');
+
+    fetch(`/api/cases${scope}`, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload?.error || 'تعذر تحميل سجل القضايا.');
+        return Array.isArray(payload?.records) ? payload.records as JudgmentRecord[] : [];
+      })
+      .then((records) => {
+        if (!cancelled) setJudgmentRecords(records);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setJudgmentRecords([]);
+          setCaseStoreError(error instanceof Error ? error.message : 'تعذر تحميل سجل القضايا.');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.id, session?.role]);
 
   useEffect(() => {
     localStorage.removeItem('diwan_user_session_v1');
-    localStorage.removeItem(LEGACY_JUDGMENT_RECORDS_STORAGE_KEY);
+    localStorage.removeItem('diwan_judgment_records_v1');
     localStorage.removeItem('diwan_pending_attachments_v1');
 
-    // Remove persistent copies created by older builds. Current case data is kept
-    // only for the active browser session until encrypted server storage exists.
+    // Remove persistent copies created by older builds. Case records now live in
+    // the encrypted server-side repository.
     for (let index = localStorage.length - 1; index >= 0; index--) {
       const key = localStorage.key(index);
       if (
@@ -478,21 +475,50 @@ export default function App() {
 
   const handleSaveRecord = (record: JudgmentRecord) => {
     if (!session) return;
+
+    const previous = judgmentRecords;
     setJudgmentRecords((prev) => {
-      const exists = prev.some((r) => r.id === record.id);
-      const updated = exists ? prev.map((r) => (r.id === record.id ? record : r)) : [record, ...prev];
-      writeStorage(judgmentRecordsStorageKey(session), updated);
-      return updated;
+      const exists = prev.some((item) => item.id === record.id);
+      return exists ? prev.map((item) => (item.id === record.id ? record : item)) : [record, ...prev];
     });
+    setCaseStoreError('');
+
+    void fetch('/api/cases', {
+      method: 'PUT',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record }),
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload?.error || 'تعذر حفظ القضية.');
+      })
+      .catch((error) => {
+        setJudgmentRecords(previous);
+        setCaseStoreError(error instanceof Error ? error.message : 'تعذر حفظ القضية.');
+      });
   };
 
   const handleDeleteRecord = (recordId: string) => {
     if (!session) return;
-    setJudgmentRecords((prev) => {
-      const updated = prev.filter((r) => r.id !== recordId);
-      writeStorage(judgmentRecordsStorageKey(session), updated);
-      return updated;
-    });
+
+    const previous = judgmentRecords;
+    setJudgmentRecords((prev) => prev.filter((record) => record.id !== recordId));
+    setCaseStoreError('');
+
+    void fetch(`/api/cases?id=${encodeURIComponent(recordId)}`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    })
+      .then(async (response) => {
+        if (response.status === 204) return;
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload?.error || 'تعذر حذف القضية.');
+      })
+      .catch((error) => {
+        setJudgmentRecords(previous);
+        setCaseStoreError(error instanceof Error ? error.message : 'تعذر حذف القضية.');
+      });
   };
 
   if (showLandingPage) {
@@ -523,11 +549,9 @@ export default function App() {
 
   // 3. مساحة العمل الأساسية المشفرة
   return (
-    // تم إضافة onContextMenu لمنع النقر باليمين و select-none لمنع النسخ
-    <div 
-      className="app-shell flex h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden font-sans select-none" 
+    <div
+      className="app-shell flex h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden font-sans"
       dir="rtl"
-      onContextMenu={(e) => e.preventDefault()}
     >
       {/* طبقة الأمان (العلامة المائية) */}
       <SecurityWatermark user={session} />
@@ -591,6 +615,11 @@ export default function App() {
 
         {/* مساحة العمل */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-24 sm:pb-6 lg:pb-8 custom-scrollbar">
+          {caseStoreError && (
+            <div className="mb-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-200">
+              تعذر الوصول إلى مخزن القضايا: {caseStoreError}
+            </div>
+          )}
           {activeCourt && (
             <div className="sticky top-0 z-20 mb-4 flex justify-end bg-slate-950/80 py-2 backdrop-blur-md">
               <button
