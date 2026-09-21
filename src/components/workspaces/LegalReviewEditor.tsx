@@ -156,6 +156,7 @@ export function LegalReviewEditor({
   // 3-Judge Cassation, Appeal & Attachments Panel State
   const [judgesReport, setJudgesReport] = useState<DetailedJudgesReviewReport | null>(null);
   const [judgesSourceAudit, setJudgesSourceAudit] = useState<JudgesSourceAudit | null>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
   const [isLoadingJudges, setIsLoadingJudges] = useState(false);
   const [previousContent, setPreviousContent] = useState<string | null>(null);
   const [revisionToast, setRevisionToast] = useState<string | null>(null);
@@ -174,6 +175,8 @@ export function LegalReviewEditor({
 
   const handleRunJudgesAudit = async () => {
     setIsLoadingJudges(true);
+    setAuditError(null);
+    setJudgesReport(null);
     setJudgesSourceAudit(null);
     setActiveTab('judges');
     try {
@@ -203,6 +206,9 @@ export function LegalReviewEditor({
       }
     } catch (err: any) {
       console.error('Error invoking judges audit:', err);
+      setJudgesReport(null);
+      setJudgesSourceAudit(null);
+      setAuditError(err instanceof Error ? err.message : 'تعذر إكمال المراجعة الآلية. أعد المحاولة.');
     } finally {
       setIsLoadingJudges(false);
     }
@@ -482,6 +488,23 @@ export function LegalReviewEditor({
           </button>
         </div>
       </div>
+
+      {auditError && (
+        <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-200 text-xs font-bold flex flex-wrap items-center justify-between gap-2 shadow-lg">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <span>{auditError} لم يتم الاحتفاظ بأي تقرير قديم على أنه نتيجة أحدث.</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleRunJudgesAudit}
+            disabled={isLoadingJudges}
+            className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-[11px] text-rose-100 hover:bg-rose-500/20 disabled:opacity-50"
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      )}
 
       {/* Revision Applied Alert Banner */}
       {revisionToast && (
