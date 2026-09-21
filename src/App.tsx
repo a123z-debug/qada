@@ -88,7 +88,7 @@ function SystemAgentBar() {
       </div>
       <div className="hidden sm:flex items-center gap-2 text-slate-400">
         <ShieldCheck className="w-4 h-4 text-emerald-400" />
-        <span>مساحة عمل مشفرة</span>
+        <span>جلسة دخول خادمية محمية</span>
       </div>
     </div>
   );
@@ -506,7 +506,7 @@ export default function App() {
     );
   }
 
-  // 3. مساحة العمل الأساسية المشفرة
+  // 3. مساحة العمل الأساسية
   return (
     // تم إضافة onContextMenu لمنع النقر باليمين و select-none لمنع النسخ
     <div 
