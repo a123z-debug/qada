@@ -7,7 +7,7 @@ function assert(condition: unknown, message: string): asserts condition {
 const map = fs.readFileSync('src/components/admin/AdminAgentMap.tsx', 'utf8');
 
 const requiredIds = [
-  'auth','search','laws','judgments','references','cases','advisor',
+  'auth','search','laws','judgments','references','cases','advisor','settings',
   'document-reader','case-router','src-bog','src-personnel','src-royal','src-precedents',
   'qada-core','facts','jurisdiction','characterization','evidence','reasoning','procedure',
   'official-source','exact-text','amendments','conflicts','final-review','drafting','final-output',
@@ -22,6 +22,7 @@ for (const id of requiredIds) {
 
 for (const label of [
   'منصة QADA العامة',
+  'مستخدمو المنصة',
   'مختبر البيانات والأدلة',
   'محرك التحليل القضائي الذكي',
   'الصياغة والمخرجات',
