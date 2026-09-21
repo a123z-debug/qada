@@ -10,6 +10,7 @@ import {
   Database,
   FileCheck2,
   FileSearch,
+  ExternalLink,
   FileText,
   Gavel,
   Gauge,
@@ -58,18 +59,35 @@ type Edge = {
 type RuntimeAgentRun = {
   id: string;
   label: string;
-  status: 'success' | 'error';
+  status: 'success' | 'warning' | 'error';
   durationMs: number;
   model?: string;
   summary: string;
+  blockers?: string[];
+};
+
+type RuntimeSourcePacket = {
+  agentId: string;
+  label: string;
+  status: 'success' | 'warning' | 'error';
+  scope: string;
+  references: Array<{
+    name: string;
+    sourceUrl: string;
+    issueInstrument?: string;
+  }>;
+  blockers: string[];
 };
 
 type RuntimeSnapshot = {
+  runId?: string;
   documentTitle?: string;
   analyzedAt?: string;
   agentRuns?: RuntimeAgentRun[];
+  sourcePackets?: RuntimeSourcePacket[];
   meta?: {
     completedAgents?: number;
+    warningAgents?: number;
     failedAgents?: number;
     architecture?: string;
   };
@@ -88,12 +106,12 @@ const nodes: AgentNode[] = [
   { id: 'advisor', title: 'المستشار القضائي', subtitle: 'واجهة الذكاء', x: 1365, y: 42, width: 190, height: 74, status: 'linked', tone: 'emerald', icon: Bot, detail: 'واجهة المحادثة الحالية وربط الأسئلة بالمحرك والمراجع.' },
 
   { id: 'document-reader', title: 'قارئ المستندات', subtitle: 'PDF / صور / نص', x: 55, y: 220, width: 210, height: 80, status: 'linked', tone: 'amber', icon: FileSearch, detail: 'يستقبل الحكم أو المذكرة أو المرفق ويجهز المحتوى للتحليل.' },
-  { id: 'case-router', title: 'موجّه القضية', subtitle: 'تحديد المسار', x: 310, y: 220, width: 210, height: 80, status: 'planned', tone: 'cyan', icon: GitBranch, detail: 'يحدد الاختصاص ونوع المستند والوكلاء المطلوب تشغيلهم لكل قضية.' },
+  { id: 'case-router', title: 'موجّه القضية', subtitle: 'تحديد المسار', x: 310, y: 220, width: 210, height: 80, status: 'linked', tone: 'cyan', icon: GitBranch, detail: 'يحدد الاختصاص ونوع المستند والوكلاء المطلوب تشغيلهم لكل قضية.' },
 
-  { id: 'src-bog', title: 'ديوان المظالم', subtitle: 'النظام والمرافعات', x: 365, y: 345, width: 190, height: 68, status: 'planned', tone: 'amber', icon: Landmark, detail: 'وكيل مرجعي لمنظومة ديوان المظالم ونظام المرافعات والتنفيذ واللوائح.' },
-  { id: 'src-personnel', title: 'نظام خدمة الأفراد', subtitle: 'حقوق عسكرية', x: 365, y: 430, width: 190, height: 68, status: 'planned', tone: 'amber', icon: BadgeCheck, detail: 'وكيل متخصص بنظام خدمة الأفراد ولوائحه وتعديلاته وحقوق العسكريين.' },
-  { id: 'src-royal', title: 'الأوامر والمراسيم', subtitle: 'ملكية وسامية', x: 365, y: 515, width: 190, height: 68, status: 'planned', tone: 'amber', icon: FileText, detail: 'وكيل يجمع الأوامر والمراسيم والقرارات الرسمية ذات الصلة ويحدد أثرها.' },
-  { id: 'src-precedents', title: 'المبادئ والأحكام', subtitle: 'سوابق قضائية', x: 365, y: 600, width: 190, height: 68, status: 'planned', tone: 'amber', icon: Scale, detail: 'وكيل لاستخراج المبادئ والأحكام ذات الصلة مع الفصل بين النص النظامي والاجتهاد القضائي.' },
+  { id: 'src-bog', title: 'ديوان المظالم', subtitle: 'النظام والمرافعات', x: 365, y: 345, width: 190, height: 68, status: 'linked', tone: 'amber', icon: Landmark, detail: 'وكيل مرجعي لمنظومة ديوان المظالم ونظام المرافعات والتنفيذ واللوائح.' },
+  { id: 'src-personnel', title: 'نظام خدمة الأفراد', subtitle: 'حقوق عسكرية', x: 365, y: 430, width: 190, height: 68, status: 'warning', tone: 'amber', icon: BadgeCheck, detail: 'وكيل متخصص بنظام خدمة الأفراد ولوائحه وتعديلاته وحقوق العسكريين.' },
+  { id: 'src-royal', title: 'الأوامر والمراسيم', subtitle: 'ملكية وسامية', x: 365, y: 515, width: 190, height: 68, status: 'linked', tone: 'amber', icon: FileText, detail: 'وكيل يجمع الأوامر والمراسيم والقرارات الرسمية ذات الصلة ويحدد أثرها.' },
+  { id: 'src-precedents', title: 'المبادئ والأحكام', subtitle: 'سوابق قضائية', x: 365, y: 600, width: 190, height: 68, status: 'warning', tone: 'amber', icon: Scale, detail: 'وكيل لاستخراج المبادئ والأحكام ذات الصلة مع الفصل بين النص النظامي والاجتهاد القضائي.' },
 
   { id: 'qada-core', title: 'QADA AI', subtitle: 'محرك التحليل القضائي', x: 690, y: 380, width: 220, height: 118, status: 'linked', tone: 'cyan', icon: Sparkles, detail: 'نواة التوجيه والتحليل التي تستقبل مدخلات القضية وتوزعها على الوكلاء المختصين.' },
 
@@ -104,9 +122,9 @@ const nodes: AgentNode[] = [
   { id: 'reasoning', title: 'محلل التسبيب', subtitle: 'منطق الحكم', x: 980, y: 400, width: 190, height: 68, status: 'planned', tone: 'emerald', icon: Workflow, detail: 'يفحص تسلسل التسبيب وعلاقة الأسباب بالمنطوق والطلبات والوقائع.' },
   { id: 'procedure', title: 'محلل الإجراءات', subtitle: 'مواعيد وشكل', x: 1190, y: 400, width: 190, height: 68, status: 'planned', tone: 'emerald', icon: Gauge, detail: 'يفحص المواعيد والإجراءات والقبول الشكلي والمتطلبات النظامية.' },
 
-  { id: 'official-source', title: 'مدقق المصدر الرسمي', subtitle: 'مصدر وهوية النص', x: 980, y: 515, width: 190, height: 68, status: 'planned', tone: 'amber', icon: SearchCheck, detail: 'يتحقق أن المرجع المستخدم صادر من مصدر رسمي محدد وقابل للتتبع.' },
-  { id: 'exact-text', title: 'مدقق النص الحرفي', subtitle: 'كل حرف ورقم', x: 1190, y: 515, width: 190, height: 68, status: 'planned', tone: 'amber', icon: ScanSearch, detail: 'يطابق النص الحرفي للمادة أو الحكم ويمنع الاقتباس التقريبي.' },
-  { id: 'amendments', title: 'مدقق السريان', subtitle: 'تعديل / إلغاء / نسخ', x: 980, y: 600, width: 190, height: 68, status: 'planned', tone: 'amber', icon: Activity, detail: 'يتحقق من النسخة السارية والتعديل والإلغاء والنفاذ الزمني للنص.' },
+  { id: 'official-source', title: 'مدقق المصدر الرسمي', subtitle: 'مصدر وهوية النص', x: 980, y: 515, width: 190, height: 68, status: 'linked', tone: 'amber', icon: SearchCheck, detail: 'يتحقق أن المرجع المستخدم صادر من مصدر رسمي محدد وقابل للتتبع.' },
+  { id: 'exact-text', title: 'مدقق النص الحرفي', subtitle: 'كل حرف ورقم', x: 1190, y: 515, width: 190, height: 68, status: 'warning', tone: 'amber', icon: ScanSearch, detail: 'يطابق النص الحرفي للمادة أو الحكم ويمنع الاقتباس التقريبي.' },
+  { id: 'amendments', title: 'مدقق السريان', subtitle: 'تعديل / إلغاء / نسخ', x: 980, y: 600, width: 190, height: 68, status: 'linked', tone: 'amber', icon: Activity, detail: 'يتحقق من النسخة السارية والتعديل والإلغاء والنفاذ الزمني للنص.' },
   { id: 'conflicts', title: 'كاشف التعارض', subtitle: 'تناقض النصوص والنتائج', x: 1190, y: 600, width: 190, height: 68, status: 'planned', tone: 'amber', icon: AlertTriangle, detail: 'يكشف التعارض بين المراجع أو بين التحليل والوقائع أو بين أسباب الحكم ومنطوقه.' },
 
   { id: 'final-review', title: 'المراجع النهائي', subtitle: 'اعتماد داخلي', x: 1410, y: 365, width: 165, height: 90, status: 'planned', tone: 'violet', icon: CheckCircle2, detail: 'يجمع النتائج ويتأكد من اكتمال التحقق قبل السماح بإخراج التقرير.' },
@@ -115,13 +133,13 @@ const nodes: AgentNode[] = [
   { id: 'admin-entry', title: 'غرفة التحليل للأدمن', subtitle: 'مدخل خاص ومقيد', x: 85, y: 760, width: 240, height: 82, status: 'linked', tone: 'violet', icon: LockKeyhole, adminOnly: true, detail: 'مدخل منفصل للمشرف لتحليل حكم أو مذكرة بشكل أعمق من واجهة المستخدم العامة.' },
   { id: 'judgment-audit', title: 'إيجنت تحليل الأحكام', subtitle: 'الحكم كاملاً', x: 380, y: 735, width: 205, height: 74, status: 'linked', tone: 'violet', icon: Gavel, adminOnly: true, detail: 'يمثل المسار الحالي لمراجعة الحكم، وسيتم توسيعه إلى فحص تشريعي وقضائي وإجرائي كامل.' },
   { id: 'memo-audit', title: 'إيجنت تحليل المذكرات', subtitle: 'دعوى ودفاع', x: 380, y: 830, width: 205, height: 74, status: 'planned', tone: 'violet', icon: FileSearch, adminOnly: true, detail: 'يفكك المذكرة ويحدد الادعاءات والأسانيد والدفوع والنواقص قبل المراجعة النهائية.' },
-  { id: 'legislative-flaws', title: 'كشف العيوب التشريعية', subtitle: 'نص وسريان', x: 660, y: 720, width: 205, height: 68, status: 'planned', tone: 'rose', icon: AlertTriangle, adminOnly: true, detail: 'يكشف مخالفة النصوص أو تطبيق نص غير ساري أو إغفال النص الواجب التطبيق.' },
-  { id: 'judicial-flaws', title: 'كشف العيوب القضائية', subtitle: 'مبادئ وتسبيب', x: 660, y: 805, width: 205, height: 68, status: 'planned', tone: 'rose', icon: Scale, adminOnly: true, detail: 'يفحص مخالفة المبادئ والتناقض مع السوابق ذات الصلة دون تحويل السابقة إلى نص ملزم تلقائياً.' },
-  { id: 'procedural-flaws', title: 'كشف العيوب الإجرائية', subtitle: 'شكل ومواعيد', x: 660, y: 890, width: 205, height: 68, status: 'planned', tone: 'rose', icon: XCircle, adminOnly: true, detail: 'يفحص الاختصاص والمواعيد والإجراءات والإعلانات والدفوع الشكلية.' },
-  { id: 'evidence-flaws', title: 'فحص الإثبات', subtitle: 'فجوات وتناقضات', x: 930, y: 720, width: 205, height: 68, status: 'planned', tone: 'rose', icon: FileCheck2, adminOnly: true, detail: 'يكشف الوقائع غير المسندة والدليل غير المنتج والتناقض بين المستندات.' },
-  { id: 'reasoning-flaws', title: 'فحص التكييف والتسبيب', subtitle: 'سبب ومنطوق', x: 930, y: 805, width: 205, height: 68, status: 'planned', tone: 'rose', icon: Workflow, adminOnly: true, detail: 'يفحص صحة التكييف وارتباط الأسباب بالمنطوق وأي قفزة منطقية في الحكم.' },
-  { id: 'rebuttal-review', title: 'مراجعة الدفوع والردود', subtitle: 'نقاط القوة والقصور', x: 930, y: 890, width: 205, height: 68, status: 'planned', tone: 'violet', icon: Scale, adminOnly: true, detail: 'يرتب نقاط الاعتراض والردود الممكنة ويبين سند كل نقطة وحدودها.' },
-  { id: 'admin-final', title: 'التقرير التحليلي للأدمن', subtitle: 'نتيجة داخلية غير عامة', x: 1245, y: 790, width: 270, height: 110, status: 'planned', tone: 'violet', icon: FileCheck2, adminOnly: true, detail: 'يجمع العيوب والمراجع والأثر المحتمل وما يحتاج إلى تحقق بشري في تقرير واحد خاص بالأدمن.' },
+  { id: 'legislative-flaws', title: 'كشف العيوب التشريعية', subtitle: 'نص وسريان', x: 660, y: 720, width: 205, height: 68, status: 'linked', tone: 'rose', icon: AlertTriangle, adminOnly: true, detail: 'يكشف مخالفة النصوص أو تطبيق نص غير ساري أو إغفال النص الواجب التطبيق.' },
+  { id: 'judicial-flaws', title: 'كشف العيوب القضائية', subtitle: 'مبادئ وتسبيب', x: 660, y: 805, width: 205, height: 68, status: 'linked', tone: 'rose', icon: Scale, adminOnly: true, detail: 'يفحص مخالفة المبادئ والتناقض مع السوابق ذات الصلة دون تحويل السابقة إلى نص ملزم تلقائياً.' },
+  { id: 'procedural-flaws', title: 'كشف العيوب الإجرائية', subtitle: 'شكل ومواعيد', x: 660, y: 890, width: 205, height: 68, status: 'linked', tone: 'rose', icon: XCircle, adminOnly: true, detail: 'يفحص الاختصاص والمواعيد والإجراءات والإعلانات والدفوع الشكلية.' },
+  { id: 'evidence-flaws', title: 'فحص الإثبات', subtitle: 'فجوات وتناقضات', x: 930, y: 720, width: 205, height: 68, status: 'linked', tone: 'rose', icon: FileCheck2, adminOnly: true, detail: 'يكشف الوقائع غير المسندة والدليل غير المنتج والتناقض بين المستندات.' },
+  { id: 'reasoning-flaws', title: 'فحص التكييف والتسبيب', subtitle: 'سبب ومنطوق', x: 930, y: 805, width: 205, height: 68, status: 'linked', tone: 'rose', icon: Workflow, adminOnly: true, detail: 'يفحص صحة التكييف وارتباط الأسباب بالمنطوق وأي قفزة منطقية في الحكم.' },
+  { id: 'rebuttal-review', title: 'مراجعة الدفوع والردود', subtitle: 'نقاط القوة والقصور', x: 930, y: 890, width: 205, height: 68, status: 'linked', tone: 'violet', icon: Scale, adminOnly: true, detail: 'يرتب نقاط الاعتراض والردود الممكنة ويبين سند كل نقطة وحدودها.' },
+  { id: 'admin-final', title: 'التقرير التحليلي للأدمن', subtitle: 'نتيجة داخلية غير عامة', x: 1245, y: 790, width: 270, height: 110, status: 'linked', tone: 'violet', icon: FileCheck2, adminOnly: true, detail: 'يجمع العيوب والمراجع والأثر المحتمل وما يحتاج إلى تحقق بشري في تقرير واحد خاص بالأدمن.' },
 ];
 
 const edges: Edge[] = [
@@ -161,6 +179,12 @@ const edges: Edge[] = [
   { from: 'judgment-audit', to: 'legislative-flaws', kind: 'admin' },
   { from: 'judgment-audit', to: 'judicial-flaws', kind: 'admin' },
   { from: 'judgment-audit', to: 'procedural-flaws', kind: 'admin' },
+  { from: 'judgment-audit', to: 'evidence-flaws', kind: 'admin' },
+  { from: 'judgment-audit', to: 'reasoning-flaws', kind: 'admin' },
+  { from: 'judgment-audit', to: 'rebuttal-review', kind: 'admin' },
+  { from: 'memo-audit', to: 'legislative-flaws', kind: 'admin' },
+  { from: 'memo-audit', to: 'judicial-flaws', kind: 'admin' },
+  { from: 'memo-audit', to: 'procedural-flaws', kind: 'admin' },
   { from: 'memo-audit', to: 'evidence-flaws', kind: 'admin' },
   { from: 'memo-audit', to: 'reasoning-flaws', kind: 'admin' },
   { from: 'memo-audit', to: 'rebuttal-review', kind: 'admin' },
@@ -204,21 +228,36 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
   const [filter, setFilter] = useState<'all' | 'admin' | 'linked' | 'planned' | 'last-run'>('all');
   const [selectedId, setSelectedId] = useState('qada-core');
   const [runtime, setRuntime] = useState<RuntimeSnapshot | null>(null);
+  const [history, setHistory] = useState<RuntimeSnapshot[]>([]);
 
   const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem('qada_admin_agent_runtime_v2');
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as RuntimeSnapshot;
-      if (parsed && Array.isArray(parsed.agentRuns)) setRuntime(parsed);
+      if (raw) {
+        const parsed = JSON.parse(raw) as RuntimeSnapshot;
+        if (parsed && Array.isArray(parsed.agentRuns)) setRuntime(parsed);
+      }
+      const rawHistory = localStorage.getItem('qada_admin_agent_run_history_v1');
+      if (rawHistory) {
+        const parsedHistory = JSON.parse(rawHistory) as RuntimeSnapshot[];
+        if (Array.isArray(parsedHistory)) {
+          setHistory(parsedHistory.filter((item) => item && Array.isArray(item.agentRuns)).slice(0, 20));
+        }
+      }
     } catch {}
   }, []);
 
   const runtimeById = useMemo(() => {
     const map = new Map<string, RuntimeAgentRun>();
     for (const run of runtime?.agentRuns || []) map.set(run.id, run);
+    return map;
+  }, [runtime]);
+
+  const sourcePacketById = useMemo(() => {
+    const map = new Map<string, RuntimeSourcePacket>();
+    for (const packet of runtime?.sourcePackets || []) map.set(packet.agentId, packet);
     return map;
   }, [runtime]);
 
@@ -262,10 +301,35 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
             </div>
             {runtime && (
               <div className="mt-2 rounded-xl border border-emerald-400/15 bg-emerald-500/5 px-3 py-2 text-[10px] text-slate-400">
-                آخر تشغيل: <span className="font-bold text-slate-200">{runtime.documentTitle || 'تحليل قضائي'}</span>
-                {runtime.analyzedAt && <span> • {new Date(runtime.analyzedAt).toLocaleString('ar-SA')}</span>}
-                <span> • مكتمل {runtime.meta?.completedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'success').length ?? 0}</span>
-                <span> • متعثر {runtime.meta?.failedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'error').length ?? 0}</span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    التشغيل المعروض: <span className="font-bold text-slate-200">{runtime.documentTitle || 'تحليل قضائي'}</span>
+                    {runtime.analyzedAt && <span> • {new Date(runtime.analyzedAt).toLocaleString('ar-SA')}</span>}
+                    <span> • مكتمل {runtime.meta?.completedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'success').length ?? 0}</span>
+                    <span> • تحذير {runtime.meta?.warningAgents ?? runtime.agentRuns?.filter((run) => run.status === 'warning').length ?? 0}</span>
+                    <span> • متعثر {runtime.meta?.failedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'error').length ?? 0}</span>
+                  </div>
+                  {history.length > 1 && (
+                    <select
+                      value={runtime.runId || ''}
+                      onChange={(event) => {
+                        const selectedRun = history.find((item) => item.runId === event.target.value);
+                        if (selectedRun) {
+                          setRuntime(selectedRun);
+                          setFilter('last-run');
+                          setSelectedId('qada-core');
+                        }
+                      }}
+                      className="max-w-[260px] rounded-lg border border-slate-700 bg-slate-950 px-2 py-1.5 text-[10px] font-bold text-slate-300 outline-none focus:border-cyan-400/50"
+                    >
+                      {history.map((item, index) => (
+                        <option key={item.runId || index} value={item.runId || ''}>
+                          {item.documentTitle || 'تحليل قضائي'} — {item.analyzedAt ? new Date(item.analyzedAt).toLocaleString('ar-SA') : 'بدون تاريخ'}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -326,16 +390,36 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
                   if (!from || !to) return null;
                   const visible = visibleIds.has(from.id) && visibleIds.has(to.id);
                   const stroke = edge.kind === 'admin' ? '#a78bfa' : edge.kind === 'verification' ? '#fbbf24' : '#38bdf8';
+                  const activeRuntimeEdge = runtimeById.has(from.id) && runtimeById.has(to.id);
+                  const hasRuntimeError = runtimeById.get(from.id)?.status === 'error' || runtimeById.get(to.id)?.status === 'error';
+                  const hasRuntimeWarning = runtimeById.get(from.id)?.status === 'warning' || runtimeById.get(to.id)?.status === 'warning';
+                  const runtimeStroke = hasRuntimeError ? '#fb7185' : hasRuntimeWarning ? '#fbbf24' : stroke;
+                  const path = edgePath(from, to);
                   return (
-                    <path
-                      key={edge.from + '-' + edge.to + '-' + index}
-                      d={edgePath(from, to)}
-                      fill="none"
-                      stroke={stroke}
-                      strokeWidth={edge.kind === 'admin' ? 1.8 : 1.35}
-                      strokeOpacity={visible ? 0.48 : 0.05}
-                      filter={visible ? 'url(#qadaGlow)' : undefined}
-                    />
+                    <g key={edge.from + '-' + edge.to + '-' + index}>
+                      <path
+                        d={path}
+                        fill="none"
+                        stroke={stroke}
+                        strokeWidth={edge.kind === 'admin' ? 1.8 : 1.35}
+                        strokeOpacity={visible ? 0.42 : 0.05}
+                        filter={visible ? 'url(#qadaGlow)' : undefined}
+                      />
+                      {activeRuntimeEdge && visible && (
+                        <path
+                          d={path}
+                          fill="none"
+                          stroke={runtimeStroke}
+                          strokeWidth={edge.kind === 'admin' ? 3.2 : 2.8}
+                          strokeOpacity={0.95}
+                          strokeLinecap="round"
+                          strokeDasharray="10 16"
+                          filter="url(#qadaGlow)"
+                        >
+                          <animate attributeName="stroke-dashoffset" from="0" to="-52" dur="1.4s" repeatCount="indefinite" />
+                        </path>
+                      )}
+                    </g>
                   );
                 })}
               </svg>
@@ -344,7 +428,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
                 const Icon = node.icon;
                 const runtimeRun = runtimeById.get(node.id);
                 const effectiveStatus: AgentStatus = runtimeRun
-                  ? (runtimeRun.status === 'success' ? 'completed' : 'error')
+                  ? (runtimeRun.status === 'success' ? 'completed' : runtimeRun.status === 'warning' ? 'warning' : 'error')
                   : node.status;
                 const meta = statusMeta[effectiveStatus];
                 const visible = visibleIds.has(node.id);
@@ -392,7 +476,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
               <span className="text-[10px] font-black text-slate-500">تفاصيل العقدة</span>
               <h3 className="mt-1 text-base font-black text-white">{selected.title}</h3>
             </div>
-            <span className={'h-3 w-3 rounded-full ' + statusMeta[runtimeById.get(selected.id) ? (runtimeById.get(selected.id)?.status === 'success' ? 'completed' : 'error') : selected.status].dot} />
+            <span className={'h-3 w-3 rounded-full ' + statusMeta[runtimeById.get(selected.id) ? (runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : 'error') : selected.status].dot} />
           </div>
 
           <p className="mt-3 text-xs leading-6 text-slate-400">{selected.detail}</p>
@@ -401,14 +485,51 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
             <DetailRow
               label="الحالة"
               value={runtimeById.get(selected.id)
-                ? statusMeta[runtimeById.get(selected.id)?.status === 'success' ? 'completed' : 'error'].label
+                ? statusMeta[runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : 'error'].label
                 : statusMeta[selected.status].label}
             />
             <DetailRow label="النطاق" value={selected.adminOnly ? 'خاص بالأدمن' : 'منصة عامة / محرك'} />
             <DetailRow label="معرف الوكيل" value={selected.id} mono />
             {runtimeById.get(selected.id)?.model && <DetailRow label="النموذج" value={runtimeById.get(selected.id)?.model || ''} mono />}
             {runtimeById.get(selected.id) && <DetailRow label="زمن آخر تشغيل" value={(runtimeById.get(selected.id)!.durationMs / 1000).toFixed(1) + ' ثانية'} />}
+            {runtimeById.get(selected.id)?.summary && <DetailRow label="ملخص آخر تشغيل" value={runtimeById.get(selected.id)?.summary || ''} />}
           </div>
+
+          {runtimeById.get(selected.id)?.blockers?.length ? (
+            <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-500/5 p-3">
+              <div className="text-[10px] font-black text-amber-200">مواضع الخلل / التحقق الناقص</div>
+              <ul className="mt-2 space-y-1.5">
+                {runtimeById.get(selected.id)!.blockers!.slice(0, 6).map((blocker, index) => (
+                  <li key={index} className="text-[10px] leading-5 text-amber-100/70">• {blocker}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {sourcePacketById.get(selected.id)?.references?.length ? (
+            <div className="mt-3 rounded-xl border border-cyan-400/15 bg-cyan-500/5 p-3">
+              <div className="text-[10px] font-black text-cyan-200">المصادر الرسمية في آخر تشغيل</div>
+              <div className="mt-2 space-y-2">
+                {sourcePacketById.get(selected.id)!.references.slice(0, 6).map((reference, index) => (
+                  <a
+                    key={reference.sourceUrl + index}
+                    href={reference.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block rounded-lg border border-slate-800 bg-slate-950/60 p-2 hover:border-cyan-400/30"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold text-slate-300">{reference.name}</div>
+                        {reference.issueInstrument && <div className="mt-1 text-[9px] text-slate-600">{reference.issueInstrument}</div>}
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-cyan-300" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-500/5 p-3 text-[11px] leading-5 text-amber-100/80">
             الخريطة الآن تمثل الهيكل الحقيقي الذي سنبني عليه. حالة «متصل حالياً» تعني أن للمنصة مساراً قائماً يقابله، أما «قيد الربط» فلا يعني أن الوكيل يعمل فعلياً بعد.

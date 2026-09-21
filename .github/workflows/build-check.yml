@@ -14,4 +14,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run lint
+      - run: npm run test:legal-sources
       - run: npm run build

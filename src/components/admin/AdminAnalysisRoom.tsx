@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   FileSearch,
   FileText,
+  ExternalLink,
   Gavel,
   LoaderCircle,
   LockKeyhole,
@@ -25,6 +26,7 @@ type AnalysisIssue = {
   documentSegment: string;
   analysis: string;
   legalBasis: string;
+  sourceUrls: string[];
   sourceStatus: string;
   impact: string;
   verificationNeeded: boolean;
@@ -52,18 +54,45 @@ type UploadedAttachment = {
 type AgentRun = {
   id: string;
   label: string;
-  status: 'success' | 'error';
+  status: 'success' | 'warning' | 'error';
   durationMs: number;
   model?: string;
   summary: string;
+  blockers?: string[];
 };
 
 type AnalysisMeta = {
   analyzedAt?: string;
   officialContextAvailable?: boolean;
   completedAgents?: number;
+  warningAgents?: number;
   failedAgents?: number;
+  officialSources?: number;
+  verifiedArticles?: number;
+  sourceBlockers?: number;
   architecture?: string;
+};
+
+type SourcePacket = {
+  agentId: string;
+  label: string;
+  status: 'success' | 'warning' | 'error';
+  scope: string;
+  references: Array<{
+    name: string;
+    authority?: string;
+    sourceUrl: string;
+    issueInstrument?: string;
+    coverage?: string;
+    note: string;
+  }>;
+  verifiedArticles: Array<{
+    system: string;
+    article: string;
+    sourceUrl: string;
+    note: string;
+  }>;
+  blockers: string[];
 };
 
 const severityOrder: Record<string, number> = {
@@ -110,6 +139,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
   const [activeCategory, setActiveCategory] = useState('الكل');
   const [meta, setMeta] = useState<AnalysisMeta | null>(null);
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([]);
+  const [sourcePackets, setSourcePackets] = useState<SourcePacket[]>([]);
 
   const categories = useMemo(() => {
     const set = new Set((report?.issues || []).map((issue) => issue.category));
@@ -158,6 +188,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
     setReport(null);
     setMeta(null);
     setAgentRuns([]);
+    setSourcePackets([]);
     setActiveCategory('الكل');
 
     try {
@@ -185,16 +216,27 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
       const nextReport = payload.report as AdminAnalysisReport;
       const nextMeta = (payload.meta || null) as AnalysisMeta | null;
       const nextAgentRuns = Array.isArray(payload.agentRuns) ? payload.agentRuns as AgentRun[] : [];
+      const nextSourcePackets = Array.isArray(payload.sourcePackets) ? payload.sourcePackets as SourcePacket[] : [];
       setReport(nextReport);
       setMeta(nextMeta);
       setAgentRuns(nextAgentRuns);
+      setSourcePackets(nextSourcePackets);
       try {
-        localStorage.setItem('qada_admin_agent_runtime_v2', JSON.stringify({
+        const snapshot = {
+          runId: `run-${Date.now()}`,
           documentTitle: documentTitle.trim() || nextReport.documentType || 'تحليل قضائي',
           analyzedAt: nextMeta?.analyzedAt || new Date().toISOString(),
           agentRuns: nextAgentRuns,
+          sourcePackets: nextSourcePackets,
           meta: nextMeta,
-        }));
+        };
+        localStorage.setItem('qada_admin_agent_runtime_v2', JSON.stringify(snapshot));
+
+        const historyKey = 'qada_admin_agent_run_history_v1';
+        const rawHistory = localStorage.getItem(historyKey);
+        const history = rawHistory ? JSON.parse(rawHistory) : [];
+        const safeHistory = Array.isArray(history) ? history : [];
+        localStorage.setItem(historyKey, JSON.stringify([snapshot, ...safeHistory].slice(0, 20)));
       } catch {}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر إكمال التحليل.');
@@ -383,11 +425,17 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                   <div className="mt-3 flex flex-wrap gap-2 text-[9px] text-slate-600">
                     <span>المعمارية: {meta.architecture || 'تحليل متعدد المراحل'}</span>
                     <span>•</span>
-                    <span>الوكلاء المكتملون: {meta.completedAgents ?? agentRuns.filter((run) => run.status === 'success').length}</span>
+                    <span>المكتملون: {meta.completedAgents ?? agentRuns.filter((run) => run.status === 'success').length}</span>
+                    <span>•</span>
+                    <span>تحذيرات: {meta.warningAgents ?? agentRuns.filter((run) => run.status === 'warning').length}</span>
                     <span>•</span>
                     <span>المتعثرون: {meta.failedAgents ?? agentRuns.filter((run) => run.status === 'error').length}</span>
                     <span>•</span>
-                    <span>سياق رسمي: {meta.officialContextAvailable ? 'متاح' : 'غير مكتمل'}</span>
+                    <span>مصادر رسمية: {meta.officialSources ?? 0}</span>
+                    <span>•</span>
+                    <span>مواد مفهرسة: {meta.verifiedArticles ?? 0}</span>
+                    <span>•</span>
+                    <span>قيود تحقق: {meta.sourceBlockers ?? 0}</span>
                     {meta.analyzedAt && <><span>•</span><span>{new Date(meta.analyzedAt).toLocaleString('ar-SA')}</span></>}
                   </div>
                 )}
@@ -414,15 +462,106 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                             'rounded-full border px-2 py-1 text-[9px] font-black ' +
                             (run.status === 'success'
                               ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
-                              : 'border-rose-400/25 bg-rose-500/10 text-rose-200')
+                              : run.status === 'warning'
+                                ? 'border-amber-400/25 bg-amber-500/10 text-amber-200'
+                                : 'border-rose-400/25 bg-rose-500/10 text-rose-200')
                           }>
-                            {run.status === 'success' ? 'مكتمل' : 'تعثر'}
+                            {run.status === 'success' ? 'مكتمل' : run.status === 'warning' ? 'تحقق مطلوب' : 'تعثر'}
                           </span>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2 text-[9px] text-slate-500">
                           <span>{(run.durationMs / 1000).toFixed(1)}ث</span>
                           {run.model && <><span>•</span><span>{run.model}</span></>}
                         </div>
+                        {run.blockers?.length ? (
+                          <div className="mt-2 rounded-lg border border-amber-400/15 bg-amber-500/5 p-2">
+                            <div className="text-[9px] font-black text-amber-200">سبب التحذير / ما ينقص التحقق</div>
+                            <ul className="mt-1 space-y-1">
+                              {run.blockers.slice(0, 4).map((blocker, blockerIndex) => (
+                                <li key={blockerIndex} className="text-[9px] leading-5 text-amber-100/70">• {blocker}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {sourcePackets.length > 0 && (
+                <div className="rounded-2xl border border-amber-400/15 bg-amber-500/5 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs font-black text-amber-200">
+                      <BookOpenCheck className="h-4 w-4" />
+                      أثر المراجع الرسمية ووكلاء المصدر
+                    </div>
+                    <span className="text-[9px] text-slate-600">{sourcePackets.reduce((sum, packet) => sum + packet.references.length, 0)} مرجعاً مسترجعاً</span>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    {sourcePackets.map((packet) => (
+                      <div key={packet.agentId} className="rounded-xl border border-slate-800 bg-slate-950/55 p-3">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div>
+                            <div className="text-[11px] font-black text-slate-200">{packet.label}</div>
+                            <div className="mt-1 text-[9px] leading-5 text-slate-500">{packet.scope}</div>
+                          </div>
+                          <span className={
+                            'rounded-full border px-2 py-1 text-[9px] font-black ' +
+                            (packet.status === 'success'
+                              ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
+                              : packet.status === 'warning'
+                                ? 'border-amber-400/25 bg-amber-500/10 text-amber-200'
+                                : 'border-rose-400/25 bg-rose-500/10 text-rose-200')
+                          }>
+                            {packet.status === 'success' ? 'متحقق' : packet.status === 'warning' ? 'تحقق ناقص' : 'خطأ'}
+                          </span>
+                        </div>
+
+                        {packet.references.length > 0 && (
+                          <div className="mt-3 grid md:grid-cols-2 gap-2">
+                            {packet.references.slice(0, 6).map((reference, index) => (
+                              <div key={reference.sourceUrl + index} className="rounded-lg border border-slate-800 bg-black/15 p-2.5">
+                                <div className="text-[10px] font-bold text-slate-300">{reference.name}</div>
+                                {reference.issueInstrument && <div className="mt-1 text-[9px] text-slate-500">{reference.issueInstrument}</div>}
+                                <a
+                                  href={reference.sourceUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="mt-2 inline-flex items-center gap-1 text-[9px] font-black text-cyan-300 hover:text-cyan-200"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  المصدر الرسمي
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {packet.verifiedArticles.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {packet.verifiedArticles.slice(0, 12).map((article, index) => (
+                              <a
+                                key={article.system + article.article + index}
+                                href={article.sourceUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                title={article.note}
+                                className="rounded-full border border-emerald-400/20 bg-emerald-500/5 px-2 py-1 text-[9px] font-bold text-emerald-200 hover:bg-emerald-500/10"
+                              >
+                                {article.system} — مادة {article.article}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+
+                        {packet.blockers.length > 0 && (
+                          <div className="mt-3 rounded-lg border border-amber-400/15 bg-amber-500/5 p-2.5">
+                            {packet.blockers.slice(0, 4).map((blocker, index) => (
+                              <div key={index} className="text-[9px] leading-5 text-amber-100/70">• {blocker}</div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -481,6 +620,23 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                       <InfoBox title="السند/المرجع" text={issue.legalBasis || 'لم يحدد سند متحقق.'} />
                       <InfoBox title="حالة المصدر" text={issue.sourceStatus || 'غير متحقق'} highlight />
                     </div>
+
+                    {issue.sourceUrls?.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {issue.sourceUrls.map((url, sourceIndex) => (
+                          <a
+                            key={url + sourceIndex}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 bg-cyan-500/5 px-2.5 py-1.5 text-[9px] font-black text-cyan-300 hover:bg-cyan-500/10"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            المصدر الرسمي {sourceIndex + 1}
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>

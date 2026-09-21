@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { readSession } from './_auth.ts';
-import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval.ts';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 
 type IncomingAttachment = {
   name?: string;
@@ -19,10 +19,11 @@ type AdminAnalysisRequest = {
 type AgentRun = {
   id: string;
   label: string;
-  status: 'success' | 'error';
+  status: 'success' | 'warning' | 'error';
   durationMs: number;
   model?: string;
   summary: string;
+  blockers?: string[];
 };
 
 type AgentResult<T = any> = {
@@ -37,6 +38,57 @@ function getGeminiClients(): GoogleGenAI[] {
     .map((index) => process.env[`GEMINI_API_KEY${index === 1 ? '' : `_${index}`}`]?.trim())
     .filter((key): key is string => Boolean(key));
   return keys.map((apiKey) => new GoogleGenAI({ apiKey }));
+}
+
+function getGatewayToken(): string {
+  return process.env.AI_GATEWAY_API_KEY?.trim()
+    || process.env.VERCEL_OIDC_TOKEN?.trim()
+    || '';
+}
+
+async function tryGatewayJson(systemInstruction: string, parts: any[]): Promise<{ data: any; model: string } | null> {
+  const token = getGatewayToken();
+  if (!token) return null;
+
+  const textParts = parts
+    .map((part) => typeof part?.text === 'string' ? part.text.trim() : '')
+    .filter(Boolean);
+  const hasNonText = parts.some((part) => part?.inlineData);
+  if (hasNonText || textParts.length === 0) return null;
+
+  const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-3.6-flash',
+      models: ['google/gemini-3.5-flash-lite'],
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: textParts.join('\n\n') },
+      ],
+      temperature: 0.05,
+      response_format: { type: 'json_object' },
+      max_tokens: 7000,
+    }),
+  });
+
+  if (!response.ok) return null;
+  const payload: any = await response.json();
+  const content = payload?.choices?.[0]?.message?.content;
+  const raw = typeof content === 'string'
+    ? content
+    : Array.isArray(content)
+      ? content.map((part: any) => typeof part?.text === 'string' ? part.text : '').join('')
+      : '';
+  const data = parseJson(raw);
+  if (!data) return null;
+  return {
+    data,
+    model: String(payload?.model || 'ai-gateway'),
+  };
 }
 
 function sanitizeMimeType(type?: string, name?: string): string | null {
@@ -107,6 +159,25 @@ async function generateJsonAgent<T>(args: {
   const started = Date.now();
   let lastError: unknown;
   const { clients, agentId, label, systemInstruction, parts, temperature = 0.05, clientOffset = 0 } = args;
+
+  try {
+    const gateway = await tryGatewayJson(systemInstruction, parts);
+    if (gateway) {
+      return {
+        data: gateway.data as T,
+        run: {
+          id: agentId,
+          label,
+          status: 'success',
+          durationMs: Date.now() - started,
+          model: gateway.model,
+          summary: 'اكتمل التحليل عبر بوابة الذكاء.',
+        },
+      };
+    }
+  } catch (error) {
+    lastError = error;
+  }
 
   if (clients.length === 0) {
     return {
@@ -203,6 +274,7 @@ function normalizeIssue(issue: any, index: number) {
     documentSegment: String(issue?.documentSegment || '').slice(0, 1800),
     analysis: String(issue?.analysis || '').slice(0, 4000),
     legalBasis: String(issue?.legalBasis || '').slice(0, 2500),
+    sourceUrls: stringList(issue?.sourceUrls, 8, 1000),
     sourceStatus: String(issue?.sourceStatus || 'غير متحقق').slice(0, 160),
     impact: String(issue?.impact || '').slice(0, 1800),
     verificationNeeded: Boolean(issue?.verificationNeeded),
@@ -228,16 +300,102 @@ function normalizeReport(input: any) {
   };
 }
 
+function enforceVerificationGate(report: ReturnType<typeof normalizeReport>, verification: {
+  officialSources: number;
+  verifiedArticles: number;
+  blockers: string[];
+  literalQuotationReady: boolean;
+  precedentCorpusReady: boolean;
+}, allowedSourceUrls: string[]) {
+  const queue = new Set(report.verificationQueue);
+  for (const blocker of verification.blockers) queue.add(blocker);
+
+  const allowedUrls = new Set(allowedSourceUrls.filter(Boolean));
+  const issues = report.issues.map((issue) => {
+    let sourceStatus = issue.sourceStatus;
+    let verificationNeeded = issue.verificationNeeded;
+    let legalBasis = issue.legalBasis;
+    const originalSourceUrls = Array.isArray(issue.sourceUrls) ? issue.sourceUrls : [];
+    const sourceUrls = originalSourceUrls.filter((url) => allowedUrls.has(url));
+
+    if (sourceUrls.length !== originalSourceUrls.length) {
+      verificationNeeded = true;
+      queue.add('أزال مدقق المصدر رابطاً غير موجود في حزمة المصادر الرسمية المسترجعة؛ لا يعتمد أي رابط يولده النموذج من تلقاء نفسه.');
+    }
+
+    if (sourceStatus === 'متحقق من السياق الرسمي' && sourceUrls.length === 0) {
+      sourceStatus = 'التحقق الحرفي مطلوب';
+      verificationNeeded = true;
+      queue.add('وُسمت نقطة بأنها متحققة دون إرفاق رابط مصدر من الحزمة الرسمية؛ خُفضت حالة التحقق آلياً.');
+    }
+
+    if (sourceStatus === 'متحقق من السياق الرسمي' && verification.officialSources === 0) {
+      sourceStatus = 'مصدر غير مكتمل';
+      verificationNeeded = true;
+    }
+
+    const precedentClaim = /مبدأ|سابقة|حكم\s+(?:رقم|المحكمة|الدائرة)/i.test(legalBasis);
+    if (precedentClaim && !verification.precedentCorpusReady) {
+      sourceStatus = sourceStatus === 'متحقق من السياق الرسمي' ? 'التحقق الحرفي مطلوب' : sourceStatus;
+      verificationNeeded = true;
+      queue.add('ورد استناد إلى حكم/مبدأ قضائي بينما قاعدة السوابق الرسمية الكاملة غير جاهزة؛ يلزم التحقق من المصدر القضائي الرسمي.');
+    }
+
+    const literalClaim = /[«»]/.test(legalBasis) || /نص\s+الماد(?:ة|ه)/i.test(legalBasis);
+    if (literalClaim && !verification.literalQuotationReady) {
+      sourceStatus = sourceStatus === 'متحقق من السياق الرسمي' ? 'التحقق الحرفي مطلوب' : sourceStatus;
+      verificationNeeded = true;
+      legalBasis = legalBasis.replace(/\s+/g, ' ').trim();
+      queue.add('يوجد ادعاء باقتباس حرفي بينما مخزن النصوص الحرفية الكاملة غير معتمد بعد؛ يجب مطابقة النص مع المصدر الرسمي قبل الاعتماد.');
+    }
+
+    if (!['متحقق من السياق الرسمي', 'وارد في المستند فقط', 'التحقق الحرفي مطلوب', 'مصدر غير مكتمل'].includes(sourceStatus)) {
+      sourceStatus = 'التحقق الحرفي مطلوب';
+      verificationNeeded = true;
+    }
+
+    return {
+      ...issue,
+      legalBasis,
+      sourceUrls,
+      sourceStatus,
+      verificationNeeded,
+    };
+  });
+
+  return {
+    ...report,
+    issues,
+    verificationQueue: Array.from(queue).slice(0, 80),
+    finalNotes: [
+      report.finalNotes,
+      `بوابة التحقق الآلي: ${verification.officialSources} مصدر رسمي فريد، ${verification.verifiedArticles} مادة مفهرسة، ${verification.blockers.length} قيد تحقق.`,
+      verification.literalQuotationReady
+        ? 'الاقتباس الحرفي متاح لهذه العملية.'
+        : 'الاقتباس الحرفي من النصوص النظامية غير معتمد من المستودع حتى تتم المطابقة مع المصدر الرسمي.',
+      verification.precedentCorpusReady
+        ? 'قاعدة السوابق القضائية الرسمية جاهزة.'
+        : 'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ أي استناد قضائي يحتاج تحققاً مستقلاً.',
+    ].filter(Boolean).join('\n'),
+  };
+}
+
 function combineWithoutFinalAgent(args: {
   intake: any;
   legislative: any;
+  judicial: any;
   procedural: any;
+  evidence: any;
   reasoning: any;
+  rebuttal: any;
 }) {
   const rawIssues = [
     ...(Array.isArray(args.legislative?.issues) ? args.legislative.issues : []),
+    ...(Array.isArray(args.judicial?.issues) ? args.judicial.issues : []),
     ...(Array.isArray(args.procedural?.issues) ? args.procedural.issues : []),
+    ...(Array.isArray(args.evidence?.issues) ? args.evidence.issues : []),
     ...(Array.isArray(args.reasoning?.issues) ? args.reasoning.issues : []),
+    ...(Array.isArray(args.rebuttal?.issues) ? args.rebuttal.issues : []),
   ];
 
   return normalizeReport({
@@ -249,16 +407,26 @@ function combineWithoutFinalAgent(args: {
       ...stringList(args.intake?.missingFacts),
       ...stringList(args.procedural?.missingFacts),
     ],
-    missingEvidence: stringList(args.reasoning?.missingEvidence),
-    conflictingPoints: stringList(args.reasoning?.conflictingPoints),
+    missingEvidence: stringList(args.evidence?.missingEvidence),
+    conflictingPoints: [
+      ...stringList(args.judicial?.conflictingPoints),
+      ...stringList(args.evidence?.conflictingPoints),
+      ...stringList(args.reasoning?.conflictingPoints),
+      ...stringList(args.rebuttal?.conflictingPoints),
+    ],
     strongestVerifiedPoints: [
       ...stringList(args.legislative?.verifiedPoints),
+      ...stringList(args.evidence?.strongestVerifiedPoints),
       ...stringList(args.reasoning?.strongestVerifiedPoints),
+      ...stringList(args.rebuttal?.strongestVerifiedPoints),
     ],
     verificationQueue: [
       ...stringList(args.legislative?.verificationQueue),
+      ...stringList(args.judicial?.verificationQueue),
       ...stringList(args.procedural?.verificationQueue),
+      ...stringList(args.evidence?.verificationQueue),
       ...stringList(args.reasoning?.verificationQueue),
+      ...stringList(args.rebuttal?.verificationQueue),
     ],
     finalNotes: 'المراجع النهائي غير متاح في هذه المحاولة؛ لا تعتبر هذه النسخة تقريراً نهائياً.',
   });
@@ -273,6 +441,7 @@ const ISSUE_SCHEMA = `كل issue يجب أن يكون بهذا الشكل:
   "documentSegment": "الموضع من المستند إن وجد",
   "analysis": "...",
   "legalBasis": "السند المتحقق أو وصف ما يحتاج تحققاً",
+  "sourceUrls": ["روابط المصادر الرسمية فقط من حزمة المصدر، دون اختراع روابط"],
   "sourceStatus": "متحقق من السياق الرسمي|وارد في المستند فقط|التحقق الحرفي مطلوب|مصدر غير مكتمل",
   "impact": "الأثر المحتمل دون جزم غير مسند",
   "verificationNeeded": true
@@ -351,10 +520,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ...stringList(intake.data?.mentionedAuthorities, 20, 300),
   ].filter(Boolean).join('\n');
 
-  const officialContext = buildOfficialLegalReferenceContext(retrievalQuery, 10);
-  const sourceNotice = officialContext
-    ? `السياق المرجعي الرسمي المسترجع لهذه العملية:\n${officialContext}`
-    : 'لا يوجد سياق رسمي كافٍ مسترجع لهذه العملية. أي استناد نظامي غير موجود صراحة يجب وسمه "التحقق الحرفي مطلوب".';
+  const sourceBundle = runLegalSourceAgents(retrievalQuery);
+  const documentTypeLabel = String(intake.data?.documentType || body.documentTitle || '').trim();
+  const auditIsJudgment = /حكم|قرار قضائي|قضاء|دائرة/i.test(documentTypeLabel);
+  const analysisMode = auditIsJudgment ? 'تحليل حكم/قرار قضائي' : 'تحليل مذكرة/لائحة/دفاع';
+  const sourceNotice = [
+    'نتيجة وكلاء المراجع القانونية لهذه العملية:',
+    sourceBundle.context,
+    `إجمالي المصادر الرسمية الفريدة: ${sourceBundle.verification.officialSources}`,
+    `المواد المفهرسة المتحقق من وجودها: ${sourceBundle.verification.verifiedArticles}`,
+    'الاقتباس الحرفي الجاهز من داخل المستودع: لا؛ يجب الرجوع للمصدر الرسمي للنص الحرفي.',
+    'قاعدة السوابق القضائية الكاملة: غير مكتملة؛ لا يجوز اختراع رقم حكم أو مبدأ.',
+  ].join('\n\n');
 
   const sharedRules = `قواعد ملزمة:
 - لا تخترع مادة أو مرسوماً أو أمراً أو حكماً أو مبدأ قضائياً.
@@ -363,19 +540,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 - إذا لم يكتمل التحقق، اجعل verificationNeeded=true واكتب ذلك بوضوح.
 - لا تجزم بالبطلان أو النقض أو القبول؛ صف الأثر المحتمل فقط.
 - لا تعرض بيانات هوية شخصية غير لازمة.
+- sourceUrls يجب أن تحتوي فقط على روابط موجودة حرفياً في حزمة وكلاء المراجع؛ لا تنشئ رابطاً جديداً ولا تكمل رابطاً ناقصاً.
 ${ISSUE_SCHEMA}`;
 
   const specialistInput = `بيانات الإدخال:
 العنوان: ${String(body.documentTitle || 'غير محدد').slice(0, 300)}
 الاختصاص: ${String(body.court || intake.data?.jurisdiction || 'غير محدد').slice(0, 200)}
 نوع المستند: ${String(intake.data?.documentType || 'غير محدد').slice(0, 160)}
+مسار غرفة الأدمن: ${analysisMode}
 
 المستند:
 ${workingText || 'لم يتوفر نص كافٍ بعد الاستخراج.'}
 
 ${sourceNotice}`;
 
-  const [legislative, procedural, reasoning] = await Promise.all([
+  const [legislative, judicial, procedural, evidence, reasoning, rebuttal] = await Promise.all([
     generateJsonAgent<any>({
       clients,
       agentId: 'legislative-flaws',
@@ -395,9 +574,26 @@ ${sharedRules}
     }),
     generateJsonAgent<any>({
       clients,
+      agentId: 'judicial-flaws',
+      label: 'وكيل العيوب القضائية والمبادئ',
+      clientOffset: 2,
+      systemInstruction: `أنت وكيل مراجعة قضائية سعودي.
+افحص منطق الحكم القضائي، مدى معالجة الدفوع الجوهرية، التناقض بين الأسباب والمنطوق، وحدود الاستناد إلى المبادئ والأحكام السابقة.
+لا تنسب رقماً أو مبدأً إلى حكم أو دائرة إلا إذا ورد ذلك صراحة في حزمة المصدر الرسمية. إذا كانت قاعدة السوابق غير مكتملة فاجعل أي استناد من هذا النوع verificationNeeded=true.
+${sharedRules}
+أعد JSON فقط:
+{
+  "issues": [],
+  "conflictingPoints": [],
+  "verificationQueue": []
+}`,
+      parts: [{ text: specialistInput }],
+    }),
+    generateJsonAgent<any>({
+      clients,
       agentId: 'procedural-flaws',
       label: 'وكيل الاختصاص والإجراءات',
-      clientOffset: 2,
+      clientOffset: 3,
       systemInstruction: `أنت وكيل اختصاص وإجراءات قضائية سعودية.
 افحص الاختصاص الولائي والنوعي، الصفة والمصلحة، المواعيد، التظلم السابق عند لزومه، تسلسل الإجراءات، الطلبات الشكلية، وما إذا كانت الوقائع المتاحة تكفي للجزم بأي نقطة إجرائية.
 ${sharedRules}
@@ -411,12 +607,12 @@ ${sharedRules}
     }),
     generateJsonAgent<any>({
       clients,
-      agentId: 'reasoning-flaws',
-      label: 'وكيل الإثبات والتكييف والتسبيب',
-      clientOffset: 3,
-      systemInstruction: `أنت وكيل نقد قضائي متخصص في الإثبات والتكييف والتسبيب.
-افحص ترابط الوقائع بالأدلة، عبء الإثبات، التناقضات، التكييف النظامي، علاقة الأسباب بالمنطوق، الرد على الدفوع الجوهرية، واتساق الطلبات مع النتيجة.
-لا تفترض أن مجرد اختلاف الرأي مع المحكمة عيب قانوني.
+      agentId: 'evidence-flaws',
+      label: 'وكيل الإثبات والمرفقات',
+      clientOffset: 0,
+      systemInstruction: `أنت وكيل إثبات قضائي سعودي.
+اربط كل واقعة أو ادعاء بما يسنده في المستند والمرفقات، وحدد الفجوات والتناقضات وعبء الإثبات والمستندات الناقصة.
+لا تفترض وجود دليل لم يرفق ولا تعتبر مجرد ذكر مستند إثباتاً لمضمونه.
 ${sharedRules}
 أعد JSON فقط:
 {
@@ -428,14 +624,53 @@ ${sharedRules}
 }`,
       parts: [{ text: specialistInput }],
     }),
+    generateJsonAgent<any>({
+      clients,
+      agentId: 'reasoning-flaws',
+      label: 'وكيل التكييف والتسبيب',
+      clientOffset: 1,
+      systemInstruction: `أنت وكيل تكييف وتسبيب قضائي سعودي.
+افحص التكييف النظامي للوقائع، البدائل الممكنة، علاقة الأسباب بالطلبات والمنطوق، وأي قفزة منطقية أو تعارض داخلي.
+لا تعتبر مجرد وجود تكييف مختلف خطأً؛ بين لماذا قد يكون التكييف محل مراجعة وما السند الذي يحتاج تحققاً.
+${sharedRules}
+أعد JSON فقط:
+{
+  "issues": [],
+  "conflictingPoints": [],
+  "strongestVerifiedPoints": [],
+  "verificationQueue": []
+}`,
+      parts: [{ text: specialistInput }],
+    }),
+    generateJsonAgent<any>({
+      clients,
+      agentId: 'rebuttal-review',
+      label: 'وكيل مراجعة الدفوع والردود',
+      clientOffset: 2,
+      systemInstruction: `أنت وكيل مراجعة دفوع وردود.
+استخرج كل دفع جوهري أو جواب عليه، وحدد ما إذا كان الرد يعالج جوهر الدفع أم يتجاوزه، وما الذي يحتاج سنداً أو إثباتاً إضافياً.
+لا تصف دفعاً بأنه حاسم أو منتج إلا مع بيان الأساس والتحقق المطلوب.
+${sharedRules}
+أعد JSON فقط:
+{
+  "issues": [],
+  "conflictingPoints": [],
+  "strongestVerifiedPoints": [],
+  "verificationQueue": []
+}`,
+      parts: [{ text: specialistInput }],
+    }),
   ]);
 
   const synthesisPayload = {
     intake: intake.data,
     legislative: legislative.data,
+    judicial: judicial.data,
     procedural: procedural.data,
+    evidence: evidence.data,
     reasoning: reasoning.data,
-    officialContextAvailable: Boolean(officialContext),
+    rebuttal: rebuttal.data,
+    sourceVerification: sourceBundle.verification,
   };
 
   const final = await generateJsonAgent<any>({
@@ -444,9 +679,12 @@ ${sharedRules}
     label: 'المراجع النهائي للأدمن',
     clientOffset: 0,
     systemInstruction: `أنت المراجع النهائي في غرفة تحليل QADA الخاصة بالأدمن.
-ستستلم نتائج وكلاء مستقلين. مهمتك الدمج وإزالة التكرار وكشف التعارض بينهم، لا اختراع نقاط جديدة بلا سند.
+ستستلم نتائج وكلاء مستقلين ونتيجة وكلاء المراجع القانونية. مهمتك الدمج وإزالة التكرار وكشف التعارض بينهم، لا اختراع نقاط جديدة بلا سند.
 رتب الملاحظات حسب أثرها المحتمل، واحتفظ بحالة المصدر لكل نقطة.
 إذا تعارض وكيلان فضع التعارض في conflictingPoints ولا تخفِه.
+إذا كانت حزمة المراجع تشير إلى blocker أو warning، فلا تحول النقطة إلى "متحقق من السياق الرسمي" لمجرد أن الوكيل التحليلي ذكرها.
+إذا لم تكن قاعدة السوابق جاهزة، فلا تنسب رقماً أو مبدأً قضائياً إلى حكم غير موجود في المصدر الرسمي.
+إذا لم يكن النص الحرفي محفوظاً ومتحققاً، لا تضع اقتباساً حرفياً للمادة؛ اذكر رقمها ومصدرها وحالة التحقق فقط.
 أعد JSON فقط بهذا الشكل:
 {
   "documentType": "...",
@@ -465,35 +703,119 @@ ${ISSUE_SCHEMA}`,
     temperature: 0.02,
   });
 
-  const report = final.data
+  const rawReport = final.data
     ? normalizeReport(final.data)
     : combineWithoutFinalAgent({
         intake: intake.data,
         legislative: legislative.data,
+        judicial: judicial.data,
         procedural: procedural.data,
+        evidence: evidence.data,
         reasoning: reasoning.data,
+        rebuttal: rebuttal.data,
       });
 
+  const allowedSourceUrls = Array.from(new Set(
+    sourceBundle.packets.flatMap((packet) => [
+      ...packet.references.map((reference) => reference.sourceUrl),
+      ...packet.verifiedArticles.map((article) => article.sourceUrl),
+    ]).filter(Boolean)
+  ));
+
+  const report = enforceVerificationGate(rawReport, sourceBundle.verification, allowedSourceUrls);
+
+  const sourceRuns: AgentRun[] = sourceBundle.runs.map((run) => ({
+    id: run.id,
+    label: run.label,
+    status: run.status,
+    durationMs: run.durationMs,
+    summary: run.summary,
+    blockers: run.blockers,
+  }));
+
+  const adminEntryRun: AgentRun = {
+    id: 'admin-entry',
+    label: 'غرفة التحليل للأدمن',
+    status: 'success',
+    durationMs: 1,
+    summary: 'استقبلت غرفة الأدمن المستند وبدأت مسار التحليل المقيد.',
+  };
+
+  const auditRun: AgentRun = {
+    id: auditIsJudgment ? 'judgment-audit' : 'memo-audit',
+    label: auditIsJudgment ? 'إيجنت تحليل الأحكام' : 'إيجنت تحليل المذكرات',
+    status: 'success',
+    durationMs: 1,
+    summary: auditIsJudgment
+      ? 'تم توجيه المستند لمسار تحليل الأحكام.'
+      : 'تم توجيه المستند لمسار تحليل المذكرات والدفوع.',
+  };
+
+  const routingRun: AgentRun = {
+    id: 'case-router',
+    label: 'موجّه القضية',
+    status: 'success',
+    durationMs: 1,
+    summary: `فعّل ${sourceRuns.length} وكلاء مصادر و6 مسارات تحليل تخصصية.`,
+  };
+
+  const coreRun: AgentRun = {
+    id: 'qada-core',
+    label: 'QADA AI Orchestrator',
+    status: sourceRuns.some((run) => run.status === 'warning') ? 'warning' : 'success',
+    durationMs: 1,
+    summary: sourceRuns.some((run) => run.status === 'warning')
+      ? 'اكتمل التوجيه مع قيود تحقق مرجعية ظاهرة في الخريطة.'
+      : 'اكتمل التوجيه دون قيود مرجعية ظاهرة.',
+    blockers: sourceBundle.verification.blockers,
+  };
+
   const agentRuns: AgentRun[] = [
+    adminEntryRun,
     intake.run,
+    auditRun,
+    routingRun,
+    coreRun,
+    ...sourceRuns,
     legislative.run,
+    judicial.run,
     procedural.run,
+    evidence.run,
     reasoning.run,
+    rebuttal.run,
     final.run,
   ];
 
+  const conflictRun: AgentRun = {
+    id: 'conflicts',
+    label: 'كاشف التعارض',
+    status: report.conflictingPoints.length > 0 ? 'warning' : 'success',
+    durationMs: 1,
+    summary: report.conflictingPoints.length > 0
+      ? `رصد ${report.conflictingPoints.length} نقطة تعارض تحتاج مراجعة.`
+      : 'لم يرصد التقرير النهائي نقاط تعارض مسجلة.',
+    blockers: report.conflictingPoints,
+  };
+  agentRuns.push(conflictRun);
+
   const completed = agentRuns.filter((run) => run.status === 'success').length;
-  const failed = agentRuns.length - completed;
+  const warnings = agentRuns.filter((run) => run.status === 'warning').length;
+  const failed = agentRuns.filter((run) => run.status === 'error').length;
 
   return res.status(200).json({
     report,
     agentRuns,
+    sourcePackets: sourceBundle.packets,
     meta: {
       analyzedAt: new Date().toISOString(),
-      officialContextAvailable: Boolean(officialContext),
+      officialContextAvailable: sourceBundle.verification.officialSources > 0,
+      officialSources: sourceBundle.verification.officialSources,
+      verifiedArticles: sourceBundle.verification.verifiedArticles,
+      sourceBlockers: sourceBundle.verification.blockers.length,
       completedAgents: completed,
+      warningAgents: warnings,
       failedAgents: failed,
-      architecture: 'multi-agent-v2',
+      architecture: 'multi-agent-v3-source-gated',
     },
   });
 }
