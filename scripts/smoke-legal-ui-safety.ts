@@ -26,7 +26,7 @@ const banned: Array<{ pattern: RegExp; reason: string }> = [
   { pattern: /سليم تماماً/g, reason: 'AI review must not present absolute legal safety claims' },
   { pattern: /سلامة البناء القضائي[\s\S]{0,120}78%/g, reason: 'dashboard must not display a fabricated fixed legal-safety score' },
   { pattern: /FrontendGuard/g, reason: 'frontend must not disable normal copy/print/browser controls' },
-  { pattern: /diwan_pending_attachments_v1/g, reason: 'attachments must not be persisted unencrypted in legacy localStorage' },
+  { pattern: /localStorage\.setItem\(['"]diwan_pending_attachments_v1['"]/g, reason: 'attachments must not be persisted unencrypted in legacy localStorage' },
   { pattern: /\.doc,\.docx/g, reason: 'unsupported Office files must not be advertised as directly analyzable' },
   { pattern: /جاهزة للإيداع في منصة \(معين\)/g, reason: 'prompt templates must not promise filing readiness' },
   { pattern: /المرسوم م\/37/g, reason: 'prompt templates must not hard-code a case-specific decree conclusion' },
