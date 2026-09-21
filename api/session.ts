@@ -220,9 +220,10 @@ export async function readActiveSession(header?: string | string[]): Promise<Aut
     const account = await loadAccount(session.email);
     if (!account || account.disabledAt || account.id !== session.id) return null;
     return session;
-  } catch (error) {
-    if (isProductionRuntime()) throw error;
-    return session;
+  } catch {
+    // Fail closed if the account store cannot confirm an ordinary user session.
+    // Admin sessions are handled above and do not depend on the user-account store.
+    return isProductionRuntime() ? null : session;
   }
 }
 
