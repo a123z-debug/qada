@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
-import { readSession } from './session.ts';
+import { readActiveSession } from './session.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 
 type IncomingAttachment = {
@@ -78,7 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  const session = readSession(req.headers?.cookie);
+  const session = await readActiveSession(req.headers?.cookie);
   if (!session) {
     return res.status(401).json({ error: 'AUTH_REQUIRED' });
   }
