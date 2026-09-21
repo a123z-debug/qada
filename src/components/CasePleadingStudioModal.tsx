@@ -37,27 +37,9 @@ export function CasePleadingStudioModal({
   const [activeDocType, setActiveDocType] = useState<PleadingDocumentType>('صحيفة طعن بالنقض');
   const [copied, setCopied] = useState(false);
 
-  // Derive sanitized record: if user is not admin, NEVER leak admin national ID or name
-  const effectiveRecord = useMemo<JudgmentRecord>(() => {
-    if (currentUser?.role === 'admin') {
-      return record;
-    }
-    // If the record belongs to the admin, strictly mask it with citizen session or standard citizen details
-    if (record.nationalId === '3751') {
-      return {
-        ...record,
-        id: `sanitized-${currentUser?.id || 'citizen'}`,
-        personName: currentUser?.personName || 'صاحب الشأن (المراجع)',
-        nationalId: currentUser?.nationalId || '',
-        agencyName: 'الجهة الإدارية المدعى عليها',
-      };
-    }
-    return {
-      ...record,
-      personName: currentUser?.personName || record.personName,
-      nationalId: currentUser?.nationalId || record.nationalId,
-    };
-  }, [record, currentUser]);
+  // Record access is already scoped by the server repository. Do not rewrite
+  // parties or identifiers based on browser-side heuristics.
+  const effectiveRecord = useMemo<JudgmentRecord>(() => record, [record]);
 
   const [selectedStage, setSelectedStage] = useState<CaseStageLevel>(
     effectiveRecord.courtType === 'المحكمة الإدارية العليا'
