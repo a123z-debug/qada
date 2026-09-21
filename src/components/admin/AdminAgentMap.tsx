@@ -79,6 +79,31 @@ type RuntimeSourcePacket = {
   blockers: string[];
 };
 
+type PlatformHealth = {
+  ready?: boolean;
+  status?: 'ready' | 'degraded';
+  services?: {
+    authConfigured?: boolean;
+    dataConfigured?: boolean;
+    adminConfigured?: boolean;
+    aiConfigured?: boolean;
+    geminiConfigured?: boolean;
+    gatewayConfigured?: boolean;
+    redisConfigured?: boolean;
+    redisReachable?: boolean;
+  };
+  legalCorpus?: {
+    officialSystems?: number;
+    officialRegulations?: number;
+    officialAmendments?: number;
+  };
+  build?: {
+    commit?: string;
+    environment?: string;
+  };
+  checkedAt?: string;
+};
+
 type RuntimeSnapshot = {
   runId?: string;
   documentTitle?: string;
@@ -230,6 +255,8 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
   const [runtime, setRuntime] = useState<RuntimeSnapshot | null>(null);
   const [history, setHistory] = useState<RuntimeSnapshot[]>([]);
   const [historyError, setHistoryError] = useState('');
+  const [health, setHealth] = useState<PlatformHealth | null>(null);
+  const [healthError, setHealthError] = useState('');
 
   const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
 
@@ -262,6 +289,32 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadHealth = async () => {
+      try {
+        const response = await fetch('/api/health', { cache: 'no-store' });
+        const payload = await response.json().catch(() => ({}));
+        if (cancelled) return;
+        setHealth(payload as PlatformHealth);
+        setHealthError(response.ok ? '' : 'فحص الجاهزية أفاد بأن بعض الخدمات غير جاهزة.');
+      } catch (error) {
+        if (!cancelled) {
+          setHealth(null);
+          setHealthError(error instanceof Error ? error.message : 'تعذر فحص جاهزية المنصة.');
+        }
+      }
+    };
+
+    void loadHealth();
+    const timer = window.setInterval(() => void loadHealth(), 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
+
   const runtimeById = useMemo(() => {
     const map = new Map<string, RuntimeAgentRun>();
     for (const run of runtime?.agentRuns || []) map.set(run.id, run);
@@ -274,6 +327,25 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
     return map;
   }, [runtime]);
 
+  const infrastructureStatus = (node: AgentNode): AgentStatus => {
+    if (!health?.services) return node.status;
+    const services = health.services;
+
+    if (node.id === 'auth') {
+      return services.authConfigured && services.adminConfigured ? 'linked' : 'error';
+    }
+    if (['advisor', 'qada-core', 'document-reader'].includes(node.id)) {
+      return services.geminiConfigured ? 'linked' : services.aiConfigured ? 'warning' : 'error';
+    }
+    if (['cases', 'admin-entry'].includes(node.id)) {
+      return services.redisReachable && services.dataConfigured ? 'linked' : 'error';
+    }
+    if (['search', 'laws', 'references', 'official-source'].includes(node.id)) {
+      return (health.legalCorpus?.officialSystems || 0) > 0 ? node.status === 'planned' ? 'warning' : 'linked' : 'warning';
+    }
+    return node.status;
+  };
+
   const visibleIds = useMemo(() => {
     if (filter === 'all') return new Set(nodes.map((node) => node.id));
     if (filter === 'admin') return new Set(nodes.filter((node) => node.adminOnly).map((node) => node.id));
@@ -284,11 +356,12 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
   const counts = useMemo(() => {
     return {
       total: nodes.length,
-      linked: nodes.filter((node) => node.status === 'linked').length,
-      planned: nodes.filter((node) => node.status === 'planned').length,
+      linked: nodes.filter((node) => infrastructureStatus(node) === 'linked').length,
+      planned: nodes.filter((node) => infrastructureStatus(node) === 'planned').length,
       admin: nodes.filter((node) => node.adminOnly).length,
+      infrastructureErrors: nodes.filter((node) => infrastructureStatus(node) === 'error').length,
     };
-  }, []);
+  }, [health]);
 
   return (
     <section className="space-y-4" dir="rtl">
@@ -310,13 +383,32 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
               <SummaryCard label="إجمالي العقد" value={counts.total} />
               <SummaryCard label="متصل" value={counts.linked} tone="emerald" />
               <SummaryCard label="قيد الربط" value={counts.planned} tone="slate" />
-              <SummaryCard label="غرفة الأدمن" value={counts.admin} tone="violet" />
+              <SummaryCard label={counts.infrastructureErrors ? 'أخطاء بنية' : 'غرفة الأدمن'} value={counts.infrastructureErrors || counts.admin} tone={counts.infrastructureErrors ? 'slate' : 'violet'} />
             </div>
             {historyError && (
               <div className="mt-2 rounded-xl border border-amber-400/20 bg-amber-500/5 px-3 py-2 text-[10px] font-bold text-amber-200">
                 تعذر تحميل سجل التشغيل المركزي: {historyError}
               </div>
             )}
+            <div className={
+              'mt-2 rounded-xl border px-3 py-2 text-[10px] ' +
+              (health?.ready
+                ? 'border-emerald-400/20 bg-emerald-500/5 text-emerald-100/80'
+                : 'border-amber-400/20 bg-amber-500/5 text-amber-100/80')
+            }>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-black">{health?.ready ? 'البنية الخادمية جاهزة' : 'حالة البنية تحتاج انتباهاً'}</span>
+                {health?.build?.commit && <span className="font-mono text-[9px] text-slate-600">{health.build.commit.slice(0, 10)}</span>}
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[9px]">
+                <span>Auth: {health?.services?.authConfigured ? '✓' : '✕'}</span>
+                <span>Data: {health?.services?.dataConfigured ? '✓' : '✕'}</span>
+                <span>Gemini: {health?.services?.geminiConfigured ? '✓' : '✕'}</span>
+                <span>Redis: {health?.services?.redisReachable ? '✓' : '✕'}</span>
+                <span>أنظمة رسمية: {health?.legalCorpus?.officialSystems ?? 0}</span>
+              </div>
+              {healthError && <div className="mt-1 font-bold text-amber-200">{healthError}</div>}
+            </div>
             {runtime && (
               <div className="mt-2 rounded-xl border border-emerald-400/15 bg-emerald-500/5 px-3 py-2 text-[10px] text-slate-400">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -447,7 +539,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
                 const runtimeRun = runtimeById.get(node.id);
                 const effectiveStatus: AgentStatus = runtimeRun
                   ? (runtimeRun.status === 'success' ? 'completed' : runtimeRun.status === 'warning' ? 'warning' : 'error')
-                  : node.status;
+                  : infrastructureStatus(node);
                 const meta = statusMeta[effectiveStatus];
                 const visible = visibleIds.has(node.id);
                 const selectedNode = node.id === selectedId;
@@ -494,7 +586,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
               <span className="text-[10px] font-black text-slate-500">تفاصيل العقدة</span>
               <h3 className="mt-1 text-base font-black text-white">{selected.title}</h3>
             </div>
-            <span className={'h-3 w-3 rounded-full ' + statusMeta[runtimeById.get(selected.id) ? (runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : 'error') : selected.status].dot} />
+            <span className={'h-3 w-3 rounded-full ' + statusMeta[runtimeById.get(selected.id) ? (runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : 'error') : infrastructureStatus(selected)].dot} />
           </div>
 
           <p className="mt-3 text-xs leading-6 text-slate-400">{selected.detail}</p>
@@ -550,7 +642,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
           ) : null}
 
           <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-500/5 p-3 text-[11px] leading-5 text-amber-100/80">
-            الخريطة الآن تمثل الهيكل الحقيقي الذي سنبني عليه. حالة «متصل حالياً» تعني أن للمنصة مساراً قائماً يقابله، أما «قيد الربط» فلا يعني أن الوكيل يعمل فعلياً بعد.
+            الخريطة مرتبطة الآن بسجل التشغيل وفحص الجاهزية الخادمي. العقدة قد تتحول إلى تحذير أو خطأ إذا تعطل الذكاء أو Redis أو مفاتيح الحماية، ولا تُعرض حالة نجاح ثابتة عند فشل البنية.
           </div>
 
           {onOpenAnalysisRoom && (selected.adminOnly || selected.id === 'qada-core' || selected.id === 'judgments') && (
