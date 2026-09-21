@@ -204,7 +204,7 @@ export function AdministrativeWorkspace({
     let promptContent = '';
     if (currentService === 'administrative_claim') {
       promptContent = `صغ مسودة لائحة دعوى إدارية للمراجعة:
-المدعي: ${claimantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 الجهة المدعى عليها: ${defendantAgency}
 موضوع النزاع: ${disputedDecision}
 تاريخ التظلم أو المخاطبة إن وجد: ${grievanceDate || 'غير محدد'}
@@ -217,7 +217,7 @@ ${claimRequests}
 ${sharedRules}`;
     } else if (currentService === 'administrative_appeal') {
       promptContent = `صغ مسودة اعتراض أو استئناف إداري للمراجعة، وحدد أولاً ما يلزم التحقق منه من الحكم والتبليغ والميعاد وأسباب الاعتراض.
-المستأنف: ${claimantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 المستأنف ضدها: ${defendantAgency}
 موضوع النزاع: ${disputedDecision}
 الأسانيد المدخلة أو المستخرجة: ${legalBases}
@@ -228,7 +228,7 @@ ${uploadedFileText ? `المرفقات: ${uploadedFileText}` : ''}
 ${sharedRules}`;
     } else if (currentService === 'administrative_memo') {
       promptContent = `صغ مسودة مذكرة رد ومرافعة جوابية أمام المحكمة الإدارية، واعتمد فقط على الوقائع والمستندات والأسانيد التي يمكن التحقق منها.
-المدعي: ${claimantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 الجهة: ${defendantAgency}
 موضوع النزاع: ${disputedDecision}
 الأسانيد المدخلة أو المستخرجة: ${legalBases}
@@ -238,7 +238,7 @@ ${storyAddon}
 ${sharedRules}`;
     } else {
       promptContent = `صغ مسودة مذكرة إيداع ومراجعة للمرفقات في قضية إدارية، واربط كل ملاحظة بما يظهر فعلاً في المستند.
-صاحب الشأن: ${claimantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 الجهة: ${defendantAgency}
 المرفق: ${uploadedFileName || 'مرفقات القضية'}
 ${storyAddon}
