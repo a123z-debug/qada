@@ -124,6 +124,7 @@ interface SidebarProps {
   onOpenAssistant?: () => void;
   onOpenReports?: () => void;
   onOpenAdminMap?: () => void;
+  onOpenAdminAnalysis?: () => void;
 }
 
 export function Sidebar({
@@ -140,6 +141,7 @@ export function Sidebar({
   onOpenAssistant,
   onOpenReports,
   onOpenAdminMap,
+  onOpenAdminAnalysis,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
 
@@ -409,6 +411,23 @@ export function Sidebar({
                 <span>خريطة الوكلاء وغرفة العمليات</span>
               </span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-200 border border-violet-400/20">ADMIN</span>
+            </button>
+          )}
+
+          {userSession?.role === 'admin' && onOpenAdminAnalysis && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenAdminAnalysis();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className="min-h-12 w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-black text-amber-200 border border-amber-400/30 bg-amber-500/10 hover:bg-amber-500/15 hover:border-amber-300/50 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <GitCompare className="w-4 h-4 text-amber-300" />
+                <span>غرفة تحليل الأحكام والمذكرات</span>
+              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/20">ADMIN</span>
             </button>
           )}
         </div>
