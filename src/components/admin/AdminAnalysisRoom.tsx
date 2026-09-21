@@ -140,6 +140,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
   const [meta, setMeta] = useState<AnalysisMeta | null>(null);
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([]);
   const [sourcePackets, setSourcePackets] = useState<SourcePacket[]>([]);
+  const [historyWarning, setHistoryWarning] = useState('');
 
   const categories = useMemo(() => {
     const set = new Set((report?.issues || []).map((issue) => issue.category));
@@ -190,6 +191,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
     setAgentRuns([]);
     setSourcePackets([]);
     setActiveCategory('الكل');
+    setHistoryWarning('');
 
     try {
       const response = await fetch('/api/admin-analysis', {
@@ -221,23 +223,28 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
       setMeta(nextMeta);
       setAgentRuns(nextAgentRuns);
       setSourcePackets(nextSourcePackets);
+      const snapshot = {
+        runId: `run-${Date.now()}`,
+        documentTitle: documentTitle.trim() || nextReport.documentType || 'تحليل قضائي',
+        analyzedAt: nextMeta?.analyzedAt || Date.now(),
+        agentRuns: nextAgentRuns,
+        sourcePackets: nextSourcePackets,
+        meta: nextMeta,
+      };
       try {
-        const snapshot = {
-          runId: `run-${Date.now()}`,
-          documentTitle: documentTitle.trim() || nextReport.documentType || 'تحليل قضائي',
-          analyzedAt: nextMeta?.analyzedAt || new Date().toISOString(),
-          agentRuns: nextAgentRuns,
-          sourcePackets: nextSourcePackets,
-          meta: nextMeta,
-        };
-        localStorage.setItem('qada_admin_agent_runtime_v2', JSON.stringify(snapshot));
-
-        const historyKey = 'qada_admin_agent_run_history_v1';
-        const rawHistory = localStorage.getItem(historyKey);
-        const history = rawHistory ? JSON.parse(rawHistory) : [];
-        const safeHistory = Array.isArray(history) ? history : [];
-        localStorage.setItem(historyKey, JSON.stringify([snapshot, ...safeHistory].slice(0, 20)));
-      } catch {}
+        const historyResponse = await fetch('/api/admin-runs', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ snapshot }),
+        });
+        if (!historyResponse.ok) {
+          const historyPayload = await historyResponse.json().catch(() => ({}));
+          throw new Error(historyPayload?.error || 'تعذر حفظ أثر التشغيل.');
+        }
+      } catch (historyError) {
+        setHistoryWarning(historyError instanceof Error ? historyError.message : 'تعذر حفظ أثر التشغيل.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر إكمال التحليل.');
     } finally {
@@ -362,6 +369,12 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
             {error && (
               <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-3 text-xs font-bold text-rose-200">
                 {error}
+              </div>
+            )}
+
+            {historyWarning && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-3 text-xs font-bold text-amber-200">
+                تم التحليل بنجاح، لكن تعذر حفظ سجل التشغيل المركزي: {historyWarning}
               </div>
             )}
 
