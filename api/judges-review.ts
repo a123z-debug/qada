@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
+import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
 
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
@@ -114,6 +115,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });
     const report = JSON.parse(match[0]);
+    const revisedDocument = typeof report?.revisedDocument === 'string' ? report.revisedDocument : '';
+    const citationGuard = revisedDocument
+      ? guardIntroducedLegalCitations(body.text, revisedDocument, legalReferenceContext)
+      : { introducedMarkers: [], unsupportedMarkers: [], blocked: false };
+
+    if (citationGuard.blocked) {
+      report.revisedDocument = body.text;
+      report.overallStatus = 'معيب بحاجة لتصحيح';
+      report.changeLog = Array.isArray(report.changeLog) ? report.changeLog : [];
+      report.changeLog.push('أوقفت بوابة التحقق تطبيق الصياغة المنقحة لأنها أدخلت إحالات قانونية جديدة غير مثبتة في حزمة المصادر الرسمية.');
+      report.synthesisAdvice = [
+        String(report.synthesisAdvice || ''),
+        'تمت إعادة revisedDocument إلى النص الأصلي بسبب أسانيد قانونية جديدة غير متحققة. راجع المصادر الرسمية ثم أعد الفحص.',
+      ].filter(Boolean).join('\n');
+    }
+
     return res.status(200).json({
       report,
       sourceAudit: {
@@ -122,6 +139,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         blockers: sourceBundle.verification.blockers,
         literalQuotationReady: sourceBundle.verification.literalQuotationReady,
         precedentCorpusReady: sourceBundle.verification.precedentCorpusReady,
+        introducedMarkers: citationGuard.introducedMarkers,
+        unsupportedMarkers: citationGuard.unsupportedMarkers,
+        blockedRevision: citationGuard.blocked,
       },
       sourcePackets: sourceBundle.packets,
     });
