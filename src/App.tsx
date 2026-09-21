@@ -539,10 +539,14 @@ export default function App() {
     if (!session) return;
 
     const previous = judgmentRecords;
+    const target = judgmentRecords.find((record) => record.id === recordId);
+    const ownerQuery = session.role === 'admin' && target?.storageOwnerId
+      ? `&ownerId=${encodeURIComponent(target.storageOwnerId)}`
+      : '';
     setJudgmentRecords((prev) => prev.filter((record) => record.id !== recordId));
     setCaseStoreError('');
 
-    void fetch(`/api/cases?id=${encodeURIComponent(recordId)}`, {
+    void fetch(`/api/cases?id=${encodeURIComponent(recordId)}${ownerQuery}`, {
       method: 'DELETE',
       credentials: 'same-origin',
     })
