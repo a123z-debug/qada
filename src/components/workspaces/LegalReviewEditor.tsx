@@ -29,7 +29,7 @@ import {
 import { CourtJurisdiction } from '../layout/Sidebar';
 import { printLegalMemo } from '../../utils/printMemo';
 import { JudgesCassationReviewPanel } from '../JudgesCassationReviewPanel';
-import { DetailedJudgesReviewReport } from '../../types';
+import { Attachment, DetailedJudgesReviewReport } from '../../types';
 
 interface LegalReviewEditorProps {
   initialContent: string;
@@ -41,6 +41,7 @@ interface LegalReviewEditorProps {
   uploadedFileName?: string;
   uploadedFileText?: string;
   attachmentsText?: string;
+  uploadedAttachments?: Attachment[];
   onBackToEdit: () => void;
   onContentChange?: (updatedContent: string) => void;
 }
@@ -135,6 +136,7 @@ export function LegalReviewEditor({
   uploadedFileName,
   uploadedFileText,
   attachmentsText,
+  uploadedAttachments = [],
   onBackToEdit,
   onContentChange,
 }: LegalReviewEditorProps) {
@@ -191,6 +193,7 @@ export function LegalReviewEditor({
           clientName: clientName || 'صاحب الشأن',
           attachmentsText: attachmentsText || uploadedFileText || '',
           uploadedFileName: uploadedFileName || '',
+          attachments: uploadedAttachments,
         }),
       });
 
