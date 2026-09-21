@@ -12,6 +12,7 @@
     "test:legal-sources": "tsx scripts/smoke-legal-source-agents.ts",
     "test:legal-guard": "tsx scripts/smoke-legal-citation-guard.ts",
     "test:legal-ui-safety": "tsx scripts/smoke-legal-ui-safety.ts",
+    "test:api-auth": "tsx scripts/smoke-api-auth.ts",
     "test:auth-consistency": "tsx scripts/smoke-auth-consistency.ts"
   },
   "dependencies": {
