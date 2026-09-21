@@ -3,33 +3,44 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Menu, Scale, ShieldCheck, LogOut, ArrowRight, FileText, Library, Bot, FileCheck, Sparkles, ArrowLeft, BookOpenCheck, Workflow, LockKeyhole, UploadCloud, ScanSearch, ChevronLeft, Home, FolderOpen } from 'lucide-react';
 import { UserSession, JudgmentRecord, Attachment } from './types';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar, CourtJurisdiction } from './components/layout/Sidebar';
-import { WelcomeScreen } from './components/workspaces/WelcomeScreen';
-import { AdministrativeWorkspace } from './components/workspaces/AdministrativeWorkspace';
-import { GeneralWorkspace } from './components/workspaces/GeneralWorkspace';
-import { CriminalWorkspace } from './components/workspaces/CriminalWorkspace';
-import { FloatingChatBot } from './components/chat/FloatingChatBot';
-import { Article8CalculatorModal } from './components/Article8CalculatorModal';
-import { CaseDossierModal } from './components/CaseDossierModal';
-import { JudgmentRepositoryModal } from './components/JudgmentRepositoryModal';
-import { LegalReferencesModal } from './components/LegalReferencesModal';
-import { PdfUploadModal } from './components/PdfUploadModal';
-import { CasePleadingStudioModal } from './components/CasePleadingStudioModal';
-import { AdminAgentMap } from './components/admin/AdminAgentMap';
-import { AdminAnalysisRoom } from './components/admin/AdminAnalysisRoom';
-import { AdminUserManagement } from './components/admin/AdminUserManagement';
-import { AdminAuditLog } from './components/admin/AdminAuditLog';
-import { AccountSecurityModal } from './components/AccountSecurityModal';
+const WelcomeScreen = React.lazy(() => import('./components/workspaces/WelcomeScreen').then((module) => ({ default: module.WelcomeScreen })));
+const AdministrativeWorkspace = React.lazy(() => import('./components/workspaces/AdministrativeWorkspace').then((module) => ({ default: module.AdministrativeWorkspace })));
+const GeneralWorkspace = React.lazy(() => import('./components/workspaces/GeneralWorkspace').then((module) => ({ default: module.GeneralWorkspace })));
+const CriminalWorkspace = React.lazy(() => import('./components/workspaces/CriminalWorkspace').then((module) => ({ default: module.CriminalWorkspace })));
+const FloatingChatBot = React.lazy(() => import('./components/chat/FloatingChatBot').then((module) => ({ default: module.FloatingChatBot })));
+const Article8CalculatorModal = React.lazy(() => import('./components/Article8CalculatorModal').then((module) => ({ default: module.Article8CalculatorModal })));
+const CaseDossierModal = React.lazy(() => import('./components/CaseDossierModal').then((module) => ({ default: module.CaseDossierModal })));
+const JudgmentRepositoryModal = React.lazy(() => import('./components/JudgmentRepositoryModal').then((module) => ({ default: module.JudgmentRepositoryModal })));
+const LegalReferencesModal = React.lazy(() => import('./components/LegalReferencesModal').then((module) => ({ default: module.LegalReferencesModal })));
+const PdfUploadModal = React.lazy(() => import('./components/PdfUploadModal').then((module) => ({ default: module.PdfUploadModal })));
+const CasePleadingStudioModal = React.lazy(() => import('./components/CasePleadingStudioModal').then((module) => ({ default: module.CasePleadingStudioModal })));
+const AdminAgentMap = React.lazy(() => import('./components/admin/AdminAgentMap').then((module) => ({ default: module.AdminAgentMap })));
+const AdminAnalysisRoom = React.lazy(() => import('./components/admin/AdminAnalysisRoom').then((module) => ({ default: module.AdminAnalysisRoom })));
+const AdminUserManagement = React.lazy(() => import('./components/admin/AdminUserManagement').then((module) => ({ default: module.AdminUserManagement })));
+const AdminAuditLog = React.lazy(() => import('./components/admin/AdminAuditLog').then((module) => ({ default: module.AdminAuditLog })));
+const AccountSecurityModal = React.lazy(() => import('./components/AccountSecurityModal').then((module) => ({ default: module.AccountSecurityModal })));
 type LaunchIntent =
   | { kind: 'dashboard' }
   | { kind: 'service'; court: CourtJurisdiction; service: string }
   | { kind: 'repository' }
   | { kind: 'dossier' }
   | { kind: 'assistant'; prefill?: string };
+
+function DeferredSurfaceFallback() {
+  return (
+    <div className="min-h-[220px] w-full grid place-items-center rounded-2xl border border-cyan-400/10 bg-slate-950/60" dir="rtl">
+      <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
+        <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-cyan-400" />
+        جاري تحميل الوحدة المطلوبة...
+      </div>
+    </div>
+  );
+}
 
 // ==========================================
 // 1. مكون العلامة المائية الأمنية (Dynamic Watermark)
@@ -595,10 +606,11 @@ export default function App() {
 
   // 3. مساحة العمل الأساسية المشفرة
   return (
-    <div
-      className="app-shell flex h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden font-sans"
-      dir="rtl"
-    >
+    <Suspense fallback={<DeferredSurfaceFallback />}>
+      <div
+        className="app-shell flex h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden font-sans"
+        dir="rtl"
+      >
       {/* طبقة الأمان (العلامة المائية) */}
       <SecurityWatermark user={session} />
 
@@ -883,6 +895,7 @@ export default function App() {
           requestAssistant(prompt || 'حلل المرفقات المضافة إلى المحادثة.', attachments);
         }}
       />
-    </div>
+      </div>
+    </Suspense>
   );
 }
