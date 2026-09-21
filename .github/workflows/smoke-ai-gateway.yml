@@ -14,7 +14,7 @@ jobs:
           code=$(curl -sS -o /tmp/ai.txt -w "%{http_code}" \
             -H "Content-Type: application/json" \
             -d '{"message":"اكتب كلمة تم فقط"}' \
-            https://promptmaster-nine.vercel.app/api/chat)
+            https://promptmaster-nine.vercel.app/api/ai)
           echo "HTTP=$code"
           head -c 1500 /tmp/ai.txt || true
           echo
