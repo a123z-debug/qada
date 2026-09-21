@@ -461,7 +461,7 @@ export function LegalReviewEditor({
               }`}
             >
               <Gavel className="w-3.5 h-3.5 text-amber-400" />
-              <span>هيئة قضاة النقض والاستئناف ⚖️</span>
+              <span>هيئة المراجعة القانونية الآلية ⚖️</span>
               {judgesReport && (
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               )}
@@ -525,7 +525,7 @@ export function LegalReviewEditor({
         </div>
       </div>
 
-      {/* 3. Judicial Oversight Quick Banner (قضاة النقض والاستئناف والمرفقات) */}
+      {/* 3. Legal AI review banner */}
       <div className="p-4 rounded-3xl bg-neutral-900 border border-amber-500/30 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
@@ -534,16 +534,16 @@ export function LegalReviewEditor({
           <div>
             <div className="flex items-center gap-2">
               <h4 className="text-xs sm:text-sm font-bold text-neutral-100">
-                هيئة فحص وتعديل قضاة النقض والاستئناف والمرفقات
+                هيئة المراجعة القانونية الآلية متعددة المسارات
               </h4>
               {isAllApproved && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  معتمد بعد التظليل
+                  اكتملت المراجعة اليدوية
                 </span>
               )}
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">
-              فحص أخطاء الطعن بالنقض، عيوب عريضة الدعوى، ونواقص المرفقات مع اقتراح التعديلات اللازمة والصياغة الجاهزة للإيداع.
+              تحليل أخطاء الاعتراض والدعوى ونواقص المرفقات، مع اقتراح تعديلات ومسودة منقحة مرتبطة بحالة التحقق المرجعي.
             </p>
           </div>
         </div>
@@ -564,10 +564,10 @@ export function LegalReviewEditor({
             <Scale className="w-4 h-4" />
             <span>
               {isLoadingJudges
-                ? 'جارٍ انعقاد الهيئة...'
+                ? 'جارٍ تشغيل المراجعين...'
                 : judgesReport
-                ? 'معاينة تقرير وتعديلات القضاة ⚖️'
-                : 'فحص وتعديل القضاة للمذكرة والمرفقات ⚖️'}
+                ? 'معاينة تقرير المراجعة الآلية ⚖️'
+                : 'تشغيل المراجعة الآلية للمذكرة والمرفقات ⚖️'}
             </span>
           </button>
         </div>
@@ -853,7 +853,7 @@ export function LegalReviewEditor({
                       اكتمل اعتماد التظليل الذكي ومطابقة البيانات الجوهرية!
                     </span>
                     <span className="text-neutral-300 text-[11px]">
-                      اعرض المذكرة الآن على هيئة قضاة النقض والاستئناف لفحص وتعديل أخطاء الطعن والمرفقات قبل التصدير.
+                      شغّل هيئة المراجعة الآلية لفحص الاعتراض والدعوى والمرفقات، ثم راجع المصادر الرسمية قبل التصدير.
                     </span>
                   </div>
                 </div>
@@ -868,8 +868,8 @@ export function LegalReviewEditor({
                     {isLoadingJudges
                       ? 'جارٍ الفحص...'
                       : judgesReport
-                      ? 'معاينة فحص وتعديل القضاة ⚖️'
-                      : 'فحص وتعديل هيئة القضاة ⚖️'}
+                      ? 'معاينة تقرير المراجعة الآلية ⚖️'
+                      : 'تشغيل هيئة المراجعة الآلية ⚖️'}
                   </span>
                 </button>
               </div>
