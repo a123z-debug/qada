@@ -38,6 +38,7 @@ interface JudgesSourceAudit {
 interface JudgesCassationReviewPanelProps {
   report: DetailedJudgesReviewReport | null;
   sourceAudit?: JudgesSourceAudit | null;
+  auditError?: string;
   isLoading: boolean;
   onRunAudit: () => void;
   onApplyFullRevision: (revisedText: string) => void;
@@ -51,6 +52,7 @@ interface JudgesCassationReviewPanelProps {
 export function JudgesCassationReviewPanel({
   report,
   sourceAudit,
+  auditError,
   isLoading,
   onRunAudit,
   onApplyFullRevision,
@@ -67,10 +69,15 @@ export function JudgesCassationReviewPanel({
 
   const reviewFailed = report?.overallStatus === 'تعذر إكمال الفحص الآلي';
   const revisionBlocked = Boolean(sourceAudit?.blockedRevision);
-  const isSoundDocument =
-    !reviewFailed &&
-    ((report?.cassationErrors?.items?.length === 0 && report?.claimErrors?.items?.length === 0) ||
-      report?.overallStatus === 'جاهز للإيداع');
+  const noDetectedIssues = Boolean(
+    report
+    && !reviewFailed
+    && !revisionBlocked
+    && report.cassationErrors.items.length === 0
+    && report.claimErrors.items.length === 0
+    && report.attachmentErrors.items.length === 0
+    && report.attachmentErrors.missingRequiredDocs.length === 0
+  );
 
   // Safeguard: Always use the complete text; never allow truncated or reduced versions
   const effectiveText =
@@ -154,22 +161,35 @@ export function JudgesCassationReviewPanel({
 
   if (!report) {
     return (
-      <div className="p-6 rounded-3xl bg-neutral-900 border border-neutral-800 text-center space-y-4">
+      <div className={
+        'p-6 rounded-3xl bg-neutral-900 text-center space-y-4 border ' +
+        (auditError ? 'border-rose-500/35' : 'border-neutral-800')
+      }>
         <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
           <Scale className="w-6 h-6" />
         </div>
         <div>
-          <h4 className="text-sm font-bold text-neutral-100">هيئة المراجعة القانونية الآلية</h4>
-          <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1 leading-relaxed">
-            بعد مراجعة البيانات، شغّل هيئة تحليلية متعددة الأدوار لفحص أوجه الاعتراض والدعوى والمرفقات. هذه مراجعة آلية وليست رأياً صادراً من محكمة أو قاضٍ.
+          <h4 className="text-sm font-bold text-neutral-100">
+            {auditError ? 'تعذر إكمال المراجعة الآلية' : 'هيئة المراجعة القانونية الآلية'}
+          </h4>
+          <p className={
+            'text-xs max-w-md mx-auto mt-1 leading-relaxed ' +
+            (auditError ? 'text-rose-200' : 'text-neutral-400')
+          }>
+            {auditError || 'بعد مراجعة البيانات، شغّل هيئة تحليلية متعددة الأدوار لفحص أوجه الاعتراض والدعوى والمرفقات. هذه مراجعة آلية وليست رأياً صادراً من محكمة أو قاضٍ.'}
           </p>
+          {auditError && (
+            <p className="text-[11px] text-neutral-500">
+              لم يُحتفظ بتقرير أقدم على أنه نتيجة المحاولة الحالية.
+            </p>
+          )}
         </div>
         <button
           onClick={onRunAudit}
           className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-bold text-xs flex items-center gap-2 mx-auto shadow-md transition-all cursor-pointer"
         >
           <Gavel className="w-4 h-4" />
-          <span>بدء المراجعة القانونية الآلية</span>
+          <span>{auditError ? 'إعادة محاولة المراجعة' : 'بدء المراجعة القانونية الآلية'}</span>
         </button>
       </div>
     );
@@ -329,7 +349,7 @@ export function JudgesCassationReviewPanel({
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>
-              {isSoundDocument
+              {noDetectedIssues
                 ? 'المسودة المنقحة — راجعها قبل الطباعة'
                 : 'اقتراح التعديلات وصياغة مسودة للمراجعة'}
             </span>
@@ -698,25 +718,25 @@ export function JudgesCassationReviewPanel({
             {/* Action Bar */}
             <div
               className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                isSoundDocument
+                noDetectedIssues
                   ? 'bg-emerald-950/25 border-emerald-500/40 text-emerald-200'
                   : 'bg-emerald-500/10 border-emerald-500/30 text-neutral-200'
               }`}
             >
               <div className="flex items-start sm:items-center gap-2.5 text-xs">
-                {isSoundDocument ? (
+                {noDetectedIssues ? (
                   <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
                 ) : (
                   <Sparkles className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
                 )}
                 <div>
                   <span className="font-bold text-emerald-300 block text-sm">
-                    {isSoundDocument
+                    {noDetectedIssues
                       ? 'اللائحة صحيحة ومستوفية للأصول القضائية 100% بكافة تفاصيلها وأسانيدها'
                       : 'تم تنقيح وتعديل المذكرة وفق مبادئ الاستئناف والنقض ونظام الإثبات'}
                   </span>
                   <span className="text-[11px] text-neutral-300">
-                    {isSoundDocument
+                    {noDetectedIssues
                       ? 'تم اعتماد النص الكامل بكافة تواريخه، أرقام صكوكه، نصوص المراسيم الملكية (م/37)، وقائمة المرفقات الخمسة دون أي حذف أو تقليل للمعلومات.'
                       : 'تم تدقيق العوار القضائي مع الحفاظ التام على كامل بيانات القضية.'}
                   </span>
