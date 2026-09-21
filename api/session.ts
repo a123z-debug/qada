@@ -58,9 +58,25 @@ function safeEqual(a: string, b: string) {
 }
 
 function rootSecret() {
-  const raw = process.env.AUTH_SECRET?.trim() || process.env.GEMINI_API_KEY?.trim() || '';
-  if (!raw) throw new Error('AUTH_SECRET_MISSING');
-  return createHash('sha256').update(`qada-session-v4:${raw}`).digest();
+  const explicit = process.env.AUTH_SECRET?.trim() || process.env.GEMINI_API_KEY?.trim();
+  if (explicit) {
+    return createHash('sha256').update(`qada-session-v4:${explicit}`).digest();
+  }
+
+  // Vercel-safe fallback: stable for the lifetime of one deployment.
+  // Sessions are intentionally invalidated by the next deployment.
+  const deploymentScope = [
+    process.env.VERCEL_PROJECT_ID,
+    process.env.VERCEL_DEPLOYMENT_ID,
+  ].filter(Boolean).join(':');
+
+  if (deploymentScope) {
+    return createHash('sha256')
+      .update(`qada-session-v4:vercel:${deploymentScope}:${ADMIN_CREDENTIAL_HASH}`)
+      .digest();
+  }
+
+  throw new Error('AUTH_SECRET_MISSING');
 }
 
 function keyFor(purpose: string) {
@@ -115,7 +131,7 @@ function createSessionToken(session: Session) {
   return encryptJson(payload, 'session', 'v4');
 }
 
-function readSession(header?: string | string[]): Session | null {
+export function readSession(header?: string | string[]): Session | null {
   const token = cookies(header)[SESSION_COOKIE];
   if (!token) return null;
   const payload = decryptJson<SessionPayload>(token, 'session', 'v4');
@@ -235,6 +251,15 @@ export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'GET') {
+    if (String(req.query?.health || '') === '1') {
+      try {
+        rootSecret();
+        return res.status(200).json({ ok: true, authConfigured: true });
+      } catch {
+        return res.status(503).json({ ok: false, authConfigured: false });
+      }
+    }
+
     const session = readSession(req.headers?.cookie);
     if (!session) return res.status(401).json({ authenticated: false });
     return res.status(200).json({ authenticated: true, session });
