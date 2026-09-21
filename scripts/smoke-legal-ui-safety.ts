@@ -13,6 +13,7 @@ const files = [
   'src/components/workspaces/CriminalWorkspace.tsx',
   'src/components/workspaces/GeneralWorkspace.tsx',
   'src/components/workspaces/LegalReviewEditor.tsx',
+  'src/components/LegalReferencesModal.tsx',
 ];
 
 const banned: Array<{ pattern: RegExp; reason: string }> = [
@@ -45,6 +46,17 @@ for (const file of files) {
     if (matches?.length) {
       violations.push(`${file}: ${rule.reason} (${matches.length})`);
     }
+  }
+}
+
+const referencesModal = fs.readFileSync('src/components/LegalReferencesModal.tsx', 'utf8');
+const legacySearchBlock = referencesModal.slice(
+  referencesModal.indexOf('const systems = useMemo'),
+  referencesModal.indexOf('const officialReferences = useMemo')
+);
+for (const field of ['system.lawText', 'system.executiveText', 'system.amendmentsText', 'system.judicialText']) {
+  if (legacySearchBlock.includes(field)) {
+    violations.push('src/components/LegalReferencesModal.tsx: unverified legacy prose influences client search via ' + field);
   }
 }
 
