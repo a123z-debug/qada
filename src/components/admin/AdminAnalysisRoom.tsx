@@ -52,7 +52,7 @@ type UploadedAttachment = {
 type AgentRun = {
   id: string;
   label: string;
-  status: 'success' | 'error';
+  status: 'success' | 'warning' | 'error';
   durationMs: number;
   model?: string;
   summary: string;
@@ -62,7 +62,11 @@ type AnalysisMeta = {
   analyzedAt?: string;
   officialContextAvailable?: boolean;
   completedAgents?: number;
+  warningAgents?: number;
   failedAgents?: number;
+  officialSources?: number;
+  verifiedArticles?: number;
+  sourceBlockers?: number;
   architecture?: string;
 };
 
@@ -383,11 +387,17 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                   <div className="mt-3 flex flex-wrap gap-2 text-[9px] text-slate-600">
                     <span>المعمارية: {meta.architecture || 'تحليل متعدد المراحل'}</span>
                     <span>•</span>
-                    <span>الوكلاء المكتملون: {meta.completedAgents ?? agentRuns.filter((run) => run.status === 'success').length}</span>
+                    <span>المكتملون: {meta.completedAgents ?? agentRuns.filter((run) => run.status === 'success').length}</span>
+                    <span>•</span>
+                    <span>تحذيرات: {meta.warningAgents ?? agentRuns.filter((run) => run.status === 'warning').length}</span>
                     <span>•</span>
                     <span>المتعثرون: {meta.failedAgents ?? agentRuns.filter((run) => run.status === 'error').length}</span>
                     <span>•</span>
-                    <span>سياق رسمي: {meta.officialContextAvailable ? 'متاح' : 'غير مكتمل'}</span>
+                    <span>مصادر رسمية: {meta.officialSources ?? 0}</span>
+                    <span>•</span>
+                    <span>مواد مفهرسة: {meta.verifiedArticles ?? 0}</span>
+                    <span>•</span>
+                    <span>قيود تحقق: {meta.sourceBlockers ?? 0}</span>
                     {meta.analyzedAt && <><span>•</span><span>{new Date(meta.analyzedAt).toLocaleString('ar-SA')}</span></>}
                   </div>
                 )}
@@ -414,9 +424,11 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                             'rounded-full border px-2 py-1 text-[9px] font-black ' +
                             (run.status === 'success'
                               ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
-                              : 'border-rose-400/25 bg-rose-500/10 text-rose-200')
+                              : run.status === 'warning'
+                                ? 'border-amber-400/25 bg-amber-500/10 text-amber-200'
+                                : 'border-rose-400/25 bg-rose-500/10 text-rose-200')
                           }>
-                            {run.status === 'success' ? 'مكتمل' : 'تعثر'}
+                            {run.status === 'success' ? 'مكتمل' : run.status === 'warning' ? 'تحقق مطلوب' : 'تعثر'}
                           </span>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2 text-[9px] text-slate-500">
