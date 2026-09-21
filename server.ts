@@ -10,6 +10,7 @@ import convertStoryHandler from './api/convert-story';
 import legalSourceSearchHandler from './api/legal-source-search';
 import adminAnalysisHandler from './api/admin-analysis';
 import judgesReviewHandler from './api/judges-review';
+import casesHandler from './api/cases';
 
 dotenv.config();
 
@@ -60,6 +61,10 @@ async function startServer() {
 
   app.post('/api/judges-review', (req, res) => {
     void judgesReviewHandler(req as any, res as any);
+  });
+
+  app.all('/api/cases', (req, res) => {
+    void casesHandler(req as any, res as any);
   });
 
   if (process.env.NODE_ENV !== 'production') {
