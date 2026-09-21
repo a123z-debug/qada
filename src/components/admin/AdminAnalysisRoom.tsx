@@ -49,6 +49,23 @@ type UploadedAttachment = {
   data: string;
 };
 
+type AgentRun = {
+  id: string;
+  label: string;
+  status: 'success' | 'error';
+  durationMs: number;
+  model?: string;
+  summary: string;
+};
+
+type AnalysisMeta = {
+  analyzedAt?: string;
+  officialContextAvailable?: boolean;
+  completedAgents?: number;
+  failedAgents?: number;
+  architecture?: string;
+};
+
 const severityOrder: Record<string, number> = {
   'حرج': 0,
   'عالٍ': 1,
@@ -91,7 +108,8 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
   const [error, setError] = useState('');
   const [report, setReport] = useState<AdminAnalysisReport | null>(null);
   const [activeCategory, setActiveCategory] = useState('الكل');
-  const [meta, setMeta] = useState<{ model?: string; analyzedAt?: string; officialContextAvailable?: boolean } | null>(null);
+  const [meta, setMeta] = useState<AnalysisMeta | null>(null);
+  const [agentRuns, setAgentRuns] = useState<AgentRun[]>([]);
 
   const categories = useMemo(() => {
     const set = new Set((report?.issues || []).map((issue) => issue.category));
@@ -139,6 +157,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
     setError('');
     setReport(null);
     setMeta(null);
+    setAgentRuns([]);
     setActiveCategory('الكل');
 
     try {
@@ -163,8 +182,20 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
           : 'تعذر إكمال التحليل.');
       }
 
-      setReport(payload.report as AdminAnalysisReport);
-      setMeta(payload.meta || null);
+      const nextReport = payload.report as AdminAnalysisReport;
+      const nextMeta = (payload.meta || null) as AnalysisMeta | null;
+      const nextAgentRuns = Array.isArray(payload.agentRuns) ? payload.agentRuns as AgentRun[] : [];
+      setReport(nextReport);
+      setMeta(nextMeta);
+      setAgentRuns(nextAgentRuns);
+      try {
+        localStorage.setItem('qada_admin_agent_runtime_v2', JSON.stringify({
+          documentTitle: documentTitle.trim() || nextReport.documentType || 'تحليل قضائي',
+          analyzedAt: nextMeta?.analyzedAt || new Date().toISOString(),
+          agentRuns: nextAgentRuns,
+          meta: nextMeta,
+        }));
+      } catch {}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر إكمال التحليل.');
     } finally {
@@ -350,13 +381,53 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                 <p className="mt-2 whitespace-pre-wrap text-xs sm:text-sm leading-7 text-slate-300">{report.executiveSummary || 'لا يوجد ملخص.'}</p>
                 {meta && (
                   <div className="mt-3 flex flex-wrap gap-2 text-[9px] text-slate-600">
-                    <span>النموذج: {meta.model || 'غير محدد'}</span>
+                    <span>المعمارية: {meta.architecture || 'تحليل متعدد المراحل'}</span>
+                    <span>•</span>
+                    <span>الوكلاء المكتملون: {meta.completedAgents ?? agentRuns.filter((run) => run.status === 'success').length}</span>
+                    <span>•</span>
+                    <span>المتعثرون: {meta.failedAgents ?? agentRuns.filter((run) => run.status === 'error').length}</span>
                     <span>•</span>
                     <span>سياق رسمي: {meta.officialContextAvailable ? 'متاح' : 'غير مكتمل'}</span>
                     {meta.analyzedAt && <><span>•</span><span>{new Date(meta.analyzedAt).toLocaleString('ar-SA')}</span></>}
                   </div>
                 )}
               </div>
+
+              {agentRuns.length > 0 && (
+                <div className="rounded-2xl border border-violet-400/15 bg-violet-500/5 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs font-black text-violet-200">
+                      <Sparkles className="h-4 w-4" />
+                      الوكلاء الذين نفذوا هذه العملية فعلياً
+                    </div>
+                    <span className="text-[9px] text-slate-600">{agentRuns.length} وكلاء</span>
+                  </div>
+                  <div className="mt-3 grid md:grid-cols-2 gap-2">
+                    {agentRuns.map((run) => (
+                      <div key={run.id} className="rounded-xl border border-slate-800 bg-slate-950/55 p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="truncate text-[11px] font-black text-slate-200">{run.label}</div>
+                            <div className="mt-1 font-mono text-[9px] text-slate-600">{run.id}</div>
+                          </div>
+                          <span className={
+                            'rounded-full border px-2 py-1 text-[9px] font-black ' +
+                            (run.status === 'success'
+                              ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
+                              : 'border-rose-400/25 bg-rose-500/10 text-rose-200')
+                          }>
+                            {run.status === 'success' ? 'مكتمل' : 'تعثر'}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-[9px] text-slate-500">
+                          <span>{(run.durationMs / 1000).toFixed(1)}ث</span>
+                          {run.model && <><span>•</span><span>{run.model}</span></>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-1.5">
                 {categories.map((category) => (
