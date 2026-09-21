@@ -724,6 +724,37 @@ export default function App() {
                 setIsAdminMapOpen(false);
                 setIsAdminAnalysisOpen(true);
               }}
+              onNavigateNode={(nodeId) => {
+                if (nodeId === 'auth' || nodeId === 'settings') {
+                  setIsAccountSecurityOpen(true);
+                  return;
+                }
+                if (nodeId === 'search') {
+                  requestAssistant('ابحث لي في الأنظمة والمراجع الرسمية ذات الصلة، وميّز بوضوح بين المتحقق وما يحتاج مراجعة: ');
+                  return;
+                }
+                if (nodeId === 'laws' || nodeId === 'references') {
+                  setIsReferencesOpen(true);
+                  return;
+                }
+                if (nodeId === 'judgments') {
+                  setIsRepositoryOpen(true);
+                  return;
+                }
+                if (nodeId === 'cases' || nodeId === 'final-output') {
+                  setIsDossierOpen(true);
+                  return;
+                }
+                if (nodeId === 'advisor') {
+                  requestAssistant('');
+                  return;
+                }
+                if (nodeId === 'drafting' || nodeId === 'editor-tool') {
+                  setIsAdminMapOpen(false);
+                  setActiveCourt('administrative');
+                  setActiveService('administrative_claim');
+                }
+              }}
             />
           )}
 
