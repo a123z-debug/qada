@@ -2,33 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { readSession } from './session.ts';
+import { enforceRateLimit } from './_rateLimit.ts';
 
 type Court = 'administrative' | 'general' | 'criminal';
-type RateEntry = { count: number; resetAt: number };
-const rateStore = new Map<string, RateEntry>();
-const RATE_WINDOW_MS = 10 * 60 * 1000;
-const RATE_MAX = 20;
-
-function clientId(req: VercelRequest): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded || req.socket?.remoteAddress || 'anonymous';
-  return String(raw).split(',')[0].trim().slice(0, 120);
-}
-
-function allowRequest(key: string): { allowed: boolean; retryAfter: number } {
-  const now = Date.now();
-  const current = rateStore.get(key);
-  if (!current || current.resetAt <= now) {
-    rateStore.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return { allowed: true, retryAfter: 0 };
-  }
-  if (current.count >= RATE_MAX) {
-    return { allowed: false, retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
-  }
-  current.count += 1;
-  return { allowed: true, retryAfter: 0 };
-}
-
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
     .map((index) => process.env[`GEMINI_API_KEY${index === 1 ? '' : `_${index}`}`]?.trim())
@@ -127,9 +103,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const session = readSession(req.headers?.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
 
-  const limit = allowRequest(clientId(req));
+  let limit;
+  try {
+    limit = await enforceRateLimit('convert-story', session.id, 20, 10 * 60);
+  } catch (error) {
+    console.error('Convert-story rate limit unavailable:', error instanceof Error ? error.message : error);
+    return res.status(503).json({ error: 'RATE_LIMIT_STORE_UNAVAILABLE' });
+  }
   if (!limit.allowed) {
-    res.setHeader('Retry-After', String(limit.retryAfter));
+    res.setHeader('Retry-After', String(limit.retryAfterSeconds));
     return res.status(429).json({ error: 'تم تجاوز حد الاستخدام المؤقت. حاول لاحقاً.' });
   }
 
