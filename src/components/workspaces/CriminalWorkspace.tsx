@@ -173,7 +173,7 @@ export function CriminalWorkspace({
     let prompt = '';
     if (currentService === 'criminal_defense') {
       prompt = `صغ مسودة مذكرة دفاع جنائي للمراجعة:
-المتهم: ${defendantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 التهمة كما أدخلها المستخدم: ${chargeSubject}
 الملاحظات على إجراءات التحقيق/الضبط: ${investigationFlaws}
 الأسانيد التي أدخلها المستخدم أو استخرجها النظام: ${legalGrounds}
@@ -185,21 +185,21 @@ ${defenseDemands}
 ${sharedRules}`;
     } else if (currentService === 'criminal_appeal') {
       prompt = `صغ مسودة اعتراض أو استئناف جزائي للمراجعة، وحدد أولاً ما يلزم التحقق منه من الحكم والتبليغ والميعاد والأسباب دون افتراضها.
-صاحب الشأن: ${defendantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 موضوع القضية: ${chargeSubject}
 ${storyAddon}
 
 ${sharedRules}`;
     } else if (currentService === 'criminal_procedural') {
       prompt = `حلل إجراءات الضبط والقبض والتفتيش والتوقيف في القضية التالية، وحدد فقط ما يمكن وصفه بخلل بعد ربطه بالوقائع والمصدر الرسمي.
-صاحب الشأن: ${defendantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 الملاحظات المدخلة: ${investigationFlaws}
 ${storyAddon}
 
 ${sharedRules}`;
     } else {
       prompt = `صغ مذكرة إيداع ومراجعة للمرفقات في قضية جزائية، واربط كل ملاحظة بما يظهر فعلاً في المستند.
-صاحب الشأن: ${defendantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 المرفق: ${uploadedFileName || 'مرفقات القضية'}
 ${storyAddon}
 
