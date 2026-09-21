@@ -62,6 +62,7 @@ type RuntimeAgentRun = {
   durationMs: number;
   model?: string;
   summary: string;
+  blockers?: string[];
 };
 
 type RuntimeSnapshot = {
@@ -410,7 +411,19 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
             <DetailRow label="معرف الوكيل" value={selected.id} mono />
             {runtimeById.get(selected.id)?.model && <DetailRow label="النموذج" value={runtimeById.get(selected.id)?.model || ''} mono />}
             {runtimeById.get(selected.id) && <DetailRow label="زمن آخر تشغيل" value={(runtimeById.get(selected.id)!.durationMs / 1000).toFixed(1) + ' ثانية'} />}
+            {runtimeById.get(selected.id)?.summary && <DetailRow label="ملخص آخر تشغيل" value={runtimeById.get(selected.id)?.summary || ''} />}
           </div>
+
+          {runtimeById.get(selected.id)?.blockers?.length ? (
+            <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-500/5 p-3">
+              <div className="text-[10px] font-black text-amber-200">مواضع الخلل / التحقق الناقص</div>
+              <ul className="mt-2 space-y-1.5">
+                {runtimeById.get(selected.id)!.blockers!.slice(0, 6).map((blocker, index) => (
+                  <li key={index} className="text-[10px] leading-5 text-amber-100/70">• {blocker}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-500/5 p-3 text-[11px] leading-5 text-amber-100/80">
             الخريطة الآن تمثل الهيكل الحقيقي الذي سنبني عليه. حالة «متصل حالياً» تعني أن للمنصة مساراً قائماً يقابله، أما «قيد الربط» فلا يعني أن الوكيل يعمل فعلياً بعد.
