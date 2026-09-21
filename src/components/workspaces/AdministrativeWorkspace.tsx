@@ -344,7 +344,7 @@ ${claimRequests}`;
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-neutral-100">بؤرة القضايا الإدارية</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                عزل تام
+                مسودة خاصة بالحساب الحالي
               </span>
             </div>
             <p className="text-xs text-neutral-400">
@@ -386,7 +386,7 @@ ${claimRequests}`;
               <div>
                 <h3 className="text-lg font-bold text-neutral-100">رفع مرفقات وقرارات القضية</h3>
                 <p className="text-xs text-neutral-400">
-                  يتم حفظ المرفقات في مسودة العمل محلياً دون استهلاك رصيد أو تشغيل تلقائي للذكاء الاصطناعي
+                  ملفات TXT المضافة هنا تحفظ في تخزين هذا المتصفح للحساب الحالي. استخدم زر PDF/صورة لإرسال المستند للمحادثة عند الحاجة.
                 </p>
               </div>
             </div>
