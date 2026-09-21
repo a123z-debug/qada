@@ -24,6 +24,7 @@ export type AuthSession = {
   agency?: string;
   loginMethod: 'admin_password' | 'email_password';
   loginAt: number;
+  sessionRevision?: number;
 };
 
 type SessionPayload = AuthSession & { iat: number; exp: number };
@@ -36,6 +37,7 @@ type AccountRecord = {
   passwordSalt: string;
   passwordHash: string;
   createdAt: number;
+  sessionRevision?: number;
   disabledAt?: number;
 };
 
@@ -219,6 +221,9 @@ export async function readActiveSession(header?: string | string[]): Promise<Aut
   try {
     const account = await loadAccount(session.email);
     if (!account || account.disabledAt || account.id !== session.id) return null;
+    const accountRevision = Number(account.sessionRevision || 1);
+    const sessionRevision = Number(session.sessionRevision || 1);
+    if (accountRevision !== sessionRevision) return null;
     return session;
   } catch {
     // Fail closed if the account store cannot confirm an ordinary user session.
@@ -256,6 +261,7 @@ async function createAccount(nameInput: string, emailInput: string, password: st
     passwordSalt: salt,
     passwordHash: passwordHash(password, salt),
     createdAt: Date.now(),
+    sessionRevision: 1,
   };
   const encoded = encodeAccount(record);
   const key = accountKey(email);
@@ -291,6 +297,7 @@ async function loginUser(emailInput: string, password: string): Promise<AuthSess
     role: 'user',
     loginMethod: 'email_password',
     loginAt: Date.now(),
+    sessionRevision: Number(record.sessionRevision || 1),
   };
 }
 
@@ -501,6 +508,7 @@ export default async function handler(req: any, res: any) {
         ...record,
         passwordSalt: salt,
         passwordHash: passwordHash(newPassword, salt),
+        sessionRevision: Number(record.sessionRevision || 1) + 1,
       };
       await saveAccount(updated);
       await recordAuditEvent({
@@ -511,7 +519,14 @@ export default async function handler(req: any, res: any) {
         targetId: current.id,
         outcome: 'success',
       });
-      return res.status(200).json({ ok: true });
+
+      const refreshedSession: AuthSession = {
+        ...current,
+        sessionRevision: updated.sessionRevision,
+        loginAt: Date.now(),
+      };
+      res.setHeader('Set-Cookie', cookieForSession(refreshedSession));
+      return res.status(200).json({ ok: true, session: refreshedSession });
     }
 
     let session: AuthSession;
@@ -531,6 +546,7 @@ export default async function handler(req: any, res: any) {
         role: 'user',
         loginMethod: 'email_password',
         loginAt: Date.now(),
+        sessionRevision: Number(record.sessionRevision || 1),
       };
     } else if (action === 'user-login') {
       session = await loginUser(
