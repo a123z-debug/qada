@@ -129,6 +129,7 @@ interface SidebarProps {
   onOpenAdminAnalysis?: () => void;
   onOpenAdminUsers?: () => void;
   onOpenAdminAudit?: () => void;
+  onOpenAccountSecurity?: () => void;
 }
 
 export function Sidebar({
@@ -148,6 +149,7 @@ export function Sidebar({
   onOpenAdminAnalysis,
   onOpenAdminUsers,
   onOpenAdminAudit,
+  onOpenAccountSecurity,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
 
@@ -218,15 +220,27 @@ export function Sidebar({
                   </p>
                 </div>
               </div>
-              {onLogout && (
-                <button
-                  onClick={onLogout}
-                  className="p-1.5 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
-                  title="تسجيل الخروج"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                {onOpenAccountSecurity && (
+                  <button
+                    type="button"
+                    onClick={onOpenAccountSecurity}
+                    className="p-1.5 rounded text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors"
+                    title="أمان الحساب"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {onLogout && (
+                  <button
+                    onClick={onLogout}
+                    className="p-1.5 rounded text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
+                    title="تسجيل الخروج"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
