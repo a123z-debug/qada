@@ -131,6 +131,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ].filter(Boolean).join('\n');
     }
 
+    const blockedAmendmentMarkers = new Set<string>();
+    if (Array.isArray(report?.judges)) {
+      for (const judge of report.judges) {
+        const amendment = typeof judge?.specificAmendment === 'string'
+          ? judge.specificAmendment.trim()
+          : '';
+        if (!amendment) continue;
+
+        const amendmentGuard = guardIntroducedLegalCitations(
+          body.text,
+          amendment,
+          legalReferenceContext,
+        );
+
+        if (amendmentGuard.blocked) {
+          for (const marker of amendmentGuard.unsupportedMarkers) {
+            blockedAmendmentMarkers.add(marker);
+          }
+          judge.specificAmendment = '';
+          judge.errorsIdentified = Array.isArray(judge.errorsIdentified)
+            ? judge.errorsIdentified
+            : [];
+          judge.errorsIdentified.push(
+            'حُجب تعديل مقترح لأنه أدخل إحالة قانونية جديدة لم تثبت في حزمة المصادر الرسمية.'
+          );
+        }
+      }
+    }
+
     return res.status(200).json({
       report,
       sourceAudit: {
@@ -142,6 +171,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         introducedMarkers: citationGuard.introducedMarkers,
         unsupportedMarkers: citationGuard.unsupportedMarkers,
         blockedRevision: citationGuard.blocked,
+        blockedSpecificAmendments: blockedAmendmentMarkers.size,
+        blockedAmendmentMarkers: Array.from(blockedAmendmentMarkers),
       },
       sourcePackets: sourceBundle.packets,
     });
