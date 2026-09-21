@@ -5,6 +5,7 @@ import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 import { recordAuditEvent } from './_audit.ts';
 import { redactDirectIdentifiers } from './_privacy.ts';
+import { withTimeout } from './_async.ts';
 
 type IncomingAttachment = {
   name?: string;
@@ -61,6 +62,7 @@ async function tryGatewayJson(systemInstruction: string, parts: any[]): Promise<
 
   const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
     method: 'POST',
+    signal: AbortSignal.timeout(18_000),
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -195,11 +197,13 @@ async function generateJsonAgent<T>(args: {
     };
   }
 
+  let attempts = 0;
   for (const model of MODELS) {
-    for (let i = 0; i < clients.length; i++) {
+    for (let i = 0; i < clients.length && attempts < 4; i++) {
+      attempts += 1;
       const client = clients[(i + clientOffset) % clients.length];
       try {
-        const response = await client.models.generateContent({
+        const response = await withTimeout(client.models.generateContent({
           model,
           contents: [{ role: 'user', parts }],
           config: {
@@ -207,7 +211,7 @@ async function generateJsonAgent<T>(args: {
             temperature,
             responseMimeType: 'application/json',
           },
-        });
+        }), 22_000, 'AI_AGENT_TIMEOUT');
 
         const raw = response.text
           || response.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('')
