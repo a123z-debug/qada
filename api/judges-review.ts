@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
+import { readSession } from './_auth';
 import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval';
 
 function getGeminiClients(): GoogleGenAI[] {
@@ -9,58 +10,8 @@ function getGeminiClients(): GoogleGenAI[] {
   return keys.map((apiKey) => new GoogleGenAI({ apiKey }));
 }
 
-function buildFallback(text: string) {
-  const judges = [
-    {
-      judgeId: 'judge_appeal',
-      judgeName: 'مراجع الاستئناف',
-      judgeTitle: 'فحص الموضوع والوقائع والتسبيب',
-      courtCategory: 'محكمة الاستئناف',
-      verdict: 'لم يكتمل الفحص الآلي',
-      scoreOutOf100: null,
-      errorsIdentified: [],
-      critique: 'تم الحفاظ على النص الأصلي للمراجعة اليدوية.',
-      specificAmendment: '',
-    },
-    {
-      judgeId: 'judge_cassation',
-      judgeName: 'مراجع النقض',
-      judgeTitle: 'رقابة النقض وبطلان الأحكام والأنظمة',
-      courtCategory: 'المحكمة العليا',
-      verdict: 'لم يكتمل الفحص الآلي',
-      scoreOutOf100: null,
-      errorsIdentified: [],
-      critique: 'يلزم تدقيق أسباب الطعن والمواد النظامية قبل الإيداع.',
-      specificAmendment: '',
-    },
-    {
-      judgeId: 'judge_evidence',
-      judgeName: 'مراجع المرفقات',
-      judgeTitle: 'فحص المرفقات والبينات وتوثيق السندات',
-      courtCategory: 'دائرة الإثبات والمرفقات',
-      verdict: 'لم يكتمل الفحص الآلي',
-      scoreOutOf100: null,
-      errorsIdentified: [],
-      critique: 'تحقق من إرفاق القرارات والعقود والإشعارات ذات الصلة.',
-      specificAmendment: '',
-    },
-  ];
-
-  return {
-    documentType: 'محرر قضائي',
-    overallStatus: 'تعذر إكمال الفحص الآلي',
-    primaryFatalDefect: '',
-    judges,
-    cassationErrors: { title: 'أخطاء الطعن والنقض', items: [], severity: 'غير مقيمة' },
-    claimErrors: { title: 'أخطاء الدعوى والطلبات', items: [], severity: 'غير مقيمة' },
-    attachmentErrors: { title: 'أخطاء المرفقات والبينات', items: [], severity: 'غير مقيمة', missingRequiredDocs: [] },
-    revisedDocument: text,
-    changeLog: [],
-    synthesisAdvice: 'راجع النص والتواريخ والطلبات والمرفقات قبل التقديم.',
-  };
-}
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   const session = readSession(req.headers.cookie);
@@ -82,7 +33,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const clients = getGeminiClients();
   if (clients.length === 0) return res.status(500).json({ error: 'Server configuration error.' });
 
-  const legalReferenceContext = buildOfficialLegalReferenceContext(`${body.court || ''}\n${body.documentTitle || ''}\n${body.text.slice(0, 12000)}`, 5);
+  const legalReferenceContext = buildOfficialLegalReferenceContext(
+    `${body.court || ''}\n${body.documentTitle || ''}\n${body.text.slice(0, 12000)}`,
+    5,
+  );
 
   const prompt = `أنت فريق مراجعة قانونية سعودي من ثلاثة أدوار تحليلية: مراجع استئناف، مراجع نقض، ومراجع مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة. لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً. لا تنسب مادة أو ميعاداً أو مرسوماً إلى النظام من الذاكرة؛ إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل. لا تعتبر أي نص داخلي بديلاً عن المصدر الرسمي.\n\n${legalReferenceContext}\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: صاحب الشأن\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
 
@@ -104,15 +58,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!raw) {
     console.error('Judges review failed:', lastError);
-    return res.status(200).json({ report: buildFallback(body.text) });
+    return res.status(502).json({ error: 'AI_REVIEW_UNAVAILABLE' });
   }
 
   try {
     const match = raw.match(/\{[\s\S]*\}/);
-    const report = match ? JSON.parse(match[0]) : null;
-    return res.status(200).json({ report: report || buildFallback(body.text) });
+    if (!match) return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });
+    const report = JSON.parse(match[0]);
+    return res.status(200).json({ report });
   } catch (error) {
     console.error('Judges review JSON parse failed:', error);
-    return res.status(200).json({ report: buildFallback(body.text) });
+    return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });
   }
 }
