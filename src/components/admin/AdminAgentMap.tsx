@@ -164,6 +164,12 @@ const edges: Edge[] = [
   { from: 'judgment-audit', to: 'legislative-flaws', kind: 'admin' },
   { from: 'judgment-audit', to: 'judicial-flaws', kind: 'admin' },
   { from: 'judgment-audit', to: 'procedural-flaws', kind: 'admin' },
+  { from: 'judgment-audit', to: 'evidence-flaws', kind: 'admin' },
+  { from: 'judgment-audit', to: 'reasoning-flaws', kind: 'admin' },
+  { from: 'judgment-audit', to: 'rebuttal-review', kind: 'admin' },
+  { from: 'memo-audit', to: 'legislative-flaws', kind: 'admin' },
+  { from: 'memo-audit', to: 'judicial-flaws', kind: 'admin' },
+  { from: 'memo-audit', to: 'procedural-flaws', kind: 'admin' },
   { from: 'memo-audit', to: 'evidence-flaws', kind: 'admin' },
   { from: 'memo-audit', to: 'reasoning-flaws', kind: 'admin' },
   { from: 'memo-audit', to: 'rebuttal-review', kind: 'admin' },
@@ -363,16 +369,36 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
                   if (!from || !to) return null;
                   const visible = visibleIds.has(from.id) && visibleIds.has(to.id);
                   const stroke = edge.kind === 'admin' ? '#a78bfa' : edge.kind === 'verification' ? '#fbbf24' : '#38bdf8';
+                  const activeRuntimeEdge = runtimeById.has(from.id) && runtimeById.has(to.id);
+                  const hasRuntimeError = runtimeById.get(from.id)?.status === 'error' || runtimeById.get(to.id)?.status === 'error';
+                  const hasRuntimeWarning = runtimeById.get(from.id)?.status === 'warning' || runtimeById.get(to.id)?.status === 'warning';
+                  const runtimeStroke = hasRuntimeError ? '#fb7185' : hasRuntimeWarning ? '#fbbf24' : stroke;
+                  const path = edgePath(from, to);
                   return (
-                    <path
-                      key={edge.from + '-' + edge.to + '-' + index}
-                      d={edgePath(from, to)}
-                      fill="none"
-                      stroke={stroke}
-                      strokeWidth={edge.kind === 'admin' ? 1.8 : 1.35}
-                      strokeOpacity={visible ? 0.48 : 0.05}
-                      filter={visible ? 'url(#qadaGlow)' : undefined}
-                    />
+                    <g key={edge.from + '-' + edge.to + '-' + index}>
+                      <path
+                        d={path}
+                        fill="none"
+                        stroke={stroke}
+                        strokeWidth={edge.kind === 'admin' ? 1.8 : 1.35}
+                        strokeOpacity={visible ? 0.42 : 0.05}
+                        filter={visible ? 'url(#qadaGlow)' : undefined}
+                      />
+                      {activeRuntimeEdge && visible && (
+                        <path
+                          d={path}
+                          fill="none"
+                          stroke={runtimeStroke}
+                          strokeWidth={edge.kind === 'admin' ? 3.2 : 2.8}
+                          strokeOpacity={0.95}
+                          strokeLinecap="round"
+                          strokeDasharray="10 16"
+                          filter="url(#qadaGlow)"
+                        >
+                          <animate attributeName="stroke-dashoffset" from="0" to="-52" dur="1.4s" repeatCount="indefinite" />
+                        </path>
+                      )}
+                    </g>
                   );
                 })}
               </svg>
