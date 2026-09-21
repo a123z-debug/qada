@@ -634,6 +634,18 @@ ${ISSUE_SCHEMA}`,
     blockers: run.blockers,
   }));
 
+  const documentTypeLabel = String(intake.data?.documentType || body.documentTitle || '').trim();
+  const auditIsJudgment = /حكم|قرار قضائي|قضاء|دائرة/i.test(documentTypeLabel);
+  const auditRun: AgentRun = {
+    id: auditIsJudgment ? 'judgment-audit' : 'memo-audit',
+    label: auditIsJudgment ? 'إيجنت تحليل الأحكام' : 'إيجنت تحليل المذكرات',
+    status: 'success',
+    durationMs: 1,
+    summary: auditIsJudgment
+      ? 'تم توجيه المستند لمسار تحليل الأحكام.'
+      : 'تم توجيه المستند لمسار تحليل المذكرات والدفوع.',
+  };
+
   const routingRun: AgentRun = {
     id: 'case-router',
     label: 'موجّه القضية',
@@ -655,6 +667,7 @@ ${ISSUE_SCHEMA}`,
 
   const agentRuns: AgentRun[] = [
     intake.run,
+    auditRun,
     routingRun,
     coreRun,
     ...sourceRuns,
@@ -666,6 +679,18 @@ ${ISSUE_SCHEMA}`,
     rebuttal.run,
     final.run,
   ];
+
+  const conflictRun: AgentRun = {
+    id: 'conflicts',
+    label: 'كاشف التعارض',
+    status: report.conflictingPoints.length > 0 ? 'warning' : 'success',
+    durationMs: 1,
+    summary: report.conflictingPoints.length > 0
+      ? `رصد ${report.conflictingPoints.length} نقطة تعارض تحتاج مراجعة.`
+      : 'لم يرصد التقرير النهائي نقاط تعارض مسجلة.',
+    blockers: report.conflictingPoints,
+  };
+  agentRuns.push(conflictRun);
 
   const completed = agentRuns.filter((run) => run.status === 'success').length;
   const warnings = agentRuns.filter((run) => run.status === 'warning').length;
