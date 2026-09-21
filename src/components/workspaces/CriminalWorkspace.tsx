@@ -75,6 +75,7 @@ export function CriminalWorkspace({
 
   // Output & Review Mode
   const [generatedOutput, setGeneratedOutput] = useState<string>(initial.generatedOutput || '');
+  const [generationError, setGenerationError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState<boolean>(Boolean(initial.generatedOutput));
   const [lastSavedTime, setLastSavedTime] = useState<string>('محفوظ مؤقتاً في هذه الجلسة');
@@ -156,6 +157,7 @@ export function CriminalWorkspace({
   const handleGenerate = async () => {
     setIsGenerating(true);
     setGeneratedOutput('');
+    setGenerationError('');
 
     const storyAddon = userStory.trim()
       ? `\n\n[سرد المتهم/الموكل أو نص المحضر المنسوخ]:\n"""\n${userStory}\n"""\nالمطلوب: تكييف الوقائع دون افتراض بطلان أو براءة، وربط أي سند نظامي بالمصدر الرسمي المسترجع فقط.`
@@ -227,38 +229,20 @@ ${sharedRules}`;
       });
 
       if (!fullText) {
-        fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
-
-بيانات العمل المحفوظة:
-- صاحب الشأن: ${defendantName}
-- موضوع القضية: ${chargeSubject}
-- ملاحظات الإجراءات: ${investigationFlaws}
-- الأسانيد المدخلة/المستخرجة: ${legalGrounds}
-- الطلبات المراد بحثها:
-${defenseDemands}
-
-أعد المحاولة بعد عودة الخدمة، ثم راجع المصادر الرسمية قبل اعتماد أي سند.`;
-        setGeneratedOutput(fullText);
+        throw new Error('لم تُرجع خدمة الذكاء مسودة قابلة للمراجعة.');
       }
 
       // Enter Focus Mode (Legal Review Editor) automatically
       setIsReviewMode(true);
-    } catch (err) {
-      console.error('Criminal generation failed:', err);
-      const fallback = `تعذر إكمال الصياغة الآلية، ولم تُنشأ أسانيد بديلة.
-
-صاحب الشأن: ${defendantName}
-موضوع القضية: ${chargeSubject}
-ملاحظات الإجراءات:
-${investigationFlaws}
-
-الأسانيد المدخلة أو المستخرجة سابقاً — تحتاج تحققاً:
-${legalGrounds}
-
-الطلبات المراد بحثها:
-${defenseDemands}`;
-      setGeneratedOutput(fallback);
-      setIsReviewMode(true);
+    } catch (error) {
+      console.error('Document generation failed:', error);
+      setGeneratedOutput('');
+      setIsReviewMode(false);
+      setGenerationError(
+        error instanceof Error
+          ? error.message
+          : 'تعذر إكمال الصياغة الآلية. احتفظت المنصة بمدخلاتك دون إنشاء مسودة بديلة.'
+      );
     } finally {
       setIsGenerating(false);
     }
@@ -333,6 +317,12 @@ ${defenseDemands}`;
           )}
         </div>
       </div>
+
+      {generationError && (
+        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold leading-6 text-rose-200">
+          تعذر إنشاء المسودة: {generationError} لم تُنشئ المنصة أي مواد أو دفوع أو نتائج بديلة، ويمكنك إعادة المحاولة بعد التحقق من الاتصال والخدمات.
+        </div>
+      )}
 
       {/* 2. Workspace Form Mode */}
       {currentService === 'criminal_evidence' ? (
