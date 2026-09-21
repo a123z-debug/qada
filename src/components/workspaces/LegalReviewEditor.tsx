@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   FileText,
   Scale,
@@ -23,6 +23,8 @@ import {
   Gavel,
   Paperclip,
   RotateCcw,
+  ExternalLink,
+  LoaderCircle,
 } from 'lucide-react';
 import { CourtJurisdiction } from '../layout/Sidebar';
 import { printLegalMemo } from '../../utils/printMemo';
@@ -47,8 +49,20 @@ interface RagReference {
   id: string;
   title: string;
   source: string;
-  content: string;
-  category: 'statute' | 'decree' | 'precedent' | 'shura';
+  sourceUrl: string;
+  issueInstrument: string;
+  verificationNote: string;
+  coverage: string;
+  category: string;
+  agentId: string;
+  agentStatus: 'success' | 'warning' | 'error';
+}
+
+interface ReferenceSearchMeta {
+  officialSources: number;
+  verifiedArticles: number;
+  literalQuotationReady: boolean;
+  precedentCorpusReady: boolean;
 }
 
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
@@ -100,119 +114,6 @@ function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesRe
   };
 }
 
-const RAG_REFERENCES_BY_COURT: Record<CourtJurisdiction, RagReference[]> = {
-  administrative: [
-    {
-      id: 'rag-adm-1',
-      title: 'المرسوم الملكي رقم (م/37) لعام 1430هـ',
-      source: 'الجريدة الرسمية (أم القرى) - 1430/06/30هـ',
-      category: 'decree',
-      content:
-        'المادة (17/ب) المعدلة من نظام خدمة الأفراد: "يجوز الجمع بين علاوتين من العلاوات الواردة في جدول العلاوات الأخرى المرافقة لهذا النظام". يُلغى كل ما يتعارض مع هذا النص الملكي الصريح.',
-    },
-    {
-      id: 'rag-adm-2',
-      title: 'محاضر هيئة الخبراء بمجلس الوزراء رقم (198) لعام 1430هـ',
-      source: 'هيئة الخبراء بمجلس الوزراء',
-      category: 'precedent',
-      content:
-        'دراسة اللجنة المشتركة بمشاركة ممثلي وزارتي الدفاع والمالية، والتي خلصت بالإجماع إلى وجوب إجازة الجمع ورفع الحظر، مما يمنع جهة الإدارة من التناقض أو الامتناع عن الصرف.',
-    },
-    {
-      id: 'rag-adm-3',
-      title: 'قرار مجلس الشورى رقم (63/92) وتاريخ 1429هـ',
-      source: 'مجلس الشورى السعودي',
-      category: 'shura',
-      content:
-        'الموافقة على تعديل الفقرة (ب) من المادة (17) لإقرار استحقاق منسوبي القوات المسلحة للبدلات المتزامنة تكريماً للمهام الميدانية والعملياتية ومكافحة الإرهاب.',
-    },
-    {
-      id: 'rag-adm-4',
-      title: 'المادة (8) من نظام المرافعات أمام ديوان المظالم',
-      source: 'نظام المرافعات أمام ديوان المظالم الصادر بالمرسوم (م/3)',
-      category: 'statute',
-      content:
-        'وجوب التظلم أمام الجهة الإدارية خلال (60) يوماً من تاريخ العلم بالقرار، والانتظار (60) يوماً للبت، ثم قيد الدعوى أمام المحكمة الإدارية خلال (60) يوماً من الرفض الصريح أو الضمني.',
-    },
-    {
-      id: 'rag-adm-5',
-      title: 'قاعدة تدرج القواعد القانونية وعدم جواز تعطيل التشريع',
-      source: 'المبادئ الإدارية المستقرة للمحكمة الإدارية العليا',
-      category: 'precedent',
-      content:
-        'التعليمات والقرارات الوزارية الأدنى مرتبة لا تقوى على نسخ أو تعديل أو تعطيل أحكام المراسيم الملكية النافذة، وأي امتناع يُعد قراراً سلبياً واجباً الإلغاء.',
-    },
-  ],
-  general: [
-    {
-      id: 'rag-gen-1',
-      title: 'المادة (128) من نظام المعاملات المدنية (م/191)',
-      source: 'نظام المعاملات المدنية السعودي',
-      category: 'statute',
-      content:
-        'العقد شريعة المتعاقدين، فلا يجوز نقضه ولا تعديله إلا باتفاق الطرفين أو للأسباب التي يقررها النظام. ويجب تنفيذ العقد طبقاً لما اشتمل عليه وبطريقة تتفق مع مقتضيات حسن النية.',
-    },
-    {
-      id: 'rag-gen-2',
-      title: 'المادة (138) و (139) من نظام المعاملات المدنية',
-      source: 'نظام المعاملات المدنية السعودي',
-      category: 'statute',
-      content:
-        'في العقود الملزمة للجانبين، إذا لم يوفِ أحد المتعاقدين بالتزامه جاز للمتعاقد الآخر بعد إعذار المدين أن يطالب بتنفيذ العقد أو بفسخه مع التعويض عن الضرر إن كان له مقتضٍ.',
-    },
-    {
-      id: 'rag-gen-3',
-      title: 'المادة (29) من نظام الإثبات (السندات والمحررات العادية)',
-      source: 'نظام الإثبات الصادر بالمرسوم (م/43)',
-      category: 'statute',
-      content:
-        'يعد المحرر العادي صادراً ممن وقعه ما لم ينكر صراحة ما هو منسوب إليه من خط أو إمضاء أو بصمة، والسكوت أو الإنكار غير الجازم يعد إقراراً بصحة الورقة.',
-    },
-    {
-      id: 'rag-gen-4',
-      title: 'المادة (41) من نظام المرافعات الشرعية',
-      source: 'نظام المرافعات الشرعية الصادر بالمرسوم (م/1)',
-      category: 'statute',
-      content:
-        'تقيد الدعوى بصحيفة تودع لدى المحكمة مشتملة على أسماء الخصوم وبياناتهم وموضوع الدعوى وأسانيدها والطلبات الجازمة للمدعي.',
-    },
-  ],
-  criminal: [
-    {
-      id: 'rag-crm-1',
-      title: 'المادة (35) من نظام الإجراءات الجزائية (م/2)',
-      source: 'نظام الإجراءات الجزائية',
-      category: 'statute',
-      content:
-        'في غير حالات التلبس بالجريمة، لا يجوز القبض على أي إنسان أو توقيفه إلا بأمر من السلطة المختصة بذلك نظاماً (النيابة العامة)، وكل إجراء يخالف ذلك يقع باطلاً بطلاناً مطلقاً.',
-    },
-    {
-      id: 'rag-crm-2',
-      title: 'المادة (40) من نظام الإجراءات الجزائية (حرمة المساكن)',
-      source: 'نظام الإجراءات الجزائية',
-      category: 'statute',
-      content:
-        'للأشخاص ومساكنهم ومكاتبهم ومراكبهم حرمة تجب حمايتها، ولا يجوز تفتيش أي منها إلا بإذن مسبب ومحدد من النيابة العامة أو في حالات التلبس المحددة حصراً نظاماً.',
-    },
-    {
-      id: 'rag-crm-3',
-      title: 'المادة (102) من نظام الإجراءات الجزائية (بطلان الاعتراف)',
-      source: 'نظام الإجراءات الجزائية',
-      category: 'statute',
-      content:
-        'يجب أن يكون الاستجواب خالياً من أي تأثير أو إكراه مادي أو معنوي، ولا يُعتد بأي اعتراف أو إقرار صادر تحت وطأة الوعد أو الوعيد أو الإجراءات الباطلة.',
-    },
-    {
-      id: 'rag-crm-4',
-      title: 'قاعدة (الأصل في الإنسان البراءة والشك يفسر لمصلحة المتهم)',
-      source: 'المبادئ الجزائية المستقرة للمحكمة العليا',
-      category: 'precedent',
-      content:
-        'الأحكام الجزائية تبنى على الجزم واليقين المستخلص من الدليل القاطع المشروع، ولا تبنى على الظن والاحتمال أو الأدلة المستمدة من إجراءات باطلة.',
-    },
-  ],
-};
-
 export function LegalReviewEditor({
   initialContent,
   court,
@@ -230,6 +131,11 @@ export function LegalReviewEditor({
   const [activeTab, setActiveTab] = useState<'editor' | 'highlighted' | 'judges'>('editor');
   const [copied, setCopied] = useState(false);
   const [referenceSearch, setReferenceSearch] = useState('');
+  const [referenceResults, setReferenceResults] = useState<RagReference[]>([]);
+  const [referencesLoading, setReferencesLoading] = useState(false);
+  const [referenceError, setReferenceError] = useState('');
+  const [referenceBlockers, setReferenceBlockers] = useState<string[]>([]);
+  const [referenceMeta, setReferenceMeta] = useState<ReferenceSearchMeta | null>(null);
 
   // 3 Mandatory Checkboxes for Legal Approval Gate
   const [checkNames, setCheckNames] = useState(false);
@@ -267,7 +173,6 @@ export function LegalReviewEditor({
           serviceId,
           documentTitle,
           clientName: clientName || 'صاحب الشأن',
-          nationalId: nationalId || 'غير مسجل',
           attachmentsText: attachmentsText || uploadedFileText || '',
           uploadedFileName: uploadedFileName || '',
         }),
@@ -388,21 +293,60 @@ export function LegalReviewEditor({
     return text;
   }, [content]);
 
-  // Filtered RAG references for active court
-  const courtReferences = RAG_REFERENCES_BY_COURT[court] || RAG_REFERENCES_BY_COURT.administrative;
-  const filteredReferences = useMemo(() => {
-    if (!referenceSearch.trim()) return courtReferences;
-    const q = referenceSearch.toLowerCase();
-    return courtReferences.filter(
-      (r) =>
-        r.title.toLowerCase().includes(q) ||
-        r.content.toLowerCase().includes(q) ||
-        r.source.toLowerCase().includes(q)
-    );
-  }, [courtReferences, referenceSearch]);
+  // Official-source-only legal references. No hardcoded legal quotation is inserted from the UI.
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setReferencesLoading(true);
+      setReferenceError('');
+      try {
+        const response = await fetch('/api/legal-source-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            court,
+            query: [documentTitle, referenceSearch].filter(Boolean).join(' '),
+          }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error('تعذر استرجاع المراجع الرسمية.');
+        if (cancelled) return;
+        setReferenceResults(Array.isArray(payload.references) ? payload.references : []);
+        setReferenceBlockers(Array.isArray(payload.blockers) ? payload.blockers : []);
+        setReferenceMeta(payload.meta || null);
+      } catch (error) {
+        if (cancelled || (error instanceof DOMException && error.name === 'AbortError')) return;
+        setReferenceResults([]);
+        setReferenceBlockers([]);
+        setReferenceMeta(null);
+        setReferenceError(error instanceof Error ? error.message : 'تعذر استرجاع المراجع الرسمية.');
+      } finally {
+        if (!cancelled) setReferencesLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [court, documentTitle, referenceSearch]);
+
+  const filteredReferences = useMemo(() => referenceResults, [referenceResults]);
 
   const handleInsertReference = (ref: RagReference) => {
-    const insertion = `\n\n[استناداً إلى ${ref.title} (${ref.source}):\n"${ref.content}"]\n`;
+    const insertion = [
+      '',
+      '',
+      `[مرجع رسمي للتحقق: ${ref.title}`,
+      ref.issueInstrument ? `أداة الإصدار: ${ref.issueInstrument}` : '',
+      `المصدر: ${ref.sourceUrl}`,
+      ref.coverage ? `تغطية المستودع: ${ref.coverage}` : '',
+      'تنبيه: لا يعتمد أي نص حرفي للمادة إلا بعد مطابقته بالمصدر الرسمي.]',
+      '',
+    ].filter(Boolean).join('\n');
     const newContent = content + insertion;
     setContent(newContent);
     if (onContentChange) onContentChange(newContent);
