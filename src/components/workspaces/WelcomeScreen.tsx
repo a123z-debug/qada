@@ -97,27 +97,28 @@ export function WelcomeScreen({
 
             <div className="space-y-2.5 text-xs">
               <div className="flex items-center justify-between text-slate-300">
-                <span>سلامة البناء القضائي:</span>
-                <span className="font-bold text-amber-400 font-mono">78%</span>
-              </div>
-              <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                <div className="bg-amber-500 h-full rounded-full" style={{ width: '78%' }}></div>
+                <span>حالة ملف القضية:</span>
+                <span className="font-bold text-amber-400">بانتظار الفحص</span>
               </div>
 
               <div className="space-y-1.5 pt-2 text-[11px]">
                 <div className="flex items-center justify-between text-slate-400">
-                  <span>✓ لائحة الدعوى:</span>
-                  <span className="text-emerald-400">مكتملة</span>
+                  <span>المحرر القضائي:</span>
+                  <span className="text-slate-300">غير مقيم بعد</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-400">
-                  <span>⚠ المستندات والمرفقات:</span>
-                  <span className="text-amber-400">تحتاج مراجعة</span>
+                  <span>المستندات والمرفقات:</span>
+                  <span className="text-slate-300">تُحدد بعد الرفع</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-400">
-                  <span>🔴 النقاط الحرجة:</span>
-                  <span className="text-rose-400">3 نقاط</span>
+                  <span>الملاحظات الحرجة:</span>
+                  <span className="text-slate-300">تظهر بعد التحليل</span>
                 </div>
               </div>
+
+              <p className="pt-2 border-t border-slate-800 text-[10px] leading-5 text-slate-500">
+                لا تعرض المنصة نسبة سلامة ثابتة قبل تشغيل فحص فعلي على ملف القضية.
+              </p>
             </div>
           </div>
 
