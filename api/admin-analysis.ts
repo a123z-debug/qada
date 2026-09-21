@@ -23,6 +23,7 @@ type AgentRun = {
   durationMs: number;
   model?: string;
   summary: string;
+  blockers?: string[];
 };
 
 type AgentResult<T = any> = {
@@ -225,6 +226,71 @@ function normalizeReport(input: any) {
     strongestVerifiedPoints: stringList(input?.strongestVerifiedPoints, 30, 1200),
     verificationQueue: stringList(input?.verificationQueue, 40, 1200),
     finalNotes: String(input?.finalNotes || '').slice(0, 5000),
+  };
+}
+
+function enforceVerificationGate(report: ReturnType<typeof normalizeReport>, verification: {
+  officialSources: number;
+  verifiedArticles: number;
+  blockers: string[];
+  literalQuotationReady: boolean;
+  precedentCorpusReady: boolean;
+}) {
+  const queue = new Set(report.verificationQueue);
+  for (const blocker of verification.blockers) queue.add(blocker);
+
+  const issues = report.issues.map((issue) => {
+    let sourceStatus = issue.sourceStatus;
+    let verificationNeeded = issue.verificationNeeded;
+    let legalBasis = issue.legalBasis;
+
+    if (sourceStatus === 'متحقق من السياق الرسمي' && verification.officialSources === 0) {
+      sourceStatus = 'مصدر غير مكتمل';
+      verificationNeeded = true;
+    }
+
+    const precedentClaim = /مبدأ|سابقة|حكم\s+(?:رقم|المحكمة|الدائرة)/i.test(legalBasis);
+    if (precedentClaim && !verification.precedentCorpusReady) {
+      sourceStatus = sourceStatus === 'متحقق من السياق الرسمي' ? 'التحقق الحرفي مطلوب' : sourceStatus;
+      verificationNeeded = true;
+      queue.add('ورد استناد إلى حكم/مبدأ قضائي بينما قاعدة السوابق الرسمية الكاملة غير جاهزة؛ يلزم التحقق من المصدر القضائي الرسمي.');
+    }
+
+    const literalClaim = /[«»]/.test(legalBasis) || /نص\s+الماد(?:ة|ه)/i.test(legalBasis);
+    if (literalClaim && !verification.literalQuotationReady) {
+      sourceStatus = sourceStatus === 'متحقق من السياق الرسمي' ? 'التحقق الحرفي مطلوب' : sourceStatus;
+      verificationNeeded = true;
+      legalBasis = legalBasis.replace(/\s+/g, ' ').trim();
+      queue.add('يوجد ادعاء باقتباس حرفي بينما مخزن النصوص الحرفية الكاملة غير معتمد بعد؛ يجب مطابقة النص مع المصدر الرسمي قبل الاعتماد.');
+    }
+
+    if (!['متحقق من السياق الرسمي', 'وارد في المستند فقط', 'التحقق الحرفي مطلوب', 'مصدر غير مكتمل'].includes(sourceStatus)) {
+      sourceStatus = 'التحقق الحرفي مطلوب';
+      verificationNeeded = true;
+    }
+
+    return {
+      ...issue,
+      legalBasis,
+      sourceStatus,
+      verificationNeeded,
+    };
+  });
+
+  return {
+    ...report,
+    issues,
+    verificationQueue: Array.from(queue).slice(0, 80),
+    finalNotes: [
+      report.finalNotes,
+      `بوابة التحقق الآلي: ${verification.officialSources} مصدر رسمي فريد، ${verification.verifiedArticles} مادة مفهرسة، ${verification.blockers.length} قيد تحقق.`,
+      verification.literalQuotationReady
+        ? 'الاقتباس الحرفي متاح لهذه العملية.'
+        : 'الاقتباس الحرفي من النصوص النظامية غير معتمد من المستودع حتى تتم المطابقة مع المصدر الرسمي.',
+      verification.precedentCorpusReady
+        ? 'قاعدة السوابق القضائية الرسمية جاهزة.'
+        : 'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ أي استناد قضائي يحتاج تحققاً مستقلاً.',
+    ].filter(Boolean).join('\n'),
   };
 }
 
@@ -473,7 +539,7 @@ ${ISSUE_SCHEMA}`,
     temperature: 0.02,
   });
 
-  const report = final.data
+  const rawReport = final.data
     ? normalizeReport(final.data)
     : combineWithoutFinalAgent({
         intake: intake.data,
@@ -482,16 +548,40 @@ ${ISSUE_SCHEMA}`,
         reasoning: reasoning.data,
       });
 
+  const report = enforceVerificationGate(rawReport, sourceBundle.verification);
+
   const sourceRuns: AgentRun[] = sourceBundle.runs.map((run) => ({
     id: run.id,
     label: run.label,
     status: run.status,
     durationMs: run.durationMs,
     summary: run.summary,
+    blockers: run.blockers,
   }));
+
+  const routingRun: AgentRun = {
+    id: 'case-router',
+    label: 'موجّه القضية',
+    status: 'success',
+    durationMs: 1,
+    summary: `فعّل ${sourceRuns.length} وكلاء مصادر و3 مسارات تحليل تخصصية.`,
+  };
+
+  const coreRun: AgentRun = {
+    id: 'qada-core',
+    label: 'QADA AI Orchestrator',
+    status: sourceRuns.some((run) => run.status === 'warning') ? 'warning' : 'success',
+    durationMs: 1,
+    summary: sourceRuns.some((run) => run.status === 'warning')
+      ? 'اكتمل التوجيه مع قيود تحقق مرجعية ظاهرة في الخريطة.'
+      : 'اكتمل التوجيه دون قيود مرجعية ظاهرة.',
+    blockers: sourceBundle.verification.blockers,
+  };
 
   const agentRuns: AgentRun[] = [
     intake.run,
+    routingRun,
+    coreRun,
     ...sourceRuns,
     legislative.run,
     procedural.run,
