@@ -12,6 +12,7 @@ import adminAnalysisHandler from './api/admin-analysis';
 import judgesReviewHandler from './api/judges-review';
 import casesHandler from './api/cases';
 import adminRunsHandler from './api/admin-runs';
+import healthHandler from './api/health';
 
 dotenv.config();
 
@@ -21,16 +22,11 @@ async function startServer() {
   const app = express();
 
   app.disable('x-powered-by');
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.use(express.json({ limit: '4mb' }));
+  app.use(express.urlencoded({ limit: '4mb', extended: true }));
 
-  app.get('/api/health', (_req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    res.json({
-      status: 'ok',
-      runtime: 'local-express',
-      timestamp: new Date().toISOString(),
-    });
+  app.get('/api/health', (req, res) => {
+    void healthHandler(req as any, res as any);
   });
 
   // Local development and self-hosted production use the exact same API handlers
