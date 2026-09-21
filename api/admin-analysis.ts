@@ -634,6 +634,14 @@ ${ISSUE_SCHEMA}`,
     blockers: run.blockers,
   }));
 
+  const adminEntryRun: AgentRun = {
+    id: 'admin-entry',
+    label: 'غرفة التحليل للأدمن',
+    status: 'success',
+    durationMs: 1,
+    summary: 'استقبلت غرفة الأدمن المستند وبدأت مسار التحليل المقيد.',
+  };
+
   const documentTypeLabel = String(intake.data?.documentType || body.documentTitle || '').trim();
   const auditIsJudgment = /حكم|قرار قضائي|قضاء|دائرة/i.test(documentTypeLabel);
   const auditRun: AgentRun = {
@@ -666,6 +674,7 @@ ${ISSUE_SCHEMA}`,
   };
 
   const agentRuns: AgentRun[] = [
+    adminEntryRun,
     intake.run,
     auditRun,
     routingRun,
