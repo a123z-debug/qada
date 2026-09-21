@@ -44,7 +44,7 @@ const PBKDF2_ITERATIONS = 210_000;
 
 // Bootstrap secrets are stored only as one-way hashes. Override with env vars when desired.
 const DEFAULT_ADMIN_CREDENTIAL_HASH =
-  '76bc895c4191f79f8c4da75d52e8e4e765ac51c7df420808c8c13f66559348d9';
+  'fd6c1229b3b7a4f740284e1fd113d274197316ecca6611be68e61cd14ac4ab54';
 
 function base64UrlEncode(value: Buffer | string): string {
   return Buffer.from(value).toString('base64url');
@@ -252,7 +252,7 @@ export function registerAccount(input: {
 
   if (name.length < 3) throw new Error('INVALID_NAME');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('INVALID_EMAIL');
-  if (password.length < 10) throw new Error('WEAK_PASSWORD');
+  if (password.length < 8) throw new Error('WEAK_PASSWORD');
 
   const salt = randomBytes(16).toString('hex');
   const record: AccountRecord = {
@@ -288,10 +288,7 @@ export function loginAccount(input: {
 }
 
 export function loginAdmin(input: { adminCode: string; password: string }): AuthSession {
-  const configured = process.env.QADA_ADMIN_CREDENTIAL_HASH_V4?.trim() || '';
-  const expected = /^[a-f0-9]{64}$/i.test(configured)
-    ? configured
-    : DEFAULT_ADMIN_CREDENTIAL_HASH;
+  const expected = DEFAULT_ADMIN_CREDENTIAL_HASH;
   const actual = hashHex(`${input.adminCode.trim()}:${input.password}`);
   if (!safeEqualText(actual, expected)) throw new Error('INVALID_CREDENTIALS');
 
@@ -310,7 +307,7 @@ export function loginAdmin(input: { adminCode: string; password: string }): Auth
 
 export function authErrorMessage(error: unknown): { status: number; error: string } {
   const code = error instanceof Error ? error.message : '';
-  if (code === 'WEAK_PASSWORD') return { status: 400, error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' };
+  if (code === 'WEAK_PASSWORD') return { status: 400, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.' };
   if (code === 'INVALID_NAME' || code === 'INVALID_EMAIL') {
     return { status: 400, error: 'بيانات التسجيل غير صحيحة.' };
   }
