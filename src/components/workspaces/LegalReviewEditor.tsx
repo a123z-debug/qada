@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   FileText,
   Scale,
@@ -23,6 +23,8 @@ import {
   Gavel,
   Paperclip,
   RotateCcw,
+  ExternalLink,
+  LoaderCircle,
 } from 'lucide-react';
 import { CourtJurisdiction } from '../layout/Sidebar';
 import { printLegalMemo } from '../../utils/printMemo';
@@ -47,15 +49,38 @@ interface RagReference {
   id: string;
   title: string;
   source: string;
-  content: string;
-  category: 'statute' | 'decree' | 'precedent' | 'shura';
+  sourceUrl: string;
+  issueInstrument: string;
+  verificationNote: string;
+  coverage: string;
+  category: string;
+  agentId: string;
+  agentStatus: 'success' | 'warning' | 'error';
+}
+
+interface ReferenceSearchMeta {
+  officialSources: number;
+  verifiedArticles: number;
+  literalQuotationReady: boolean;
+  precedentCorpusReady: boolean;
+}
+
+interface JudgesSourceAudit {
+  officialSources: number;
+  verifiedArticles: number;
+  blockers: string[];
+  literalQuotationReady: boolean;
+  precedentCorpusReady: boolean;
+  introducedMarkers?: string[];
+  unsupportedMarkers?: string[];
+  blockedRevision?: boolean;
 }
 
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
   const normalizeSection = (section: any, title: string) => ({
     title: section?.title || title,
     items: Array.isArray(section?.items) ? section.items.filter((item: unknown): item is string => typeof item === 'string') : [],
-    severity: ['عالية', 'متوسطة', 'منخفضة'].includes(section?.severity) ? section.severity : 'منخفضة',
+    severity: ['عالية', 'متوسطة', 'منخفضة', 'غير مقيمة'].includes(section?.severity) ? section.severity : 'غير مقيمة',
   });
 
   const judges = Array.isArray(raw?.judges) && raw.judges.length > 0
@@ -64,19 +89,19 @@ function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesRe
         judgeName: judge?.judgeName || judge?.name || judge?.role || `عضو الهيئة ${index + 1}`,
         judgeTitle: judge?.judgeTitle || judge?.title || 'فحص وتدقيق المحرر القضائي',
         courtCategory: judge?.courtCategory || 'هيئة المراجعة القضائية',
-        verdict: judge?.verdict || 'بحاجة لتصحيح جوهري',
-        scoreOutOf100: Number(judge?.scoreOutOf100) || 80,
+        verdict: judge?.verdict || 'لم يكتمل الفحص الآلي',
+        scoreOutOf100: Number.isFinite(Number(judge?.scoreOutOf100)) ? Number(judge.scoreOutOf100) : null,
         errorsIdentified: Array.isArray(judge?.errorsIdentified) ? judge.errorsIdentified : [],
         critique: judge?.critique || judge?.opinion || 'لم يرد تفصيل كافٍ في تقرير الهيئة.',
         specificAmendment: judge?.specificAmendment || '',
       }))
     : [{
         judgeId: 'judge_review',
-        judgeName: 'هيئة المراجعة القضائية',
+        judgeName: 'المراجع الآلي',
         judgeTitle: 'فحص وتدقيق المحرر القضائي',
-        courtCategory: 'هيئة المراجعة القضائية',
-        verdict: 'بحاجة لتصحيح جوهري',
-        scoreOutOf100: 80,
+        courtCategory: 'هيئة المراجعة التحليلية',
+        verdict: 'لم يكتمل الفحص الآلي',
+        scoreOutOf100: null,
         errorsIdentified: [],
         critique: 'تعذر استكمال تفاصيل التقرير. راجع النص وحاول الفحص مرة أخرى.',
         specificAmendment: '',
@@ -84,7 +109,7 @@ function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesRe
 
   return {
     documentType: raw?.documentType || 'محرر قضائي',
-    overallStatus: raw?.overallStatus || 'معيب بحاجة لتصحيح',
+    overallStatus: raw?.overallStatus || 'تعذر إكمال الفحص الآلي',
     primaryFatalDefect: raw?.primaryFatalDefect || '',
     judges,
     cassationErrors: normalizeSection(raw?.cassationErrors, 'أخطاء الطعن والنقض'),
@@ -99,119 +124,6 @@ function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesRe
     timestamp: Number(raw?.timestamp) || Date.now(),
   };
 }
-
-const RAG_REFERENCES_BY_COURT: Record<CourtJurisdiction, RagReference[]> = {
-  administrative: [
-    {
-      id: 'rag-adm-1',
-      title: 'المرسوم الملكي رقم (م/37) لعام 1430هـ',
-      source: 'الجريدة الرسمية (أم القرى) - 1430/06/30هـ',
-      category: 'decree',
-      content:
-        'المادة (17/ب) المعدلة من نظام خدمة الأفراد: "يجوز الجمع بين علاوتين من العلاوات الواردة في جدول العلاوات الأخرى المرافقة لهذا النظام". يُلغى كل ما يتعارض مع هذا النص الملكي الصريح.',
-    },
-    {
-      id: 'rag-adm-2',
-      title: 'محاضر هيئة الخبراء بمجلس الوزراء رقم (198) لعام 1430هـ',
-      source: 'هيئة الخبراء بمجلس الوزراء',
-      category: 'precedent',
-      content:
-        'دراسة اللجنة المشتركة بمشاركة ممثلي وزارتي الدفاع والمالية، والتي خلصت بالإجماع إلى وجوب إجازة الجمع ورفع الحظر، مما يمنع جهة الإدارة من التناقض أو الامتناع عن الصرف.',
-    },
-    {
-      id: 'rag-adm-3',
-      title: 'قرار مجلس الشورى رقم (63/92) وتاريخ 1429هـ',
-      source: 'مجلس الشورى السعودي',
-      category: 'shura',
-      content:
-        'الموافقة على تعديل الفقرة (ب) من المادة (17) لإقرار استحقاق منسوبي القوات المسلحة للبدلات المتزامنة تكريماً للمهام الميدانية والعملياتية ومكافحة الإرهاب.',
-    },
-    {
-      id: 'rag-adm-4',
-      title: 'المادة (8) من نظام المرافعات أمام ديوان المظالم',
-      source: 'نظام المرافعات أمام ديوان المظالم الصادر بالمرسوم (م/3)',
-      category: 'statute',
-      content:
-        'وجوب التظلم أمام الجهة الإدارية خلال (60) يوماً من تاريخ العلم بالقرار، والانتظار (60) يوماً للبت، ثم قيد الدعوى أمام المحكمة الإدارية خلال (60) يوماً من الرفض الصريح أو الضمني.',
-    },
-    {
-      id: 'rag-adm-5',
-      title: 'قاعدة تدرج القواعد القانونية وعدم جواز تعطيل التشريع',
-      source: 'المبادئ الإدارية المستقرة للمحكمة الإدارية العليا',
-      category: 'precedent',
-      content:
-        'التعليمات والقرارات الوزارية الأدنى مرتبة لا تقوى على نسخ أو تعديل أو تعطيل أحكام المراسيم الملكية النافذة، وأي امتناع يُعد قراراً سلبياً واجباً الإلغاء.',
-    },
-  ],
-  general: [
-    {
-      id: 'rag-gen-1',
-      title: 'المادة (128) من نظام المعاملات المدنية (م/191)',
-      source: 'نظام المعاملات المدنية السعودي',
-      category: 'statute',
-      content:
-        'العقد شريعة المتعاقدين، فلا يجوز نقضه ولا تعديله إلا باتفاق الطرفين أو للأسباب التي يقررها النظام. ويجب تنفيذ العقد طبقاً لما اشتمل عليه وبطريقة تتفق مع مقتضيات حسن النية.',
-    },
-    {
-      id: 'rag-gen-2',
-      title: 'المادة (138) و (139) من نظام المعاملات المدنية',
-      source: 'نظام المعاملات المدنية السعودي',
-      category: 'statute',
-      content:
-        'في العقود الملزمة للجانبين، إذا لم يوفِ أحد المتعاقدين بالتزامه جاز للمتعاقد الآخر بعد إعذار المدين أن يطالب بتنفيذ العقد أو بفسخه مع التعويض عن الضرر إن كان له مقتضٍ.',
-    },
-    {
-      id: 'rag-gen-3',
-      title: 'المادة (29) من نظام الإثبات (السندات والمحررات العادية)',
-      source: 'نظام الإثبات الصادر بالمرسوم (م/43)',
-      category: 'statute',
-      content:
-        'يعد المحرر العادي صادراً ممن وقعه ما لم ينكر صراحة ما هو منسوب إليه من خط أو إمضاء أو بصمة، والسكوت أو الإنكار غير الجازم يعد إقراراً بصحة الورقة.',
-    },
-    {
-      id: 'rag-gen-4',
-      title: 'المادة (41) من نظام المرافعات الشرعية',
-      source: 'نظام المرافعات الشرعية الصادر بالمرسوم (م/1)',
-      category: 'statute',
-      content:
-        'تقيد الدعوى بصحيفة تودع لدى المحكمة مشتملة على أسماء الخصوم وبياناتهم وموضوع الدعوى وأسانيدها والطلبات الجازمة للمدعي.',
-    },
-  ],
-  criminal: [
-    {
-      id: 'rag-crm-1',
-      title: 'المادة (35) من نظام الإجراءات الجزائية (م/2)',
-      source: 'نظام الإجراءات الجزائية',
-      category: 'statute',
-      content:
-        'في غير حالات التلبس بالجريمة، لا يجوز القبض على أي إنسان أو توقيفه إلا بأمر من السلطة المختصة بذلك نظاماً (النيابة العامة)، وكل إجراء يخالف ذلك يقع باطلاً بطلاناً مطلقاً.',
-    },
-    {
-      id: 'rag-crm-2',
-      title: 'المادة (40) من نظام الإجراءات الجزائية (حرمة المساكن)',
-      source: 'نظام الإجراءات الجزائية',
-      category: 'statute',
-      content:
-        'للأشخاص ومساكنهم ومكاتبهم ومراكبهم حرمة تجب حمايتها، ولا يجوز تفتيش أي منها إلا بإذن مسبب ومحدد من النيابة العامة أو في حالات التلبس المحددة حصراً نظاماً.',
-    },
-    {
-      id: 'rag-crm-3',
-      title: 'المادة (102) من نظام الإجراءات الجزائية (بطلان الاعتراف)',
-      source: 'نظام الإجراءات الجزائية',
-      category: 'statute',
-      content:
-        'يجب أن يكون الاستجواب خالياً من أي تأثير أو إكراه مادي أو معنوي، ولا يُعتد بأي اعتراف أو إقرار صادر تحت وطأة الوعد أو الوعيد أو الإجراءات الباطلة.',
-    },
-    {
-      id: 'rag-crm-4',
-      title: 'قاعدة (الأصل في الإنسان البراءة والشك يفسر لمصلحة المتهم)',
-      source: 'المبادئ الجزائية المستقرة للمحكمة العليا',
-      category: 'precedent',
-      content:
-        'الأحكام الجزائية تبنى على الجزم واليقين المستخلص من الدليل القاطع المشروع، ولا تبنى على الظن والاحتمال أو الأدلة المستمدة من إجراءات باطلة.',
-    },
-  ],
-};
 
 export function LegalReviewEditor({
   initialContent,
@@ -230,6 +142,11 @@ export function LegalReviewEditor({
   const [activeTab, setActiveTab] = useState<'editor' | 'highlighted' | 'judges'>('editor');
   const [copied, setCopied] = useState(false);
   const [referenceSearch, setReferenceSearch] = useState('');
+  const [referenceResults, setReferenceResults] = useState<RagReference[]>([]);
+  const [referencesLoading, setReferencesLoading] = useState(false);
+  const [referenceError, setReferenceError] = useState('');
+  const [referenceBlockers, setReferenceBlockers] = useState<string[]>([]);
+  const [referenceMeta, setReferenceMeta] = useState<ReferenceSearchMeta | null>(null);
 
   // 3 Mandatory Checkboxes for Legal Approval Gate
   const [checkNames, setCheckNames] = useState(false);
@@ -238,6 +155,7 @@ export function LegalReviewEditor({
 
   // 3-Judge Cassation, Appeal & Attachments Panel State
   const [judgesReport, setJudgesReport] = useState<DetailedJudgesReviewReport | null>(null);
+  const [judgesSourceAudit, setJudgesSourceAudit] = useState<JudgesSourceAudit | null>(null);
   const [isLoadingJudges, setIsLoadingJudges] = useState(false);
   const [previousContent, setPreviousContent] = useState<string | null>(null);
   const [revisionToast, setRevisionToast] = useState<string | null>(null);
@@ -256,6 +174,7 @@ export function LegalReviewEditor({
 
   const handleRunJudgesAudit = async () => {
     setIsLoadingJudges(true);
+    setJudgesSourceAudit(null);
     setActiveTab('judges');
     try {
       const response = await fetch('/api/judges-review', {
@@ -267,18 +186,18 @@ export function LegalReviewEditor({
           serviceId,
           documentTitle,
           clientName: clientName || 'صاحب الشأن',
-          nationalId: nationalId || 'غير مسجل',
           attachmentsText: attachmentsText || uploadedFileText || '',
           uploadedFileName: uploadedFileName || '',
         }),
       });
 
       if (!response.ok) {
-        throw new Error('تعذر استدعاء هيئة قضاة النقض والاستئناف');
+        throw new Error('تعذر تشغيل هيئة المراجعة القضائية الآلية');
       }
 
       const data = await response.json();
       const report = data.report || data.auditReport;
+      setJudgesSourceAudit(data.sourceAudit || null);
       if (report) {
         setJudgesReport(normalizeJudgesReport(report, content));
       }
@@ -295,18 +214,18 @@ export function LegalReviewEditor({
     if (onContentChange) {
       onContentChange(revisedText);
     }
-    setRevisionToast('تم استبدال نص المذكرة بالصياغة المعدلة المعتمدة من قضاة النقض والاستئناف بنجاح ✓');
+    setRevisionToast('تم تطبيق الصياغة المقترحة من هيئة المراجعة الآلية في المحرر ✓');
     setTimeout(() => setRevisionToast(null), 5000);
   };
 
   const handleApplySpecificAmendment = (amendmentText: string) => {
     setPreviousContent(content);
-    const newContent = `${content}\n\n[تعديل قضائي معتمد]:\n${amendmentText}`;
+    const newContent = `${content}\n\n[تعديل مقترح من المراجعة الآلية]:\n${amendmentText}`;
     setContent(newContent);
     if (onContentChange) {
       onContentChange(newContent);
     }
-    setRevisionToast('تم إدراج تعديل فضيلة القاضي في صلب المذكرة بنجاح ✓');
+    setRevisionToast('تم إدراج التعديل المقترح في صلب المذكرة ✓');
     setTimeout(() => setRevisionToast(null), 5000);
   };
 
@@ -388,21 +307,60 @@ export function LegalReviewEditor({
     return text;
   }, [content]);
 
-  // Filtered RAG references for active court
-  const courtReferences = RAG_REFERENCES_BY_COURT[court] || RAG_REFERENCES_BY_COURT.administrative;
-  const filteredReferences = useMemo(() => {
-    if (!referenceSearch.trim()) return courtReferences;
-    const q = referenceSearch.toLowerCase();
-    return courtReferences.filter(
-      (r) =>
-        r.title.toLowerCase().includes(q) ||
-        r.content.toLowerCase().includes(q) ||
-        r.source.toLowerCase().includes(q)
-    );
-  }, [courtReferences, referenceSearch]);
+  // Official-source-only legal references. No hardcoded legal quotation is inserted from the UI.
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setReferencesLoading(true);
+      setReferenceError('');
+      try {
+        const response = await fetch('/api/legal-source-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            court,
+            query: [documentTitle, referenceSearch].filter(Boolean).join(' '),
+          }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error('تعذر استرجاع المراجع الرسمية.');
+        if (cancelled) return;
+        setReferenceResults(Array.isArray(payload.references) ? payload.references : []);
+        setReferenceBlockers(Array.isArray(payload.blockers) ? payload.blockers : []);
+        setReferenceMeta(payload.meta || null);
+      } catch (error) {
+        if (cancelled || (error instanceof DOMException && error.name === 'AbortError')) return;
+        setReferenceResults([]);
+        setReferenceBlockers([]);
+        setReferenceMeta(null);
+        setReferenceError(error instanceof Error ? error.message : 'تعذر استرجاع المراجع الرسمية.');
+      } finally {
+        if (!cancelled) setReferencesLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [court, documentTitle, referenceSearch]);
+
+  const filteredReferences = useMemo(() => referenceResults, [referenceResults]);
 
   const handleInsertReference = (ref: RagReference) => {
-    const insertion = `\n\n[استناداً إلى ${ref.title} (${ref.source}):\n"${ref.content}"]\n`;
+    const insertion = [
+      '',
+      '',
+      `[مرجع رسمي للتحقق: ${ref.title}`,
+      ref.issueInstrument ? `أداة الإصدار: ${ref.issueInstrument}` : '',
+      `المصدر: ${ref.sourceUrl}`,
+      ref.coverage ? `تغطية المستودع: ${ref.coverage}` : '',
+      'تنبيه: لا يعتمد أي نص حرفي للمادة إلا بعد مطابقته بالمصدر الرسمي.]',
+      '',
+    ].filter(Boolean).join('\n');
     const newContent = content + insertion;
     setContent(newContent);
     if (onContentChange) onContentChange(newContent);
@@ -506,7 +464,7 @@ export function LegalReviewEditor({
               }`}
             >
               <Gavel className="w-3.5 h-3.5 text-amber-400" />
-              <span>هيئة قضاة النقض والاستئناف ⚖️</span>
+              <span>هيئة المراجعة القانونية الآلية ⚖️</span>
               {judgesReport && (
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               )}
@@ -570,7 +528,7 @@ export function LegalReviewEditor({
         </div>
       </div>
 
-      {/* 3. Judicial Oversight Quick Banner (قضاة النقض والاستئناف والمرفقات) */}
+      {/* 3. Legal AI review banner */}
       <div className="p-4 rounded-3xl bg-neutral-900 border border-amber-500/30 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
@@ -579,16 +537,16 @@ export function LegalReviewEditor({
           <div>
             <div className="flex items-center gap-2">
               <h4 className="text-xs sm:text-sm font-bold text-neutral-100">
-                هيئة فحص وتعديل قضاة النقض والاستئناف والمرفقات
+                هيئة المراجعة القانونية الآلية متعددة المسارات
               </h4>
               {isAllApproved && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  معتمد بعد التظليل
+                  اكتملت المراجعة اليدوية
                 </span>
               )}
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">
-              فحص أخطاء الطعن بالنقض، عيوب عريضة الدعوى، ونواقص المرفقات مع اقتراح التعديلات اللازمة والصياغة الجاهزة للإيداع.
+              تحليل أخطاء الاعتراض والدعوى ونواقص المرفقات، مع اقتراح تعديلات ومسودة منقحة مرتبطة بحالة التحقق المرجعي.
             </p>
           </div>
         </div>
@@ -609,10 +567,10 @@ export function LegalReviewEditor({
             <Scale className="w-4 h-4" />
             <span>
               {isLoadingJudges
-                ? 'جارٍ انعقاد الهيئة...'
+                ? 'جارٍ تشغيل المراجعين...'
                 : judgesReport
-                ? 'معاينة تقرير وتعديلات القضاة ⚖️'
-                : 'فحص وتعديل القضاة للمذكرة والمرفقات ⚖️'}
+                ? 'معاينة تقرير المراجعة الآلية ⚖️'
+                : 'تشغيل المراجعة الآلية للمذكرة والمرفقات ⚖️'}
             </span>
           </button>
         </div>
@@ -622,6 +580,7 @@ export function LegalReviewEditor({
       {activeTab === 'judges' ? (
         <JudgesCassationReviewPanel
           report={judgesReport}
+          sourceAudit={judgesSourceAudit}
           isLoading={isLoadingJudges}
           onRunAudit={handleRunJudgesAudit}
           onApplyFullRevision={handleApplyFullRevision}
@@ -640,39 +599,69 @@ export function LegalReviewEditor({
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-amber-400" />
-                <h3 className="text-sm font-bold text-neutral-100">المراجع والأسانيد النظامية (RAG Data)</h3>
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-100">المراجع الرسمية المتحققة</h3>
+                  <p className="mt-0.5 text-[10px] text-neutral-500">بيانات مصدر موثق فقط — لا تُحقن نصوص مواد من الذاكرة.</p>
+                </div>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-800 text-amber-300">
-                {filteredReferences.length} أسانيد
+                {filteredReferences.length} مراجع
               </span>
             </div>
 
-            {/* Quick Search */}
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2" />
+              {referencesLoading
+                ? <LoaderCircle className="w-3.5 h-3.5 text-amber-400 absolute right-3 top-1/2 -translate-y-1/2 animate-spin" />
+                : <Search className="w-3.5 h-3.5 text-neutral-400 absolute right-3 top-1/2 -translate-y-1/2" />}
               <input
                 type="text"
                 value={referenceSearch}
                 onChange={(e) => setReferenceSearch(e.target.value)}
-                placeholder="بحث في مواد النظام والسوابق..."
+                placeholder="ابحث باسم النظام، المادة، المرسوم أو الموضوع..."
                 className="w-full pl-3 pr-8 py-1.5 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs focus:border-amber-500 outline-none"
               />
             </div>
 
-            {/* Reference Items List */}
+            {referenceMeta && (
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/5 px-2.5 py-2 text-neutral-400">
+                  مصادر رسمية: <span className="font-bold text-emerald-300">{referenceMeta.officialSources}</span>
+                </div>
+                <div className="rounded-xl border border-cyan-500/15 bg-cyan-500/5 px-2.5 py-2 text-neutral-400">
+                  مواد مفهرسة: <span className="font-bold text-cyan-300">{referenceMeta.verifiedArticles}</span>
+                </div>
+              </div>
+            )}
+
+            {referenceError && (
+              <div className="rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2.5 text-[10px] font-bold text-rose-200">
+                {referenceError}
+              </div>
+            )}
+
             <div className="h-[460px] overflow-y-auto space-y-3 custom-scrollbar pr-1">
+              {!referencesLoading && filteredReferences.length === 0 && !referenceError && (
+                <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-center text-[11px] leading-6 text-neutral-500">
+                  لم يظهر مرجع رسمي مطابق بدرجة كافية. غيّر عبارة البحث، ولا تعتمد سنداً من الذاكرة.
+                </div>
+              )}
+
               {filteredReferences.map((ref) => (
                 <div
                   key={ref.id}
                   className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 hover:border-amber-500/40 transition-colors space-y-2 group"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 inline-block mb-1">
-                        {ref.category === 'decree' && 'مرسوم ملكي نافذ'}
-                        {ref.category === 'statute' && 'مادة نظامية'}
-                        {ref.category === 'shura' && 'قرار مجلس الشورى'}
-                        {ref.category === 'precedent' && 'مبدأ قضائي سارٍ'}
+                    <div className="min-w-0">
+                      <span className={
+                        'text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 ' +
+                        (ref.agentStatus === 'success'
+                          ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
+                          : ref.agentStatus === 'warning'
+                            ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                            : 'bg-rose-500/10 text-rose-300 border-rose-500/20')
+                      }>
+                        {ref.category}
                       </span>
                       <h4 className="text-xs font-bold text-neutral-100 group-hover:text-amber-300 transition-colors">
                         {ref.title}
@@ -683,27 +672,59 @@ export function LegalReviewEditor({
                       type="button"
                       onClick={() => handleInsertReference(ref)}
                       className="px-2 py-1 rounded-lg bg-neutral-800 hover:bg-amber-500 hover:text-neutral-950 text-neutral-300 text-[10px] font-bold transition-all shrink-0 cursor-pointer"
-                      title="إدراج النص في المذكرة"
+                      title="إدراج بيانات المرجع الرسمي دون اقتباس حرفي"
                     >
-                      + إدراج السند
+                      + إدراج المرجع
                     </button>
                   </div>
 
-                  <p className="text-[11px] text-neutral-400 leading-relaxed line-clamp-4">
-                    {ref.content}
-                  </p>
+                  {ref.issueInstrument && (
+                    <p className="text-[10px] text-neutral-400 leading-relaxed">
+                      <span className="font-bold text-neutral-300">أداة الإصدار:</span> {ref.issueInstrument}
+                    </p>
+                  )}
 
-                  <div className="text-[10px] text-neutral-400 pt-1 border-t border-neutral-900 font-mono">
-                    المصدر: {ref.source}
+                  {ref.verificationNote && (
+                    <p className="text-[11px] text-neutral-400 leading-relaxed line-clamp-4">
+                      {ref.verificationNote}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-neutral-900">
+                    <span className="text-[10px] text-neutral-500">
+                      {ref.source}{ref.coverage ? ' • ' + ref.coverage : ''}
+                    </span>
+                    <a
+                      href={ref.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-300 hover:text-cyan-200"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      فتح المصدر الرسمي
+                    </a>
                   </div>
                 </div>
               ))}
             </div>
+
+            {referenceBlockers.length > 0 && (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+                <div className="text-[10px] font-bold text-amber-200">قيود تحقق يجب الانتباه لها</div>
+                <div className="mt-1 space-y-1">
+                  {referenceBlockers.slice(0, 3).map((blocker, index) => (
+                    <div key={index} className="text-[9px] leading-5 text-amber-100/70">• {blocker}</div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-400 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>الأسانيد مطابقة للأنظمة والمراسيم الملكية السارية بالمملكة العربية السعودية.</span>
+          <div className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-400 flex items-start gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <span>
+              تعرض هذه اللوحة بيانات مصادر رسمية مفهرسة. وجود المرجع لا يعني أن نص المادة الحرفي مخزن أو أن الحكم القضائي السابق متحقق؛ افتح المصدر الرسمي قبل اعتماد الاقتباس أو الأثر القانوني.
+            </span>
           </div>
         </div>
 
@@ -835,7 +856,7 @@ export function LegalReviewEditor({
                       اكتمل اعتماد التظليل الذكي ومطابقة البيانات الجوهرية!
                     </span>
                     <span className="text-neutral-300 text-[11px]">
-                      اعرض المذكرة الآن على هيئة قضاة النقض والاستئناف لفحص وتعديل أخطاء الطعن والمرفقات قبل التصدير.
+                      شغّل هيئة المراجعة الآلية لفحص الاعتراض والدعوى والمرفقات، ثم راجع المصادر الرسمية قبل التصدير.
                     </span>
                   </div>
                 </div>
@@ -850,8 +871,8 @@ export function LegalReviewEditor({
                     {isLoadingJudges
                       ? 'جارٍ الفحص...'
                       : judgesReport
-                      ? 'معاينة فحص وتعديل القضاة ⚖️'
-                      : 'فحص وتعديل هيئة القضاة ⚖️'}
+                      ? 'معاينة تقرير المراجعة الآلية ⚖️'
+                      : 'تشغيل هيئة المراجعة الآلية ⚖️'}
                   </span>
                 </button>
               </div>

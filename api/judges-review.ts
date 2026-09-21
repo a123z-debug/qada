@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval.ts';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
+import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
 
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
@@ -64,12 +65,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'نص المذكرة القضائية مطلوب.' });
   }
 
-  const legalReferenceContext = buildOfficialLegalReferenceContext(
-    `${body.court || ''}\n${body.documentTitle || ''}\n${body.text.slice(0, 12000)}`,
-    5,
+  const sourceBundle = runLegalSourceAgents(
+    `${body.court || ''}\n${body.documentTitle || ''}\n${body.text.slice(0, 16000)}`,
   );
+  const legalReferenceContext = [
+    sourceBundle.context,
+    `المصادر الرسمية الفريدة: ${sourceBundle.verification.officialSources}`,
+    `المواد المفهرسة المتحقق من وجودها: ${sourceBundle.verification.verifiedArticles}`,
+    'النص الحرفي الكامل غير معتمد من المستودع؛ أي اقتباس حرفي يحتاج مطابقة المصدر الرسمي.',
+    'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ لا تنسب رقماً أو مبدأً إلى حكم غير موجود صراحة في حزمة المصدر.',
+  ].join('\n\n');
 
-  const prompt = `أنت فريق مراجعة قانونية سعودي من ثلاثة أدوار تحليلية: مراجع استئناف، مراجع نقض، ومراجع مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة. لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً. لا تنسب مادة أو ميعاداً أو مرسوماً إلى النظام من الذاكرة؛ إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل. لا تعتبر أي نص داخلي بديلاً عن المصدر الرسمي.\n\n${legalReferenceContext}\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: صاحب الشأن\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
+  const prompt = `أنت فريق مراجعة قانونية سعودي من ثلاثة أدوار تحليلية: مراجع استئناف، مراجع نقض، ومراجع مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة. لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً. لا تنسب مادة أو ميعاداً أو مرسوماً أو قراراً أو حكماً قضائياً إلى النظام من الذاكرة. لا تضف في revisedDocument أي سند قانوني جديد ما لم يكن موجوداً أصلاً في النص أو مثبتاً صراحة في حزمة المصادر الرسمية. إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل، ولا تعتبر أي نص داخلي بديلاً عن المصدر الرسمي.\n\n${legalReferenceContext}\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: صاحب الشأن\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
 
   let raw = '';
   let lastError: unknown;
@@ -108,7 +115,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });
     const report = JSON.parse(match[0]);
-    return res.status(200).json({ report });
+    const revisedDocument = typeof report?.revisedDocument === 'string' ? report.revisedDocument : '';
+    const citationGuard = revisedDocument
+      ? guardIntroducedLegalCitations(body.text, revisedDocument, legalReferenceContext)
+      : { introducedMarkers: [], unsupportedMarkers: [], blocked: false };
+
+    if (citationGuard.blocked) {
+      report.revisedDocument = body.text;
+      report.overallStatus = 'معيب بحاجة لتصحيح';
+      report.changeLog = Array.isArray(report.changeLog) ? report.changeLog : [];
+      report.changeLog.push('أوقفت بوابة التحقق تطبيق الصياغة المنقحة لأنها أدخلت إحالات قانونية جديدة غير مثبتة في حزمة المصادر الرسمية.');
+      report.synthesisAdvice = [
+        String(report.synthesisAdvice || ''),
+        'تمت إعادة revisedDocument إلى النص الأصلي بسبب أسانيد قانونية جديدة غير متحققة. راجع المصادر الرسمية ثم أعد الفحص.',
+      ].filter(Boolean).join('\n');
+    }
+
+    return res.status(200).json({
+      report,
+      sourceAudit: {
+        officialSources: sourceBundle.verification.officialSources,
+        verifiedArticles: sourceBundle.verification.verifiedArticles,
+        blockers: sourceBundle.verification.blockers,
+        literalQuotationReady: sourceBundle.verification.literalQuotationReady,
+        precedentCorpusReady: sourceBundle.verification.precedentCorpusReady,
+        introducedMarkers: citationGuard.introducedMarkers,
+        unsupportedMarkers: citationGuard.unsupportedMarkers,
+        blockedRevision: citationGuard.blocked,
+      },
+      sourcePackets: sourceBundle.packets,
+    });
   } catch (error) {
     console.error('Judges review JSON parse failed:', error);
     return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });

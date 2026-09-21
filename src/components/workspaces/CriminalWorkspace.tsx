@@ -23,18 +23,19 @@ interface CriminalWorkspaceProps {
   userSession?: UserSession | null;
 }
 
-const STORAGE_KEY = 'diwan_criminal_draft_v2';
+const STORAGE_KEY_PREFIX = 'diwan_criminal_draft_v3';
 
 export function CriminalWorkspace({
   service = 'criminal_defense',
   userSession,
 }: CriminalWorkspaceProps) {
   const currentService = service || 'criminal_defense';
+  const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
 
   // Restore draft from LocalStorage
   const getInitialState = () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       if (saved) return JSON.parse(saved);
     } catch {
       // ignore
@@ -42,10 +43,10 @@ export function CriminalWorkspace({
     return {
       defendantName: userSession?.name || 'المتهم / الموكل',
       nationalId: userSession?.nationalId || 'الهوية الوطنية',
-      chargeSubject: 'التهمة المنسوبة بموجب لائحة دعوى النيابة العامة واشتباه جنائي',
-      investigationFlaws: 'بطلان القبض والتفتيش لانتفاء حالة التلبس وعدم صدور إذن مسبق من النيابة العامة وفق المواد 35 و 40 من نظام الإجراءات الجزائية، وبطلان استخلاص الدليل.',
-      legalGrounds: 'نظام الإجراءات الجزائية الصادر بالمرسوم الملكي (م/2)، والمواد (35، 36، 40، 43) بشأن حرمة المساكن والأشخاص وبطلان الإجراء غير المشروع، وقاعدة (ما بُني على باطل فهو باطل)، وأصل البراءة وتفسير الشك لمصلحة المتهم.',
-      defenseDemands: '1. بطلان إجراءات القبض والتفتيش واستبعاد كافة الأدلة المستمدة منهما تطبيقاً لنظام الإجراءات الجزائية.\n2. الحكم ببراءة المتهم من التهمة المنسوبة إليه لانتفاء القصد الجنائي ولثبوت الشك.\n3. رد الدعوى الجزائية وإطلاق سراحه فوراً.',
+      chargeSubject: 'اكتب التهمة أو موضوع القضية كما ورد في لائحة الدعوى أو محضر التحقيق.',
+      investigationFlaws: 'اكتب الملاحظات على إجراءات الضبط أو التحقيق كما تظهر في المستندات، دون افتراض بطلانها مسبقاً.',
+      legalGrounds: 'لم يتم التحقق من سند نظامي بعد. استخدم أداة التكييف أو البحث الرسمي لربط الوقائع بالمراجع المتحققة.',
+      defenseDemands: 'اكتب الطلبات التي تريد بحثها، وسيتم فحص مدى ملاءمتها للمرحلة والإجراءات والمستندات.',
       userStory: '',
       uploadedFileName: '',
       uploadedFileText: '',
@@ -108,7 +109,7 @@ export function CriminalWorkspace({
         uploadedFileText,
         generatedOutput,
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(storageKey, JSON.stringify(data));
       const now = new Date();
       setLastSavedTime(`تم الحفظ في ${now.toLocaleTimeString('ar-SA')}`);
     } catch {
@@ -149,31 +150,50 @@ export function CriminalWorkspace({
     setGeneratedOutput('');
 
     const storyAddon = userStory.trim()
-      ? `\n\n[سرد المتهم/الموكل باللغة العادية أو نص المحضر المنسوخ لما حدث (صار كذا كذا)]:\n"""\n${userStory}\n"""\nالمطلوب: تكييف هذا السرد البسيط واستخراج مواد نظام الإجراءات الجزائية (المواد 35 و 40 و 43) وبطلان الإجراءات والتمسك بأصل البراءة ودرء الشبهات.`
+      ? `\n\n[سرد المتهم/الموكل أو نص المحضر المنسوخ]:\n"""\n${userStory}\n"""\nالمطلوب: تكييف الوقائع دون افتراض بطلان أو براءة، وربط أي سند نظامي بالمصدر الرسمي المسترجع فقط.`
       : '';
+
+    const sharedRules = `قواعد إلزامية:
+- لا تفترض بطلان القبض أو التفتيش أو التوقيف؛ افحص الوقائع والمستندات أولاً.
+- لا تذكر رقم مادة أو مرسوم أو ميعاد من الذاكرة.
+- استخدم فقط الأسانيد الرسمية المسترجعة من الخادم، واذكر ما يحتاج تحققاً.
+- لا تعرض رقم الهوية الوطنية في المخرجات.
+- صغ النتيجة كمسودة دفاع للمراجعة البشرية، لا كحكم أو ضمان نتيجة.`;
 
     let prompt = '';
     if (currentService === 'criminal_defense') {
-      prompt = `بصفتك محامياً ومستشاراً جنائياً بارعاً في المحاكم الجزائية بالمملكة العربية السعودية، صغ (مذكرة دفاع جنائي) قوية تدحض لائحة الاتهام:
-المتهم: ${defendantName} (هوية: ${nationalId})
-التهمة المنسوبة: ${chargeSubject}
-أوجه البطلان وعيوب التحقيق: ${investigationFlaws}
-الأسانيد النظامية والشرعية: ${legalGrounds}
+      prompt = `صغ مسودة مذكرة دفاع جنائي للمراجعة:
+المتهم: ${defendantName}
+التهمة كما أدخلها المستخدم: ${chargeSubject}
+الملاحظات على إجراءات التحقيق/الضبط: ${investigationFlaws}
+الأسانيد التي أدخلها المستخدم أو استخرجها النظام: ${legalGrounds}
 ${storyAddon}
-${uploadedFileText ? `بيانات المرفقات المودعة: ${uploadedFileText}` : ''}
-الطلبات:
+${uploadedFileText ? `بيانات المرفقات: ${uploadedFileText}` : ''}
+الطلبات المراد بحثها:
 ${defenseDemands}
 
-الصياغة يجب أن تكون قاطعة ومحكمة أمام الدائرة الجزائية بالمحكمة الجزائية، بالتركيز على أصل البراءة وقاعدة أن الشك يُفسر لمصلحة المتهم وبطلان الإجراءات المخالفة لنظام الإجراءات الجزائية.`;
+${sharedRules}`;
     } else if (currentService === 'criminal_appeal') {
-      prompt = `صغ (لائحة اعتراض واستئناف حكم جزائي) أمام محكمة الاستئناف الجزائية للطعن في إدانة أو عقوبة تعزيرية على ${defendantName} بالاستناد لمخالفة الإجراءات والخطأ في تكييف الواقعة.
-${storyAddon}`;
+      prompt = `صغ مسودة اعتراض أو استئناف جزائي للمراجعة، وحدد أولاً ما يلزم التحقق منه من الحكم والتبليغ والميعاد والأسباب دون افتراضها.
+صاحب الشأن: ${defendantName}
+موضوع القضية: ${chargeSubject}
+${storyAddon}
+
+${sharedRules}`;
     } else if (currentService === 'criminal_procedural') {
-      prompt = `صغ مذكرة دفوع شكلية قاطعة بالبطلان المطلق لإجراءات الضبط والقبض والتفتيش لخرق المواد 35 و 40 من نظام الإجراءات الجزائية وانعدام حالة التلبس واستبعاد الدليل الجنائي الباطل في قضية ${defendantName}.
-${storyAddon}`;
+      prompt = `حلل إجراءات الضبط والقبض والتفتيش والتوقيف في القضية التالية، وحدد فقط ما يمكن وصفه بخلل بعد ربطه بالوقائع والمصدر الرسمي.
+صاحب الشأن: ${defendantName}
+الملاحظات المدخلة: ${investigationFlaws}
+${storyAddon}
+
+${sharedRules}`;
     } else {
-      prompt = `صغ مذكرة إيداع بينات ومحاضر دفاع أمام المحكمة الجزائية لفحص محضر الضبط (${uploadedFileName || 'المرفقات'}) واستخراج أوجه البطلان لصالح المتهم ${defendantName}.
-${storyAddon}`;
+      prompt = `صغ مذكرة إيداع ومراجعة للمرفقات في قضية جزائية، واربط كل ملاحظة بما يظهر فعلاً في المستند.
+صاحب الشأن: ${defendantName}
+المرفق: ${uploadedFileName || 'مرفقات القضية'}
+${storyAddon}
+
+${sharedRules}`;
     }
 
     try {
@@ -183,7 +203,6 @@ ${storyAddon}`;
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],
           targetCourt: 'المحكمة الجزائية',
-          clientNationalId: nationalId,
           clientPersonName: defendantName,
           powerMode: true,
         }),
@@ -221,7 +240,17 @@ ${storyAddon}`;
       }
 
       if (!fullText) {
-        fullText = `بسم الله الرحمن الرحيم\n\nلدى فضيلة رئيس وأعضاء الدائرة الجزائية بالمحكمة الجزائية الموقرين\n\nالسلام عليكم ورحمة الله وبركاته،، وبعد:\n\nمذكرة دفاع في القضية الجزائية المقامة ضد المتهم: ${defendantName} - سجل مدني: (${nationalId})\n\nأولاً: الدفوع الشكلية ببطلان إجراءات القبض والتفتيش:\nحيث تنص المادة (35) من نظام الإجراءات الجزائية على أنه "في غير حالات التلبس بالجريمة، لا يجوز القبض على أي إنسان أو توقيفه إلا بأمر من السلطة المختصة بذلك نظاماً"، وحيث ثبت انتفاء حالة التلبس وعدم صدور إذن نظامي مسبب، فإن القبض والتفتيش يقعان باطلين بطلاناً مطلقاً، وما تولد عنهما من أدلة ومضبوطات يعد باطلاً إعمالاً لقاعدة (ما بُني على باطل فهو باطل).\n\nثانياً: في الموضوع وأصل البراءة:\nالأصل الشرعي والنظامي براءة الذمة، واليقين لا يزول بالشك، والاتهام لم يقم على دليل قاطع، بل جاء متهاتراً ومستنداً لإجراءات معيبة.\n\nبناءً عليه، يطلب الدفاع الحكم بـ:\n${defenseDemands}\n\nوتقبلوا وافر الاحترام،،\nوكيل المتهم: ${defendantName}`;
+        fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
+
+بيانات العمل المحفوظة:
+- صاحب الشأن: ${defendantName}
+- موضوع القضية: ${chargeSubject}
+- ملاحظات الإجراءات: ${investigationFlaws}
+- الأسانيد المدخلة/المستخرجة: ${legalGrounds}
+- الطلبات المراد بحثها:
+${defenseDemands}
+
+أعد المحاولة بعد عودة الخدمة، ثم راجع المصادر الرسمية قبل اعتماد أي سند.`;
         setGeneratedOutput(fullText);
       }
 
@@ -229,7 +258,18 @@ ${storyAddon}`;
       setIsReviewMode(true);
     } catch (err) {
       console.error('Criminal generation failed:', err);
-      const fallback = `بسم الله الرحمن الرحيم\n\nلدى المحكمة الجزائية الموقرة\n\nالمتهم: ${defendantName} (هوية: ${nationalId})\nالموضوع: مذكرة دفاع جنائي\n\nالدفوع:\n${investigationFlaws}\n\nالأسانيد:\n${legalGrounds}\n\nالطلبات:\n${defenseDemands}\n\nمقدمه: ${defendantName}`;
+      const fallback = `تعذر إكمال الصياغة الآلية، ولم تُنشأ أسانيد بديلة.
+
+صاحب الشأن: ${defendantName}
+موضوع القضية: ${chargeSubject}
+ملاحظات الإجراءات:
+${investigationFlaws}
+
+الأسانيد المدخلة أو المستخرجة سابقاً — تحتاج تحققاً:
+${legalGrounds}
+
+الطلبات المراد بحثها:
+${defenseDemands}`;
       setGeneratedOutput(fallback);
       setIsReviewMode(true);
     } finally {

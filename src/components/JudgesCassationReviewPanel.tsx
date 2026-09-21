@@ -24,8 +24,20 @@ import {
 import { DetailedJudgesReviewReport, DetailedJudgeItem } from '../types';
 import { printLegalMemo } from '../utils/printMemo';
 
+interface JudgesSourceAudit {
+  officialSources: number;
+  verifiedArticles: number;
+  blockers: string[];
+  literalQuotationReady: boolean;
+  precedentCorpusReady: boolean;
+  introducedMarkers?: string[];
+  unsupportedMarkers?: string[];
+  blockedRevision?: boolean;
+}
+
 interface JudgesCassationReviewPanelProps {
   report: DetailedJudgesReviewReport | null;
+  sourceAudit?: JudgesSourceAudit | null;
   isLoading: boolean;
   onRunAudit: () => void;
   onApplyFullRevision: (revisedText: string) => void;
@@ -38,6 +50,7 @@ interface JudgesCassationReviewPanelProps {
 
 export function JudgesCassationReviewPanel({
   report,
+  sourceAudit,
   isLoading,
   onRunAudit,
   onApplyFullRevision,
@@ -53,6 +66,7 @@ export function JudgesCassationReviewPanel({
   const [expandedJudge, setExpandedJudge] = useState<string | null>('judge_cassation');
 
   const reviewFailed = report?.overallStatus === 'تعذر إكمال الفحص الآلي';
+  const revisionBlocked = Boolean(sourceAudit?.blockedRevision);
   const isSoundDocument =
     !reviewFailed &&
     ((report?.cassationErrors?.items?.length === 0 && report?.claimErrors?.items?.length === 0) ||
@@ -90,8 +104,13 @@ export function JudgesCassationReviewPanel({
   };
 
   const handleApplyFull = (text: string) => {
+    if (revisionBlocked) {
+      setAppliedNotification('لم تُطبق الصياغة: بوابة التحقق رصدت إحالات قانونية جديدة غير متحققة.');
+      setTimeout(() => setAppliedNotification(null), 5000);
+      return;
+    }
     onApplyFullRevision(text);
-    setAppliedNotification('تم تطبيق الصياغة المنقحة بالكامل في المحرر بنجاح ✓');
+    setAppliedNotification('تم تطبيق الصياغة المنقحة في المحرر ✓');
     setTimeout(() => setAppliedNotification(null), 4000);
   };
 
@@ -109,24 +128,24 @@ export function JudgesCassationReviewPanel({
         </div>
         <div className="space-y-2">
           <h3 className="text-base font-bold text-neutral-100">
-            انعقاد جلسة الفحص المشتركة لهيئة قضاة النقض والاستئناف والمحكمة العليا...
+            تشغيل هيئة المراجعة القانونية الآلية متعددة المسارات...
           </h3>
           <p className="text-xs text-neutral-400 max-w-lg mx-auto leading-relaxed">
-            يجري الآن فحص عوار ومخالفات النقض، وتدقيق عريضة الدعوى والطلبات، ومطابقة كفاية وحجية المرفقات مع نظام الإثبات لإعداد التعديلات القضائية المصوبة.
+            يجري الآن تحليل أوجه الاعتراض، وتدقيق الدعوى والطلبات والمرفقات، مع تمييز ما تم التحقق منه مرجعياً عما يحتاج مراجعة مصدر رسمي.
           </p>
         </div>
         <div className="flex justify-center gap-2 pt-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-800 text-[11px] text-amber-300 border border-neutral-700">
             <Scale className="w-3.5 h-3.5" />
-            <span>قاضي الاستئناف</span>
+            <span>مراجع الاستئناف</span>
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-800 text-[11px] text-rose-300 border border-neutral-700">
             <Gavel className="w-3.5 h-3.5" />
-            <span>قاضي المحكمة العليا (النقض)</span>
+            <span>مراجع النقض</span>
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-800 text-[11px] text-sky-300 border border-neutral-700">
             <Paperclip className="w-3.5 h-3.5" />
-            <span>قاضي تدقيق المرفقات</span>
+            <span>مراجع المرفقات</span>
           </span>
         </div>
       </div>
@@ -140,9 +159,9 @@ export function JudgesCassationReviewPanel({
           <Scale className="w-6 h-6" />
         </div>
         <div>
-          <h4 className="text-sm font-bold text-neutral-100">فحص وتعديل هيئة قضاة النقض والاستئناف والمرفقات</h4>
+          <h4 className="text-sm font-bold text-neutral-100">هيئة المراجعة القانونية الآلية</h4>
           <p className="text-xs text-neutral-400 max-w-md mx-auto mt-1 leading-relaxed">
-            بعد مراجعة واعتماد التظليل الذكي، اعرض مذكرتك على دائرة قضائية متخصصة تضم قضاة من محكمة الاستئناف والمحكمة العليا لفحص أوجه البطلان وكشف أخطاء النقض والدعوى والمرفقات وتعديلها تلقائياً.
+            بعد مراجعة البيانات، شغّل هيئة تحليلية متعددة الأدوار لفحص أوجه الاعتراض والدعوى والمرفقات. هذه مراجعة آلية وليست رأياً صادراً من محكمة أو قاضٍ.
           </p>
         </div>
         <button
@@ -150,7 +169,7 @@ export function JudgesCassationReviewPanel({
           className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-bold text-xs flex items-center gap-2 mx-auto shadow-md transition-all cursor-pointer"
         >
           <Gavel className="w-4 h-4" />
-          <span>بدء فحص الهيئة القضائية وتعديل المذكرة الآن</span>
+          <span>بدء المراجعة القانونية الآلية</span>
         </button>
       </div>
     );
@@ -177,21 +196,21 @@ export function JudgesCassationReviewPanel({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm sm:text-base font-bold text-neutral-100">
-                  تقرير هيئة قضاة النقض والاستئناف والمحكمة العليا
+                  تقرير هيئة المراجعة القانونية الآلية
                 </h3>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   {reviewFailed ? 'الفحص غير مكتمل' : 'فحص وتعديل مكتمل'}
                 </span>
               </div>
               <p className="text-xs text-neutral-400 mt-0.5">
-                فحص أوجه البطلان في النقض • أخطاء الدعوى والطلبات • تدقيق كفاية المرفقات • صياغة التعديل الجاهز
+                تحليل أوجه الاعتراض • أخطاء الدعوى والطلبات • تدقيق المرفقات • مسودة تعديل للمراجعة
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-center">
             <div className="px-3 py-1.5 rounded-xl bg-neutral-950 border border-neutral-800 text-center">
-              <div className="text-[10px] text-neutral-400 font-medium">مؤشر السلامة</div>
+              <div className="text-[10px] text-neutral-400 font-medium">مؤشر التحليل</div>
               <div className="text-sm font-bold font-mono text-amber-400">{averageScore === null ? 'غير مقيم' : `${averageScore}%`}</div>
             </div>
             <button
@@ -214,12 +233,51 @@ export function JudgesCassationReviewPanel({
           </div>
         )}
 
+        {sourceAudit && (
+          <div className={
+            'mt-3.5 p-3 rounded-2xl border flex items-start gap-2.5 ' +
+            (sourceAudit.blockers.length > 0
+              ? 'bg-amber-500/10 border-amber-500/30'
+              : 'bg-emerald-500/10 border-emerald-500/25')
+          }>
+            <BookOpen className={
+              'w-4 h-4 shrink-0 mt-0.5 ' +
+              (sourceAudit.blockers.length > 0 ? 'text-amber-400' : 'text-emerald-400')
+            } />
+            <div className="min-w-0 text-xs leading-relaxed">
+              <div className="font-bold text-neutral-200">حالة التحقق المرجعي</div>
+              <div className="mt-1 text-neutral-400">
+                مصادر رسمية: {sourceAudit.officialSources} • مواد مفهرسة: {sourceAudit.verifiedArticles}
+                {' • '}النص الحرفي: {sourceAudit.literalQuotationReady ? 'متحقق' : 'يحتاج مطابقة المصدر'}
+                {' • '}السوابق الكاملة: {sourceAudit.precedentCorpusReady ? 'جاهزة' : 'غير مكتملة'}
+              </div>
+              {sourceAudit.blockers.length > 0 && (
+                <ul className="mt-2 space-y-1 text-[11px] text-amber-100/75">
+                  {sourceAudit.blockers.slice(0, 4).map((item, index) => (
+                    <li key={index}>• {item}</li>
+                  ))}
+                </ul>
+              )}
+              {sourceAudit.blockedRevision && (
+                <div className="mt-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-2 text-[11px] font-bold text-rose-200">
+                  أوقفت بوابة التحقق تطبيق المسودة المنقحة لأنها أدخلت إحالات قانونية جديدة لم تثبت في حزمة المصادر الرسمية.
+                  {sourceAudit.unsupportedMarkers?.length ? (
+                    <div className="mt-1 font-normal text-rose-100/75">
+                      {sourceAudit.unsupportedMarkers.slice(0, 4).join(' • ')}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
                 {/* Primary Fatal Flaw Callout */}
         {report.primaryFatalDefect && (
           <div className="mt-3.5 p-3 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-start gap-2.5">
             <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
             <div className="text-xs">
-              <span className="font-bold text-rose-300 ml-1">مكمن الخلل الأبرز المشخص قضائياً:</span>
+              <span className="font-bold text-rose-300 ml-1">مكمن الخلل الأبرز وفق التحليل:</span>
               <span className="text-neutral-200 leading-relaxed font-medium">{report.primaryFatalDefect}</span>
             </div>
           </div>
@@ -258,7 +316,7 @@ export function JudgesCassationReviewPanel({
             }`}
           >
             <Scale className="w-3.5 h-3.5" />
-            <span>آراء وتعديلات قضاة الهيئة ({report.judges.length})</span>
+            <span>آراء مسارات المراجعة ({report.judges.length})</span>
           </button>
 
           <button
@@ -272,8 +330,8 @@ export function JudgesCassationReviewPanel({
             <Sparkles className="w-3.5 h-3.5" />
             <span>
               {isSoundDocument
-                ? 'اللائحة المعتمدة الكاملة للطباعة والإيداع ✓'
-                : 'اقتراح التعديلات اللازمة والصياغة الجاهزة للإيداع'}
+                ? 'المسودة المنقحة — راجعها قبل الطباعة'
+                : 'اقتراح التعديلات وصياغة مسودة للمراجعة'}
             </span>
           </button>
         </div>
@@ -282,19 +340,26 @@ export function JudgesCassationReviewPanel({
           <button
             onClick={handlePrint}
             className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
-            title="طباعة اللائحة الكاملة المعتمدة فوراً بصيغة رسمية"
+            title="طباعة المسودة الحالية بعد مراجعتك البشرية"
           >
             <Printer className="w-3.5 h-3.5" />
-            <span>طباعة اللائحة فوراً (PDF)</span>
+            <span>معاينة/طباعة المسودة (PDF)</span>
           </button>
 
           {activeTab === 'revised' && (
             <button
               onClick={() => handleApplyFull(effectiveText)}
-              className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+              disabled={revisionBlocked}
+              className={
+                'px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md ' +
+                (revisionBlocked
+                  ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 cursor-pointer')
+              }
+              title={revisionBlocked ? 'محظور حتى يتم التحقق من الإحالات القانونية الجديدة' : 'تطبيق المسودة المنقحة في المحرر'}
             >
               <Check className="w-3.5 h-3.5" />
-              <span>تطبيق في المحرر</span>
+              <span>{revisionBlocked ? 'التطبيق محظور مرجعياً' : 'تطبيق في المحرر'}</span>
             </button>
           )}
         </div>
@@ -335,19 +400,19 @@ export function JudgesCassationReviewPanel({
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
                     }`}>
-                      {!reviewFailed && report.cassationErrors.items.length === 0 ? 'سليم تماماً ✓' : `خطورة ${report.cassationErrors.severity || 'عالية'}`}
+                      {!reviewFailed && report.cassationErrors.items.length === 0 ? 'لم تُرصد ملاحظات ✓' : `خطورة ${report.cassationErrors.severity || 'عالية'}`}
                     </span>
                   </div>
 
                   <p className="text-[11px] text-neutral-400 mt-2">
-                    الرقابة العليا على مخالفة الشريعة والأنظمة، وبطلان الإجراءات وفق المادة (193) مرافعات والمادة (11) ديوان المظالم:
+                    تحليل أوجه الاعتراض والنقض بحسب المستند والمراجع التي تم استرجاعها والتحقق منها في هذه العملية:
                   </p>
 
                   {!reviewFailed && report.cassationErrors.items.length === 0 ? (
                     <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
-                      <p className="text-xs text-emerald-300 font-semibold">خالٍ تماماً من عوار النقض</p>
+                      <p className="text-xs text-emerald-300 font-semibold">لم تُرصد ملاحظات نقض في هذا المسار</p>
                       <p className="text-[11px] text-neutral-300 leading-relaxed">
-                        تم تأصيل أسباب الطعن وفق المادة (11) بدقة دون استطراد في الوقائع الموضوعية.
+                        لم يسجل مسار التحليل ملاحظة إضافية هنا؛ لا يعني ذلك سلامة المستند خارج نطاق البيانات والمراجع المتاحة.
                       </p>
                     </div>
                   ) : (
@@ -365,7 +430,7 @@ export function JudgesCassationReviewPanel({
                 <div className="pt-2 text-[10px] text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
                   <span>محكمة النقض (المحكمة العليا)</span>
                   <span className={!reviewFailed && report.cassationErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
-                    {!reviewFailed && report.cassationErrors.items.length === 0 ? 'مطابق للأصول ✓' : `${report.cassationErrors.items.length} عيوب مرصودة`}
+                    {!reviewFailed && report.cassationErrors.items.length === 0 ? 'لا ملاحظات مسجلة ✓' : `${report.cassationErrors.items.length} عيوب مرصودة`}
                   </span>
                 </div>
               </div>
@@ -391,7 +456,7 @@ export function JudgesCassationReviewPanel({
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                     }`}>
-                      {!reviewFailed && report.claimErrors.items.length === 0 ? 'سليم تماماً ✓' : `خطورة ${report.claimErrors.severity || 'متوسطة'}`}
+                      {!reviewFailed && report.claimErrors.items.length === 0 ? 'لم تُرصد ملاحظات ✓' : `خطورة ${report.claimErrors.severity || 'متوسطة'}`}
                     </span>
                   </div>
 
@@ -421,7 +486,7 @@ export function JudgesCassationReviewPanel({
                 <div className="pt-2 text-[10px] text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
                   <span>محكمة الاستئناف والموضوع</span>
                   <span className={!reviewFailed && report.claimErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
-                    {!reviewFailed && report.claimErrors.items.length === 0 ? 'مطابق للأصول ✓' : `${report.claimErrors.items.length} ملاحظات صياغة`}
+                    {!reviewFailed && report.claimErrors.items.length === 0 ? 'لا ملاحظات مسجلة ✓' : `${report.claimErrors.items.length} ملاحظات صياغة`}
                   </span>
                 </div>
               </div>
@@ -502,7 +567,7 @@ export function JudgesCassationReviewPanel({
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span className="text-neutral-300">
-                  قامت هيئة القضاة بمعالجة كافة هذه العيوب وأعادت صياغة المذكرة بالكامل لتكون جاهزة للإيداع المباشر:
+                  أنتجت هيئة المراجعة الآلية مسودة منقحة استناداً إلى التحليل المتاح. راجع النص والمصادر الرسمية قبل الإيداع:
                 </span>
               </div>
               <button
@@ -582,7 +647,7 @@ export function JudgesCassationReviewPanel({
                         {/* Errors Identified */}
                         {judge.errorsIdentified && judge.errorsIdentified.length > 0 && (
                           <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 space-y-1.5">
-                            <span className="text-[11px] font-bold text-rose-400 block">الأخطاء المرصودة من فضيلة القاضي:</span>
+                            <span className="text-[11px] font-bold text-rose-400 block">الملاحظات المرصودة من مسار المراجعة:</span>
                             <ul className="space-y-1">
                               {judge.errorsIdentified.map((err, i) => (
                                 <li key={i} className="text-xs text-neutral-300 flex items-start gap-2">
@@ -604,7 +669,7 @@ export function JudgesCassationReviewPanel({
                         {judge.specificAmendment && (
                           <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="space-y-1 flex-1">
-                              <span className="text-[11px] font-bold text-amber-300 block">التعديل المقترح من فضيلة القاضي:</span>
+                              <span className="text-[11px] font-bold text-amber-300 block">التعديل المقترح من مسار المراجعة:</span>
                               <p className="text-xs text-neutral-200 leading-relaxed font-mono bg-neutral-950/70 p-2.5 rounded-lg border border-neutral-800">
                                 {judge.specificAmendment}
                               </p>
@@ -614,7 +679,7 @@ export function JudgesCassationReviewPanel({
                               className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 self-end sm:self-center shadow-xs"
                             >
                               <Check className="w-3.5 h-3.5" />
-                              <span>تطبيق تعديل القاضي</span>
+                              <span>تطبيق التعديل المقترح</span>
                             </button>
                           </div>
                         )}
@@ -663,7 +728,7 @@ export function JudgesCassationReviewPanel({
                 <button
                   onClick={handlePrint}
                   className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
-                  title="طباعة اللائحة الكاملة المعتمدة فوراً بصيغة رسمية A4"
+                  title="طباعة المسودة الحالية بعد مراجعتك البشرية A4"
                 >
                   <Printer className="w-4 h-4" />
                   <span>طباعة اللائحة (PDF)</span>
@@ -700,7 +765,7 @@ export function JudgesCassationReviewPanel({
             <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-400">
               <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>النص معتمد قضائياً: {effectiveText.length.toLocaleString('ar-SA')} حرفاً • كافة الحيثيات والمرفقات مثبتة بدون اختصار</span>
+                <span>المسودة الحالية: {effectiveText.length.toLocaleString('ar-SA')} حرفاً • تحقق من الحيثيات والمرفقات والمصادر قبل الاعتماد</span>
               </span>
               <span className="text-neutral-400">جاهز للإيداع المباشر في منصة معين / ناجز</span>
             </div>
@@ -709,7 +774,7 @@ export function JudgesCassationReviewPanel({
             {report.changeLog && report.changeLog.length > 0 && (
               <div className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-2">
                 <span className="text-[11px] font-bold text-neutral-400 block">
-                  محضر التدقيق والاعتماد القضائي بواسطة هيئة القضاة:
+                  سجل المراجعة التحليلية الآلية:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {report.changeLog.map((change, idx) => (

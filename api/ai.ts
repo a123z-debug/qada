@@ -1,3 +1,5 @@
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
+import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
 const SYSTEM_INSTRUCTION = `أنت المستشار الذكي لمنصة أصول القضاء في المملكة العربية السعودية.
 التزم بالدقة والتحفظ القانوني:
 - لا تخترع مادة نظامية أو مرسوماً أو قراراً أو ميعاداً.
@@ -56,9 +58,18 @@ export default async function handler(req: any, res: any) {
     return res.status(400).json({ error: 'Invalid request payload.' });
   }
 
+  const retrievalQuery = [
+    body.targetCourt || '',
+    ...messages.filter((item) => item.role === 'user').map((item) => item.content),
+  ].join('\n').slice(0, 26000);
+  const sourceBundle = runLegalSourceAgents(retrievalQuery);
+
   const system = [
     SYSTEM_INSTRUCTION,
     body.targetCourt ? `الاختصاص المختار: ${String(body.targetCourt).slice(0, 160)}` : '',
+    sourceBundle.context,
+    'قواعد إخراج إضافية: لا تستخدم رابطاً أو رقم مادة أو مرسوماً أو قراراً أو حكماً جديداً خارج ما ورد في كلام المستخدم أو حزمة المصادر الرسمية. إذا كانت حزمة المصدر تحمل warning أو blocker فاذكر ذلك ولا تحوله إلى نتيجة قطعية.',
+    'النص الحرفي الكامل للمواد غير معتمد من المستودع؛ لا تضع اقتباساً حرفياً إلا إذا كان وارداً في نص المستخدم نفسه.',
   ].filter(Boolean).join('\n\n');
 
   try {
@@ -134,6 +145,35 @@ export default async function handler(req: any, res: any) {
     if (!reply) {
       return res.status(502).json({ error: 'AI_PROVIDER_REQUEST_FAILED' });
     }
+
+    const citationGuard = guardIntroducedLegalCitations(retrievalQuery, reply, sourceBundle.context);
+    if (citationGuard.unsupportedMarkers.length > 0) {
+      for (const marker of citationGuard.unsupportedMarkers) {
+        reply = reply.split(marker).join(`${marker} [غير متحقق من حزمة المصادر الرسمية]`);
+      }
+    }
+
+    const sourceLinks = Array.from(new Map(
+      sourceBundle.packets
+        .flatMap((packet) => packet.references)
+        .filter((reference) => reference.sourceUrl)
+        .map((reference) => [reference.sourceUrl, reference] as const)
+    ).values()).slice(0, 4);
+
+    const auditLines: string[] = [];
+    if (sourceLinks.length > 0) {
+      auditLines.push('', 'مصادر رسمية مرتبطة للتحقق:');
+      for (const reference of sourceLinks) {
+        auditLines.push(`- ${reference.name}: ${reference.sourceUrl}`);
+      }
+    }
+    if (sourceBundle.verification.blockers.length > 0 || citationGuard.unsupportedMarkers.length > 0) {
+      auditLines.push(
+        '',
+        'حالة التحقق: توجد نقاط تحتاج مراجعة المصدر الرسمي قبل الاعتماد النهائي.'
+      );
+    }
+    if (auditLines.length > 0) reply = [reply.trim(), ...auditLines].join('\n');
 
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');

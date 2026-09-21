@@ -16,4 +16,6 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run test:legal-sources
+      - run: npm run test:legal-guard
+      - run: npm run test:legal-ui-safety
       - run: npm run build

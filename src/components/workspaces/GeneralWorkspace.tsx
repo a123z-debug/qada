@@ -23,29 +23,30 @@ interface GeneralWorkspaceProps {
   userSession?: UserSession | null;
 }
 
-const STORAGE_KEY = 'diwan_general_draft_v2';
+const STORAGE_KEY_PREFIX = 'diwan_general_draft_v3';
 
 export function GeneralWorkspace({
   service = 'general_claim',
   userSession,
 }: GeneralWorkspaceProps) {
   const currentService = service || 'general_claim';
+  const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
 
   // Restore draft from LocalStorage
   const getInitialState = () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       if (saved) return JSON.parse(saved);
     } catch {
       // ignore
     }
     return {
-      claimantName: userSession?.name || 'المدعي )',
-      nationalId: userSession?.nationalId || 'الهوية الوطنية)',
-      defendantName: 'المدعى عليه (الطرف المخل بالعقد / المدين)',
-      disputeSubject: 'المطالبة بمستحقات عقد مقاولة وتعويض عن التأخير وإخلال بالالتزام العقدي',
-      legalGrounds: 'نظام المعاملات المدنية الصادر بالمرسوم الملكي (م/191)، المواد (128، 129، 138)، ونظام المرافعات الشرعية، ونظام الإثبات في السندات والعقود الموقعة.',
-      claimDemands: '1. إلزام المدعى عليه بسداد كامل المبلغ المترصد وقدره (150,000) ريال.\n2. التعويض عن الأضرار الناشئة عن المماطلة وتأخير السداد.\n3. إلزام المدعى عليه بأتعاب المحاماة والتقاضي.',
+      claimantName: userSession?.name || '',
+      nationalId: userSession?.nationalId || '',
+      defendantName: '',
+      disputeSubject: 'اكتب موضوع النزاع والوقائع الأساسية كما تظهر في العقد أو المستندات.',
+      legalGrounds: 'لم يتم التحقق من سند نظامي بعد. استخدم أداة التكييف أو البحث الرسمي لإضافة مراجع متحققة.',
+      claimDemands: 'اكتب الطلبات التي تريد بحثها، وسيتم فحص مدى ملاءمتها للمستندات والنظام النافذ.',
       userStory: '',
       uploadedFileName: '',
       uploadedFileText: '',
@@ -108,7 +109,7 @@ export function GeneralWorkspace({
         uploadedFileText,
         generatedOutput,
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(storageKey, JSON.stringify(data));
       const now = new Date();
       setLastSavedTime(`تم الحفظ في ${now.toLocaleTimeString('ar-SA')}`);
     } catch {
@@ -149,34 +150,53 @@ export function GeneralWorkspace({
     setGeneratedOutput('');
 
     const storyAddon = userStory.trim()
-      ? `\n\n[سرد العميل باللغة البسيطة أو النص المنسوخ لما حدث (صار كذا كذا)]:\n"""\n${userStory}\n"""\nالمطلوب: تكييف هذا السرد في نصوص ومواد نظام المعاملات المدنية ونظام الإثبات وصياغة الوقائع والطلبات بأسلوب قضائي حاسم.`
+      ? `\n\n[سرد المستخدم أو النص المنسوخ]:\n"""\n${userStory}\n"""\nالمطلوب: تنظيم الوقائع وتكييفها دون افتراض مادة أو ميعاد؛ استخدم فقط المراجع الرسمية التي يسترجعها الخادم.`
       : '';
+
+    const sharedRules = `قواعد إلزامية:
+- لا تفترض صحة عقد أو ثبوت دين أو مسؤولية أو تعويض قبل فحص المستندات.
+- لا تذكر مادة أو مرسوماً أو ميعاداً من الذاكرة.
+- استخدم فقط الأسانيد الرسمية المسترجعة من الخادم، واذكر ما يحتاج تحققاً.
+- لا تعرض رقم الهوية الوطنية في المخرجات.
+- صغ النتيجة كمسودة للمراجعة البشرية، لا كضمان لنتيجة قضائية.`;
 
     let prompt = '';
     if (currentService === 'general_claim') {
-      prompt = `بصفتك مستشاراً قانونياً متخصصاً في المحاكم العامة بالمملكة العربية السعودية، قم بصياغة (لائحة دعوى حقوقية / عامة) نموذجية متكاملة وفق أحكام نظام المعاملات المدنية ونظام المرافعات الشرعية:
-المدعي: ${claimantName} (هوية: ${nationalId})
+      prompt = `صغ مسودة لائحة دعوى حقوقية/عامة للمراجعة:
+المدعي: ${claimantName}
 المدعى عليه: ${defendantName}
 موضوع النزاع: ${disputeSubject}
-الأسانيد: ${legalGrounds}
+الأسانيد المدخلة أو المستخرجة: ${legalGrounds}
 ${storyAddon}
-${uploadedFileText ? `بيانات المرفقات المودعة: ${uploadedFileText}` : ''}
-الطلبات:
+${uploadedFileText ? `بيانات المرفقات: ${uploadedFileText}` : ''}
+الطلبات المراد بحثها:
 ${claimDemands}
 
-صغ اللائحة بأسلوب قضائي رصين، واذكر الوقائع بدقة، وتطبيق القواعد الشرعية ومواد نظام المعاملات المدنية، ثم الطلبات الختامية.`;
+${sharedRules}`;
     } else if (currentService === 'general_appeal') {
-      prompt = `قم بصياغة (لائحة اعتراض واستئناف حكم عام) أمام محكمة الاستئناف (الدوائر الحقوقية/المدنية).
+      prompt = `صغ مسودة اعتراض أو استئناف في قضية حقوقية/مدنية للمراجعة، وحدد ما يلزم التحقق منه من الحكم والتبليغ والميعاد وأسباب الاعتراض.
 المستأنف: ${claimantName}
 المستأنف ضده: ${defendantName}
-موضوع الطعن: الاعتراض على الحكم الابتدائي لفساده في الاستدلال، ومخالفته للثابت بالأوراق ولبنود العقد المؤرخ ومواد نظام المعاملات المدنية.
-${storyAddon}`;
+موضوع النزاع: ${disputeSubject}
+${storyAddon}
+
+${sharedRules}`;
     } else if (currentService === 'general_memo') {
-      prompt = `قم بصياغة مذكرة دفاع ومرافعة مدنية جوابية أمام المحكمة العامة في الدعوى المقامة ضد ${claimantName} ودحض مزاعم المدعى عليه استناداً لنظام المعاملات المدنية.
-${storyAddon}`;
+      prompt = `صغ مسودة مذكرة جوابية أو دفاع مدني للمراجعة، واعتمد فقط على الوقائع والمستندات والأسانيد التي يمكن التحقق منها.
+صاحب الشأن: ${claimantName}
+الطرف الآخر: ${defendantName}
+موضوع النزاع: ${disputeSubject}
+${storyAddon}
+
+${sharedRules}`;
     } else {
-      prompt = `قم بصياغة مذكرة إيداع بينات وعقود أمام المحكمة العامة لفحص السند أو العقد (${uploadedFileName || 'المرفقات'}) وإثبات الالتزام والمديونية.
-${storyAddon}`;
+      prompt = `صغ مسودة مذكرة إيداع ومراجعة لعقود أو بينات في قضية أمام المحكمة العامة، واربط كل ملاحظة بما يظهر فعلاً في المستند.
+صاحب الشأن: ${claimantName}
+الطرف الآخر: ${defendantName}
+المرفق: ${uploadedFileName || 'مرفقات القضية'}
+${storyAddon}
+
+${sharedRules}`;
     }
 
     try {
@@ -186,7 +206,6 @@ ${storyAddon}`;
         body: JSON.stringify({
           messages: [{ role: 'user', content: prompt }],
           targetCourt: 'المحكمة العامة',
-          clientNationalId: nationalId,
           clientPersonName: claimantName,
           powerMode: true,
         }),
@@ -224,7 +243,18 @@ ${storyAddon}`;
       }
 
       if (!fullText) {
-        fullText = `بسم الله الرحمن الرحيم\n\nلدى المحكمة العامة الموقرة\n\nالمدعي: ${claimantName} - الهوية: (${nationalId})\nالمدعى عليه: ${defendantName}\n\nالموضوع: دعوى مطالبة حقوقية وتنفيذ التزام عقدي.\n\nالوقائع:\nأبرم الطرفان عقداً التزم بموجبه المدعي بتنفيذ كافة التزاماته، في حين امتنع المدعى عليه عن الوفاء بالسداد دون مسوغ نظامي أو شرعي، إخلالاً بقاعدة العقد شريعة المتعاقدين ومقتضيات حسن النية.\n\nالأسانيد:\n- المواد (128، 129، 138) من نظام المعاملات المدنية (م/191).\n- نظام الإثبات ونظام المرافعات الشرعية.\n\nالطلبات:\n${claimDemands}\n\nوالله يحفظكم ويرعاكم،،\nالمدعي: ${claimantName}`;
+        fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
+
+بيانات العمل المحفوظة:
+- صاحب الشأن: ${claimantName}
+- الطرف الآخر: ${defendantName}
+- موضوع النزاع: ${disputeSubject}
+- الأسانيد المدخلة أو المستخرجة سابقاً — تحتاج تحققاً:
+${legalGrounds}
+- الطلبات المراد بحثها:
+${claimDemands}
+
+أعد المحاولة بعد عودة الخدمة، ثم راجع المصادر الرسمية قبل اعتماد أي سند.`;
         setGeneratedOutput(fullText);
       }
 
@@ -232,9 +262,20 @@ ${storyAddon}`;
       setIsReviewMode(true);
     } catch (err) {
       console.error('Generation failed:', err);
-      const fallback = `بسم الله الرحمن الرحيم\n\nلدى المحكمة العامة\n\nالمدعي: ${claimantName} (هوية: ${nationalId})\nالمدعى عليه: ${defendantName}\n\nالموضوع: ${disputeSubject}\n\nالأسانيد:\n${legalGrounds}\n\nالطلبات:\n${claimDemands}\n\nمقدمه: ${claimantName}`;
+      const fallback = `تعذر إكمال الصياغة الآلية، ولم تُنشأ أسانيد بديلة.
+
+صاحب الشأن: ${claimantName}
+الطرف الآخر: ${defendantName}
+موضوع النزاع: ${disputeSubject}
+
+الأسانيد المدخلة أو المستخرجة سابقاً — تحتاج تحققاً:
+${legalGrounds}
+
+الطلبات المراد بحثها:
+${claimDemands}`;
       setGeneratedOutput(fallback);
       setIsReviewMode(true);
+
     } finally {
       setIsGenerating(false);
     }
@@ -409,7 +450,7 @@ ${storyAddon}`;
                 <div><p className="text-xs font-bold text-emerald-300">التكييف الأولي المقترح</p><p className="mt-1 text-[11px] text-neutral-400">راجع الموضوع والأسانيد والطلبات قبل اعتمادها.</p></div>
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">موضوع القضية</span><p className="mt-1 text-xs leading-relaxed text-neutral-200">{pendingAdaptation.subject || pendingAdaptation.disputedSubject}</p></div>
-                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">الأسانيد المتوقعة</span><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.legal_bases?.map((basis) => `- ${basis}`).join('\n') || pendingAdaptation.legalBases}</p></div>
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">المراجع الرسمية المتاحة</span><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.legal_bases?.map((basis) => `- ${basis}`).join('\n') || pendingAdaptation.legalBases}</p></div>
                   <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">الطلبات المقترحة</span><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.requests?.map((request, index) => `${index + 1}. ${request}`).join('\n') || pendingAdaptation.claimDemands}</p></div>
                 </div>
                 <div className="flex justify-end gap-2"><button type="button" onClick={() => setPendingAdaptation(null)} className="rounded-xl border border-neutral-700 px-3 py-2 text-xs font-bold text-neutral-300 hover:bg-neutral-800">إلغاء الاقتراح</button><button type="button" onClick={() => applyAdaptation(pendingAdaptation)} className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-neutral-950 hover:bg-emerald-400">اعتماد وتعبئة النموذج</button></div>
