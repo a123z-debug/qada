@@ -103,10 +103,10 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
       hoverBg: 'hover:bg-fuchsia-400/10',
     },
     services: [
-      { id: 'criminal_defense', label: 'مذكرة دفاع / براءة', icon: FileText, badge: 'دفاع', description: 'دحض أدلة الاتهام وتطبيق أصل البراءة' },
-      { id: 'criminal_appeal', label: 'اعتراض جزائي', icon: Gavel, badge: 'نقض', description: 'الطعن في عقوبة التعزير ومخالفة الإجراءات' },
-      { id: 'criminal_procedural', label: 'دفوع الإجراءات الباطلة', icon: ShieldAlert, badge: 'بطلان', description: 'بطلان القبض والتفتيش وثمرة الشجرة الخبيثة' },
-      { id: 'criminal_evidence', label: 'تدقيق محضر الضبط', icon: UploadCloud, badge: 'محاضر', description: 'استخراج أوجه التناقض في محضر التحقيق' },
+      { id: 'criminal_defense', label: 'مذكرة دفاع جزائي', icon: FileText, badge: 'دفاع', description: 'تنظيم الوقائع والدفوع ومناقشة أدلة الاتهام وفق المصادر المتحققة' },
+      { id: 'criminal_appeal', label: 'اعتراض جزائي', icon: Gavel, badge: 'اعتراض', description: 'فحص أسباب الاعتراض المحتملة وتسبيب الحكم والإجراءات' },
+      { id: 'criminal_procedural', label: 'فحص سلامة الإجراءات', icon: ShieldAlert, badge: 'إجراءات', description: 'مراجعة القبض والتفتيش والتوقيف وربط كل ملاحظة بالسند النظامي النافذ' },
+      { id: 'criminal_evidence', label: 'تدقيق محضر الضبط', icon: UploadCloud, badge: 'محاضر', description: 'مقارنة المحضر وبقية الأدلة ورصد التعارضات المحتملة دون افتراض النتيجة' },
     ],
   },
 ];
