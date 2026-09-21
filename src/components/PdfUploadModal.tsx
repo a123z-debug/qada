@@ -19,6 +19,15 @@ export function PdfUploadModal({ isOpen, onClose, onAddAttachments, onAnalyzeImm
 
   if (!isOpen) return null;
 
+  const resetAndClose = () => {
+    setSelectedFiles([]);
+    setUploadError(null);
+    setCustomNote('');
+    setIsDragging(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    onClose();
+  };
+
   const readFileAsBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -76,7 +85,7 @@ export function PdfUploadModal({ isOpen, onClose, onAddAttachments, onAnalyzeImm
   const handleConfirmAndAdd = () => {
     if (!selectedFiles.length) return;
     onAddAttachments(selectedFiles);
-    onClose();
+    resetAndClose();
   };
 
   const handleConfirmAndAnalyze = () => {
@@ -84,14 +93,14 @@ export function PdfUploadModal({ isOpen, onClose, onAddAttachments, onAnalyzeImm
     const promptText = `افحص المستند المرفق فحصاً قانونياً محايداً. تصنيف المستخدم المبدئي: [${documentType}]، لكنه ليس حكماً نهائياً على نوع المستند أو الاختصاص.\n\nحدّد نوع المستند والجهة والأطراف والتواريخ والطلبات من المستند فقط، ثم اربطه بالمصادر الرسمية ذات الصلة. افصل بين النص المستخرج والتحليل القانوني وما يحتاج تحققاً رسمياً، ولا تخمّن مادة أو مرسوماً غير متحقق منه.${customNote.trim() ? `\nطلب المستخدم الخاص: ${customNote}` : ''}`;
     if (onAnalyzeImmediately) onAnalyzeImmediately(selectedFiles, promptText);
     else onAddAttachments(selectedFiles);
-    onClose();
+    resetAndClose();
   };
 
-  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && resetAndClose()}>
     <div className="relative w-full max-w-2xl bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl overflow-hidden text-right flex flex-col max-h-[90vh]">
       <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
         <div><h2 className="text-lg font-bold text-neutral-100">رفع وتدقيق المستندات</h2><p className="text-xs text-neutral-400">PDF والصور فقط — إجمالي آمن للإرسال المباشر حتى 2.5MB</p></div>
-        <button onClick={onClose} className="p-2 text-neutral-400"><X className="w-5 h-5" /></button>
+        <button onClick={resetAndClose} className="p-2 text-neutral-400"><X className="w-5 h-5" /></button>
       </div>
       <div className="p-6 overflow-y-auto space-y-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">{[
