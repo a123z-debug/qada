@@ -9,6 +9,7 @@ import {
 } from 'node:crypto';
 import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
+import { protectJson, unprotectJson } from './_secureStore.ts';
 
 export type SessionRole = 'admin' | 'user';
 
@@ -191,12 +192,12 @@ function accountIdKey(userId: string) {
 }
 
 function encodeAccount(record: AccountRecord) {
-  return encryptJson(record, 'account-record', 'a2');
+  return protectJson(record, 'account-record');
 }
 
 function decodeAccount(value: string | null | undefined): AccountRecord | null {
   if (!value) return null;
-  const record = decryptJson<AccountRecord>(value, 'account-record', 'a2');
+  const record = unprotectJson<AccountRecord>(value, 'account-record');
   return record?.version === 2 ? record : null;
 }
 
