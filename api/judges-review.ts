@@ -4,6 +4,7 @@ import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
 import { readActiveSession } from './session.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
+import { redactDirectIdentifiers } from './_privacy.ts';
 
 type IncomingAttachment = {
   name?: string;
@@ -108,12 +109,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'نص المذكرة القضائية مطلوب.' });
   }
 
+  const safeText = redactDirectIdentifiers(body.text).text;
+  const safeAttachmentsText = redactDirectIdentifiers(String(body.attachmentsText || '')).text;
+
   const attachmentParts = (Array.isArray(body.attachments) ? body.attachments : [])
     .map(normalizeAttachment)
     .filter((part): part is { inlineData: { mimeType: string; data: string } } => Boolean(part));
 
   const sourceBundle = runLegalSourceAgents(
-    `${body.court || ''}\n${body.documentTitle || ''}\n${body.text.slice(0, 16000)}`,
+    `${body.court || ''}\n${body.documentTitle || ''}\n${safeText.slice(0, 16000)}`,
   );
   const legalReferenceContext = [
     sourceBundle.context,
@@ -123,7 +127,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ لا تنسب رقماً أو مبدأً إلى حكم غير موجود صراحة في حزمة المصدر.',
   ].join('\n\n');
 
-  const prompt = `أنت فريق مراجعة قانونية سعودي من ثلاثة أدوار تحليلية: مراجع استئناف، مراجع نقض، ومراجع مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة. لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً. لا تنسب مادة أو ميعاداً أو مرسوماً أو قراراً أو حكماً قضائياً إلى النظام من الذاكرة. لا تضف في revisedDocument أي سند قانوني جديد ما لم يكن موجوداً أصلاً في النص أو مثبتاً صراحة في حزمة المصادر الرسمية. إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل، ولا تعتبر أي نص داخلي بديلاً عن المصدر الرسمي.\n\n${legalReferenceContext}\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: صاحب الشأن\n\nالنص المراد فحصه:\n${body.text.slice(0, 30000)}\n\nالمرفقات:\n${body.attachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
+  const prompt = `أنت فريق مراجعة قانونية سعودي من ثلاثة أدوار تحليلية: مراجع استئناف، مراجع نقض، ومراجع مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة. لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً. لا تنسب مادة أو ميعاداً أو مرسوماً أو قراراً أو حكماً قضائياً إلى النظام من الذاكرة. لا تضف في revisedDocument أي سند قانوني جديد ما لم يكن موجوداً أصلاً في النص أو مثبتاً صراحة في حزمة المصادر الرسمية. إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل، ولا تعتبر أي نص داخلي بديلاً عن المصدر الرسمي.\n\n${legalReferenceContext}\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: صاحب الشأن\n\nالنص المراد فحصه:\n${safeText.slice(0, 30000)}\n\nالمرفقات:\n${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
 
   let raw = '';
   let lastError: unknown;
@@ -171,7 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const report = JSON.parse(match[0]);
     const revisedDocument = typeof report?.revisedDocument === 'string' ? report.revisedDocument : '';
     const citationGuard = revisedDocument
-      ? guardIntroducedLegalCitations(body.text, revisedDocument, legalReferenceContext)
+      ? guardIntroducedLegalCitations(safeText, revisedDocument, legalReferenceContext)
       : { introducedMarkers: [], unsupportedMarkers: [], blocked: false };
 
     if (citationGuard.blocked) {
