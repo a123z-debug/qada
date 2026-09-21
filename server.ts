@@ -13,6 +13,7 @@ import judgesReviewHandler from './api/judges-review';
 import casesHandler from './api/cases';
 import adminRunsHandler from './api/admin-runs';
 import healthHandler from './api/health';
+import adminUsersHandler from './api/admin-users';
 
 dotenv.config();
 
@@ -66,6 +67,10 @@ async function startServer() {
 
   app.all('/api/admin-runs', (req, res) => {
     void adminRunsHandler(req as any, res as any);
+  });
+
+  app.all('/api/admin-users', (req, res) => {
+    void adminUsersHandler(req as any, res as any);
   });
 
   if (process.env.NODE_ENV !== 'production') {
