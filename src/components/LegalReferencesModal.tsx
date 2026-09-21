@@ -186,9 +186,10 @@ export function LegalReferencesModal({
   ).length;
 
   const selected =
-    LEGAL_REFERENCE_SYSTEMS.find((system) => system.id === selectedId) ||
+    systems.find((system) => system.id === selectedId) ||
     systems[0] ||
     LEGAL_REFERENCE_SYSTEMS[0];
+  const hasFilteredSystem = systems.length > 0;
 
   const selectedIsTrusted = selected?.verificationStatus === 'official';
   const articles = useMemo(
@@ -433,138 +434,152 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
               )}
             </section>
 
-            <section className="rounded-2xl border border-cyan-400/15 bg-[#07172d] p-4 select-text">
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-lg font-black text-white sm:text-2xl">{selected.name}</h3>
-                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${sourceBadgeClasses(selected)}`}>{sourceBadge(selected)}</span>
-                  </div>
-                  <p className="mt-2 text-xs leading-6 text-slate-400">{selected.subCategory}</p>
-                  <div className="mt-3 grid gap-2 text-[11px] text-slate-400 sm:grid-cols-2">
-                    <div><span className="font-bold text-slate-300">أداة الإصدار:</span> {selected.royalDecree || 'غير مثبتة'}</div>
-                    <div><span className="font-bold text-slate-300">قرار مجلس الوزراء:</span> {selected.cabinetResolution || 'غير مثبت'}</div>
-                    <div><span className="font-bold text-slate-300">الحالة:</span> {selected.status || 'غير محددة'}</div>
-                    <div><span className="font-bold text-slate-300">الجهة:</span> {selected.authority || 'غير محددة'}</div>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={copyCompleteReference} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-400/15">
-                    {copiedAll ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    {copiedAll ? 'تم النسخ' : 'نسخ المرجع كاملاً'}
-                  </button>
-                  {selected.officialSourceUrl && (
-                    <a href={selected.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-400/15">
-                      <ExternalLink className="h-4 w-4" /> المصدر الرسمي
-                    </a>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            <section className="mt-4 rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-4">
-              <div className="flex items-center gap-2 text-emerald-200">
-                <ShieldCheck className="h-5 w-5" />
-                <h4 className="font-black">مصادر الاعتماد الرئيسية</h4>
-              </div>
-              <p className="mt-1 text-[11px] leading-5 text-slate-400">
-                ترتيب التحقق في أصول القضاء: هيئة الخبراء بمجلس الوزراء، قرارات مجلس الوزراء السعودي، مجلس الشورى، ثم جريدة أم القرى لإثبات النشر والنفاذ. لا تُقدَّم النسخة الداخلية على المصدر الرسمي.
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                {OFFICIAL_REFERENCE_PORTALS.map((portal) => (
-                  <a key={portal.label} href={portal.url} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-700 bg-slate-950/70 p-3 hover:border-emerald-400/40">
-                    <div className="flex items-center gap-2 text-xs font-black text-slate-100">
-                      <ExternalLink className="h-3.5 w-3.5 text-emerald-300" />
-                      <span>{portal.label}</span>
-                    </div>
-                    <p className="mt-1 text-[10px] leading-4 text-slate-500">{portal.note}</p>
-                  </a>
-                ))}
-              </div>
-            </section>
-
-            <section className="mt-4 grid gap-3 xl:grid-cols-2">
-              <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4">
-                <div className="flex items-center gap-2 text-cyan-200"><Bot className="h-5 w-5" /><span className="font-black">أمين المراجع</span></div>
-                <p className="mt-1 text-[11px] leading-5 text-slate-400">موظف مخصص لإحضار المادة المطلوبة باسم النظام ورقم المادة والمصدر، ويرفض اختلاق النص عند غياب التوثيق.</p>
-              </div>
-              <div className="rounded-2xl border border-violet-400/20 bg-violet-400/5 p-4">
-                <div className="flex items-center gap-2 text-violet-200"><Sparkles className="h-5 w-5" /><span className="font-black">مدقق المراجع</span></div>
-                <p className="mt-1 text-[11px] leading-5 text-slate-400">خبير ثانٍ لمراجعة النسخة النافذة والتعديل والمصدر قبل اعتماد النص في التحليل أو المذكرة.</p>
-              </div>
-            </section>
-
-            <section className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-3">
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input value={expertRequest} onChange={(e) => setExpertRequest(e.target.value)} placeholder="مثال: أحضر المادة الثامنة من نظام المرافعات أمام ديوان المظالم مع آخر تعديل" className="min-h-11 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-400/60" />
-                <button onClick={askReferenceCustodian} className="min-h-11 rounded-xl bg-cyan-400 px-4 text-xs font-black text-slate-950 hover:bg-cyan-300">استدعاء أمين المراجع</button>
-                <button onClick={askReferenceAuditor} className="min-h-11 rounded-xl border border-violet-400/30 bg-violet-400/10 px-4 text-xs font-black text-violet-200 hover:bg-violet-400/15">تدقيق المرجع</button>
-              </div>
-            </section>
-
-            <div className="mt-4 flex gap-1.5 overflow-x-auto border-b border-slate-800 pb-2">
-              {tabs.map((item) => (
-                <button key={item.id} onClick={() => setTab(item.id)} className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold ${tab === item.id ? 'bg-amber-400 text-slate-950' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>{item.label}</button>
-              ))}
-            </div>
-
-            <section className="mt-4">
-              {tab === 'articles' && (
-                <div className="space-y-3">
-                  {articles.length > 0 ? articles.map((article, index) => (
-                    <article key={article.title + index} className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <h4 className="font-black text-amber-300">{article.title}</h4>
-                        <button onClick={() => { setExpertRequest(`${article.title} من ${selected.name}`); }} className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-300">
-                          طلب التحقق <ChevronLeft className="h-3 w-3" />
-                        </button>
-                      </div>
-                      <p className="whitespace-pre-wrap text-sm leading-7 text-slate-300">{article.body}</p>
-                    </article>
-                  )) : (
-                    <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 text-sm leading-7 text-amber-100">
-                      لم تُفهرس مواد هذا النظام مادةً مادة في النسخة الداخلية الحالية. استخدم «أمين المراجع» لإحضار مادة محددة، ولا تعتمد نصاً غير موثق.
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {tab === 'law' && (
-                selectedIsTrusted
-                  ? <ReferenceText title="نص النظام في قاعدة المنصة" text={selected.lawText} />
-                  : <UntrustedReferenceNotice />
-              )}
-              {tab === 'executive' && (
-                selectedIsTrusted
-                  ? <ReferenceText title="اللائحة التنفيذية والملحقات" text={selected.executiveText} />
-                  : <UntrustedReferenceNotice />
-              )}
-              {tab === 'amendments' && (
-                selectedIsTrusted
-                  ? <ReferenceText title="سجل التعديلات والقرارات" text={selected.amendmentsText} />
-                  : <UntrustedReferenceNotice />
-              )}
-
-              {tab === 'versions' && (
-                <div className="space-y-3">
-                  <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
-                    <h4 className="flex items-center gap-2 font-black text-white"><BookOpenCheck className="h-4 w-4 text-cyan-300" /> نسخة قاعدة المنصة</h4>
-                    <p className="mt-2 text-xs leading-6 text-slate-400">الإصدار الداخلي: {LEGAL_REFERENCE_DB_VERSION}. تاريخ الإصدار الهجري المسجل: {selected.issueDateHijri || 'غير محدد'}، وتاريخ النفاذ المسجل: {selected.effectiveDateHijri || 'غير محدد'}.</p>
-                  </div>
-                  <div className={`rounded-2xl border p-4 ${selected.verificationStatus === 'official' ? 'border-emerald-400/20 bg-emerald-400/5' : selected.verificationStatus === 'needs-correction' ? 'border-rose-400/20 bg-rose-400/5' : 'border-amber-400/20 bg-amber-400/5'}`}>
-                    <h4 className="flex items-center gap-2 font-black text-white"><ShieldCheck className="h-4 w-4" /> حالة المطابقة</h4>
-                    <p className="mt-2 text-xs leading-6 text-slate-300">
-                      {selected.verificationStatus === 'official'
-                        ? 'تمت مطابقة هذا السجل ونصه المفهرس بالمصدر الرسمي وفق نطاق التحقق المسجل.'
-                        : selected.verificationStatus === 'needs-correction'
-                          ? 'ظهر تعارض أو نقص توثيق في هذا السجل. حُجب نصه الداخلي عن النسخ والاسترجاع القضائي حتى تتم مطابقته مادةً وتعديلاً بالمصدر الرسمي.'
-                          : 'هذا المرجع موجود في قاعدة المنصة الداخلية لكنه لم يُربط بعد بمصدر رسمي مثبت. لا يُعامل كنص تشريعي نهائي حتى يراجعه مدقق المراجع.'}
-                    </p>
-                    {selected.officialSourceUrl && <a href={selected.officialSourceUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-emerald-300"><ExternalLink className="h-4 w-4" /> فتح النسخة الرسمية</a>}
-                  </div>
-                </div>
-              )}
-            </section>
+            {hasFilteredSystem ? (
+              <>
+                            <section className="rounded-2xl border border-cyan-400/15 bg-[#07172d] p-4 select-text">
+                              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="text-lg font-black text-white sm:text-2xl">{selected.name}</h3>
+                                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${sourceBadgeClasses(selected)}`}>{sourceBadge(selected)}</span>
+                                  </div>
+                                  <p className="mt-2 text-xs leading-6 text-slate-400">{selected.subCategory}</p>
+                                  <div className="mt-3 grid gap-2 text-[11px] text-slate-400 sm:grid-cols-2">
+                                    <div><span className="font-bold text-slate-300">أداة الإصدار:</span> {selected.royalDecree || 'غير مثبتة'}</div>
+                                    <div><span className="font-bold text-slate-300">قرار مجلس الوزراء:</span> {selected.cabinetResolution || 'غير مثبت'}</div>
+                                    <div><span className="font-bold text-slate-300">الحالة:</span> {selected.status || 'غير محددة'}</div>
+                                    <div><span className="font-bold text-slate-300">الجهة:</span> {selected.authority || 'غير محددة'}</div>
+                                  </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <button onClick={copyCompleteReference} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-400/15">
+                                    {copiedAll ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                                    {copiedAll ? 'تم النسخ' : 'نسخ المرجع كاملاً'}
+                                  </button>
+                                  {selected.officialSourceUrl && (
+                                    <a href={selected.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-300 hover:bg-emerald-400/15">
+                                      <ExternalLink className="h-4 w-4" /> المصدر الرسمي
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </section>
+                
+                            <section className="mt-4 rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-4">
+                              <div className="flex items-center gap-2 text-emerald-200">
+                                <ShieldCheck className="h-5 w-5" />
+                                <h4 className="font-black">مصادر الاعتماد الرئيسية</h4>
+                              </div>
+                              <p className="mt-1 text-[11px] leading-5 text-slate-400">
+                                ترتيب التحقق في أصول القضاء: هيئة الخبراء بمجلس الوزراء، قرارات مجلس الوزراء السعودي، مجلس الشورى، ثم جريدة أم القرى لإثبات النشر والنفاذ. لا تُقدَّم النسخة الداخلية على المصدر الرسمي.
+                              </p>
+                              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                                {OFFICIAL_REFERENCE_PORTALS.map((portal) => (
+                                  <a key={portal.label} href={portal.url} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-700 bg-slate-950/70 p-3 hover:border-emerald-400/40">
+                                    <div className="flex items-center gap-2 text-xs font-black text-slate-100">
+                                      <ExternalLink className="h-3.5 w-3.5 text-emerald-300" />
+                                      <span>{portal.label}</span>
+                                    </div>
+                                    <p className="mt-1 text-[10px] leading-4 text-slate-500">{portal.note}</p>
+                                  </a>
+                                ))}
+                              </div>
+                            </section>
+                
+                            <section className="mt-4 grid gap-3 xl:grid-cols-2">
+                              <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+                                <div className="flex items-center gap-2 text-cyan-200"><Bot className="h-5 w-5" /><span className="font-black">أمين المراجع</span></div>
+                                <p className="mt-1 text-[11px] leading-5 text-slate-400">موظف مخصص لإحضار المادة المطلوبة باسم النظام ورقم المادة والمصدر، ويرفض اختلاق النص عند غياب التوثيق.</p>
+                              </div>
+                              <div className="rounded-2xl border border-violet-400/20 bg-violet-400/5 p-4">
+                                <div className="flex items-center gap-2 text-violet-200"><Sparkles className="h-5 w-5" /><span className="font-black">مدقق المراجع</span></div>
+                                <p className="mt-1 text-[11px] leading-5 text-slate-400">خبير ثانٍ لمراجعة النسخة النافذة والتعديل والمصدر قبل اعتماد النص في التحليل أو المذكرة.</p>
+                              </div>
+                            </section>
+                
+                            <section className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-3">
+                              <div className="flex flex-col gap-2 sm:flex-row">
+                                <input value={expertRequest} onChange={(e) => setExpertRequest(e.target.value)} placeholder="مثال: أحضر المادة الثامنة من نظام المرافعات أمام ديوان المظالم مع آخر تعديل" className="min-h-11 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-400/60" />
+                                <button onClick={askReferenceCustodian} className="min-h-11 rounded-xl bg-cyan-400 px-4 text-xs font-black text-slate-950 hover:bg-cyan-300">استدعاء أمين المراجع</button>
+                                <button onClick={askReferenceAuditor} className="min-h-11 rounded-xl border border-violet-400/30 bg-violet-400/10 px-4 text-xs font-black text-violet-200 hover:bg-violet-400/15">تدقيق المرجع</button>
+                              </div>
+                            </section>
+                
+                            <div className="mt-4 flex gap-1.5 overflow-x-auto border-b border-slate-800 pb-2">
+                              {tabs.map((item) => (
+                                <button key={item.id} onClick={() => setTab(item.id)} className={`whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold ${tab === item.id ? 'bg-amber-400 text-slate-950' : 'bg-slate-900 text-slate-400 hover:text-white'}`}>{item.label}</button>
+                              ))}
+                            </div>
+                
+                            <section className="mt-4">
+                              {tab === 'articles' && (
+                                <div className="space-y-3">
+                                  {articles.length > 0 ? articles.map((article, index) => (
+                                    <article key={article.title + index} className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+                                      <div className="mb-2 flex items-center justify-between gap-2">
+                                        <h4 className="font-black text-amber-300">{article.title}</h4>
+                                        <button onClick={() => { setExpertRequest(`${article.title} من ${selected.name}`); }} className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-300">
+                                          طلب التحقق <ChevronLeft className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                      <p className="whitespace-pre-wrap text-sm leading-7 text-slate-300">{article.body}</p>
+                                    </article>
+                                  )) : (
+                                    <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 text-sm leading-7 text-amber-100">
+                                      لم تُفهرس مواد هذا النظام مادةً مادة في النسخة الداخلية الحالية. استخدم «أمين المراجع» لإحضار مادة محددة، ولا تعتمد نصاً غير موثق.
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                
+                              {tab === 'law' && (
+                                selectedIsTrusted
+                                  ? <ReferenceText title="نص النظام في قاعدة المنصة" text={selected.lawText} />
+                                  : <UntrustedReferenceNotice />
+                              )}
+                              {tab === 'executive' && (
+                                selectedIsTrusted
+                                  ? <ReferenceText title="اللائحة التنفيذية والملحقات" text={selected.executiveText} />
+                                  : <UntrustedReferenceNotice />
+                              )}
+                              {tab === 'amendments' && (
+                                selectedIsTrusted
+                                  ? <ReferenceText title="سجل التعديلات والقرارات" text={selected.amendmentsText} />
+                                  : <UntrustedReferenceNotice />
+                              )}
+                
+                              {tab === 'versions' && (
+                                <div className="space-y-3">
+                                  <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+                                    <h4 className="flex items-center gap-2 font-black text-white"><BookOpenCheck className="h-4 w-4 text-cyan-300" /> نسخة قاعدة المنصة</h4>
+                                    <p className="mt-2 text-xs leading-6 text-slate-400">الإصدار الداخلي: {LEGAL_REFERENCE_DB_VERSION}. تاريخ الإصدار الهجري المسجل: {selected.issueDateHijri || 'غير محدد'}، وتاريخ النفاذ المسجل: {selected.effectiveDateHijri || 'غير محدد'}.</p>
+                                  </div>
+                                  <div className={`rounded-2xl border p-4 ${selected.verificationStatus === 'official' ? 'border-emerald-400/20 bg-emerald-400/5' : selected.verificationStatus === 'needs-correction' ? 'border-rose-400/20 bg-rose-400/5' : 'border-amber-400/20 bg-amber-400/5'}`}>
+                                    <h4 className="flex items-center gap-2 font-black text-white"><ShieldCheck className="h-4 w-4" /> حالة المطابقة</h4>
+                                    <p className="mt-2 text-xs leading-6 text-slate-300">
+                                      {selected.verificationStatus === 'official'
+                                        ? 'تمت مطابقة هذا السجل ونصه المفهرس بالمصدر الرسمي وفق نطاق التحقق المسجل.'
+                                        : selected.verificationStatus === 'needs-correction'
+                                          ? 'ظهر تعارض أو نقص توثيق في هذا السجل. حُجب نصه الداخلي عن النسخ والاسترجاع القضائي حتى تتم مطابقته مادةً وتعديلاً بالمصدر الرسمي.'
+                                          : 'هذا المرجع موجود في قاعدة المنصة الداخلية لكنه لم يُربط بعد بمصدر رسمي مثبت. لا يُعامل كنص تشريعي نهائي حتى يراجعه مدقق المراجع.'}
+                                    </p>
+                                    {selected.officialSourceUrl && <a href={selected.officialSourceUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-emerald-300"><ExternalLink className="h-4 w-4" /> فتح النسخة الرسمية</a>}
+                                  </div>
+                                </div>
+                              )}
+                            </section>
+                
+                
+              </>
+            ) : (
+              <section className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 text-center">
+                <Search className="mx-auto h-6 w-6 text-slate-500" />
+                <h3 className="mt-3 text-sm font-black text-slate-200">لا يوجد سجل داخلي يطابق البحث الحالي</h3>
+                <p className="mt-2 text-xs leading-6 text-slate-500">
+                  لم تُعرض تفاصيل مرجع سابق حتى لا تختلط بنتائج البحث. يمكنك الاستفادة من نتائج الفهرس الرسمي أعلاه أو تعديل عبارة البحث.
+                </p>
+              </section>
+            )}
 
             <div className="mt-6 rounded-2xl border border-rose-400/15 bg-rose-400/5 p-4 text-[11px] leading-6 text-slate-400">
               <span className="font-black text-rose-200">قاعدة اعتماد المراجع:</span> لا يُعتمد أي نص أو رقم مادة أو تعديل في مخرج قضائي لمجرد وجوده في قاعدة المنصة؛ الأولوية دائماً للنص الرسمي النافذ ومصدره وتاريخ تعديله.
