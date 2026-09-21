@@ -13,16 +13,19 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const geminiKey =
-    process.env.GEMINI_API_KEY?.trim()
-    || process.env.GOOGLE_API_KEY?.trim()
-    || '';
+  const geminiKeys = [
+    process.env.GEMINI_API_KEY?.trim(),
+    process.env.GEMINI_API_KEY_2?.trim(),
+    process.env.GEMINI_API_KEY_3?.trim(),
+    process.env.GEMINI_API_KEY_4?.trim(),
+    process.env.GOOGLE_API_KEY?.trim(),
+  ].filter((value): value is string => Boolean(value));
   const gatewayToken =
     process.env.AI_GATEWAY_API_KEY?.trim()
     || process.env.VERCEL_OIDC_TOKEN?.trim()
     || '';
 
-  if (!geminiKey && !gatewayToken) {
+  if (geminiKeys.length === 0 && !gatewayToken) {
     return res.status(503).json({ error: 'AI_AUTH_UNAVAILABLE' });
   }
 
@@ -61,36 +64,39 @@ export default async function handler(req: any, res: any) {
   try {
     let reply = '';
 
-    if (geminiKey) {
+    if (geminiKeys.length > 0) {
       const transcript = [
         system,
         ...messages.map((item) => `${item.role === 'assistant' ? 'المستشار' : 'المستخدم'}: ${item.content}`),
       ].join('\n\n');
 
-      const response = await fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
-        {
-          method: 'POST',
-          headers: {
-            'x-goog-api-key': geminiKey,
-            'Content-Type': 'application/json',
+      for (const geminiKey of geminiKeys) {
+        const response = await fetch(
+          'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+          {
+            method: 'POST',
+            headers: {
+              'x-goog-api-key': geminiKey,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: transcript }] }],
+              generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
+            }),
           },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: transcript }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
-          }),
-        },
-      );
+        );
 
-      if (response.ok) {
-        const payload: any = await response.json();
-        reply = payload?.candidates?.[0]?.content?.parts
-          ?.map((part: any) => typeof part?.text === 'string' ? part.text : '')
-          .join('')
-          .trim() || '';
-      } else {
-        const detail = await response.text().catch(() => '');
-        console.error('Gemini HTTP error:', response.status, detail.slice(0, 500));
+        if (response.ok) {
+          const payload: any = await response.json();
+          reply = payload?.candidates?.[0]?.content?.parts
+            ?.map((part: any) => typeof part?.text === 'string' ? part.text : '')
+            .join('')
+            .trim() || '';
+          if (reply) break;
+        } else {
+          const detail = await response.text().catch(() => '');
+          console.error('Gemini HTTP error:', response.status, detail.slice(0, 500));
+        }
       }
     }
 
