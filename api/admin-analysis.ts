@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { readSession } from './_auth.ts';
-import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval.ts';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 
 type IncomingAttachment = {
   name?: string;
@@ -19,7 +19,7 @@ type AdminAnalysisRequest = {
 type AgentRun = {
   id: string;
   label: string;
-  status: 'success' | 'error';
+  status: 'success' | 'warning' | 'error';
   durationMs: number;
   model?: string;
   summary: string;
@@ -351,10 +351,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ...stringList(intake.data?.mentionedAuthorities, 20, 300),
   ].filter(Boolean).join('\n');
 
-  const officialContext = buildOfficialLegalReferenceContext(retrievalQuery, 10);
-  const sourceNotice = officialContext
-    ? `السياق المرجعي الرسمي المسترجع لهذه العملية:\n${officialContext}`
-    : 'لا يوجد سياق رسمي كافٍ مسترجع لهذه العملية. أي استناد نظامي غير موجود صراحة يجب وسمه "التحقق الحرفي مطلوب".';
+  const sourceBundle = runLegalSourceAgents(retrievalQuery);
+  const sourceNotice = [
+    'نتيجة وكلاء المراجع القانونية لهذه العملية:',
+    sourceBundle.context,
+    `إجمالي المصادر الرسمية الفريدة: ${sourceBundle.verification.officialSources}`,
+    `المواد المفهرسة المتحقق من وجودها: ${sourceBundle.verification.verifiedArticles}`,
+    'الاقتباس الحرفي الجاهز من داخل المستودع: لا؛ يجب الرجوع للمصدر الرسمي للنص الحرفي.',
+    'قاعدة السوابق القضائية الكاملة: غير مكتملة؛ لا يجوز اختراع رقم حكم أو مبدأ.',
+  ].join('\n\n');
 
   const sharedRules = `قواعد ملزمة:
 - لا تخترع مادة أو مرسوماً أو أمراً أو حكماً أو مبدأ قضائياً.
@@ -435,7 +440,7 @@ ${sharedRules}
     legislative: legislative.data,
     procedural: procedural.data,
     reasoning: reasoning.data,
-    officialContextAvailable: Boolean(officialContext),
+    sourceVerification: sourceBundle.verification,
   };
 
   const final = await generateJsonAgent<any>({
@@ -444,9 +449,12 @@ ${sharedRules}
     label: 'المراجع النهائي للأدمن',
     clientOffset: 0,
     systemInstruction: `أنت المراجع النهائي في غرفة تحليل QADA الخاصة بالأدمن.
-ستستلم نتائج وكلاء مستقلين. مهمتك الدمج وإزالة التكرار وكشف التعارض بينهم، لا اختراع نقاط جديدة بلا سند.
+ستستلم نتائج وكلاء مستقلين ونتيجة وكلاء المراجع القانونية. مهمتك الدمج وإزالة التكرار وكشف التعارض بينهم، لا اختراع نقاط جديدة بلا سند.
 رتب الملاحظات حسب أثرها المحتمل، واحتفظ بحالة المصدر لكل نقطة.
 إذا تعارض وكيلان فضع التعارض في conflictingPoints ولا تخفِه.
+إذا كانت حزمة المراجع تشير إلى blocker أو warning، فلا تحول النقطة إلى "متحقق من السياق الرسمي" لمجرد أن الوكيل التحليلي ذكرها.
+إذا لم تكن قاعدة السوابق جاهزة، فلا تنسب رقماً أو مبدأً قضائياً إلى حكم غير موجود في المصدر الرسمي.
+إذا لم يكن النص الحرفي محفوظاً ومتحققاً، لا تضع اقتباساً حرفياً للمادة؛ اذكر رقمها ومصدرها وحالة التحقق فقط.
 أعد JSON فقط بهذا الشكل:
 {
   "documentType": "...",
@@ -474,8 +482,17 @@ ${ISSUE_SCHEMA}`,
         reasoning: reasoning.data,
       });
 
+  const sourceRuns: AgentRun[] = sourceBundle.runs.map((run) => ({
+    id: run.id,
+    label: run.label,
+    status: run.status,
+    durationMs: run.durationMs,
+    summary: run.summary,
+  }));
+
   const agentRuns: AgentRun[] = [
     intake.run,
+    ...sourceRuns,
     legislative.run,
     procedural.run,
     reasoning.run,
@@ -483,17 +500,22 @@ ${ISSUE_SCHEMA}`,
   ];
 
   const completed = agentRuns.filter((run) => run.status === 'success').length;
-  const failed = agentRuns.length - completed;
+  const warnings = agentRuns.filter((run) => run.status === 'warning').length;
+  const failed = agentRuns.filter((run) => run.status === 'error').length;
 
   return res.status(200).json({
     report,
     agentRuns,
     meta: {
       analyzedAt: new Date().toISOString(),
-      officialContextAvailable: Boolean(officialContext),
+      officialContextAvailable: sourceBundle.verification.officialSources > 0,
+      officialSources: sourceBundle.verification.officialSources,
+      verifiedArticles: sourceBundle.verification.verifiedArticles,
+      sourceBlockers: sourceBundle.verification.blockers.length,
       completedAgents: completed,
+      warningAgents: warnings,
       failedAgents: failed,
-      architecture: 'multi-agent-v2',
+      architecture: 'multi-agent-v3-source-gated',
     },
   });
 }
