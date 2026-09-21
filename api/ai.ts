@@ -1,5 +1,6 @@
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
+import { readSession } from './session.ts';
 const SYSTEM_INSTRUCTION = `أنت المستشار الذكي لمنصة أصول القضاء في المملكة العربية السعودية.
 التزم بالدقة والتحفظ القانوني:
 - لا تخترع مادة نظامية أو مرسوماً أو قراراً أو ميعاداً.
@@ -13,6 +14,11 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  const session = readSession(req.headers?.cookie);
+  if (!session) {
+    return res.status(401).json({ error: 'AUTH_REQUIRED' });
   }
 
   const geminiKeys = [
