@@ -596,6 +596,7 @@ ${ISSUE_SCHEMA}`,
   return res.status(200).json({
     report,
     agentRuns,
+    sourcePackets: sourceBundle.packets,
     meta: {
       analyzedAt: new Date().toISOString(),
       officialContextAvailable: sourceBundle.verification.officialSources > 0,
