@@ -33,6 +33,8 @@ interface JudgesSourceAudit {
   introducedMarkers?: string[];
   unsupportedMarkers?: string[];
   blockedRevision?: boolean;
+  blockedSpecificAmendments?: number;
+  blockedAmendmentMarkers?: string[];
 }
 
 interface JudgesCassationReviewPanelProps {
@@ -280,6 +282,17 @@ export function JudgesCassationReviewPanel({
                   ))}
                 </ul>
               )}
+              {(sourceAudit.blockedSpecificAmendments || 0) > 0 && (
+                <div className="mt-2 rounded-xl border border-amber-500/25 bg-amber-500/10 p-2 text-[11px] text-amber-100">
+                  حُجب {sourceAudit.blockedSpecificAmendments} تعديل فرعي لأنه احتوى إحالات قانونية جديدة غير متحققة.
+                  {sourceAudit.blockedAmendmentMarkers?.length ? (
+                    <div className="mt-1 text-amber-100/70">
+                      {sourceAudit.blockedAmendmentMarkers.slice(0, 4).join(' • ')}
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
               {sourceAudit.blockedRevision && (
                 <div className="mt-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-2 text-[11px] font-bold text-rose-200">
                   أوقفت بوابة التحقق تطبيق المسودة المنقحة لأنها أدخلت إحالات قانونية جديدة لم تثبت في حزمة المصادر الرسمية.
