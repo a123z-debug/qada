@@ -4,6 +4,7 @@ import { readSession } from './session.ts';
 import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 import { protectJson, unprotectJson } from './_secureStore.ts';
+import { recordAuditEvent } from './_audit.ts';
 
 type StoredCase = {
   ownerId: string;
@@ -98,6 +99,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await redisCommand(['SET', key, protectJson(value, 'case-record')]);
       await redisCommand(['SADD', userIndexKey(ownerId), key]);
       await redisCommand(['SADD', allIndexKey(), key]);
+      await recordAuditEvent({
+        actorId: session.id,
+        actorRole: session.role,
+        action: 'case.save',
+        targetType: 'case',
+        targetId: `${ownerId}:${id}`,
+        outcome: 'success',
+        metadata: { adminCrossUser: ownerId !== session.id },
+      });
       return res.status(200).json({ ok: true, record: session.role === 'admin' ? { ...cleanRecord, storageOwnerId: ownerId } : cleanRecord });
     }
 
@@ -110,6 +120,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await redisCommand(['DEL', key]);
       await redisCommand(['SREM', userIndexKey(ownerId), key]);
       await redisCommand(['SREM', allIndexKey(), key]);
+      await recordAuditEvent({
+        actorId: session.id,
+        actorRole: session.role,
+        action: 'case.delete',
+        targetType: 'case',
+        targetId: `${ownerId}:${caseId}`,
+        outcome: 'success',
+        metadata: { adminCrossUser: ownerId !== session.id },
+      });
       return res.status(204).end();
     }
 
