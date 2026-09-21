@@ -38,7 +38,7 @@ type LaunchIntent =
 
 function readStorage<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw) as T;
     return parsed ?? fallback;
@@ -50,7 +50,7 @@ function readStorage<T>(key: string, fallback: T): T {
 
 function writeStorage<T>(key: string, value: T) {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    sessionStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch (error) {
     console.error(`Storage write failed for ${key}:`, error);
@@ -369,6 +369,21 @@ export default function App() {
   useEffect(() => {
     localStorage.removeItem('diwan_user_session_v1');
     localStorage.removeItem(LEGACY_JUDGMENT_RECORDS_STORAGE_KEY);
+    localStorage.removeItem('diwan_pending_attachments_v1');
+
+    // Remove persistent copies created by older builds. Current case data is kept
+    // only for the active browser session until encrypted server storage exists.
+    for (let index = localStorage.length - 1; index >= 0; index--) {
+      const key = localStorage.key(index);
+      if (
+        key?.startsWith('diwan_administrative_draft_') ||
+        key?.startsWith('diwan_criminal_draft_') ||
+        key?.startsWith('diwan_general_draft_') ||
+        key?.startsWith('diwan_judgment_records_v2_')
+      ) {
+        localStorage.removeItem(key);
+      }
+    }
 
     let cancelled = false;
     fetch('/api/session', {
