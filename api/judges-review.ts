@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval.ts';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
