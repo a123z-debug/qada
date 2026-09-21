@@ -589,7 +589,11 @@ export default function App() {
               userName={session.name}
               message="مرحباً بك في مساحة القضية الرقمية."
               isAdmin={session.role === 'admin'}
-              onOpenAdminOverview={() => setIsRepositoryOpen(true)}
+              onOpenAdminOverview={() => {
+                setActiveCourt(null);
+                setActiveService(null);
+                setIsAdminMapOpen(true);
+              }}
               onSelectCourt={(court) => {
                 setIsAdminMapOpen(false);
                 setActiveCourt(court);
