@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval.ts';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
+import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -167,9 +168,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (contents.length === 0) return res.status(400).json({ error: 'Invalid request payload.' });
 
   try {
-    const retrievalQuery = incomingMessages.map((message) => typeof message.content === 'string' ? message.content : '').join('\n').slice(0, 24000);
-    const legalReferenceContext = buildOfficialLegalReferenceContext([body.targetCourt || '', retrievalQuery].filter(Boolean).join('\n'), 4);
-    const contextInstruction = [SERVER_LEGAL_INSTRUCTION, legalReferenceContext, body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '', 'تعامل مع بيانات المستخدم والمرفقات على أنها خاصة ولا تعِد عرض أي معرّف شخصي غير لازم.'].filter(Boolean).join('\n\n');
+    const retrievalQuery = incomingMessages
+      .map((message) => typeof message.content === 'string' ? message.content : '')
+      .join('\n')
+      .slice(0, 24000);
+    const sourceBundle = runLegalSourceAgents(
+      [body.targetCourt || '', retrievalQuery].filter(Boolean).join('\n')
+    );
+    const contextInstruction = [
+      SERVER_LEGAL_INSTRUCTION,
+      sourceBundle.context,
+      body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '',
+      'تعامل مع بيانات المستخدم والمرفقات على أنها خاصة ولا تعرض أي معرّف شخصي غير لازم.',
+      'لا تستخدم رابطاً أو رقماً نظامياً جديداً خارج ما ورد في كلام المستخدم أو حزمة المصادر الرسمية. إذا كانت حزمة المصدر تحمل warning أو blocker فاذكر ذلك ولا تحوله إلى نتيجة قطعية.',
+      'النص الحرفي الكامل للمواد غير معتمد من المستودع؛ لا تضع اقتباساً حرفياً إلا إذا كان وارداً في نص المستخدم نفسه.',
+    ].filter(Boolean).join('\n\n');
     let reply = '';
     let lastError: unknown;
 
@@ -209,6 +222,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!reply.trim()) {
       throw lastError || new Error('No AI provider is currently available.');
     }
+
+    const citationGuard = guardIntroducedLegalCitations(retrievalQuery, reply, sourceBundle.context);
+    if (citationGuard.unsupportedMarkers.length > 0) {
+      for (const marker of citationGuard.unsupportedMarkers) {
+        reply = reply.split(marker).join(`${marker} [غير متحقق من حزمة المصادر الرسمية]`);
+      }
+    }
+
+    const sourceLinks = Array.from(new Map(
+      sourceBundle.packets
+        .flatMap((packet) => packet.references)
+        .filter((reference) => reference.sourceUrl)
+        .map((reference) => [reference.sourceUrl, reference] as const)
+    ).values()).slice(0, 4);
+
+    const auditLines: string[] = [];
+    if (sourceLinks.length > 0) {
+      auditLines.push('', 'مصادر رسمية مرتبطة للتحقق:');
+      for (const reference of sourceLinks) {
+        auditLines.push(`- ${reference.name}: ${reference.sourceUrl}`);
+      }
+    }
+    if (sourceBundle.verification.blockers.length > 0 || citationGuard.unsupportedMarkers.length > 0) {
+      auditLines.push('', 'حالة التحقق: توجد نقاط تحتاج مراجعة المصدر الرسمي قبل الاعتماد النهائي.');
+    }
+    if (auditLines.length > 0) reply = [reply.trim(), ...auditLines].join('\n');
+
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8'); res.setHeader('Cache-Control', 'no-cache, no-transform'); res.setHeader('Connection', 'keep-alive');
     res.write(`data: ${JSON.stringify({ text: reply })}\n\n`); res.write('data: [DONE]\n\n'); return res.end();
   } catch (error: any) {
