@@ -30,6 +30,10 @@ const banned: Array<{ pattern: RegExp; reason: string }> = [
   { pattern: /\.doc,\.docx/g, reason: 'unsupported Office files must not be advertised as directly analyzable' },
   { pattern: /جاهزة للإيداع في منصة \(معين\)/g, reason: 'prompt templates must not promise filing readiness' },
   { pattern: /المرسوم م\/37/g, reason: 'prompt templates must not hard-code a case-specific decree conclusion' },
+  { pattern: /جاهزة للطباعة أو الإيداع/g, reason: 'draft UI must not promise filing readiness' },
+  { pattern: /عزل تام/g, reason: 'UI must not make absolute privacy claims' },
+  { pattern: /البراهين الرادعة/g, reason: 'legal UI should avoid sensational certainty language' },
+  { pattern: /setGeneratedOutput\((?:fallback|fallbackText)\)/g, reason: 'AI failures must not be converted into synthetic review drafts' },
 ];
 
 const violations: string[] = [];
