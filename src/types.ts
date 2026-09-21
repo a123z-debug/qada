@@ -117,6 +117,9 @@ export interface CaseStageRecord {
 
 export interface JudgmentRecord {
   id: string;
+  // Internal repository ownership metadata. Returned only to administrators when
+  // they inspect cross-user records; normal users never receive it.
+  storageOwnerId?: string;
   // 1. هوية الشخص وبيانات الدعوى
   personName: string;
   nationalId: string; // رقم الهوية الوطنية / الإقامة
