@@ -64,6 +64,15 @@ async function generateViaGateway(messages: IncomingMessage[], systemInstruction
   const token = getGatewayToken();
   if (!token) return '';
 
+  // The gateway conversion below can carry images but not raw PDF bytes.
+  // When a PDF is present, skip the gateway so Gemini receives the actual inlineData.
+  const hasPdfAttachment = messages.some((message) =>
+    (message.attachments || []).some(
+      (attachment) => sanitizeMimeType(attachment.type, attachment.name) === 'application/pdf'
+    )
+  );
+  if (hasPdfAttachment) return '';
+
   const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
     method: 'POST',
     headers: {

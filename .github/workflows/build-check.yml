@@ -21,4 +21,5 @@ jobs:
       - run: npm run test:auth-consistency
       - run: npm run test:api-auth
       - run: npm run test:privacy-storage
+      - run: npm run test:multimodal-evidence
       - run: npm run build
