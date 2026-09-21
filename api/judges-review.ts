@@ -114,7 +114,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });
     const report = JSON.parse(match[0]);
-    return res.status(200).json({ report });
+    return res.status(200).json({
+      report,
+      sourceAudit: {
+        officialSources: sourceBundle.verification.officialSources,
+        verifiedArticles: sourceBundle.verification.verifiedArticles,
+        blockers: sourceBundle.verification.blockers,
+        literalQuotationReady: sourceBundle.verification.literalQuotationReady,
+        precedentCorpusReady: sourceBundle.verification.precedentCorpusReady,
+      },
+      sourcePackets: sourceBundle.packets,
+    });
   } catch (error) {
     console.error('Judges review JSON parse failed:', error);
     return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });
