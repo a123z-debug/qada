@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { readSession } from './_auth';
 import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
@@ -11,6 +10,85 @@ function getGeminiClients(): GoogleGenAI[] {
     .map((index) => process.env[`GEMINI_API_KEY${index === 1 ? '' : `_${index}`}`]?.trim())
     .filter((apiKey): apiKey is string => Boolean(apiKey));
   return apiKeys.map((apiKey) => new GoogleGenAI({ apiKey }));
+}
+
+function getGatewayToken(): string {
+  return process.env.AI_GATEWAY_API_KEY?.trim()
+    || process.env.VERCEL_OIDC_TOKEN?.trim()
+    || '';
+}
+
+function toGatewayMessages(messages: IncomingMessage[], systemInstruction: string) {
+  const converted: any[] = [{ role: 'system', content: systemInstruction }];
+
+  for (const message of messages) {
+    const role = message.role === 'assistant' || message.role === 'model' ? 'assistant' : 'user';
+    const text = typeof message.content === 'string' ? message.content.trim().slice(0, 12000) : '';
+    const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+    const imageParts = attachments
+      .map((attachment) => {
+        const mimeType = sanitizeMimeType(attachment.type, attachment.name);
+        const data = typeof attachment.data === 'string' ? attachment.data.trim() : '';
+        if (!mimeType?.startsWith('image/') || !data) return null;
+        const url = data.startsWith('data:') ? data : `data:${mimeType};base64,${data.includes(',') ? data.slice(data.indexOf(',') + 1) : data}`;
+        return { type: 'image_url', image_url: { url } };
+      })
+      .filter(Boolean);
+
+    const pdfNames = attachments
+      .filter((attachment) => sanitizeMimeType(attachment.type, attachment.name) === 'application/pdf')
+      .map((attachment) => attachment.name || 'مرفق PDF');
+
+    if (imageParts.length > 0) {
+      converted.push({
+        role,
+        content: [
+          { type: 'text', text: [text, pdfNames.length ? `المرفقات غير الصورية: ${pdfNames.join('، ')}` : ''].filter(Boolean).join('\n') || 'حلل المرفق.' },
+          ...imageParts,
+        ],
+      });
+    } else if (text || pdfNames.length) {
+      converted.push({
+        role,
+        content: [text, pdfNames.length ? `مرفقات PDF مذكورة في الطلب: ${pdfNames.join('، ')}` : ''].filter(Boolean).join('\n'),
+      });
+    }
+  }
+
+  return converted;
+}
+
+async function generateViaGateway(messages: IncomingMessage[], systemInstruction: string): Promise<string> {
+  const token = getGatewayToken();
+  if (!token) return '';
+
+  const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-3.6-flash',
+      models: ['google/gemini-3.5-flash-lite'],
+      messages: toGatewayMessages(messages, systemInstruction),
+      temperature: 0.2,
+      max_tokens: 3500,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`AI Gateway ${response.status}: ${detail.slice(0, 500)}`);
+  }
+
+  const payload: any = await response.json();
+  const content = payload?.choices?.[0]?.message?.content;
+  if (typeof content === 'string') return content.trim();
+  if (Array.isArray(content)) {
+    return content.map((part: any) => typeof part?.text === 'string' ? part.text : '').join('').trim();
+  }
+  return '';
 }
 
 const SERVER_LEGAL_INSTRUCTION = `أنت مستشار منصة أصول القضاء في المملكة العربية السعودية.
@@ -72,9 +150,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ error: 'Method Not Allowed' }); }
 
-  const session = readSession(req.headers.cookie);
-  if (!session) return res.status(401).json({ error: 'يلزم تسجيل الدخول لاستخدام المستشار.' });
-  const limit = checkRateLimit(session.id);
+  const forwarded = req.headers['x-forwarded-for'];
+  const rawClientId = Array.isArray(forwarded)
+    ? forwarded[0]
+    : forwarded || req.socket?.remoteAddress || 'anonymous';
+  const clientId = String(rawClientId).split(',')[0].trim().slice(0, 80);
+  const limit = checkRateLimit(clientId);
   if (!limit.allowed) { res.setHeader('Retry-After', String(limit.retryAfterSeconds)); return res.status(429).json({ error: 'تم تجاوز حد الاستخدام المؤقت. حاول لاحقاً.' }); }
 
   const body = (req.body ?? {}) as { message?: string; messages?: IncomingMessage[]; history?: IncomingMessage[]; targetCourt?: string };
@@ -86,21 +167,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (contents.length === 0) return res.status(400).json({ error: 'Invalid request payload.' });
 
   try {
-    const clients = getGeminiClients();
-    if (clients.length === 0) return res.status(500).json({ error: 'Server configuration error.' });
     const retrievalQuery = incomingMessages.map((message) => typeof message.content === 'string' ? message.content : '').join('\n').slice(0, 24000);
     const legalReferenceContext = buildOfficialLegalReferenceContext([body.targetCourt || '', retrievalQuery].filter(Boolean).join('\n'), 4);
     const contextInstruction = [SERVER_LEGAL_INSTRUCTION, legalReferenceContext, body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '', 'تعامل مع بيانات المستخدم والمرفقات على أنها خاصة ولا تعِد عرض أي معرّف شخصي غير لازم.'].filter(Boolean).join('\n\n');
-    const models = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
-    let response: any; let lastError: unknown;
-    for (const ai of clients) { for (const model of models) { try { response = await ai.models.generateContent({ model, contents: contents as any, config: { systemInstruction: contextInstruction, temperature: 0.2 } }); break; } catch (error) { lastError = error; } } if (response) break; }
-    if (!response) throw lastError || new Error('Gemini request failed.');
-    const reply = response.text || ((response as any)?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('') ?? '');
-    if (!reply.trim()) return res.status(502).json({ error: 'AI_EMPTY_RESPONSE' });
+    let reply = '';
+    let lastError: unknown;
+
+    try {
+      reply = await generateViaGateway(incomingMessages, contextInstruction);
+    } catch (error) {
+      lastError = error;
+      console.error('AI Gateway Error:', error instanceof Error ? error.message : error);
+    }
+
+    if (!reply) {
+      const clients = getGeminiClients();
+      const models = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+      let response: any;
+
+      for (const ai of clients) {
+        for (const model of models) {
+          try {
+            response = await ai.models.generateContent({
+              model,
+              contents: contents as any,
+              config: { systemInstruction: contextInstruction, temperature: 0.2 },
+            });
+            break;
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        if (response) break;
+      }
+
+      reply = response?.text
+        || response?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('')
+        || '';
+    }
+
+    if (!reply.trim()) {
+      throw lastError || new Error('No AI provider is currently available.');
+    }
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8'); res.setHeader('Cache-Control', 'no-cache, no-transform'); res.setHeader('Connection', 'keep-alive');
     res.write(`data: ${JSON.stringify({ text: reply })}\n\n`); res.write('data: [DONE]\n\n'); return res.end();
   } catch (error: any) {
-    console.error('Gemini API Error:', error?.message || error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error('AI provider error:', error?.message || error);
+    return res.status(503).json({ error: 'AI_PROVIDER_UNAVAILABLE' });
   }
 }
