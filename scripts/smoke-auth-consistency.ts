@@ -11,8 +11,8 @@ const envExample = fs.readFileSync('.env.example', 'utf8');
 const server = fs.readFileSync('server.ts', 'utf8');
 
 assert(
-  adminAnalysis.includes("import { readSession } from './session.ts';"),
-  'admin-analysis must read the active session implementation',
+  adminAnalysis.includes("import { readActiveSession } from './session.ts';"),
+  'admin-analysis must verify that the account behind the signed session is still active',
 );
 assert(
   !adminAnalysis.includes('_auth'),
@@ -43,6 +43,11 @@ assert(
 assert(
   sessionApi.includes("redisCommand(['GET', key])"),
   'user login must load the account from the server store',
+);
+assert(
+  sessionApi.includes('export async function readActiveSession')
+    && sessionApi.includes('account.disabledAt'),
+  'disabled accounts must invalidate active sessions on protected API requests',
 );
 assert(
   !loginScreen.includes('accountProof')
