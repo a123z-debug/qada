@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
 import { readSession } from './session.ts';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
+import { enforceRateLimit } from './_rateLimit.ts';
 
 type IncomingAttachment = {
   name?: string;
@@ -133,9 +134,9 @@ function cleanAttachments(rawAttachments: IncomingAttachment[]) {
       ? raw.slice(raw.indexOf(',') + 1)
       : raw;
 
-    if (data.length > 18_000_000) continue;
+    if (data.length > 3_500_000) continue;
     totalChars += data.length;
-    if (totalChars > 48_000_000) break;
+    if (totalChars > 3_500_000) break;
 
     cleaned.push({
       name: String(item.name || 'مرفق').slice(0, 180),
@@ -457,6 +458,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const session = readSession(req.headers.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
   if (session.role !== 'admin') return res.status(403).json({ error: 'ADMIN_ONLY' });
+
+  try {
+    const limit = await enforceRateLimit('admin-analysis', session.id, 12, 10 * 60);
+    if (!limit.allowed) {
+      res.setHeader('Retry-After', String(limit.retryAfterSeconds));
+      return res.status(429).json({ error: 'RATE_LIMITED' });
+    }
+  } catch (error) {
+    console.error('Admin-analysis rate limit unavailable:', error instanceof Error ? error.message : error);
+    return res.status(503).json({ error: 'RATE_LIMIT_STORE_UNAVAILABLE' });
+  }
 
   const body = (req.body ?? {}) as AdminAnalysisRequest;
   const inputText = typeof body.text === 'string' ? body.text.trim().slice(0, 45000) : '';
