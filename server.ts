@@ -9,6 +9,8 @@ import adminAnalysisHandler from "./api/admin-analysis";
 import legalSourceSearchHandler from "./api/legal-source-search";
 import sessionHandler from "./api/session";
 import aiHandler from "./api/ai";
+import chatHandler from "./api/chat";
+import convertStoryHandler from "./api/convert-story";
 import {
   authErrorMessage,
   clearLegacySessionCookie,
@@ -307,6 +309,29 @@ async function startServer() {
 
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Local development uses the exact same handlers as Vercel for application-critical routes.
+  app.all("/api/session", (req, res) => {
+    void sessionHandler(req as any, res as any);
+  });
+  app.post("/api/ai", (req, res) => {
+    void aiHandler(req as any, res as any);
+  });
+  app.post("/api/chat", (req, res) => {
+    void chatHandler(req as any, res as any);
+  });
+  app.post("/api/convert-story", (req, res) => {
+    void convertStoryHandler(req as any, res as any);
+  });
+  app.post("/api/legal-source-search", (req, res) => {
+    void legalSourceSearchHandler(req as any, res as any);
+  });
+  app.post("/api/admin-analysis", (req, res) => {
+    void adminAnalysisHandler(req as any, res as any);
+  });
+  app.post("/api/judges-review", (req, res) => {
+    void judgesReviewHandler(req as any, res as any);
+  });
 
   // Health check
   app.get("/api/health", (_req, res) => {
@@ -857,28 +882,6 @@ requests: (مصفوفة Array للطلبات الختامية المتوقعة �
       console.error("Judicial audit error:", err);
       res.status(500).json({ error: formatGeminiErrorMessage(err) });
     }
-  });
-
-  // Local development delegates critical application routes to the same handlers used by Vercel.
-  // This prevents the local copy from drifting into a different auth or legal-analysis behavior.
-  app.all("/api/session", (req, res) => {
-    void sessionHandler(req as any, res as any);
-  });
-
-  app.post("/api/ai", (req, res) => {
-    void aiHandler(req as any, res as any);
-  });
-
-  app.post("/api/legal-source-search", (req, res) => {
-    void legalSourceSearchHandler(req as any, res as any);
-  });
-
-  app.post("/api/admin-analysis", (req, res) => {
-    void adminAnalysisHandler(req as any, res as any);
-  });
-
-  app.post("/api/judges-review", (req, res) => {
-    void judgesReviewHandler(req as any, res as any);
   });
 
   // Vite middleware in dev, static files in production
