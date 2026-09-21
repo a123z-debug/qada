@@ -23,6 +23,7 @@ import { AdminAgentMap } from './components/admin/AdminAgentMap';
 import { AdminAnalysisRoom } from './components/admin/AdminAnalysisRoom';
 import { AdminUserManagement } from './components/admin/AdminUserManagement';
 import { AdminAuditLog } from './components/admin/AdminAuditLog';
+import { AccountSecurityModal } from './components/AccountSecurityModal';
 type LaunchIntent =
   | { kind: 'dashboard' }
   | { kind: 'service'; court: CourtJurisdiction; service: string }
@@ -360,6 +361,7 @@ export default function App() {
   const [isAdminAnalysisOpen, setIsAdminAnalysisOpen] = useState(false);
   const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
   const [isAdminAuditOpen, setIsAdminAuditOpen] = useState(false);
+  const [isAccountSecurityOpen, setIsAccountSecurityOpen] = useState(false);
 
   const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>([]);
   const [caseStoreError, setCaseStoreError] = useState('');
@@ -509,6 +511,7 @@ export default function App() {
     setIsAdminAnalysisOpen(false);
     setIsAdminUsersOpen(false);
     setIsAdminAuditOpen(false);
+    setIsAccountSecurityOpen(false);
     setJudgmentRecords([]);
   };
 
@@ -656,6 +659,7 @@ export default function App() {
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(true);
         } : undefined}
+        onOpenAccountSecurity={() => setIsAccountSecurityOpen(true)}
       />
 
       <div className="w-full lg:w-3/4 flex-1 flex flex-col h-full overflow-hidden relative z-10">
@@ -816,6 +820,12 @@ export default function App() {
           </button>
         </div>
       </nav>
+
+      <AccountSecurityModal
+        isOpen={isAccountSecurityOpen}
+        onClose={() => setIsAccountSecurityOpen(false)}
+        session={session}
+      />
 
       <FloatingChatBot
         position="bottom-left"
