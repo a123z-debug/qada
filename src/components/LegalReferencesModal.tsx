@@ -115,13 +115,13 @@ export function LegalReferencesModal({
       if (!q) return true;
       return normalize([
         system.name,
+        system.category,
         system.subCategory,
         system.royalDecree,
         system.cabinetResolution,
+        system.authority,
         system.tags.join(' '),
-        system.lawText,
-        system.executiveText,
-        system.amendmentsText,
+        system.officialSourceUrl || '',
       ].join(' ')).includes(q);
     });
   }, [query, category]);
