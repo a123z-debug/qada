@@ -13,13 +13,17 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const token =
+  const geminiKey =
+    process.env.GEMINI_API_KEY?.trim()
+    || process.env.GOOGLE_API_KEY?.trim()
+    || '';
+  const gatewayToken =
     process.env.AI_GATEWAY_API_KEY?.trim()
     || process.env.VERCEL_OIDC_TOKEN?.trim()
     || '';
 
-  if (!token) {
-    return res.status(503).json({ error: 'AI_GATEWAY_AUTH_UNAVAILABLE' });
+  if (!geminiKey && !gatewayToken) {
+    return res.status(503).json({ error: 'AI_AUTH_UNAVAILABLE' });
   }
 
   const body = (req.body ?? {}) as {
@@ -55,32 +59,69 @@ export default async function handler(req: any, res: any) {
   ].filter(Boolean).join('\n\n');
 
   try {
-    const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3.6-flash',
-        models: ['google/gemini-3.5-flash-lite'],
-        messages: [{ role: 'system', content: system }, ...messages],
-        temperature: 0.2,
-        max_tokens: 3000,
-      }),
-    });
+    let reply = '';
 
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      console.error('AI Gateway HTTP error:', response.status, detail.slice(0, 500));
-      return res.status(502).json({ error: 'AI_GATEWAY_REQUEST_FAILED', status: response.status });
+    if (geminiKey) {
+      const transcript = [
+        system,
+        ...messages.map((item) => `${item.role === 'assistant' ? 'المستشار' : 'المستخدم'}: ${item.content}`),
+      ].join('\n\n');
+
+      const response = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+        {
+          method: 'POST',
+          headers: {
+            'x-goog-api-key': geminiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: transcript }] }],
+            generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
+          }),
+        },
+      );
+
+      if (response.ok) {
+        const payload: any = await response.json();
+        reply = payload?.candidates?.[0]?.content?.parts
+          ?.map((part: any) => typeof part?.text === 'string' ? part.text : '')
+          .join('')
+          .trim() || '';
+      } else {
+        const detail = await response.text().catch(() => '');
+        console.error('Gemini HTTP error:', response.status, detail.slice(0, 500));
+      }
     }
 
-    const payload: any = await response.json();
-    const reply = payload?.choices?.[0]?.message?.content;
+    if (!reply && gatewayToken) {
+      const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${gatewayToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-3.6-flash',
+          models: ['google/gemini-3.5-flash-lite'],
+          messages: [{ role: 'system', content: system }, ...messages],
+          temperature: 0.2,
+          max_tokens: 3000,
+        }),
+      });
 
-    if (typeof reply !== 'string' || !reply.trim()) {
-      return res.status(502).json({ error: 'AI_EMPTY_RESPONSE' });
+      if (response.ok) {
+        const payload: any = await response.json();
+        const content = payload?.choices?.[0]?.message?.content;
+        reply = typeof content === 'string' ? content.trim() : '';
+      } else {
+        const detail = await response.text().catch(() => '');
+        console.error('AI Gateway HTTP error:', response.status, detail.slice(0, 500));
+      }
+    }
+
+    if (!reply) {
+      return res.status(502).json({ error: 'AI_PROVIDER_REQUEST_FAILED' });
     }
 
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
@@ -89,7 +130,7 @@ export default async function handler(req: any, res: any) {
     res.write('data: [DONE]\n\n');
     return res.end();
   } catch (error) {
-    console.error('AI Gateway runtime error:', error instanceof Error ? error.message : error);
-    return res.status(500).json({ error: 'AI_GATEWAY_RUNTIME_ERROR' });
+    console.error('AI runtime error:', error instanceof Error ? error.message : error);
+    return res.status(500).json({ error: 'AI_RUNTIME_ERROR' });
   }
 }
