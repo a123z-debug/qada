@@ -220,7 +220,6 @@ ${sharedRules}`;
             attachments: uploadedAttachment ? [uploadedAttachment] : [],
           }],
           targetCourt: 'المحكمة العامة',
-          clientPersonName: claimantName,
           powerMode: true,
         }),
       });
