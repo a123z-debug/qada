@@ -577,6 +577,7 @@ export function LegalReviewEditor({
       {activeTab === 'judges' ? (
         <JudgesCassationReviewPanel
           report={judgesReport}
+          sourceAudit={judgesSourceAudit}
           isLoading={isLoadingJudges}
           onRunAudit={handleRunJudgesAudit}
           onApplyFullRevision={handleApplyFullRevision}
