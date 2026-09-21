@@ -261,7 +261,7 @@ ${sharedRules}`;
             : currentService === 'criminal_appeal'
             ? 'لائحة اعتراض واستئناف حكم جزائي'
             : currentService === 'criminal_procedural'
-            ? 'مذكرة دفوع بطلان القبض والتفتيش'
+            ? 'مذكرة فحص إجراءات القبض والتفتيش'
             : 'مذكرة إيداع وتدقيق محاضر التحقيق'
         }
         clientName={defendantName}
@@ -287,13 +287,13 @@ ${sharedRules}`;
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-neutral-100">بؤرة المحاكم الجزائية</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                عزل تام
+                معزول حسب الحساب
               </span>
             </div>
             <p className="text-xs text-neutral-400">
               {currentService === 'criminal_defense' && 'إعداد وصياغة لائحة دعوى / مذكرة دفاع جنائي'}
               {currentService === 'criminal_appeal' && 'صياغة اعتراض واستئناف حكم جزائي'}
-              {currentService === 'criminal_procedural' && 'إعداد مذكرة دفوع بطلان القبض والتفتيش'}
+              {currentService === 'criminal_procedural' && 'فحص سلامة إجراءات القبض والتفتيش'}
               {currentService === 'criminal_evidence' && 'رفع مرفقات ومحاضر الضبط والتحقيق الجنائي'}
             </p>
           </div>
