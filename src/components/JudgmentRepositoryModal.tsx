@@ -57,15 +57,9 @@ export function JudgmentRepositoryModal({
 }: JudgmentRepositoryModalProps) {
   const isAdminView = currentUser?.role === 'admin';
 
-  // Sanitize records based on role - strictly hide admin record from citizens
-  const authorizedRecords = useMemo(() => {
-    if (isAdminView) {
-      return records;
-    }
-    return records.filter(
-      (rec) => rec.nationalId !== 'الهوية الوطنية' && rec.id !== '<rec-3751></rec-3751>-military'
-    );
-  }, [records, isAdminView]);
+  // The server repository already scopes normal users to their own records.
+  // Administrators receive the cross-user view through the protected API.
+  const authorizedRecords = useMemo(() => records, [records]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourtFilter, setSelectedCourtFilter] = useState<string>('all');
@@ -107,7 +101,6 @@ export function JudgmentRepositoryModal({
     return authorizedRecords.filter((rec) => {
       const matchesSearch =
         rec.personName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rec.nationalId.includes(searchQuery) ||
         rec.agencyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         rec.caseNumber.includes(searchQuery) ||
         rec.judgmentNumber.includes(searchQuery);
@@ -126,8 +119,8 @@ export function JudgmentRepositoryModal({
 
   const handleCreateRecord = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPersonName.trim() || !newNationalId.trim() || !newCourtType) {
-      alert('يرجى كتابة اسم الشخص ورقم هويته الوطنية واختيار المحكمة لحفظ السجل.');
+    if (!newPersonName.trim() || !newCourtType) {
+      alert('يرجى كتابة اسم صاحب الشأن واختيار المحكمة لحفظ السجل.');
       return;
     }
 
@@ -145,7 +138,7 @@ export function JudgmentRepositoryModal({
       .filter(Boolean);
 
     const newRecord: JudgmentRecord = {
-      id: `rec-${newNationalId.replace(/\s+/g, '')}-${Date.now()}`,
+      id: `rec-${globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`}`,
       personName: newPersonName.trim(),
       nationalId: newNationalId.trim(),
       agencyName: newAgencyName.trim(),
@@ -248,7 +241,7 @@ export function JudgmentRepositoryModal({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-extrabold text-base md:text-lg text-amber-200">
-                  سجل الأحكام القضائية والتدرج القضائي برقم الهوية
+                  مستودع الأحكام والقضايا والتدرج القضائي
                 </h3>
                 <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
                   {authorizedRecords.length} صكوك محفوظة
@@ -262,7 +255,7 @@ export function JudgmentRepositoryModal({
               <p className="text-xs text-neutral-400">
                 {isAdminView
                   ? 'وضع المسؤول: عرض جميع مرفوعات المستخدمين، مع متابعة تسلسل المعاملات والأخطاء والحجج لكل قضية.'
-                  : 'حفظ تفاصيل الحكم بالهوية، تسلسل المعاملة عبر المحاكم الثلاث، رصد الأخطاء، والحجج والردود القانونية'}
+                  : 'حفظ تفاصيل الحكم ومسار القضية وملاحظات المراجعة داخل مستودع خادمي مشفر'}
               </p>
             </div>
           </div>
@@ -294,7 +287,7 @@ export function JudgmentRepositoryModal({
                 <Search className="w-4 h-4 absolute right-3 top-2.5 text-neutral-400" />
                 <input
                   type="text"
-                  placeholder="ابحث برقم الهوية (مثلاً 1082...) أو اسم الشخص أو الجهة..."
+                  placeholder="ابحث باسم الشخص أو الجهة أو رقم القضية أو الحكم..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-3 pr-9 py-1.5 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-hidden focus:border-amber-500"
@@ -373,7 +366,7 @@ export function JudgmentRepositoryModal({
                           <span>{rec.personName}</span>
                         </div>
                         <span className="px-1.5 py-0.5 rounded-sm font-mono text-[10px] bg-neutral-800 text-amber-400 border border-neutral-700">
-                          {rec.nationalId}
+                          {rec.nationalId ? `•••• ${rec.nationalId.slice(-4)}` : (rec.caseNumber || 'بدون رقم')}
                         </span>
                       </div>
 
@@ -414,7 +407,7 @@ export function JudgmentRepositoryModal({
                   <div className="flex items-center gap-2">
                     <Plus className="w-5 h-5 text-amber-400" />
                     <h4 className="font-bold text-sm text-neutral-100">
-                      إدراج صك حكم ومعاملة جديدة مقيدة برقم الهوية
+                      إدراج صك حكم أو معاملة جديدة
                     </h4>
                   </div>
                   <button
@@ -443,12 +436,13 @@ export function JudgmentRepositoryModal({
 
                   <div>
                     <label className="block text-neutral-400 mb-1 font-medium">
-                      رقم الهوية الوطنية / الإقامة*
+                      رقم الهوية الوطنية / الإقامة — اختياري
                     </label>
                     <input
-                      required
                       type="text"
-                      placeholder="مثال: 1082918231"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      placeholder="اختياري — يحفظ مشفراً ولا يُرسل للذكاء"
                       value={newNationalId}
                       onChange={(e) => setNewNationalId(e.target.value)}
                       className="w-full p-2.5 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 focus:outline-hidden focus:border-amber-500 font-mono"
@@ -663,9 +657,11 @@ export function JudgmentRepositoryModal({
                         <h4 className="font-extrabold text-base md:text-lg text-amber-200">
                           {activeRecord.personName}
                         </h4>
-                        <span className="px-2 py-0.5 rounded-md font-mono text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                          هوية: {activeRecord.nationalId}
-                        </span>
+                        {activeRecord.nationalId && (
+                          <span className="px-2 py-0.5 rounded-md font-mono text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                            هوية: •••• {activeRecord.nationalId.slice(-4)}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-neutral-400 mt-1 flex items-center gap-2">
                         <span>المدعى عليها: <strong className="text-neutral-200">{activeRecord.agencyName}</strong></span>
@@ -686,7 +682,7 @@ export function JudgmentRepositoryModal({
 
                       <button
                         onClick={() => {
-                          const p = `أنا الوكيل الشرعي عن الموكل ${activeRecord.personName} (سجل مدني: ${activeRecord.nationalId}) في مواجهة ${activeRecord.agencyName}.\nنوع المحكمة: ${activeRecord.courtType}.\nالوقائع: ${activeRecord.facts}\nالردود والأخطاء: ${activeRecord.fatalFlawsFound.join('، ')}.\nالمطلوب: توليد رد قاطع ومحكم يفحم ممثل الجهة ويظهر للمحكمة تمكني التام من القضية والمواد النظامية.`;
+                          const p = `أعد مسودة مرافعة منظمة لصاحب الشأن ${activeRecord.personName} في مواجهة ${activeRecord.agencyName}.\nنوع المحكمة: ${activeRecord.courtType}.\nالوقائع: ${activeRecord.facts}\nالملاحظات المسجلة: ${activeRecord.fatalFlawsFound.join('، ')}.\nالمطلوب: صياغة رد مهني يربط كل دفع بوقائعه ومستنده، ولا يضيف مادة أو حكماً أو ميعاداً غير متحقق من المصدر الرسمي.`;
                           onSendToChatPrompt(p);
                           onClose();
                         }}
@@ -1104,7 +1100,7 @@ export function JudgmentRepositoryModal({
         {/* Footer */}
         <div className="px-6 py-3 border-t border-neutral-800 bg-neutral-900/90 flex items-center justify-between text-xs text-neutral-400">
           <span>
-            سجل قضائي إداري مقيد برقم الهوية • ديوان المظالم • المحاكم الإدارية والاستئناف والإدارية العليا
+            مستودع قضايا خادمي مشفر • صلاحيات حسب الحساب • سجلات الأدمن منفصلة
           </span>
           <button
             onClick={onClose}
