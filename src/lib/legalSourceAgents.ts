@@ -442,16 +442,29 @@ function buildAmendmentPacket(query: string): LegalSourcePacket {
 
 export function runLegalSourceAgents(query: string): LegalSourceAgentBundle {
   const started = Date.now();
+  const normalizedQuery = normalizeArabic(query);
 
   const packets: LegalSourcePacket[] = [
     buildOfficialSourcePacket(query),
-    buildBogPacket(query),
-    buildPersonnelPacket(query),
-    buildRoyalPacket(query),
     buildAmendmentPacket(query),
     buildExactTextPacket(query),
-    buildPrecedentPacket(),
   ];
+
+  if (containsAny(normalizedQuery, ['ديوان المظالم', 'قضاء اداري', 'اداري', 'قرار اداري', 'تظلم', 'جهه اداريه'])) {
+    packets.push(buildBogPacket(query));
+  }
+
+  if (containsAny(normalizedQuery, ['خدمه الافراد', 'عسكري', 'عسكريين', 'فرد عسكري', 'ترقيه عسكريه', 'بدل ترحيل', 'حقوق عسكريه'])) {
+    packets.push(buildPersonnelPacket(query));
+  }
+
+  if (containsAny(normalizedQuery, ['مرسوم ملكي', 'امر ملكي', 'اوامر ملكيه', 'قرار مجلس الوزراء', 'تعديل نظام', 'اداه الاصدار'])) {
+    packets.push(buildRoyalPacket(query));
+  }
+
+  if (containsAny(normalizedQuery, ['مبدأ قضائي', 'مبادئ قضائيه', 'سابقه قضائيه', 'حكم رقم', 'المحكمه العليا', 'نقض', 'استئناف'])) {
+    packets.push(buildPrecedentPacket());
+  }
 
   const elapsed = Math.max(1, Date.now() - started);
   const runs = packets.map((packet, index): LegalSourceAgentRun => ({
