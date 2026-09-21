@@ -776,7 +776,7 @@ export function JudgesCassationReviewPanel({
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>المسودة الحالية: {effectiveText.length.toLocaleString('ar-SA')} حرفاً • تحقق من الحيثيات والمرفقات والمصادر قبل الاعتماد</span>
               </span>
-              <span className="text-neutral-400">جاهز للإيداع المباشر في منصة معين / ناجز</span>
+              <span className="text-neutral-400">يتطلب مراجعة بشرية نهائية قبل أي إيداع عبر معين / ناجز</span>
             </div>
 
             {/* Change Log Chips */}
