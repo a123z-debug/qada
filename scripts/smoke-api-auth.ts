@@ -35,8 +35,8 @@ const violations: string[] = [];
 
 for (const file of protectedEndpoints) {
   const source = fs.readFileSync(file, 'utf8');
-  if (!source.includes("readSession")) {
-    violations.push(file + ': missing signed-session read');
+  if (!source.includes("readActiveSession")) {
+    violations.push(file + ': missing active signed-session read');
   }
   if (!source.includes("res.status(401).json({ error: 'AUTH_REQUIRED' })")) {
     violations.push(file + ': missing AUTH_REQUIRED response');
