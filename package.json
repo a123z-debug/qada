@@ -16,6 +16,7 @@
     "test:auth-consistency": "tsx scripts/smoke-auth-consistency.ts",
     "test:privacy-storage": "tsx scripts/smoke-privacy-storage.ts",
     "test:multimodal-evidence": "tsx scripts/smoke-multimodal-evidence.ts",
+    "test:production-readiness": "tsx scripts/smoke-production-readiness.ts",
     "audit:prod": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
