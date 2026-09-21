@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import { readSession } from './session.ts';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
+import { recordAuditEvent } from './_audit.ts';
 
 type IncomingAttachment = {
   name?: string;
@@ -902,6 +903,22 @@ ${ISSUE_SCHEMA}`,
   const completed = agentRuns.filter((run) => run.status === 'success').length;
   const warnings = agentRuns.filter((run) => run.status === 'warning').length;
   const failed = agentRuns.filter((run) => run.status === 'error').length;
+
+  await recordAuditEvent({
+    actorId: session.id,
+    actorRole: session.role,
+    action: 'admin.analysis.run',
+    targetType: 'analysis',
+    targetId: String(body.documentTitle || documentTypeLabel || 'untitled'),
+    outcome: failed > 0 ? 'warning' : 'success',
+    metadata: {
+      completedAgents: completed,
+      warningAgents: warnings,
+      failedAgents: failed,
+      officialSources: sourceBundle.verification.officialSources,
+      verifiedArticles: sourceBundle.verification.verifiedArticles,
+    },
+  });
 
   return res.status(200).json({
     report,
