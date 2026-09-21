@@ -88,6 +88,11 @@ for (const id of requiredAgentNodes) {
 assert(map.includes('onClick={() => setSelectedId(node.id)}'), 'Map nodes are not clickable');
 assert(map.includes('runtimeById.get(selected.id)'), 'Selected map node does not expose runtime telemetry');
 assert(map.includes('sourcePacketById.get(selected.id)'), 'Selected source node does not expose source provenance');
+assert(map.includes('onNavigateNode') && app.includes('onNavigateNode={(nodeId) =>'),
+  'Blueprint module navigation is not wired to the live application');
+for (const id of ['settings','search','laws','judgments','references','cases','advisor','drafting','editor-tool','final-output']) {
+  assert(map.includes(`'${id}'`), 'Navigable blueprint module missing: ' + id);
+}
 
 for (const workspace of Object.values(workspaces)) {
   assert(workspace.includes("fetch('/api/chat'"), 'Workspace generation button is not wired to chat API');
