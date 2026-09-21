@@ -25,5 +25,6 @@ jobs:
       - run: npm run test:privacy-storage
       - run: npm run test:multimodal-evidence
       - run: npm run test:production-readiness
+      - run: npm run test:blueprint-map
       - run: npm run build
       - run: npm run audit:prod
