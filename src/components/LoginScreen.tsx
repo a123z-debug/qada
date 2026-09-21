@@ -9,6 +9,10 @@ interface LoginScreenProps {
 
 type Mode = 'user-login' | 'register' | 'admin';
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
 export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
   const [mode, setMode] = useState<Mode>('user-login');
   const [name, setName] = useState('');
