@@ -342,7 +342,7 @@ ${effectiveRecord.dialoguesAndExchanges.length
             <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-900/40 text-xs">
               <div className="flex items-center gap-1.5 font-bold text-emerald-300 mb-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>الحجج والبراهين الرادعة المضمنة في الصياغة:</span>
+                <span>الحجج والردود القانونية المسجلة:</span>
               </div>
               <ul className="space-y-1.5 text-neutral-300 list-disc list-inside">
                 {record.strongestRebuttals.map((reb, idx) => (
@@ -359,7 +359,7 @@ ${effectiveRecord.dialoguesAndExchanges.length
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-neutral-300 flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-amber-400" />
-                مسودة اللائحة النظامية المعتمدة (جاهزة للطباعة أو الإيداع بنظام معين):
+                مسودة المحرر القانوني — للمراجعة البشرية قبل الطباعة أو الإيداع:
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -410,7 +410,7 @@ ${effectiveRecord.dialoguesAndExchanges.length
         {/* Footer */}
         <div className="px-6 py-4 border-t border-neutral-800 bg-neutral-900/90 flex items-center justify-between text-xs text-neutral-400">
           <span>
-            جميع المذكرات مصاغة بلغة قضائية صارمة تراعي قيد الميعاد الإجرائي ونفي السلطة التقديرية.
+            هذه مسودة تنظيمية تعتمد فقط على بيانات الملف؛ راجع المواعيد والأسانيد والمصادر الرسمية قبل استخدامها أو إيداعها.
           </span>
           <button
             onClick={onClose}
