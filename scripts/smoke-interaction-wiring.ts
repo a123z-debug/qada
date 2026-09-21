@@ -49,6 +49,10 @@ for (const match of admin.matchAll(/agentId:\s*'([^']+)'/g)) runtimeAgentIds.add
 for (const match of admin.matchAll(/id:\s*'([^']+)'/g)) runtimeAgentIds.add(match[1]);
 for (const match of sourceAgents.matchAll(/agentId:\s*'([^']+)'/g)) runtimeAgentIds.add(match[1]);
 
+for (const id of ['judgment-audit', 'memo-audit']) {
+  if (admin.includes(`'${id}'`)) runtimeAgentIds.add(id);
+}
+
 const requiredAgentNodes = [
   'document-reader','case-router','qada-core','facts','jurisdiction','characterization','evidence','reasoning','procedure',
   'src-bog','src-personnel','src-royal','src-precedents','official-source','exact-text','amendments','conflicts','final-review',
