@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { readActiveSession } from './session.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
+import { withTimeout } from './_async.ts';
 
 type Court = 'administrative' | 'general' | 'criminal';
 function getGeminiClients(): GoogleGenAI[] {
@@ -45,6 +46,7 @@ async function askAi(prompt: string): Promise<any | null> {
     try {
       const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
         method: 'POST',
+        signal: AbortSignal.timeout(15_000),
         headers: { Authorization: `Bearer ${gatewayToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'google/gemini-3.6-flash',
@@ -71,14 +73,17 @@ async function askAi(prompt: string): Promise<any | null> {
 
   const clients = getGeminiClients();
   const models = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
-  for (const client of clients) {
+  let attempts = 0;
+  outer: for (const client of clients) {
     for (const model of models) {
+      if (attempts >= 4) break outer;
+      attempts += 1;
       try {
-        const response = await client.models.generateContent({
+        const response = await withTimeout(client.models.generateContent({
           model,
           contents: prompt,
           config: { temperature: 0.05, responseMimeType: 'application/json' },
-        });
+        }), 18_000, 'AI_STORY_TIMEOUT');
         const parsed = parseJson(response.text || '');
         if (parsed) return parsed;
       } catch {}
