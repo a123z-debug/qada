@@ -34,6 +34,15 @@ if (!chat.includes('attachments?: IncomingAttachment[]')) {
 if (!chat.includes('inlineData')) {
   violations.push('api/chat.ts: Gemini inline attachment handling missing');
 }
+if (!chat.includes('trustedUserMessages')) {
+  violations.push('api/chat.ts: client-supplied assistant/model roles are not being discarded');
+}
+if (!chat.includes("enforceRateLimit('chat', session.id")) {
+  violations.push('api/chat.ts: distributed session-scoped chat rate limit missing');
+}
+if (chat.includes("message.role === 'assistant' || message.role === 'model' ? 'model' : 'user'")) {
+  violations.push('api/chat.ts: client roles can still become trusted model history');
+}
 
 if (violations.length) {
   throw new Error(`API auth/attachment safety smoke failed:\n${violations.join('\n')}`);
