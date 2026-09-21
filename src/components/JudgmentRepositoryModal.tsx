@@ -57,6 +57,12 @@ export function JudgmentRepositoryModal({
 }: JudgmentRepositoryModalProps) {
   const isAdminView = currentUser?.role === 'admin';
 
+  const maskNationalId = (value: string) => {
+    const clean = String(value || '').replace(/\s+/g, '');
+    if (!clean) return 'غير مدخل';
+    return clean.length <= 4 ? `••••${clean}` : `••••••${clean.slice(-4)}`;
+  };
+
   // Sanitize records based on role - strictly hide admin record from citizens
   const authorizedRecords = useMemo(() => {
     if (isAdminView) {
@@ -261,8 +267,8 @@ export function JudgmentRepositoryModal({
               </div>
               <p className="text-xs text-neutral-400">
                 {isAdminView
-                  ? 'وضع المسؤول: عرض جميع مرفوعات المستخدمين، مع متابعة تسلسل المعاملات والأخطاء والحجج لكل قضية.'
-                  : 'حفظ تفاصيل الحكم بالهوية، تسلسل المعاملة عبر المحاكم الثلاث، رصد الأخطاء، وحجج الوكيل الصاعقة'}
+                  ? 'وضع المسؤول يعرض سجلات هذا الحساب الإداري على هذا المتصفح فقط؛ لا توجد قاعدة مركزية تجمع قضايا المستخدمين.'
+                  : 'حفظ سجل الحكم وتسلسل المراحل والملاحظات للحساب الحالي على هذا المتصفح.'}
               </p>
             </div>
           </div>
@@ -294,7 +300,7 @@ export function JudgmentRepositoryModal({
                 <Search className="w-4 h-4 absolute right-3 top-2.5 text-neutral-400" />
                 <input
                   type="text"
-                  placeholder="ابحث برقم الهوية (مثلاً 1082...) أو اسم الشخص أو الجهة..."
+                  placeholder="ابحث بالاسم أو الجهة أو رقم القضية/الحكم..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-3 pr-9 py-1.5 rounded-xl bg-neutral-900 border border-neutral-700 text-xs text-neutral-100 placeholder:text-neutral-500 focus:outline-hidden focus:border-amber-500"
@@ -373,7 +379,7 @@ export function JudgmentRepositoryModal({
                           <span>{rec.personName}</span>
                         </div>
                         <span className="px-1.5 py-0.5 rounded-sm font-mono text-[10px] bg-neutral-800 text-amber-400 border border-neutral-700">
-                          {rec.nationalId}
+                          {maskNationalId(rec.nationalId)}
                         </span>
                       </div>
 
@@ -414,7 +420,7 @@ export function JudgmentRepositoryModal({
                   <div className="flex items-center gap-2">
                     <Plus className="w-5 h-5 text-amber-400" />
                     <h4 className="font-bold text-sm text-neutral-100">
-                      إدراج صك حكم ومعاملة جديدة مقيدة برقم الهوية
+                      إدراج صك حكم أو معاملة جديدة
                     </h4>
                   </div>
                   <button
@@ -664,7 +670,7 @@ export function JudgmentRepositoryModal({
                           {activeRecord.personName}
                         </h4>
                         <span className="px-2 py-0.5 rounded-md font-mono text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                          هوية: {activeRecord.nationalId}
+                          هوية: {maskNationalId(activeRecord.nationalId)}
                         </span>
                       </div>
                       <p className="text-xs text-neutral-400 mt-1 flex items-center gap-2">
