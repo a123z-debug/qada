@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval';
+import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval.ts';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
