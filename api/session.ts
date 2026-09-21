@@ -7,70 +7,41 @@ import {
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto';
+import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.ts';
+import { enforceRateLimit } from './_rateLimit.ts';
 
-type Role = 'admin' | 'user';
+export type SessionRole = 'admin' | 'user';
 
-type Session = {
+export type AuthSession = {
   id: string;
   name: string;
   personName: string;
   email: string;
   nationalId: string;
-  role: Role;
+  role: SessionRole;
   agency?: string;
   loginMethod: 'admin_password' | 'email_password';
   loginAt: number;
 };
 
-type SessionPayload = Session & { iat: number; exp: number };
+type SessionPayload = AuthSession & { iat: number; exp: number };
 
 type AccountRecord = {
-  version: 1;
+  version: 2;
+  id: string;
   name: string;
   email: string;
   passwordSalt: string;
   passwordHash: string;
   createdAt: number;
+  disabledAt?: number;
 };
 
-const SESSION_COOKIE = 'qada_session_v4';
-const OLD_SESSION_COOKIES = ['qada_session_v3', 'qada_session_v2'];
+const SESSION_COOKIE = 'qada_session_v5';
+const OLD_SESSION_COOKIES = ['qada_session_v4', 'qada_session_v3', 'qada_session_v2'];
 const SESSION_MAX_AGE = 12 * 60 * 60;
-const PBKDF2_ITERATIONS = 210_000;
-const ADMIN_CREDENTIAL_HASH = 'fd6c1229b3b7a4f740284e1fd113d274197316ecca6611be68e61cd14ac4ab54';
-
-type AuthAttemptEntry = { count: number; resetAt: number };
-const authAttempts = new Map<string, AuthAttemptEntry>();
-const AUTH_WINDOW_MS = 15 * 60 * 1000;
-const AUTH_MAX_ATTEMPTS = 10;
-
-function clientId(req: any): string {
-  const forwarded = req.headers?.['x-forwarded-for'];
-  const raw = Array.isArray(forwarded)
-    ? forwarded[0]
-    : forwarded || req.socket?.remoteAddress || 'unknown';
-  return String(raw).split(',')[0].trim().slice(0, 120);
-}
-
-function checkAuthAttempt(key: string): { allowed: boolean; retryAfter: number } {
-  const now = Date.now();
-  const current = authAttempts.get(key);
-
-  if (!current || current.resetAt <= now) {
-    authAttempts.set(key, { count: 1, resetAt: now + AUTH_WINDOW_MS });
-    return { allowed: true, retryAfter: 0 };
-  }
-
-  if (current.count >= AUTH_MAX_ATTEMPTS) {
-    return {
-      allowed: false,
-      retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)),
-    };
-  }
-
-  current.count += 1;
-  return { allowed: true, retryAfter: 0 };
-}
+const PBKDF2_ITERATIONS = 310_000;
+const localAccounts = new Map<string, string>();
 
 function b64(value: Buffer | string) {
   return Buffer.from(value).toString('base64url');
@@ -90,26 +61,28 @@ function safeEqual(a: string, b: string) {
   return aa.length === bb.length && timingSafeEqual(aa, bb);
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isProductionRuntime() {
+  return process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+}
+
 function rootSecret() {
-  const explicit = process.env.AUTH_SECRET?.trim() || process.env.GEMINI_API_KEY?.trim();
-  if (explicit) {
-    return createHash('sha256').update(`qada-session-v4:${explicit}`).digest();
+  const explicit = process.env.AUTH_SECRET?.trim();
+  if (!explicit || explicit.length < 32) {
+    throw new Error('AUTH_SECRET_MISSING');
   }
+  return createHash('sha256').update(`qada-session-v5:${explicit}`).digest();
+}
 
-  // Vercel-safe fallback: stable for the lifetime of one deployment.
-  // Sessions are intentionally invalidated by the next deployment.
-  const deploymentScope = [
-    process.env.VERCEL_PROJECT_ID,
-    process.env.VERCEL_DEPLOYMENT_ID,
-  ].filter(Boolean).join(':');
-
-  if (deploymentScope) {
-    return createHash('sha256')
-      .update(`qada-session-v4:vercel:${deploymentScope}:${ADMIN_CREDENTIAL_HASH}`)
-      .digest();
+function adminCredentialHash() {
+  const configured = process.env.QADA_ADMIN_CREDENTIAL_HASH_V4?.trim();
+  if (!configured || !/^[a-f0-9]{64}$/i.test(configured)) {
+    throw new Error('ADMIN_CREDENTIAL_NOT_CONFIGURED');
   }
-
-  throw new Error('AUTH_SECRET_MISSING');
+  return configured.toLowerCase();
 }
 
 function keyFor(purpose: string) {
@@ -154,27 +127,31 @@ function decryptJson<T>(token: string, purpose: string, version: string): T | nu
   }
 }
 
-function createSessionToken(session: Session) {
+function createSessionToken(session: AuthSession) {
   const now = Date.now();
   const payload: SessionPayload = {
     ...session,
     iat: now,
     exp: now + SESSION_MAX_AGE * 1000,
   };
-  return encryptJson(payload, 'session', 'v4');
+  return encryptJson(payload, 'session', 'v5');
 }
 
-export function readSession(header?: string | string[]): Session | null {
-  const token = cookies(header)[SESSION_COOKIE];
-  if (!token) return null;
-  const payload = decryptJson<SessionPayload>(token, 'session', 'v4');
-  if (!payload || payload.exp <= Date.now() || !payload.id || !payload.email || !payload.role) return null;
-  const { iat: _iat, exp: _exp, ...session } = payload;
-  return session;
+export function readSession(header?: string | string[]): AuthSession | null {
+  try {
+    const token = cookies(header)[SESSION_COOKIE];
+    if (!token) return null;
+    const payload = decryptJson<SessionPayload>(token, 'session', 'v5');
+    if (!payload || payload.exp <= Date.now() || !payload.id || !payload.email || !payload.role) return null;
+    const { iat: _iat, exp: _exp, ...session } = payload;
+    return session;
+  } catch {
+    return null;
+  }
 }
 
-function cookieForSession(session: Session) {
-  const secure = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+function cookieForSession(session: AuthSession) {
+  const secure = isProductionRuntime();
   return [
     `${SESSION_COOKIE}=${createSessionToken(session)}`,
     'HttpOnly',
@@ -186,7 +163,7 @@ function cookieForSession(session: Session) {
 }
 
 function expiredCookie(name: string) {
-  const secure = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+  const secure = isProductionRuntime();
   return [
     `${name}=`,
     'HttpOnly',
@@ -201,13 +178,76 @@ function passwordHash(password: string, salt: string) {
   return pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, 32, 'sha256').toString('hex');
 }
 
-function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
+function accountKey(email: string) {
+  return `${redisPrefix()}:account:${sha256(normalizeEmail(email))}`;
 }
 
-function makeUserSession(record: AccountRecord): Session {
+function accountIndexKey() {
+  return `${redisPrefix()}:accounts:index`;
+}
+
+function encodeAccount(record: AccountRecord) {
+  return encryptJson(record, 'account-record', 'a2');
+}
+
+function decodeAccount(value: string | null | undefined): AccountRecord | null {
+  if (!value) return null;
+  const record = decryptJson<AccountRecord>(value, 'account-record', 'a2');
+  return record?.version === 2 ? record : null;
+}
+
+async function loadAccount(email: string): Promise<AccountRecord | null> {
+  const key = accountKey(email);
+  if (isRedisConfigured()) {
+    return decodeAccount(await redisCommand(['GET', key]));
+  }
+  if (isProductionRuntime()) throw new Error('ACCOUNT_STORE_UNAVAILABLE');
+  return decodeAccount(localAccounts.get(key));
+}
+
+async function createAccount(nameInput: string, emailInput: string, password: string): Promise<AccountRecord> {
+  const name = nameInput.trim();
+  const email = normalizeEmail(emailInput);
+  if (name.length < 3) throw new Error('INVALID_NAME');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('INVALID_EMAIL');
+  if (password.length < 10) throw new Error('WEAK_PASSWORD');
+
+  const salt = randomBytes(16).toString('hex');
+  const record: AccountRecord = {
+    version: 2,
+    id: `user-${sha256(email).slice(0, 20)}`,
+    name,
+    email,
+    passwordSalt: salt,
+    passwordHash: passwordHash(password, salt),
+    createdAt: Date.now(),
+  };
+  const encoded = encodeAccount(record);
+  const key = accountKey(email);
+
+  if (isRedisConfigured()) {
+    const result = await redisCommand(['SET', key, encoded, 'NX']);
+    if (result !== 'OK') throw new Error('ACCOUNT_EXISTS');
+    await redisCommand(['SADD', accountIndexKey(), key]);
+    return record;
+  }
+
+  if (isProductionRuntime()) throw new Error('ACCOUNT_STORE_UNAVAILABLE');
+  if (localAccounts.has(key)) throw new Error('ACCOUNT_EXISTS');
+  localAccounts.set(key, encoded);
+  return record;
+}
+
+async function loginUser(emailInput: string, password: string): Promise<AuthSession> {
+  const email = normalizeEmail(emailInput);
+  const record = await loadAccount(email);
+  if (!record) throw new Error('ACCOUNT_NOT_FOUND');
+  if (record.disabledAt) throw new Error('ACCOUNT_DISABLED');
+  if (!safeEqual(passwordHash(password, record.passwordSalt), record.passwordHash)) {
+    throw new Error('INVALID_CREDENTIALS');
+  }
   return {
-    id: `user-${sha256(record.email).slice(0, 20)}`,
+    id: record.id,
     name: record.name,
     personName: record.name,
     email: record.email,
@@ -218,65 +258,45 @@ function makeUserSession(record: AccountRecord): Session {
   };
 }
 
-function createAccount(nameInput: string, emailInput: string, password: string) {
-  const name = nameInput.trim();
-  const email = normalizeEmail(emailInput);
-  if (name.length < 3) throw new Error('INVALID_NAME');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('INVALID_EMAIL');
-  if (password.length < 8) throw new Error('WEAK_PASSWORD');
-
-  const salt = randomBytes(16).toString('hex');
-  const record: AccountRecord = {
-    version: 1,
-    name,
-    email,
-    passwordSalt: salt,
-    passwordHash: passwordHash(password, salt),
-    createdAt: Date.now(),
-  };
-
-  return {
-    session: makeUserSession(record),
-    accountProof: encryptJson(record, 'account-proof', 'v1'),
-  };
-}
-
-function loginUser(emailInput: string, password: string, accountProof: string) {
-  const record = decryptJson<AccountRecord>(accountProof, 'account-proof', 'v1');
-  if (!record || record.version !== 1) throw new Error('ACCOUNT_NOT_FOUND');
-
-  const email = normalizeEmail(emailInput);
-  if (!safeEqual(email, record.email)) throw new Error('INVALID_CREDENTIALS');
-  if (!safeEqual(passwordHash(password, record.passwordSalt), record.passwordHash)) {
-    throw new Error('INVALID_CREDENTIALS');
-  }
-  return makeUserSession(record);
-}
-
-function loginAdmin(adminCodeInput: string, password: string): Session {
+function loginAdmin(adminCodeInput: string, password: string): AuthSession {
+  const expected = adminCredentialHash();
   const actual = sha256(`${adminCodeInput.trim()}:${password}`);
-  if (!safeEqual(actual, ADMIN_CREDENTIAL_HASH)) throw new Error('INVALID_CREDENTIALS');
+  if (!safeEqual(actual, expected)) throw new Error('INVALID_CREDENTIALS');
 
   return {
     id: 'admin-primary',
-    name: 'Administration',
-    personName: 'Administration',
-    email: 'admin@qada.local',
+    name: process.env.ADMIN_DISPLAY_NAME?.trim() || 'مدير النظام',
+    personName: process.env.ADMIN_DISPLAY_NAME?.trim() || 'مدير النظام',
+    email: process.env.ADMIN_EMAIL?.trim() || 'admin@qada.local',
     nationalId: '',
     role: 'admin',
-    agency: 'إدارة أصول القضاء',
+    agency: process.env.ADMIN_AGENCY?.trim() || 'إدارة أصول القضاء',
     loginMethod: 'admin_password',
     loginAt: Date.now(),
   };
 }
 
+function clientId(req: any): string {
+  const forwarded = req.headers?.['x-forwarded-for'];
+  const raw = Array.isArray(forwarded)
+    ? forwarded[0]
+    : forwarded || req.socket?.remoteAddress || 'unknown';
+  return String(raw).split(',')[0].trim().slice(0, 120);
+}
+
 function authError(error: unknown) {
   const code = error instanceof Error ? error.message : '';
   if (code === 'INVALID_NAME' || code === 'INVALID_EMAIL') return { status: 400, error: 'بيانات التسجيل غير صحيحة.' };
-  if (code === 'WEAK_PASSWORD') return { status: 400, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.' };
-  if (code === 'ACCOUNT_NOT_FOUND') return { status: 401, error: 'هذا الحساب غير محفوظ على هذا المتصفح. أنشئ المستخدم أولاً.' };
+  if (code === 'WEAK_PASSWORD') return { status: 400, error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' };
+  if (code === 'ACCOUNT_EXISTS') return { status: 409, error: 'يوجد حساب مسجل بهذا البريد.' };
+  if (code === 'ACCOUNT_NOT_FOUND') return { status: 401, error: 'الحساب غير موجود أو بيانات الدخول غير صحيحة.' };
+  if (code === 'ACCOUNT_DISABLED') return { status: 403, error: 'الحساب موقوف. راجع إدارة المنصة.' };
   if (code === 'INVALID_CREDENTIALS') return { status: 401, error: 'بيانات الدخول غير صحيحة.' };
-  if (code === 'AUTH_SECRET_MISSING') return { status: 503, error: 'إعداد المصادقة على الخادم غير مكتمل.' };
+  if (code === 'AUTH_SECRET_MISSING') return { status: 503, error: 'AUTH_SECRET غير مضبوط أو أقصر من الحد المطلوب.' };
+  if (code === 'ADMIN_CREDENTIAL_NOT_CONFIGURED') return { status: 503, error: 'بيانات اعتماد الإدارة غير مضبوطة على الخادم.' };
+  if (code === 'ACCOUNT_STORE_UNAVAILABLE' || code === 'RATE_LIMIT_STORE_UNAVAILABLE' || code.startsWith('REDIS_')) {
+    return { status: 503, error: 'مخزن الحسابات والحماية الموزعة غير متاح.' };
+  }
   return { status: 500, error: 'تعذر إكمال عملية المصادقة.' };
 }
 
@@ -285,12 +305,25 @@ export default async function handler(req: any, res: any) {
 
   if (req.method === 'GET') {
     if (String(req.query?.health || '') === '1') {
+      let authConfigured = false;
+      let adminConfigured = false;
       try {
         rootSecret();
-        return res.status(200).json({ ok: true, authConfigured: true });
-      } catch {
-        return res.status(503).json({ ok: false, authConfigured: false });
-      }
+        authConfigured = true;
+      } catch {}
+      try {
+        adminCredentialHash();
+        adminConfigured = true;
+      } catch {}
+      const storeConfigured = isRedisConfigured();
+      const ready = authConfigured && adminConfigured && (storeConfigured || !isProductionRuntime());
+      return res.status(ready ? 200 : 503).json({
+        ok: ready,
+        authConfigured,
+        adminConfigured,
+        accountStore: storeConfigured ? 'redis' : (isProductionRuntime() ? 'missing' : 'memory-dev'),
+        sessionCookie: SESSION_COOKIE,
+      });
     }
 
     const session = readSession(req.headers?.cookie);
@@ -312,33 +345,40 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    rootSecret();
     const body = (req.body ?? {}) as Record<string, unknown>;
     const action = String(body.action || '');
 
     if (action === 'register' || action === 'user-login' || action === 'admin-login') {
-      const limit = checkAuthAttempt(`${action}:${clientId(req)}`);
+      const limit = await enforceRateLimit(`auth:${action}`, clientId(req), 10, 15 * 60);
       if (!limit.allowed) {
-        res.setHeader('Retry-After', String(limit.retryAfter));
+        res.setHeader('Retry-After', String(limit.retryAfterSeconds));
         return res.status(429).json({ error: 'محاولات كثيرة. حاول مرة أخرى لاحقاً.' });
       }
     }
 
-    let session: Session;
-    let accountProof: string | undefined;
+    let session: AuthSession;
 
     if (action === 'register') {
-      const result = createAccount(
+      const record = await createAccount(
         String(body.name || ''),
         String(body.email || ''),
         String(body.password || ''),
       );
-      session = result.session;
-      accountProof = result.accountProof;
+      session = {
+        id: record.id,
+        name: record.name,
+        personName: record.name,
+        email: record.email,
+        nationalId: '',
+        role: 'user',
+        loginMethod: 'email_password',
+        loginAt: Date.now(),
+      };
     } else if (action === 'user-login') {
-      session = loginUser(
+      session = await loginUser(
         String(body.email || ''),
         String(body.password || ''),
-        String(body.accountProof || ''),
       );
     } else if (action === 'admin-login') {
       session = loginAdmin(
@@ -354,10 +394,7 @@ export default async function handler(req: any, res: any) {
       cookieForSession(session),
     ]);
 
-    return res.status(200).json({
-      session,
-      ...(accountProof ? { accountProof } : {}),
-    });
+    return res.status(200).json({ session });
   } catch (error) {
     const mapped = authError(error);
     return res.status(mapped.status).json({ error: mapped.error });
