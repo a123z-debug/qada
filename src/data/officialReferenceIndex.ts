@@ -92,7 +92,13 @@ export const OFFICIAL_REFERENCE_INDEX: OfficialReferenceSystem[] = [
     cabinetResolution: '283 بتاريخ 24/05/1443هـ',
     issueDateHijri: '1443-05-26',
     publicationDateHijri: '1443-06-04',
+    effectiveRule: 'يعمل بالنظام بعد مضي (مائة وثمانين) يوماً من تاريخ نشره في الجريدة الرسمية وفق المادة (129).',
     sources: [
+      {
+        authority: 'هيئة الخبراء بمجلس الوزراء',
+        url: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1',
+        purpose: 'المرجع الرسمي للنظام وبيانات الإصدار والنشر والحالة ونصوص المواد.',
+      },
       {
         authority: 'جريدة أم القرى',
         url: 'https://www.uqn.gov.sa/details?p=18818',
@@ -110,8 +116,10 @@ export const OFFICIAL_REFERENCE_INDEX: OfficialReferenceSystem[] = [
       },
     ],
     articles: [
-      { number: '1', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18818', note: 'ظهرت المادة صراحة في النشر الرسمي.' },
-      { number: '2', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18818', note: 'ظهرت المادة صراحة في النشر الرسمي.' },
+      { number: '1', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1', note: 'ظهرت المادة صراحة في المصدر الرسمي، وتحدد نطاق سريان النظام على المعاملات المدنية والتجارية.' },
+      { number: '2', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1', note: 'ظهرت المادة صراحة في المصدر الرسمي ضمن الأحكام العامة للإثبات.' },
+      { number: '3', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1', note: 'ظهرت المادة صراحة في المصدر الرسمي ضمن الأحكام العامة وقواعد عبء الإثبات.' },
+      { number: '4', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1', note: 'ظهرت المادة صراحة في المصدر الرسمي وتتعلق بالتعامل مع تعارض أدلة الإثبات وتسبيب المحكمة.' },
       { number: '10', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18818', note: 'ظهرت المادة صراحة في النشر الرسمي وتتعلق بإجراءات الإثبات الإلكترونية.' },
       { number: '53', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18818', note: 'ظهرت المادة صراحة في النشر الرسمي ضمن باب الدليل الرقمي.' },
       { number: '54', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18818', note: 'ظهرت المادة صراحة في النشر الرسمي ضمن باب الدليل الرقمي.' },
@@ -120,6 +128,7 @@ export const OFFICIAL_REFERENCE_INDEX: OfficialReferenceSystem[] = [
       { number: '80', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18818', note: 'ظهرت المادة صراحة في النشر الرسمي وتتعلق بإحالة الشهادة الزور إلى النيابة العامة.' },
       { number: '81', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18818', note: 'ظهرت المادة صراحة في النشر الرسمي ضمن الدعوى المستعجلة لسماع الشهادة.' },
       { number: '126', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/wp-content/uploads/2022/10/%D8%A7%D9%84%D8%B9%D8%AF%D8%AF-4954.pdf', note: 'وردت الإحالة إلى المادة (126) صراحة في ديباجة قرار وزير العدل رقم (921) المنشور رسمياً.' },
+      { number: '129', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1', note: 'ثبتت من المصدر الرسمي بوصفها مادة النشر والنفاذ؛ يعمل بالنظام بعد مضي 180 يوماً من تاريخ نشره في الجريدة الرسمية.' },
     ],
     regulations: [
       {
