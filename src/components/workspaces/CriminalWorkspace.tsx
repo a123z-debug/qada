@@ -22,6 +22,7 @@ import { consumeTextSse } from '../../lib/consumeTextSse';
 interface CriminalWorkspaceProps {
   service: string | null;
   userSession?: UserSession | null;
+  onOpenPdfModal?: () => void;
 }
 
 const STORAGE_KEY_PREFIX = 'diwan_criminal_draft_v3';
@@ -29,6 +30,7 @@ const STORAGE_KEY_PREFIX = 'diwan_criminal_draft_v3';
 export function CriminalWorkspace({
   service = 'criminal_defense',
   userSession,
+  onOpenPdfModal,
 }: CriminalWorkspaceProps) {
   const currentService = service || 'criminal_defense';
   const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
