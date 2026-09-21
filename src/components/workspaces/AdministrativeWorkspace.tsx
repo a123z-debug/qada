@@ -48,10 +48,10 @@ export function AdministrativeWorkspace({
   const currentService = service || 'administrative_claim';
   const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
 
-  // Restore Draft from LocalStorage on mount
+  // Restore draft from sessionStorage for this browser session
   const getInitialState = () => {
     try {
-      const saved = localStorage.getItem(storageKey);
+      const saved = sessionStorage.getItem(storageKey);
       if (saved) {
         return JSON.parse(saved);
       }
@@ -96,7 +96,7 @@ export function AdministrativeWorkspace({
   const [generatedOutput, setGeneratedOutput] = useState<string>(initial.generatedOutput || '');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState<boolean>(Boolean(initial.generatedOutput));
-  const [lastSavedTime, setLastSavedTime] = useState<string>('محفوظ محلياً');
+  const [lastSavedTime, setLastSavedTime] = useState<string>('محفوظ مؤقتاً في هذه الجلسة');
   const [isAutoFilled, setIsAutoFilled] = useState(false);
   const [pendingAdaptation, setPendingAdaptation] = useState<LegalAdaptationResult | null>(null);
 
@@ -117,7 +117,7 @@ export function AdministrativeWorkspace({
     setTimeout(() => setIsAutoFilled(false), 2200);
   };
 
-  // Auto-save to LocalStorage whenever form fields or output change
+  // Auto-save to sessionStorage for this browser tab/session whenever form fields or output change
   useEffect(() => {
     try {
       const dataToSave = {
@@ -133,7 +133,7 @@ export function AdministrativeWorkspace({
         uploadedFileText,
         generatedOutput,
       };
-      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+      sessionStorage.setItem(storageKey, JSON.stringify(dataToSave));
       const now = new Date();
       setLastSavedTime(`تم الحفظ في ${now.toLocaleTimeString('ar-SA')}`);
     } catch {
