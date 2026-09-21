@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { readSession } from './_auth';
 import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval';
 
 function getGeminiClients(): GoogleGenAI[] {
@@ -10,12 +9,47 @@ function getGeminiClients(): GoogleGenAI[] {
   return keys.map((apiKey) => new GoogleGenAI({ apiKey }));
 }
 
+function getGatewayToken(): string {
+  return process.env.AI_GATEWAY_API_KEY?.trim()
+    || process.env.VERCEL_OIDC_TOKEN?.trim()
+    || '';
+}
+
+async function generateReviewViaGateway(prompt: string): Promise<string> {
+  const token = getGatewayToken();
+  if (!token) return '';
+
+  const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-3.6-flash',
+      models: ['google/gemini-3.5-flash-lite'],
+      messages: [
+        { role: 'system', content: 'أعد JSON صالحاً فقط دون أي نص خارج JSON.' },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.1,
+      max_tokens: 7000,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`AI Gateway ${response.status}: ${detail.slice(0, 500)}`);
+  }
+
+  const payload: any = await response.json();
+  const content = payload?.choices?.[0]?.message?.content;
+  return typeof content === 'string' ? content.trim() : '';
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
-
-  const session = readSession(req.headers.cookie);
-  if (!session) return res.status(401).json({ error: 'يلزم تسجيل الدخول لإجراء المراجعة.' });
 
   const body = (req.body ?? {}) as {
     text?: string;
@@ -30,9 +64,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'نص المذكرة القضائية مطلوب.' });
   }
 
-  const clients = getGeminiClients();
-  if (clients.length === 0) return res.status(500).json({ error: 'Server configuration error.' });
-
   const legalReferenceContext = buildOfficialLegalReferenceContext(
     `${body.court || ''}\n${body.documentTitle || ''}\n${body.text.slice(0, 12000)}`,
     5,
@@ -42,23 +73,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   let raw = '';
   let lastError: unknown;
-  const models = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
-  for (const client of clients) {
-    for (const model of models) {
-      try {
-        const response = await client.models.generateContent({ model, contents: prompt });
-        raw = response.text?.trim() || '';
-        if (raw) break;
-      } catch (error) {
-        lastError = error;
+
+  try {
+    raw = await generateReviewViaGateway(prompt);
+  } catch (error) {
+    lastError = error;
+    console.error('AI Gateway review failed:', error instanceof Error ? error.message : error);
+  }
+
+  if (!raw) {
+    const clients = getGeminiClients();
+    const models = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+
+    for (const client of clients) {
+      for (const model of models) {
+        try {
+          const response = await client.models.generateContent({ model, contents: prompt });
+          raw = response.text?.trim() || '';
+          if (raw) break;
+        } catch (error) {
+          lastError = error;
+        }
       }
+      if (raw) break;
     }
-    if (raw) break;
   }
 
   if (!raw) {
     console.error('Judges review failed:', lastError);
-    return res.status(502).json({ error: 'AI_REVIEW_UNAVAILABLE' });
+    return res.status(503).json({ error: 'AI_REVIEW_UNAVAILABLE' });
   }
 
   try {
