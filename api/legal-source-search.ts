@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { readSession } from './session.ts';
+import { enforceRateLimit } from './_rateLimit.ts';
 
 type Court = 'administrative' | 'general' | 'criminal';
 
@@ -20,7 +21,7 @@ function categoryForAgent(agentId: string): string {
   return 'مصدر رسمي';
 }
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method !== 'POST') {
@@ -31,6 +32,17 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   const session = readSession(req.headers?.cookie);
   if (!session) {
     return res.status(401).json({ error: 'AUTH_REQUIRED' });
+  }
+
+  try {
+    const limit = await enforceRateLimit('legal-source-search', session.id, 90, 10 * 60);
+    if (!limit.allowed) {
+      res.setHeader('Retry-After', String(limit.retryAfterSeconds));
+      return res.status(429).json({ error: 'RATE_LIMITED' });
+    }
+  } catch (error) {
+    console.error('Legal-source rate limit unavailable:', error instanceof Error ? error.message : error);
+    return res.status(503).json({ error: 'RATE_LIMIT_STORE_UNAVAILABLE' });
   }
 
   const body = (req.body ?? {}) as { query?: string; court?: Court };
