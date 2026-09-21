@@ -782,6 +782,75 @@ ${ISSUE_SCHEMA}`,
     blockers: sourceBundle.verification.blockers,
   };
 
+  const logicalRuns: AgentRun[] = [
+    {
+      id: 'facts',
+      label: 'محلل الوقائع',
+      status: intake.data ? 'success' : 'warning',
+      durationMs: intake.run.durationMs,
+      model: intake.run.model,
+      summary: intake.data
+        ? `استخرج ${stringList(intake.data?.keyFacts).length} واقعة رئيسية و${stringList(intake.data?.proceduralDates).length} تاريخاً إجرائياً.`
+        : 'تعذر بناء طبقة الوقائع بصورة مستقلة؛ راجع قراءة المستند.',
+      blockers: intake.data ? stringList(intake.data?.warnings, 8, 600) : ['لم تتوفر مخرجات قارئ المستند.'],
+    },
+    {
+      id: 'jurisdiction',
+      label: 'محلل الاختصاص',
+      status: procedural.data ? 'success' : 'warning',
+      durationMs: procedural.run.durationMs,
+      model: procedural.run.model,
+      summary: procedural.data
+        ? `فحص الاختصاص والمسار الإجرائي للمستند ضمن: ${String(intake.data?.jurisdiction || body.court || 'غير محدد').slice(0, 160)}.`
+        : 'تعذر إكمال مسار الاختصاص بصورة مستقلة.',
+      blockers: procedural.data ? stringList(procedural.data?.verificationQueue, 8, 600) : ['مسار الإجراءات لم يكتمل.'],
+    },
+    {
+      id: 'characterization',
+      label: 'محلل التكييف',
+      status: reasoning.data ? 'success' : 'warning',
+      durationMs: reasoning.run.durationMs,
+      model: reasoning.run.model,
+      summary: reasoning.data
+        ? 'اكتمل فحص التكييف النظامي وعلاقته بالوقائع والطلبات.'
+        : 'تعذر إكمال فحص التكييف.',
+      blockers: reasoning.data ? stringList(reasoning.data?.verificationQueue, 8, 600) : ['مسار التكييف والتسبيب لم يكتمل.'],
+    },
+    {
+      id: 'evidence',
+      label: 'محلل الإثبات',
+      status: evidence.data ? (stringList(evidence.data?.missingEvidence).length ? 'warning' : 'success') : 'warning',
+      durationMs: evidence.run.durationMs,
+      model: evidence.run.model,
+      summary: evidence.data
+        ? `فحص الأدلة والمرفقات؛ رُصد ${stringList(evidence.data?.missingEvidence).length} عنصر إثبات ناقص أو مطلوب.`
+        : 'تعذر إكمال فحص الإثبات.',
+      blockers: evidence.data ? stringList(evidence.data?.missingEvidence, 8, 600) : ['مسار الإثبات لم يكتمل.'],
+    },
+    {
+      id: 'reasoning',
+      label: 'محلل التسبيب',
+      status: reasoning.data ? (stringList(reasoning.data?.conflictingPoints).length ? 'warning' : 'success') : 'warning',
+      durationMs: reasoning.run.durationMs,
+      model: reasoning.run.model,
+      summary: reasoning.data
+        ? `فحص ترابط الأسباب والطلبات والمنطوق؛ رُصد ${stringList(reasoning.data?.conflictingPoints).length} تعارضاً محتملاً.`
+        : 'تعذر إكمال فحص التسبيب.',
+      blockers: reasoning.data ? stringList(reasoning.data?.conflictingPoints, 8, 600) : ['مسار التكييف والتسبيب لم يكتمل.'],
+    },
+    {
+      id: 'procedure',
+      label: 'محلل الإجراءات',
+      status: procedural.data ? (stringList(procedural.data?.missingFacts).length ? 'warning' : 'success') : 'warning',
+      durationMs: procedural.run.durationMs,
+      model: procedural.run.model,
+      summary: procedural.data
+        ? `فحص المواعيد والإجراءات والقبول الشكلي؛ توجد ${stringList(procedural.data?.missingFacts).length} معلومة إجرائية ناقصة.`
+        : 'تعذر إكمال فحص الإجراءات.',
+      blockers: procedural.data ? stringList(procedural.data?.missingFacts, 8, 600) : ['مسار الإجراءات لم يكتمل.'],
+    },
+  ];
+
   const agentRuns: AgentRun[] = [
     adminEntryRun,
     intake.run,
@@ -789,6 +858,7 @@ ${ISSUE_SCHEMA}`,
     routingRun,
     coreRun,
     ...sourceRuns,
+    ...logicalRuns,
     legislative.run,
     judicial.run,
     procedural.run,
@@ -809,6 +879,25 @@ ${ISSUE_SCHEMA}`,
     blockers: report.conflictingPoints,
   };
   agentRuns.push(conflictRun);
+
+  const failedBeforeGate = agentRuns.filter((run) => run.status === 'error').length;
+  const finalReviewRun: AgentRun = {
+    id: 'final-review',
+    label: 'بوابة المراجعة النهائية',
+    status: failedBeforeGate > 0 || sourceBundle.verification.blockers.length > 0 ? 'warning' : 'success',
+    durationMs: final.run.durationMs,
+    model: final.run.model,
+    summary: failedBeforeGate > 0
+      ? 'توجد مسارات متعثرة؛ التقرير يحتاج مراجعة بشرية قبل الاعتماد.'
+      : sourceBundle.verification.blockers.length > 0
+        ? 'اكتمل الدمج مع قيود تحقق مرجعية معلنة.'
+        : 'اكتملت بوابة الدمج والتحقق دون عوائق مسجلة.',
+    blockers: [
+      ...sourceBundle.verification.blockers,
+      ...agentRuns.filter((run) => run.status === 'error').map((run) => `${run.label}: ${run.summary}`),
+    ].slice(0, 12),
+  };
+  agentRuns.push(finalReviewRun);
 
   const completed = agentRuns.filter((run) => run.status === 'success').length;
   const warnings = agentRuns.filter((run) => run.status === 'warning').length;
