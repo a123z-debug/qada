@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   BookOpenCheck,
@@ -125,6 +125,14 @@ export function LegalReferencesModal({
       ].join(' ')).includes(q);
     });
   }, [query, category]);
+
+  useEffect(() => {
+    if (systems.length === 0) return;
+    if (!systems.some((system) => system.id === selectedId)) {
+      setSelectedId(systems[0].id);
+      setTab('articles');
+    }
+  }, [systems, selectedId]);
 
   const officialReferences = useMemo(() => {
     const q = normalize(query);
@@ -433,6 +441,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
               )}
             </section>
 
+            <div className={systems.length === 0 ? 'hidden' : ''}>
             <section className="rounded-2xl border border-cyan-400/15 bg-[#07172d] p-4 select-text">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                 <div>
@@ -569,6 +578,13 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
             <div className="mt-6 rounded-2xl border border-rose-400/15 bg-rose-400/5 p-4 text-[11px] leading-6 text-slate-400">
               <span className="font-black text-rose-200">قاعدة اعتماد المراجع:</span> لا يُعتمد أي نص أو رقم مادة أو تعديل في مخرج قضائي لمجرد وجوده في قاعدة المنصة؛ الأولوية دائماً للنص الرسمي النافذ ومصدره وتاريخ تعديله.
             </div>
+            </div>
+
+            {systems.length === 0 && (
+              <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-6 text-center text-sm text-slate-400">
+                لا يوجد نظام داخلي مطابق للفلاتر الحالية. تم إخفاء تفاصيل المرجع السابق حتى لا تختلط بنتائج البحث الجديدة.
+              </div>
+            )}
           </main>
         </div>
       </div>
