@@ -156,6 +156,7 @@ export function LegalReviewEditor({
   // 3-Judge Cassation, Appeal & Attachments Panel State
   const [judgesReport, setJudgesReport] = useState<DetailedJudgesReviewReport | null>(null);
   const [judgesSourceAudit, setJudgesSourceAudit] = useState<JudgesSourceAudit | null>(null);
+  const [judgesAuditError, setJudgesAuditError] = useState('');
   const [isLoadingJudges, setIsLoadingJudges] = useState(false);
   const [previousContent, setPreviousContent] = useState<string | null>(null);
   const [revisionToast, setRevisionToast] = useState<string | null>(null);
@@ -174,7 +175,9 @@ export function LegalReviewEditor({
 
   const handleRunJudgesAudit = async () => {
     setIsLoadingJudges(true);
+    setJudgesReport(null);
     setJudgesSourceAudit(null);
+    setJudgesAuditError('');
     setActiveTab('judges');
     try {
       const response = await fetch('/api/judges-review', {
@@ -192,7 +195,9 @@ export function LegalReviewEditor({
       });
 
       if (!response.ok) {
-        throw new Error('تعذر تشغيل هيئة المراجعة القضائية الآلية');
+        const payload = await response.json().catch(() => ({}));
+        const detail = typeof payload?.error === 'string' ? payload.error : '';
+        throw new Error(detail || 'تعذر تشغيل هيئة المراجعة القانونية الآلية');
       }
 
       const data = await response.json();
@@ -200,9 +205,18 @@ export function LegalReviewEditor({
       setJudgesSourceAudit(data.sourceAudit || null);
       if (report) {
         setJudgesReport(normalizeJudgesReport(report, content));
+      } else {
+        throw new Error('لم تعد خدمة المراجعة تقريراً صالحاً.');
       }
     } catch (err: any) {
       console.error('Error invoking judges audit:', err);
+      setJudgesReport(null);
+      setJudgesSourceAudit(null);
+      setJudgesAuditError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'تعذر إكمال المراجعة الآلية. أعد المحاولة.'
+      );
     } finally {
       setIsLoadingJudges(false);
     }
@@ -581,6 +595,7 @@ export function LegalReviewEditor({
         <JudgesCassationReviewPanel
           report={judgesReport}
           sourceAudit={judgesSourceAudit}
+          auditError={judgesAuditError}
           isLoading={isLoadingJudges}
           onRunAudit={handleRunJudgesAudit}
           onApplyFullRevision={handleApplyFullRevision}
