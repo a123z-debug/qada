@@ -213,8 +213,8 @@ export function Sidebar({
                   <p className="text-slate-200 font-semibold truncate text-[11px]">
                     {userSession.name}
                   </p>
-                  <p className="text-[10px] text-slate-400 font-mono">
-                    هوية: •••• {userSession.nationalId.slice(-4)}
+                  <p className="text-[10px] text-slate-400 truncate" dir="ltr">
+                    {userSession.role === 'admin' ? 'ADMIN' : userSession.email}
                   </p>
                 </div>
               </div>
