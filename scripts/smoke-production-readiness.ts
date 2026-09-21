@@ -42,6 +42,17 @@ for (const file of srcFiles) {
 const app = fs.readFileSync('src/App.tsx', 'utf8');
 assert(!app.includes('مركز التحليل متصل:'), 'static connected status must not return');
 
+const boundedAiFiles = [
+  'api/chat.ts',
+  'api/admin-analysis.ts',
+  'api/judges-review.ts',
+  'api/convert-story.ts',
+];
+for (const file of boundedAiFiles) {
+  const source = fs.readFileSync(file, 'utf8');
+  assert(source.includes("from './_async.ts'"), file + ': bounded async helper missing');
+  assert(source.includes('withTimeout(') || source.includes('AbortSignal.timeout('), file + ': provider timeout missing');
+}
 const secureStore = fs.readFileSync('api/_secureStore.ts', 'utf8');
 assert(secureStore.includes("process.env.DATA_SECRET"), 'persistent encryption must use DATA_SECRET');
 assert(!secureStore.includes('process.env.DATA_SECRET || process.env.AUTH_SECRET'), 'persistent encryption must not fall back to AUTH_SECRET');
