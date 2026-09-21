@@ -521,6 +521,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ].filter(Boolean).join('\n');
 
   const sourceBundle = runLegalSourceAgents(retrievalQuery);
+  const documentTypeLabel = String(intake.data?.documentType || body.documentTitle || '').trim();
+  const auditIsJudgment = /حكم|قرار قضائي|قضاء|دائرة/i.test(documentTypeLabel);
+  const analysisMode = auditIsJudgment ? 'تحليل حكم/قرار قضائي' : 'تحليل مذكرة/لائحة/دفاع';
   const sourceNotice = [
     'نتيجة وكلاء المراجع القانونية لهذه العملية:',
     sourceBundle.context,
@@ -544,6 +547,7 @@ ${ISSUE_SCHEMA}`;
 العنوان: ${String(body.documentTitle || 'غير محدد').slice(0, 300)}
 الاختصاص: ${String(body.court || intake.data?.jurisdiction || 'غير محدد').slice(0, 200)}
 نوع المستند: ${String(intake.data?.documentType || 'غير محدد').slice(0, 160)}
+مسار غرفة الأدمن: ${analysisMode}
 
 المستند:
 ${workingText || 'لم يتوفر نص كافٍ بعد الاستخراج.'}
@@ -737,8 +741,6 @@ ${ISSUE_SCHEMA}`,
     summary: 'استقبلت غرفة الأدمن المستند وبدأت مسار التحليل المقيد.',
   };
 
-  const documentTypeLabel = String(intake.data?.documentType || body.documentTitle || '').trim();
-  const auditIsJudgment = /حكم|قرار قضائي|قضاء|دائرة/i.test(documentTypeLabel);
   const auditRun: AgentRun = {
     id: auditIsJudgment ? 'judgment-audit' : 'memo-audit',
     label: auditIsJudgment ? 'إيجنت تحليل الأحكام' : 'إيجنت تحليل المذكرات',
