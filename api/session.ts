@@ -396,11 +396,13 @@ export default async function handler(req: any, res: any) {
         adminCredentialHash();
         adminConfigured = true;
       } catch {}
+      const dataConfigured = Boolean((process.env.DATA_SECRET || '').trim().length >= 32);
       const storeConfigured = isRedisConfigured();
-      const ready = authConfigured && adminConfigured && (storeConfigured || !isProductionRuntime());
+      const ready = authConfigured && dataConfigured && adminConfigured && (storeConfigured || !isProductionRuntime());
       return res.status(ready ? 200 : 503).json({
         ok: ready,
         authConfigured,
+        dataConfigured,
         adminConfigured,
         accountStore: storeConfigured ? 'redis' : (isProductionRuntime() ? 'missing' : 'memory-dev'),
         sessionCookie: SESSION_COOKIE,
