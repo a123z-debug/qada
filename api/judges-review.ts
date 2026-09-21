@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
 import { readSession } from './session.ts';
+import { enforceRateLimit } from './_rateLimit.ts';
 
 type IncomingAttachment = {
   name?: string;
@@ -80,6 +81,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const session = readSession(req.headers?.cookie);
   if (!session) {
     return res.status(401).json({ error: 'AUTH_REQUIRED' });
+  }
+
+  try {
+    const limit = await enforceRateLimit('judges-review', session.id, 20, 10 * 60);
+    if (!limit.allowed) {
+      res.setHeader('Retry-After', String(limit.retryAfterSeconds));
+      return res.status(429).json({ error: 'RATE_LIMITED' });
+    }
+  } catch (error) {
+    console.error('Judges-review rate limit unavailable:', error instanceof Error ? error.message : error);
+    return res.status(503).json({ error: 'RATE_LIMIT_STORE_UNAVAILABLE' });
   }
 
   const body = (req.body ?? {}) as {
