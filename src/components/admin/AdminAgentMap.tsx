@@ -16,7 +16,6 @@ import {
   Landmark,
   Layers3,
   LockKeyhole,
-  Network,
   RotateCcw,
   Scale,
   ScanSearch,
@@ -72,7 +71,7 @@ const nodes: AgentNode[] = [
 
   { id: 'src-bog', title: 'ديوان المظالم', subtitle: 'النظام والمرافعات', x: 365, y: 345, width: 190, height: 68, status: 'planned', tone: 'amber', icon: Landmark, detail: 'وكيل مرجعي لمنظومة ديوان المظالم ونظام المرافعات والتنفيذ واللوائح.' },
   { id: 'src-personnel', title: 'نظام خدمة الأفراد', subtitle: 'حقوق عسكرية', x: 365, y: 430, width: 190, height: 68, status: 'planned', tone: 'amber', icon: BadgeCheck, detail: 'وكيل متخصص بنظام خدمة الأفراد ولوائحه وتعديلاته وحقوق العسكريين.' },
-  { id: 'src-royal', title: 'الأوامر والمراسيم', subtitle: 'ملكية وسامية', x: 365, y: 515, width: 190, height: 68, status: 'planned', tone: 'amber', icon: ScrollTextIcon, detail: 'وكيل يجمع الأوامر والمراسيم والقرارات الرسمية ذات الصلة ويحدد أثرها.' },
+  { id: 'src-royal', title: 'الأوامر والمراسيم', subtitle: 'ملكية وسامية', x: 365, y: 515, width: 190, height: 68, status: 'planned', tone: 'amber', icon: FileText, detail: 'وكيل يجمع الأوامر والمراسيم والقرارات الرسمية ذات الصلة ويحدد أثرها.' },
   { id: 'src-precedents', title: 'المبادئ والأحكام', subtitle: 'سوابق قضائية', x: 365, y: 600, width: 190, height: 68, status: 'planned', tone: 'amber', icon: Scale, detail: 'وكيل لاستخراج المبادئ والأحكام ذات الصلة مع الفصل بين النص النظامي والاجتهاد القضائي.' },
 
   { id: 'qada-core', title: 'QADA AI', subtitle: 'محرك التحليل القضائي', x: 690, y: 380, width: 220, height: 118, status: 'linked', tone: 'cyan', icon: Sparkles, detail: 'نواة التوجيه والتحليل التي تستقبل مدخلات القضية وتوزعها على الوكلاء المختصين.' },
@@ -176,10 +175,6 @@ function edgePath(from: AgentNode, to: AgentNode) {
   const ty = to.y + to.height / 2;
   const mx = sx + (tx - sx) * 0.5;
   return 'M ' + sx + ' ' + sy + ' C ' + mx + ' ' + sy + ', ' + mx + ' ' + ty + ', ' + tx + ' ' + ty;
-}
-
-function ScrollTextIcon(props: { className?: string }) {
-  return <FileText className={props.className} />;
 }
 
 export function AdminAgentMap() {
