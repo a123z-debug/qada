@@ -1,19 +1,20 @@
-name: Smoke Auth Configuration
+name: QADA Production Readiness Smoke
 on:
-  push:
-    branches: [master]
+  workflow_dispatch:
 jobs:
-  auth-config:
+  production-readiness:
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for Vercel production deployment
-        run: sleep 25
-      - name: Verify auth configuration
+      - name: Verify deployed readiness endpoint
         run: |
           set -euo pipefail
-          code=$(curl -sS -o /tmp/auth-health.json -w "%{http_code}" "https://promptmaster-nine.vercel.app/api/session?health=1")
-          cat /tmp/auth-health.json
+          code=$(curl -sS -o /tmp/qada-health.json -w "%{http_code}" "https://promptmaster-nine.vercel.app/api/health")
+          cat /tmp/qada-health.json
           echo
           echo "HTTP=$code"
           test "$code" = "200"
-          grep -q '"authConfigured":true' /tmp/auth-health.json
+          grep -q '"ready":true' /tmp/qada-health.json
+          grep -q '"authConfigured":true' /tmp/qada-health.json
+          grep -q '"dataConfigured":true' /tmp/qada-health.json
+          grep -q '"geminiConfigured":true' /tmp/qada-health.json
+          grep -q '"redisReachable":true' /tmp/qada-health.json
