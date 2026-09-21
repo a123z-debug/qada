@@ -10,6 +10,7 @@ import {
   Database,
   FileCheck2,
   FileSearch,
+  ExternalLink,
   FileText,
   Gavel,
   Gauge,
@@ -65,11 +66,25 @@ type RuntimeAgentRun = {
   blockers?: string[];
 };
 
+type RuntimeSourcePacket = {
+  agentId: string;
+  label: string;
+  status: 'success' | 'warning' | 'error';
+  scope: string;
+  references: Array<{
+    name: string;
+    sourceUrl: string;
+    issueInstrument?: string;
+  }>;
+  blockers: string[];
+};
+
 type RuntimeSnapshot = {
   runId?: string;
   documentTitle?: string;
   analyzedAt?: string;
   agentRuns?: RuntimeAgentRun[];
+  sourcePackets?: RuntimeSourcePacket[];
   meta?: {
     completedAgents?: number;
     warningAgents?: number;
@@ -237,6 +252,12 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
   const runtimeById = useMemo(() => {
     const map = new Map<string, RuntimeAgentRun>();
     for (const run of runtime?.agentRuns || []) map.set(run.id, run);
+    return map;
+  }, [runtime]);
+
+  const sourcePacketById = useMemo(() => {
+    const map = new Map<string, RuntimeSourcePacket>();
+    for (const packet of runtime?.sourcePackets || []) map.set(packet.agentId, packet);
     return map;
   }, [runtime]);
 
@@ -482,6 +503,31 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
                   <li key={index} className="text-[10px] leading-5 text-amber-100/70">• {blocker}</li>
                 ))}
               </ul>
+            </div>
+          ) : null}
+
+          {sourcePacketById.get(selected.id)?.references?.length ? (
+            <div className="mt-3 rounded-xl border border-cyan-400/15 bg-cyan-500/5 p-3">
+              <div className="text-[10px] font-black text-cyan-200">المصادر الرسمية في آخر تشغيل</div>
+              <div className="mt-2 space-y-2">
+                {sourcePacketById.get(selected.id)!.references.slice(0, 6).map((reference, index) => (
+                  <a
+                    key={reference.sourceUrl + index}
+                    href={reference.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block rounded-lg border border-slate-800 bg-slate-950/60 p-2 hover:border-cyan-400/30"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[10px] font-bold text-slate-300">{reference.name}</div>
+                        {reference.issueInstrument && <div className="mt-1 text-[9px] text-slate-600">{reference.issueInstrument}</div>}
+                      </div>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-cyan-300" />
+                    </div>
+                  </a>
+                ))}
+              </div>
             </div>
           ) : null}
 
