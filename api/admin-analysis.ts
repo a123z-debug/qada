@@ -40,6 +40,57 @@ function getGeminiClients(): GoogleGenAI[] {
   return keys.map((apiKey) => new GoogleGenAI({ apiKey }));
 }
 
+function getGatewayToken(): string {
+  return process.env.AI_GATEWAY_API_KEY?.trim()
+    || process.env.VERCEL_OIDC_TOKEN?.trim()
+    || '';
+}
+
+async function tryGatewayJson(systemInstruction: string, parts: any[]): Promise<{ data: any; model: string } | null> {
+  const token = getGatewayToken();
+  if (!token) return null;
+
+  const textParts = parts
+    .map((part) => typeof part?.text === 'string' ? part.text.trim() : '')
+    .filter(Boolean);
+  const hasNonText = parts.some((part) => part?.inlineData);
+  if (hasNonText || textParts.length === 0) return null;
+
+  const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-3.6-flash',
+      models: ['google/gemini-3.5-flash-lite'],
+      messages: [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: textParts.join('\n\n') },
+      ],
+      temperature: 0.05,
+      response_format: { type: 'json_object' },
+      max_tokens: 7000,
+    }),
+  });
+
+  if (!response.ok) return null;
+  const payload: any = await response.json();
+  const content = payload?.choices?.[0]?.message?.content;
+  const raw = typeof content === 'string'
+    ? content
+    : Array.isArray(content)
+      ? content.map((part: any) => typeof part?.text === 'string' ? part.text : '').join('')
+      : '';
+  const data = parseJson(raw);
+  if (!data) return null;
+  return {
+    data,
+    model: String(payload?.model || 'ai-gateway'),
+  };
+}
+
 function sanitizeMimeType(type?: string, name?: string): string | null {
   const mime = (type || '').trim().toLowerCase();
   const allowed = new Set(['application/pdf', 'image/png', 'image/jpeg', 'image/webp']);
@@ -108,6 +159,25 @@ async function generateJsonAgent<T>(args: {
   const started = Date.now();
   let lastError: unknown;
   const { clients, agentId, label, systemInstruction, parts, temperature = 0.05, clientOffset = 0 } = args;
+
+  try {
+    const gateway = await tryGatewayJson(systemInstruction, parts);
+    if (gateway) {
+      return {
+        data: gateway.data as T,
+        run: {
+          id: agentId,
+          label,
+          status: 'success',
+          durationMs: Date.now() - started,
+          model: gateway.model,
+          summary: 'اكتمل التحليل عبر بوابة الذكاء.',
+        },
+      };
+    }
+  } catch (error) {
+    lastError = error;
+  }
 
   if (clients.length === 0) {
     return {
