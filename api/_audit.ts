@@ -32,7 +32,8 @@ function sanitizeMetadata(input?: Record<string, unknown>) {
     if (!safeKey) continue;
     if (typeof value === 'string') output[safeKey] = value.slice(0, 240);
     else if (typeof value === 'number' && Number.isFinite(value)) output[safeKey] = value;
-    else if (typeof value === 'boolean' || value === null) output[safeKey] = value;
+    else if (typeof value === 'boolean') output[safeKey] = value;
+    else if (value === null) output[safeKey] = null;
   }
   return output;
 }
