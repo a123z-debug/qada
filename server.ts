@@ -14,6 +14,7 @@ import casesHandler from './api/cases';
 import adminRunsHandler from './api/admin-runs';
 import healthHandler from './api/health';
 import adminUsersHandler from './api/admin-users';
+import auditLogHandler from './api/audit-log';
 
 dotenv.config();
 
@@ -71,6 +72,10 @@ async function startServer() {
 
   app.all('/api/admin-users', (req, res) => {
     void adminUsersHandler(req as any, res as any);
+  });
+
+  app.all('/api/audit-log', (req, res) => {
+    void auditLogHandler(req as any, res as any);
   });
 
   if (process.env.NODE_ENV !== 'production') {
