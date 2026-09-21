@@ -19,6 +19,8 @@ import { JudgmentRepositoryModal } from './components/JudgmentRepositoryModal';
 import { LegalReferencesModal } from './components/LegalReferencesModal';
 import { PdfUploadModal } from './components/PdfUploadModal';
 import { CasePleadingStudioModal } from './components/CasePleadingStudioModal';
+import { AdminAgentMap } from './components/admin/AdminAgentMap';
+import { AdminAnalysisRoom } from './components/admin/AdminAnalysisRoom';
 import { INITIAL_JUDGMENT_RECORDS } from './data/judgmentRecords';
 
 const LEGACY_JUDGMENT_RECORDS_STORAGE_KEY = 'diwan_judgment_records_v1';
@@ -349,6 +351,8 @@ export default function App() {
   const [assistantAttachments, setAssistantAttachments] = useState<Attachment[]>([]);
   const [pleadingRecord, setPleadingRecord] = useState<JudgmentRecord | null>(null);
   const [isPleadingStudioOpen, setIsPleadingStudioOpen] = useState(false);
+  const [isAdminMapOpen, setIsAdminMapOpen] = useState(false);
+  const [isAdminAnalysisOpen, setIsAdminAnalysisOpen] = useState(false);
 
   const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>(INITIAL_JUDGMENT_RECORDS);
 
@@ -452,6 +456,8 @@ export default function App() {
     setShowLandingPage(true);
     setActiveCourt(null);
     setActiveService(null);
+    setIsAdminMapOpen(false);
+    setIsAdminAnalysisOpen(false);
     setJudgmentRecords([]);
   };
 
@@ -515,10 +521,16 @@ export default function App() {
         activeCourt={activeCourt}
         activeService={activeService}
         onSelectCourt={(court) => {
+          setIsAdminMapOpen(false);
+          setIsAdminAnalysisOpen(false);
           setActiveCourt(court);
           setActiveService(null);
         }}
-        onSelectService={(service) => setActiveService(service)}
+        onSelectService={(service) => {
+          setIsAdminMapOpen(false);
+          setIsAdminAnalysisOpen(false);
+          setActiveService(service);
+        }}
         userSession={session}
         onLogout={handleLogout}
         isMobileOpen={isMobileMenuOpen}
@@ -527,6 +539,12 @@ export default function App() {
         onOpenSearch={() => requestAssistant('ابحث لي في الأنظمة والمراجع ذات الصلة بسؤالي، واذكر السند ومصدره بوضوح: ')}
         onOpenAssistant={() => requestAssistant('')}
         onOpenReports={() => setIsDossierOpen(true)}
+        onOpenAdminMap={session.role === 'admin' ? () => {
+          setActiveCourt(null);
+          setActiveService(null);
+          setIsAdminAnalysisOpen(false);
+          setIsAdminMapOpen(true);
+        } : undefined}
       />
 
       <div className="w-full lg:w-3/4 flex-1 flex flex-col h-full overflow-hidden relative z-10">
@@ -568,13 +586,38 @@ export default function App() {
             </div>
           )}
 
-          {!activeCourt && (
+          {session.role === 'admin' && isAdminMapOpen && !isAdminAnalysisOpen && (
+            <AdminAgentMap
+              onOpenAnalysisRoom={() => {
+                setIsAdminMapOpen(false);
+                setIsAdminAnalysisOpen(true);
+              }}
+            />
+          )}
+
+          {session.role === 'admin' && isAdminAnalysisOpen && (
+            <AdminAnalysisRoom
+              onBack={() => {
+                setIsAdminAnalysisOpen(false);
+                setIsAdminMapOpen(true);
+              }}
+            />
+          )}
+
+          {!activeCourt && !isAdminMapOpen && !isAdminAnalysisOpen && (
             <WelcomeScreen
               userName={session.name}
               message="مرحباً بك في مساحة القضية الرقمية."
               isAdmin={session.role === 'admin'}
-              onOpenAdminOverview={() => setIsRepositoryOpen(true)}
+              onOpenAdminOverview={() => {
+                setActiveCourt(null);
+                setActiveService(null);
+                setIsAdminAnalysisOpen(false);
+                setIsAdminMapOpen(true);
+              }}
               onSelectCourt={(court) => {
+                setIsAdminMapOpen(false);
+                setIsAdminAnalysisOpen(false);
                 setActiveCourt(court);
                 setActiveService(null);
               }}
@@ -582,7 +625,7 @@ export default function App() {
             />
           )}
 
-          {activeCourt === 'administrative' && (
+          {!isAdminMapOpen && !isAdminAnalysisOpen && activeCourt === 'administrative' && (
             <AdministrativeWorkspace
               service={activeService}
               userSession={session}
@@ -593,14 +636,14 @@ export default function App() {
             />
           )}
 
-          {activeCourt === 'general' && (
+          {!isAdminMapOpen && !isAdminAnalysisOpen && activeCourt === 'general' && (
             <GeneralWorkspace
               service={activeService}
               userSession={session}
             />
           )}
 
-          {activeCourt === 'criminal' && (
+          {!isAdminMapOpen && !isAdminAnalysisOpen && activeCourt === 'criminal' && (
             <CriminalWorkspace
               service={activeService}
               userSession={session}
@@ -617,7 +660,7 @@ export default function App() {
         <div className="grid grid-cols-5 gap-1 px-2 pt-2">
           <button
             type="button"
-            onClick={() => { setActiveCourt(null); setActiveService(null); }}
+            onClick={() => { setIsAdminMapOpen(false); setIsAdminAnalysisOpen(false); setActiveCourt(null); setActiveService(null); }}
             className={`mobile-dock-btn ${activeCourt === null ? 'mobile-dock-btn-active' : ''}`}
           >
             <Home className="w-5 h-5" /><span>الرئيسية</span>

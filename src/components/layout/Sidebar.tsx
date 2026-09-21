@@ -20,7 +20,8 @@ import {
   X,
   Search,
   Clock,
-  GitCompare
+  GitCompare,
+  Network
 } from 'lucide-react';
 import { UserSession } from '../../types';
 
@@ -122,6 +123,7 @@ interface SidebarProps {
   onOpenSearch?: () => void;
   onOpenAssistant?: () => void;
   onOpenReports?: () => void;
+  onOpenAdminMap?: () => void;
 }
 
 export function Sidebar({
@@ -137,6 +139,7 @@ export function Sidebar({
   onOpenSearch,
   onOpenAssistant,
   onOpenReports,
+  onOpenAdminMap,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
 
@@ -391,6 +394,23 @@ export function Sidebar({
             <BarChart3 className="w-4 h-4 text-slate-400" />
             <span>تقارير الفحص والنتائج</span>
           </button>
+
+          {userSession?.role === 'admin' && onOpenAdminMap && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenAdminMap();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className="min-h-12 w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-black text-violet-200 border border-violet-400/30 bg-violet-500/10 hover:bg-violet-500/15 hover:border-violet-300/50 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <Network className="w-4 h-4 text-violet-300" />
+                <span>خريطة الوكلاء وغرفة العمليات</span>
+              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-200 border border-violet-400/20">ADMIN</span>
+            </button>
+          )}
         </div>
 
       </div>

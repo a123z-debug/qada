@@ -17,7 +17,9 @@ import {
   Bot,
   FileCheck,
   AlertTriangle,
-  Clock
+  Clock,
+  Network,
+  LockKeyhole
 } from 'lucide-react';
 import { CourtJurisdiction, COURT_CATEGORIES } from '../layout/Sidebar';
 
@@ -123,15 +125,34 @@ export function WelcomeScreen({
       </div>
 
       {isAdmin && onOpenAdminOverview && (
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={onOpenAdminOverview}
-            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-200 transition hover:bg-emerald-500/20 shadow-md"
-          >
-            <FolderOpen className="w-4 h-4" />
-            <span>مرفوعات جميع المستخدمين (لوحة الإدارة)</span>
-          </button>
+        <div className="relative overflow-hidden rounded-3xl border border-violet-400/35 bg-gradient-to-l from-violet-500/15 via-slate-950/95 to-cyan-500/10 p-5 sm:p-6 shadow-[0_20px_70px_rgba(76,29,149,.18)]">
+          <div className="absolute -top-16 -left-16 h-44 w-44 rounded-full bg-violet-500/15 blur-3xl pointer-events-none" />
+          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-violet-300/30 bg-violet-500/15 text-violet-200 shadow-[0_0_25px_rgba(167,139,250,.15)]">
+                <Network className="h-7 w-7" />
+              </div>
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-1 text-[10px] font-black text-violet-200">
+                  <LockKeyhole className="h-3 w-3" />
+                  ADMIN ONLY
+                </div>
+                <h2 className="mt-2 text-xl sm:text-2xl font-black text-white">غرفة العمليات وخريطة الوكلاء</h2>
+                <p className="mt-1 max-w-2xl text-xs sm:text-sm leading-6 text-slate-400">
+                  شاهد جميع وكلاء QADA ومساراتهم، واعرف أي وكيل متصل الآن وأي وكيل قيد البناء، ثم تتبع الأخطاء وحالة كل مسار من مكان واحد.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenAdminOverview}
+              className="min-h-12 shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl border border-violet-300/40 bg-violet-500/20 px-5 py-3 text-sm font-black text-violet-100 transition hover:bg-violet-500/30 hover:border-violet-200/60 shadow-lg"
+            >
+              <Network className="w-5 h-5" />
+              <span>فتح خريطة الوكلاء</span>
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
