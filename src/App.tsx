@@ -646,6 +646,7 @@ export default function App() {
             <GeneralWorkspace
               service={activeService}
               userSession={session}
+              onOpenPdfModal={() => setIsPdfModalOpen(true)}
             />
           )}
 
@@ -653,6 +654,7 @@ export default function App() {
             <CriminalWorkspace
               service={activeService}
               userSession={session}
+              onOpenPdfModal={() => setIsPdfModalOpen(true)}
             />
           )}
         </main>
