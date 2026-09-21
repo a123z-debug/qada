@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { readSession } from './_auth';
 import { buildOfficialLegalReferenceContext } from '../src/lib/legalRetrieval';
 
 function getGeminiClients(): GoogleGenAI[] {
