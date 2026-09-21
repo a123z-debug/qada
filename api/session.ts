@@ -211,6 +211,21 @@ async function loadAccount(email: string): Promise<AccountRecord | null> {
   return decodeAccount(localAccounts.get(key));
 }
 
+export async function readActiveSession(header?: string | string[]): Promise<AuthSession | null> {
+  const session = readSession(header);
+  if (!session) return null;
+  if (session.role === 'admin') return session;
+
+  try {
+    const account = await loadAccount(session.email);
+    if (!account || account.disabledAt || account.id !== session.id) return null;
+    return session;
+  } catch (error) {
+    if (isProductionRuntime()) throw error;
+    return session;
+  }
+}
+
 async function saveAccount(record: AccountRecord): Promise<void> {
   const key = accountKey(record.email);
   const encoded = encodeAccount(record);
@@ -424,7 +439,7 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    const session = readSession(req.headers?.cookie);
+    const session = await readActiveSession(req.headers?.cookie);
     if (!session) return res.status(401).json({ authenticated: false });
     return res.status(200).json({ authenticated: true, session });
   }
