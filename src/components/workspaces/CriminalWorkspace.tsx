@@ -302,7 +302,7 @@ ${defenseDemands}`;
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-neutral-100">بؤرة المحاكم الجزائية</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                عزل تام
+                مسودة خاصة بالحساب الحالي
               </span>
             </div>
             <p className="text-xs text-neutral-400">
@@ -343,7 +343,7 @@ ${defenseDemands}`;
               <div>
                 <h3 className="text-lg font-bold text-neutral-100">رفع مرفقات ومحاضر المحاكم الجزائية</h3>
                 <p className="text-xs text-neutral-400">
-                  تُحفظ محاضر الضبط والتحقيق في مسودة العمل محلياً دون تشغيل الـ API إلا بالضغط على الزر أدناه
+                  ملفات TXT المضافة هنا تحفظ في تخزين هذا المتصفح للحساب الحالي. استخدم زر PDF/صورة لإرسال المستند للمحادثة عند الحاجة.
                 </p>
               </div>
             </div>
@@ -426,7 +426,7 @@ ${defenseDemands}`;
                 </h3>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/30">
-                حفظ محلي (LocalStorage)
+                حفظ محلي على هذا المتصفح
               </span>
             </div>
 
