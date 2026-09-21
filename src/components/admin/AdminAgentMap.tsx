@@ -119,7 +119,7 @@ type RuntimeSnapshot = {
 };
 
 const CANVAS_WIDTH = 1600;
-const CANVAS_HEIGHT = 980;
+const CANVAS_HEIGHT = 1080;
 
 const nodes: AgentNode[] = [
   { id: 'auth', title: 'المصادقة والحساب', subtitle: 'دخول وصلاحيات', x: 45, y: 42, width: 180, height: 74, status: 'linked', tone: 'cyan', icon: ShieldCheck, detail: 'بوابة الدخول والجلسات وتحديد صلاحية المستخدم أو المشرف.' },
@@ -153,18 +153,24 @@ const nodes: AgentNode[] = [
   { id: 'conflicts', title: 'كاشف التعارض', subtitle: 'تناقض النصوص والنتائج', x: 1190, y: 600, width: 190, height: 68, status: 'linked', tone: 'amber', icon: AlertTriangle, detail: 'يجمع نقاط التعارض الخارجة من مسارات الإثبات والتسبيب والدفوع ويعرضها كتحذير قابل للتتبع.' },
 
   { id: 'final-review', title: 'المراجع النهائي', subtitle: 'بوابة تحقق داخلية', x: 1410, y: 365, width: 165, height: 90, status: 'linked', tone: 'violet', icon: CheckCircle2, detail: 'بوابة داخلية تجمع النتائج وتمنع إخفاء فشل الوكلاء أو قيود المصادر قبل إخراج التقرير.' },
-  { id: 'drafting', title: 'مختبر الصياغة', subtitle: 'دعوى / مذكرة / اعتراض', x: 1410, y: 485, width: 165, height: 90, status: 'planned', tone: 'cyan', icon: FileText, detail: 'يحوّل التحليل الموثق إلى مسودة قانونية منظمة دون اختراع أسانيد.' },
+  { id: 'drafting', title: 'مختبر الصياغة', subtitle: 'دعوى / مذكرة / اعتراض', x: 1410, y: 485, width: 165, height: 90, status: 'linked', tone: 'cyan', icon: FileText, detail: 'يحوّل التحليل الموثق إلى مسودة قانونية منظمة، ويربط الصياغة ببوابة التحقق المرجعي قبل اعتماد أي إحالة.' },
+  { id: 'final-output', title: 'المخرجات النهائية', subtitle: 'تقرير / مسودة / خطة عمل', x: 1410, y: 595, width: 165, height: 78, status: 'linked', tone: 'amber', icon: FileCheck2, detail: 'يجمع التقرير التحليلي والمسودة المنقحة وروابط المصادر وقائمة التحقق المطلوبة للمراجعة البشرية.' },
 
-  { id: 'admin-entry', title: 'غرفة التحليل للأدمن', subtitle: 'مدخل خاص ومقيد', x: 85, y: 760, width: 240, height: 82, status: 'linked', tone: 'violet', icon: LockKeyhole, adminOnly: true, detail: 'مدخل منفصل للمشرف لتحليل حكم أو مذكرة بشكل أعمق من واجهة المستخدم العامة.' },
-  { id: 'judgment-audit', title: 'إيجنت تحليل الأحكام', subtitle: 'الحكم كاملاً', x: 380, y: 735, width: 205, height: 74, status: 'linked', tone: 'violet', icon: Gavel, adminOnly: true, detail: 'يمثل المسار الحالي لمراجعة الحكم، وسيتم توسيعه إلى فحص تشريعي وقضائي وإجرائي كامل.' },
-  { id: 'memo-audit', title: 'إيجنت تحليل المذكرات', subtitle: 'دعوى ودفاع', x: 380, y: 830, width: 205, height: 74, status: 'linked', tone: 'violet', icon: FileSearch, adminOnly: true, detail: 'مسار فعلي للمذكرات واللوائح والدفاع يوزع المستند على الوكلاء التخصصيين ثم بوابة التحقق.' },
-  { id: 'legislative-flaws', title: 'كشف العيوب التشريعية', subtitle: 'نص وسريان', x: 660, y: 720, width: 205, height: 68, status: 'linked', tone: 'rose', icon: AlertTriangle, adminOnly: true, detail: 'يكشف مخالفة النصوص أو تطبيق نص غير ساري أو إغفال النص الواجب التطبيق.' },
-  { id: 'judicial-flaws', title: 'كشف العيوب القضائية', subtitle: 'مبادئ وتسبيب', x: 660, y: 805, width: 205, height: 68, status: 'linked', tone: 'rose', icon: Scale, adminOnly: true, detail: 'يفحص مخالفة المبادئ والتناقض مع السوابق ذات الصلة دون تحويل السابقة إلى نص ملزم تلقائياً.' },
-  { id: 'procedural-flaws', title: 'كشف العيوب الإجرائية', subtitle: 'شكل ومواعيد', x: 660, y: 890, width: 205, height: 68, status: 'linked', tone: 'rose', icon: XCircle, adminOnly: true, detail: 'يفحص الاختصاص والمواعيد والإجراءات والإعلانات والدفوع الشكلية.' },
-  { id: 'evidence-flaws', title: 'فحص الإثبات', subtitle: 'فجوات وتناقضات', x: 930, y: 720, width: 205, height: 68, status: 'linked', tone: 'rose', icon: FileCheck2, adminOnly: true, detail: 'يكشف الوقائع غير المسندة والدليل غير المنتج والتناقض بين المستندات.' },
-  { id: 'reasoning-flaws', title: 'فحص التكييف والتسبيب', subtitle: 'سبب ومنطوق', x: 930, y: 805, width: 205, height: 68, status: 'linked', tone: 'rose', icon: Workflow, adminOnly: true, detail: 'يفحص صحة التكييف وارتباط الأسباب بالمنطوق وأي قفزة منطقية في الحكم.' },
-  { id: 'rebuttal-review', title: 'مراجعة الدفوع والردود', subtitle: 'نقاط القوة والقصور', x: 930, y: 890, width: 205, height: 68, status: 'linked', tone: 'violet', icon: Scale, adminOnly: true, detail: 'يرتب نقاط الاعتراض والردود الممكنة ويبين سند كل نقطة وحدودها.' },
-  { id: 'admin-final', title: 'التقرير التحليلي للأدمن', subtitle: 'نتيجة داخلية غير عامة', x: 1245, y: 790, width: 270, height: 110, status: 'linked', tone: 'violet', icon: FileCheck2, adminOnly: true, detail: 'يجمع العيوب والمراجع والأثر المحتمل وما يحتاج إلى تحقق بشري في تقرير واحد خاص بالأدمن.' },
+  { id: 'editor-tool', title: 'Editor', subtitle: 'إدارة وصياغة المواد', x: 610, y: 692, width: 155, height: 58, status: 'linked', tone: 'cyan', icon: FileText, detail: 'واجهة تحرير المذكرات والمسودات ومراجعة النص قبل إدخاله إلى مسارات التحليل.' },
+  { id: 'execution-tool', title: 'Execution', subtitle: 'مراقبة سير التشغيل', x: 785, y: 692, width: 155, height: 58, status: 'linked', tone: 'cyan', icon: Activity, detail: 'يعرض حالة تشغيل الوكلاء الفعلية، الأزمنة، التحذيرات، الأخطاء ومسار التنفيذ.' },
+  { id: 'evaluation-tool', title: 'Evaluation', subtitle: 'اختبار وتحقق', x: 960, y: 692, width: 155, height: 58, status: 'linked', tone: 'emerald', icon: CheckCircle2, detail: 'طبقة التقييم والاختبارات الآلية التي تمنع اعتماد نسخة لا تجتاز فحوص المصادر والأمان والبناء.' },
+  { id: 'agents-tool', title: 'Agents', subtitle: 'إدارة الوكلاء', x: 1135, y: 692, width: 155, height: 58, status: 'linked', tone: 'amber', icon: Layers3, detail: 'فهرس الوكلاء والمسارات المرتبطة بالخريطة التشغيلية وحالة كل وكيل.' },
+
+  { id: 'admin-entry', title: 'غرفة التحليل للأدمن', subtitle: 'مدخل خاص ومقيد', x: 85, y: 840, width: 240, height: 82, status: 'linked', tone: 'violet', icon: LockKeyhole, adminOnly: true, detail: 'مدخل منفصل للمشرف لتحليل حكم أو مذكرة بشكل أعمق من واجهة المستخدم العامة.' },
+  { id: 'judgment-audit', title: 'إيجنت تحليل الأحكام', subtitle: 'الحكم كاملاً', x: 380, y: 815, width: 205, height: 74, status: 'linked', tone: 'violet', icon: Gavel, adminOnly: true, detail: 'مسار فعلي لتحليل الأحكام يوزع الحكم على الفحص التشريعي والقضائي والإجرائي والإثباتي والتسبيب والدفوع.' },
+  { id: 'memo-audit', title: 'إيجنت تحليل المذكرات', subtitle: 'دعوى ودفاع', x: 380, y: 910, width: 205, height: 74, status: 'linked', tone: 'violet', icon: FileSearch, adminOnly: true, detail: 'مسار فعلي للمذكرات واللوائح والدفاع يوزع المستند على الوكلاء التخصصيين ثم بوابة التحقق.' },
+  { id: 'legislative-flaws', title: 'كشف العيوب التشريعية', subtitle: 'نص وسريان', x: 660, y: 800, width: 205, height: 68, status: 'linked', tone: 'rose', icon: AlertTriangle, adminOnly: true, detail: 'يكشف مخالفة النصوص أو تطبيق نص غير ساري أو إغفال النص الواجب التطبيق.' },
+  { id: 'judicial-flaws', title: 'كشف العيوب القضائية', subtitle: 'مبادئ وتسبيب', x: 660, y: 885, width: 205, height: 68, status: 'linked', tone: 'rose', icon: Scale, adminOnly: true, detail: 'يفحص مخالفة المبادئ والتناقض مع السوابق ذات الصلة دون تحويل السابقة إلى نص ملزم تلقائياً.' },
+  { id: 'procedural-flaws', title: 'كشف العيوب الإجرائية', subtitle: 'شكل ومواعيد', x: 660, y: 970, width: 205, height: 68, status: 'linked', tone: 'rose', icon: XCircle, adminOnly: true, detail: 'يفحص الاختصاص والمواعيد والإجراءات والإعلانات والدفوع الشكلية.' },
+  { id: 'evidence-flaws', title: 'فحص الإثبات', subtitle: 'فجوات وتناقضات', x: 930, y: 800, width: 205, height: 68, status: 'linked', tone: 'rose', icon: FileCheck2, adminOnly: true, detail: 'يكشف الوقائع غير المسندة والدليل غير المنتج والتناقض بين المستندات.' },
+  { id: 'reasoning-flaws', title: 'فحص التكييف والتسبيب', subtitle: 'سبب ومنطوق', x: 930, y: 885, width: 205, height: 68, status: 'linked', tone: 'rose', icon: Workflow, adminOnly: true, detail: 'يفحص صحة التكييف وارتباط الأسباب بالمنطوق وأي قفزة منطقية في الحكم.' },
+  { id: 'rebuttal-review', title: 'مراجعة الدفوع والردود', subtitle: 'نقاط القوة والقصور', x: 930, y: 970, width: 205, height: 68, status: 'linked', tone: 'violet', icon: Scale, adminOnly: true, detail: 'يرتب نقاط الاعتراض والردود الممكنة ويبين سند كل نقطة وحدودها.' },
+  { id: 'admin-final', title: 'التقرير التحليلي للأدمن', subtitle: 'نتيجة داخلية غير عامة', x: 1245, y: 870, width: 270, height: 110, status: 'linked', tone: 'violet', icon: FileCheck2, adminOnly: true, detail: 'يجمع العيوب والمراجع والأثر المحتمل وما يحتاج إلى تحقق بشري في تقرير واحد خاص بالأدمن.' },
 ];
 
 const edges: Edge[] = [
@@ -198,6 +204,11 @@ const edges: Edge[] = [
   { from: 'amendments', to: 'final-review', kind: 'verification' },
   { from: 'conflicts', to: 'final-review', kind: 'verification' },
   { from: 'final-review', to: 'drafting' },
+  { from: 'drafting', to: 'final-output' },
+  { from: 'qada-core', to: 'editor-tool' },
+  { from: 'qada-core', to: 'execution-tool' },
+  { from: 'qada-core', to: 'evaluation-tool' },
+  { from: 'qada-core', to: 'agents-tool' },
 
   { from: 'admin-entry', to: 'judgment-audit', kind: 'admin' },
   { from: 'admin-entry', to: 'memo-audit', kind: 'admin' },
@@ -479,10 +490,22 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
               <div className="absolute left-[26px] top-[20px] rounded-xl border border-cyan-400/15 bg-slate-950/80 px-3 py-2 text-[11px] font-bold text-cyan-200">
                 منصة QADA العامة
               </div>
-              <div className="absolute left-[26px] top-[705px] rounded-xl border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-[11px] font-black text-violet-200">
+              <div className="absolute left-[45px] top-[175px] rounded-lg border border-amber-400/15 bg-amber-500/5 px-2.5 py-1.5 text-[10px] font-black text-amber-200">
+                مختبر البيانات والأدلة
+              </div>
+              <div className="absolute left-[650px] top-[320px] rounded-lg border border-cyan-400/15 bg-cyan-500/5 px-2.5 py-1.5 text-[10px] font-black text-cyan-200">
+                محرك التحليل القضائي الذكي
+              </div>
+              <div className="absolute left-[1395px] top-[455px] rounded-lg border border-cyan-400/15 bg-cyan-500/5 px-2.5 py-1.5 text-[10px] font-black text-cyan-200">
+                الصياغة والمخرجات
+              </div>
+              <div className="absolute left-[610px] top-[660px] rounded-lg border border-slate-700 bg-slate-950/85 px-2.5 py-1.5 text-[10px] font-black text-slate-300">
+                بيئة التشغيل والتحكم
+              </div>
+              <div className="absolute left-[26px] top-[785px] rounded-xl border border-violet-400/30 bg-violet-500/10 px-3 py-2 text-[11px] font-black text-violet-200">
                 غرفة التحليل الخاصة بالأدمن
               </div>
-              <div className="absolute left-[26px] right-[26px] top-[700px] h-px bg-gradient-to-l from-transparent via-violet-400/50 to-transparent" />
+              <div className="absolute left-[26px] right-[26px] top-[780px] h-px bg-gradient-to-l from-transparent via-violet-400/50 to-transparent" />
 
               <svg className="absolute inset-0 h-full w-full pointer-events-none" viewBox={'0 0 ' + CANVAS_WIDTH + ' ' + CANVAS_HEIGHT} aria-hidden="true">
                 <defs>
