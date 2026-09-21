@@ -545,6 +545,12 @@ export default function App() {
           setIsAdminAnalysisOpen(false);
           setIsAdminMapOpen(true);
         } : undefined}
+        onOpenAdminAnalysis={session.role === 'admin' ? () => {
+          setActiveCourt(null);
+          setActiveService(null);
+          setIsAdminMapOpen(false);
+          setIsAdminAnalysisOpen(true);
+        } : undefined}
       />
 
       <div className="w-full lg:w-3/4 flex-1 flex flex-col h-full overflow-hidden relative z-10">
