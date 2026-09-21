@@ -32,12 +32,12 @@ export function PdfUploadModal({ isOpen, onClose, onAddAttachments, onAnalyzeImm
   const handleProcessFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploadError(null);
-    const maxFileSize = 25 * 1024 * 1024;
+    const maxFileSize = 3 * 1024 * 1024;
     const newItems: Attachment[] = [];
 
     for (const file of Array.from(files)) {
       if (file.size > maxFileSize) {
-        setUploadError(`الملف "${file.name}" أكبر من الحد الأقصى (25 ميجابايت).`);
+        setUploadError(`الملف "${file.name}" أكبر من الحد الآمن للإرسال المباشر (3 ميجابايت). استخدم ملفاً أصغر أو قسّمه قبل التحليل.`);
         continue;
       }
       const isImage = file.type.startsWith('image/');
@@ -61,7 +61,15 @@ export function PdfUploadModal({ isOpen, onClose, onAddAttachments, onAnalyzeImm
         setUploadError(`تعذر قراءة الملف "${file.name}". يرجى المحاولة مرة أخرى.`);
       }
     }
-    setSelectedFiles(prev => [...prev, ...newItems]);
+    setSelectedFiles(prev => {
+      const combined = [...prev, ...newItems];
+      const totalBytes = combined.reduce((sum, item) => sum + item.size, 0);
+      if (totalBytes > 3 * 1024 * 1024) {
+        setUploadError('إجمالي الملفات تجاوز 3 ميجابايت. احذف بعض الملفات أو حللها على دفعات.');
+        return prev;
+      }
+      return combined;
+    });
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -82,7 +90,7 @@ export function PdfUploadModal({ isOpen, onClose, onAddAttachments, onAnalyzeImm
   return <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
     <div className="relative w-full max-w-2xl bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl overflow-hidden text-right flex flex-col max-h-[90vh]">
       <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
-        <div><h2 className="text-lg font-bold text-neutral-100">رفع وتدقيق المستندات</h2><p className="text-xs text-neutral-400">PDF والصور فقط — حتى 25MB</p></div>
+        <div><h2 className="text-lg font-bold text-neutral-100">رفع وتدقيق المستندات</h2><p className="text-xs text-neutral-400">PDF والصور فقط — حتى 3MB لكل طلب</p></div>
         <button onClick={onClose} className="p-2 text-neutral-400"><X className="w-5 h-5" /></button>
       </div>
       <div className="p-6 overflow-y-auto space-y-5">

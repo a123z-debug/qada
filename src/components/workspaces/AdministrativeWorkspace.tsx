@@ -20,9 +20,11 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { printLegalMemo } from '../../utils/printMemo';
-import { UserSession } from '../../types';
+import { Attachment, UserSession } from '../../types';
 import { LegalReviewEditor } from './LegalReviewEditor';
 import { LegalAdaptationResult, PlainStoryInput } from './PlainStoryInput';
+import { readFileAsAttachment } from '../../lib/clientAttachments';
+import { readSseTextResponse } from '../../lib/readSseTextResponse';
 
 interface AdministrativeWorkspaceProps {
   service: string | null;
@@ -88,6 +90,7 @@ export function AdministrativeWorkspace({
   // File Upload state (No auto API call!)
   const [uploadedFileName, setUploadedFileName] = useState<string>(initial.uploadedFileName || '');
   const [uploadedFileText, setUploadedFileText] = useState<string>(initial.uploadedFileText || '');
+  const [uploadedAttachment, setUploadedAttachment] = useState<Attachment | null>(null);
 
   // Output & Review Mode
   const [generatedOutput, setGeneratedOutput] = useState<string>(initial.generatedOutput || '');
@@ -150,20 +153,25 @@ export function AdministrativeWorkspace({
     generatedOutput,
   ]);
 
-  // Handle Attachment Upload (STRICT: NO API CALL IS MADE HERE)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Attachment Upload without sending until the user explicitly requests analysis.
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadedFileName(file.name);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = (event.target?.result as string) || '';
-      const summaryText = `[مرفق مستند: ${file.name} - الحجم: ${(file.size / 1024).toFixed(1)} ك.ب]\n${content.slice(0, 1200)}`;
-      setUploadedFileText(summaryText);
-      setDisputedDecision((prev) => `${prev}\n(مرفق: ${file.name})`);
-    };
-    reader.readAsText(file);
+    try {
+      const attachment = await readFileAsAttachment(file);
+      setUploadedAttachment(attachment);
+      setUploadedFileName(file.name);
+      setUploadedFileText(`[مرفق جاهز للتحليل: ${file.name} - الحجم: ${(file.size / 1024).toFixed(1)} ك.ب]`);
+      setDisputedDecision((prev) => prev.includes(file.name) ? prev : `${prev}\n(مرفق: ${file.name})`);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'تعذر قراءة الملف.');
+      setUploadedAttachment(null);
+      setUploadedFileName('');
+      setUploadedFileText('');
+    } finally {
+      e.target.value = '';
+    }
   };
 
   // Generation Handler triggered ONLY by explicit "صياغة المذكرة" button
@@ -241,7 +249,11 @@ ${sharedRules}`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: promptContent }],
+          messages: [{
+            role: 'user',
+            content: promptContent,
+            attachments: uploadedAttachment ? [uploadedAttachment] : [],
+          }],
           targetCourt: 'المحكمة الإدارية',
           clientPersonName: claimantName,
           powerMode: true,
@@ -252,34 +264,9 @@ ${sharedRules}`;
         throw new Error('فشل توليد المذكرة من الخادم');
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const dataStr = line.slice(6).trim();
-              if (dataStr === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(dataStr);
-                if (parsed.text) {
-                  fullText += parsed.text;
-                  setGeneratedOutput(fullText);
-                }
-              } catch {
-                fullText += dataStr;
-                setGeneratedOutput(fullText);
-              }
-            }
-          }
-        }
-      }
+      let fullText = await readSseTextResponse(response, (nextText) => {
+        setGeneratedOutput(nextText);
+      });
 
       if (!fullText) {
         fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
@@ -408,7 +395,7 @@ ${claimRequests}`;
             <label className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow">
               <UploadCloud className="w-4 h-4" />
               <span>اختيار ملف من الجهاز</span>
-              <input type="file" onChange={handleFileUpload} className="hidden" accept=".pdf,.doc,.docx,.txt,image/*" />
+              <input type="file" onChange={handleFileUpload} className="hidden" accept=".pdf,application/pdf,image/*" />
             </label>
           </div>
 

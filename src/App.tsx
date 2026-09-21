@@ -88,7 +88,7 @@ function SystemAgentBar() {
       </div>
       <div className="hidden sm:flex items-center gap-2 text-slate-400">
         <ShieldCheck className="w-4 h-4 text-emerald-400" />
-        <span>مساحة عمل مشفرة</span>
+        <span>جلسة دخول خادمية محمية</span>
       </div>
     </div>
   );
@@ -695,7 +695,13 @@ export default function App() {
         externalAttachments={assistantAttachments}
       />
 
-      <Article8CalculatorModal isOpen={isArticle8Open} onClose={() => setIsArticle8Open(false)} onInsertToPrompt={() => setIsArticle8Open(false)} />
+      <Article8CalculatorModal
+        isOpen={isArticle8Open}
+        onClose={() => setIsArticle8Open(false)}
+        onInsertToPrompt={(generatedText) => {
+          if (generatedText.trim()) requestAssistant(generatedText);
+        }}
+      />
       <CaseDossierModal isOpen={isDossierOpen} onClose={() => setIsDossierOpen(false)} judgmentRecords={judgmentRecords} initialNationalId={session.nationalId} currentUser={session} />
       <LegalReferencesModal
         isOpen={isReferencesOpen}
@@ -729,12 +735,10 @@ export default function App() {
         isOpen={isPdfModalOpen}
         onClose={() => setIsPdfModalOpen(false)}
         onAddAttachments={(attachments) => {
-          localStorage.setItem('diwan_pending_attachments_v1', JSON.stringify(attachments));
-          setIsDossierOpen(true);
+          requestAssistant('', attachments);
         }}
         onAnalyzeImmediately={(attachments, prompt) => {
-          localStorage.setItem('diwan_pending_attachments_v1', JSON.stringify(attachments));
-          requestAssistant(prompt || 'حلل المرفقات المضافة إلى ملف القضية.', attachments);
+          requestAssistant(prompt || 'حلل المرفقات المضافة إلى المحادثة.', attachments);
         }}
       />
     </div>

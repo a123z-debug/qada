@@ -87,8 +87,8 @@ export function CassationJudgesPanel({
   const getOverallStatusBanner = () => {
     if (report.overallStatus === 'جاهز للإيداع') {
       return {
-        bg: 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200',
-        badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        bg: 'bg-sky-950/30 border-sky-500/30 text-sky-200',
+        badge: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
         icon: ShieldCheck,
       };
     }
@@ -107,6 +107,9 @@ export function CassationJudgesPanel({
   };
 
   const banner = getOverallStatusBanner();
+  const displayedOverallStatus = report.overallStatus === 'جاهز للإيداع'
+    ? 'لم تُرصد ملاحظات في الفحص الآلي'
+    : report.overallStatus;
 
   return (
     <div
@@ -128,7 +131,7 @@ export function CassationJudgesPanel({
                 </span>
               </h4>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${banner.badge}`}>
-                {report.overallStatus}
+                {displayedOverallStatus}
               </span>
             </div>
             <p className="text-[11px] text-neutral-300 mt-0.5">
@@ -159,7 +162,7 @@ export function CassationJudgesPanel({
                 : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
             }`}
           >
-            جميع القضاة ({allJudges.length})
+            جميع المراجعين ({allJudges.length})
           </button>
           <button
             onClick={() => setSelectedCourtTab('المحكمة الإدارية')}
@@ -197,7 +200,7 @@ export function CassationJudgesPanel({
         </div>
 
         <span className="text-[11px] text-neutral-400 hidden sm:inline">
-          تدقيق شامل وفق الأنظمة واللوائح وسوابق المحكمة العليا
+          مراجعة تحليلية وفق المصادر والأنظمة المتاحة في حزمة التحقق
         </span>
       </div>
 
@@ -231,7 +234,7 @@ export function CassationJudgesPanel({
           <div className="flex items-start gap-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold text-amber-300">الخلاصة القضائية الموحدة لتدارك البطلان: </span>
+              <span className="font-bold text-amber-300">الخلاصة التحليلية المقترحة: </span>
               <span className="text-neutral-300">{report.synthesisAdvice}</span>
             </div>
           </div>
@@ -302,10 +305,14 @@ function JudgeBox({
               className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${badge.bg}`}
             >
               <VerdictIcon className="w-3 h-3" />
-              <span>{judge.verdict}</span>
+              <span>
+                {judge.verdict === 'مقبول شكلاً وموضوعاً'
+                  ? 'لم تُرصد ملاحظة في هذا المسار'
+                  : judge.verdict}
+              </span>
             </span>
             <span className="text-[10px] font-mono text-neutral-400">
-              مؤشر السلامة: <b className="text-amber-400">{typeof judge.scoreOutOf100 === 'number' ? `${judge.scoreOutOf100}%` : 'غير مقيم'}</b>
+              مؤشر التحليل: <b className="text-amber-400">{typeof judge.scoreOutOf100 === 'number' ? `${judge.scoreOutOf100}%` : 'غير مقيم'}</b>
             </span>
           </div>
         </div>
@@ -339,7 +346,7 @@ function JudgeBox({
 
           <div className="p-2 rounded-lg bg-neutral-900/60 border border-neutral-800/80">
             <span className="font-bold text-sky-300/90 text-[11px] block mb-0.5">
-              رقابة التطبيق الموضوعي وسوابق المحكمة العليا:
+              تحليل التطبيق الموضوعي والمراجع القضائية المتاحة:
             </span>
             <p className="text-neutral-300 leading-relaxed text-[11px]">{judge.substantiveCritique}</p>
           </div>
@@ -351,7 +358,7 @@ function JudgeBox({
         <div className="pt-2 border-t border-neutral-800/80 mt-auto">
           <div className="flex items-start justify-between gap-2 p-2 rounded-xl bg-amber-950/20 border border-amber-500/20 text-xs">
             <div className="min-w-0 flex-1">
-              <span className="font-bold text-amber-300 text-[11px] block">توجيه القاضي لتصحيح الخلل:</span>
+              <span className="font-bold text-amber-300 text-[11px] block">اقتراح المراجع لمعالجة الخلل:</span>
               <p className="text-neutral-200 text-[11px] leading-relaxed mt-0.5">{judge.actionableRemedy}</p>
             </div>
             {onApplyRemedy && (
