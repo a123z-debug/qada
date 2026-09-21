@@ -22,6 +22,7 @@ import { consumeTextSse } from '../../lib/consumeTextSse';
 interface GeneralWorkspaceProps {
   service: string | null;
   userSession?: UserSession | null;
+  onOpenPdfModal?: () => void;
 }
 
 const STORAGE_KEY_PREFIX = 'diwan_general_draft_v3';
@@ -29,6 +30,7 @@ const STORAGE_KEY_PREFIX = 'diwan_general_draft_v3';
 export function GeneralWorkspace({
   service = 'general_claim',
   userSession,
+  onOpenPdfModal,
 }: GeneralWorkspaceProps) {
   const currentService = service || 'general_claim';
   const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
