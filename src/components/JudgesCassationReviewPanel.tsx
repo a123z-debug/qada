@@ -71,6 +71,8 @@ export function JudgesCassationReviewPanel({
   const revisionBlocked = Boolean(sourceAudit?.blockedRevision);
   const noDetectedIssues = Boolean(
     report
+    && sourceAudit
+    && sourceAudit.blockers.length === 0
     && !reviewFailed
     && !revisionBlocked
     && report.cassationErrors.items.length === 0
