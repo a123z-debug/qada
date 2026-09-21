@@ -74,34 +74,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const stored = await loadMany(limitedKeys);
       stored.sort((a, b) => Number(b.record.updatedAt || b.savedAt) - Number(a.record.updatedAt || a.savedAt));
       return res.status(200).json({
-        records: stored.map((item) => item.record),
+        records: stored.map((item) => wantsAll
+          ? { ...item.record, storageOwnerId: item.ownerId }
+          : item.record),
         meta: { scope: wantsAll ? 'all' : 'user', count: stored.length, truncated: keys.length > limitedKeys.length },
       });
     }
 
     if (req.method === 'PUT' || req.method === 'POST') {
       const record = sanitizeRecord((req.body as any)?.record);
-      const id = String(record.id);
-      const key = caseKey(session.id, id);
+      const requestedOwner = typeof record.storageOwnerId === 'string' ? record.storageOwnerId.trim() : '';
+      const ownerId = session.role === 'admin' && requestedOwner ? requestedOwner : session.id;
+      const { storageOwnerId: _storageOwnerId, ...cleanRecord } = record;
+      const id = String(cleanRecord.id);
+      const key = caseKey(ownerId, id);
       const value: StoredCase = {
-        ownerId: session.id,
-        ownerName: session.name,
-        ownerEmail: session.email,
-        record,
+        ownerId,
+        ownerName: ownerId === session.id ? session.name : 'مستخدم المنصة',
+        ownerEmail: ownerId === session.id ? session.email : '',
+        record: cleanRecord,
         savedAt: Date.now(),
       };
       await redisCommand(['SET', key, protectJson(value, 'case-record')]);
-      await redisCommand(['SADD', userIndexKey(session.id), key]);
+      await redisCommand(['SADD', userIndexKey(ownerId), key]);
       await redisCommand(['SADD', allIndexKey(), key]);
-      return res.status(200).json({ ok: true, record });
+      return res.status(200).json({ ok: true, record: session.role === 'admin' ? { ...cleanRecord, storageOwnerId: ownerId } : cleanRecord });
     }
 
     if (req.method === 'DELETE') {
       const caseId = String(req.query?.id || '').trim();
       if (!caseId) return res.status(400).json({ error: 'CASE_ID_REQUIRED' });
-      const key = caseKey(session.id, caseId);
+      const requestedOwner = String(req.query?.ownerId || '').trim();
+      const ownerId = session.role === 'admin' && requestedOwner ? requestedOwner : session.id;
+      const key = caseKey(ownerId, caseId);
       await redisCommand(['DEL', key]);
-      await redisCommand(['SREM', userIndexKey(session.id), key]);
+      await redisCommand(['SREM', userIndexKey(ownerId), key]);
       await redisCommand(['SREM', allIndexKey(), key]);
       return res.status(204).end();
     }
