@@ -23,18 +23,19 @@ interface GeneralWorkspaceProps {
   userSession?: UserSession | null;
 }
 
-const STORAGE_KEY = 'diwan_general_draft_v2';
+const STORAGE_KEY_PREFIX = 'diwan_general_draft_v3';
 
 export function GeneralWorkspace({
   service = 'general_claim',
   userSession,
 }: GeneralWorkspaceProps) {
   const currentService = service || 'general_claim';
+  const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
 
   // Restore draft from LocalStorage
   const getInitialState = () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKey);
       if (saved) return JSON.parse(saved);
     } catch {
       // ignore
@@ -108,7 +109,7 @@ export function GeneralWorkspace({
         uploadedFileText,
         generatedOutput,
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(storageKey, JSON.stringify(data));
       const now = new Date();
       setLastSavedTime(`تم الحفظ في ${now.toLocaleTimeString('ar-SA')}`);
     } catch {
