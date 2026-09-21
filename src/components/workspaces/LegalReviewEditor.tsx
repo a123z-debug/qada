@@ -71,6 +71,9 @@ interface JudgesSourceAudit {
   blockers: string[];
   literalQuotationReady: boolean;
   precedentCorpusReady: boolean;
+  introducedMarkers?: string[];
+  unsupportedMarkers?: string[];
+  blockedRevision?: boolean;
 }
 
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
