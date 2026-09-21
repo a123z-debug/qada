@@ -224,7 +224,7 @@ ${sharedRules}`;
 
       if (!response.ok) throw new Error('فشل التوليد');
 
-      const fullText = await consumeTextSse(response, (text) => setGeneratedOutput(text));
+      let fullText = await consumeTextSse(response, (text) => setGeneratedOutput(text));
 
       if (!fullText) {
         fullText = `تعذر استلام مسودة من خدمة الذكاء الاصطناعي، لذلك لم تنشئ المنصة أي مادة أو دفع قانوني افتراضي.
