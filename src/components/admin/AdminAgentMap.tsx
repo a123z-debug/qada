@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -31,7 +31,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-type AgentStatus = 'linked' | 'planned' | 'warning' | 'error' | 'running';
+type AgentStatus = 'linked' | 'planned' | 'warning' | 'error' | 'running' | 'completed';
 type AgentTone = 'cyan' | 'amber' | 'emerald' | 'violet' | 'slate' | 'rose';
 
 type AgentNode = {
@@ -53,6 +53,26 @@ type Edge = {
   from: string;
   to: string;
   kind?: 'normal' | 'admin' | 'verification';
+};
+
+type RuntimeAgentRun = {
+  id: string;
+  label: string;
+  status: 'success' | 'error';
+  durationMs: number;
+  model?: string;
+  summary: string;
+};
+
+type RuntimeSnapshot = {
+  documentTitle?: string;
+  analyzedAt?: string;
+  agentRuns?: RuntimeAgentRun[];
+  meta?: {
+    completedAgents?: number;
+    failedAgents?: number;
+    architecture?: string;
+  };
 };
 
 const CANVAS_WIDTH = 1600;
@@ -158,6 +178,7 @@ const statusMeta: Record<AgentStatus, { label: string; dot: string; text: string
   warning: { label: 'يحتاج مراجعة', dot: 'bg-amber-400', text: 'text-amber-300' },
   error: { label: 'خطأ', dot: 'bg-rose-500', text: 'text-rose-300' },
   running: { label: 'يعمل الآن', dot: 'bg-cyan-400', text: 'text-cyan-300' },
+  completed: { label: 'آخر تشغيل مكتمل', dot: 'bg-emerald-300', text: 'text-emerald-200' },
 };
 
 function toneClass(tone: AgentTone) {
@@ -180,16 +201,33 @@ function edgePath(from: AgentNode, to: AgentNode) {
 
 export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () => void }) {
   const [zoom, setZoom] = useState(0.82);
-  const [filter, setFilter] = useState<'all' | 'admin' | 'linked' | 'planned'>('all');
+  const [filter, setFilter] = useState<'all' | 'admin' | 'linked' | 'planned' | 'last-run'>('all');
   const [selectedId, setSelectedId] = useState('qada-core');
+  const [runtime, setRuntime] = useState<RuntimeSnapshot | null>(null);
 
   const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('qada_admin_agent_runtime_v2');
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as RuntimeSnapshot;
+      if (parsed && Array.isArray(parsed.agentRuns)) setRuntime(parsed);
+    } catch {}
+  }, []);
+
+  const runtimeById = useMemo(() => {
+    const map = new Map<string, RuntimeAgentRun>();
+    for (const run of runtime?.agentRuns || []) map.set(run.id, run);
+    return map;
+  }, [runtime]);
 
   const visibleIds = useMemo(() => {
     if (filter === 'all') return new Set(nodes.map((node) => node.id));
     if (filter === 'admin') return new Set(nodes.filter((node) => node.adminOnly).map((node) => node.id));
+    if (filter === 'last-run') return new Set((runtime?.agentRuns || []).map((run) => run.id));
     return new Set(nodes.filter((node) => node.status === filter).map((node) => node.id));
-  }, [filter]);
+  }, [filter, runtime]);
 
   const counts = useMemo(() => {
     return {
@@ -215,11 +253,21 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 min-w-0">
-            <SummaryCard label="إجمالي العقد" value={counts.total} />
-            <SummaryCard label="متصل" value={counts.linked} tone="emerald" />
-            <SummaryCard label="قيد الربط" value={counts.planned} tone="slate" />
-            <SummaryCard label="غرفة الأدمن" value={counts.admin} tone="violet" />
+          <div className="min-w-0">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <SummaryCard label="إجمالي العقد" value={counts.total} />
+              <SummaryCard label="متصل" value={counts.linked} tone="emerald" />
+              <SummaryCard label="قيد الربط" value={counts.planned} tone="slate" />
+              <SummaryCard label="غرفة الأدمن" value={counts.admin} tone="violet" />
+            </div>
+            {runtime && (
+              <div className="mt-2 rounded-xl border border-emerald-400/15 bg-emerald-500/5 px-3 py-2 text-[10px] text-slate-400">
+                آخر تشغيل: <span className="font-bold text-slate-200">{runtime.documentTitle || 'تحليل قضائي'}</span>
+                {runtime.analyzedAt && <span> • {new Date(runtime.analyzedAt).toLocaleString('ar-SA')}</span>}
+                <span> • مكتمل {runtime.meta?.completedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'success').length ?? 0}</span>
+                <span> • متعثر {runtime.meta?.failedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'error').length ?? 0}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -232,6 +280,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
               <FilterButton active={filter === 'admin'} onClick={() => setFilter('admin')}>غرفة الأدمن</FilterButton>
               <FilterButton active={filter === 'linked'} onClick={() => setFilter('linked')}>المتصل حالياً</FilterButton>
               <FilterButton active={filter === 'planned'} onClick={() => setFilter('planned')}>قيد الربط</FilterButton>
+              <FilterButton active={filter === 'last-run'} onClick={() => setFilter('last-run')}>آخر تشغيل فعلي</FilterButton>
             </div>
             <div className="flex items-center gap-1">
               <button type="button" onClick={() => setZoom((value) => Math.min(1.15, Number((value + 0.08).toFixed(2))))} className="min-h-10 min-w-10 inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-white" title="تكبير">
@@ -293,7 +342,11 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
 
               {nodes.map((node) => {
                 const Icon = node.icon;
-                const meta = statusMeta[node.status];
+                const runtimeRun = runtimeById.get(node.id);
+                const effectiveStatus: AgentStatus = runtimeRun
+                  ? (runtimeRun.status === 'success' ? 'completed' : 'error')
+                  : node.status;
+                const meta = statusMeta[effectiveStatus];
                 const visible = visibleIds.has(node.id);
                 const selectedNode = node.id === selectedId;
                 return (
@@ -321,7 +374,7 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
                     </div>
                     <div className="absolute bottom-2.5 right-3 left-3 flex items-center justify-between gap-2">
                       <span className={'text-[9px] font-bold ' + meta.text}>{meta.label}</span>
-                      <span className={'h-2 w-2 rounded-full ' + meta.dot + (node.status === 'running' ? ' animate-pulse' : '')} />
+                      <span className={'h-2 w-2 rounded-full ' + meta.dot + (effectiveStatus === 'running' ? ' animate-pulse' : '')} />
                     </div>
                   </button>
                 );
@@ -339,15 +392,22 @@ export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () 
               <span className="text-[10px] font-black text-slate-500">تفاصيل العقدة</span>
               <h3 className="mt-1 text-base font-black text-white">{selected.title}</h3>
             </div>
-            <span className={'h-3 w-3 rounded-full ' + statusMeta[selected.status].dot} />
+            <span className={'h-3 w-3 rounded-full ' + statusMeta[runtimeById.get(selected.id) ? (runtimeById.get(selected.id)?.status === 'success' ? 'completed' : 'error') : selected.status].dot} />
           </div>
 
           <p className="mt-3 text-xs leading-6 text-slate-400">{selected.detail}</p>
 
           <div className="mt-4 space-y-2 text-xs">
-            <DetailRow label="الحالة" value={statusMeta[selected.status].label} />
+            <DetailRow
+              label="الحالة"
+              value={runtimeById.get(selected.id)
+                ? statusMeta[runtimeById.get(selected.id)?.status === 'success' ? 'completed' : 'error'].label
+                : statusMeta[selected.status].label}
+            />
             <DetailRow label="النطاق" value={selected.adminOnly ? 'خاص بالأدمن' : 'منصة عامة / محرك'} />
             <DetailRow label="معرف الوكيل" value={selected.id} mono />
+            {runtimeById.get(selected.id)?.model && <DetailRow label="النموذج" value={runtimeById.get(selected.id)?.model || ''} mono />}
+            {runtimeById.get(selected.id) && <DetailRow label="زمن آخر تشغيل" value={(runtimeById.get(selected.id)!.durationMs / 1000).toFixed(1) + ' ثانية'} />}
           </div>
 
           <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-500/5 p-3 text-[11px] leading-5 text-amber-100/80">
