@@ -211,6 +211,19 @@ async function loadAccount(email: string): Promise<AccountRecord | null> {
   return decodeAccount(localAccounts.get(key));
 }
 
+async function saveAccount(record: AccountRecord): Promise<void> {
+  const key = accountKey(record.email);
+  const encoded = encodeAccount(record);
+  if (isRedisConfigured()) {
+    await redisCommand(['SET', key, encoded]);
+    await redisCommand(['SADD', accountIndexKey(), key]);
+    await redisCommand(['SET', accountIdKey(record.id), key]);
+    return;
+  }
+  if (isProductionRuntime()) throw new Error('ACCOUNT_STORE_UNAVAILABLE');
+  localAccounts.set(key, encoded);
+}
+
 async function createAccount(nameInput: string, emailInput: string, password: string): Promise<AccountRecord> {
   const name = nameInput.trim();
   const email = normalizeEmail(emailInput);
@@ -375,6 +388,7 @@ function authError(error: unknown) {
   if (code === 'ACCOUNT_DISABLED') return { status: 403, error: 'الحساب موقوف. راجع إدارة المنصة.' };
   if (code === 'INVALID_CREDENTIALS') return { status: 401, error: 'بيانات الدخول غير صحيحة.' };
   if (code === 'AUTH_SECRET_MISSING') return { status: 503, error: 'AUTH_SECRET غير مضبوط أو أقصر من الحد المطلوب.' };
+  if (code === 'DATA_SECRET_MISSING') return { status: 503, error: 'DATA_SECRET غير مضبوط أو أقصر من الحد المطلوب.' };
   if (code === 'ADMIN_CREDENTIAL_NOT_CONFIGURED') return { status: 503, error: 'بيانات اعتماد الإدارة غير مضبوطة على الخادم.' };
   if (code === 'ACCOUNT_STORE_UNAVAILABLE' || code === 'RATE_LIMIT_STORE_UNAVAILABLE' || code.startsWith('REDIS_')) {
     return { status: 503, error: 'مخزن الحسابات والحماية الموزعة غير متاح.' };
@@ -442,12 +456,46 @@ export default async function handler(req: any, res: any) {
     const body = (req.body ?? {}) as Record<string, unknown>;
     const action = String(body.action || '');
 
-    if (action === 'register' || action === 'user-login' || action === 'admin-login') {
+    if (action === 'register' || action === 'user-login' || action === 'admin-login' || action === 'change-password') {
       const limit = await enforceRateLimit(`auth:${action}`, clientId(req), 10, 15 * 60);
       if (!limit.allowed) {
         res.setHeader('Retry-After', String(limit.retryAfterSeconds));
         return res.status(429).json({ error: 'محاولات كثيرة. حاول مرة أخرى لاحقاً.' });
       }
+    }
+
+    if (action === 'change-password') {
+      const current = readSession(req.headers?.cookie);
+      if (!current) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+      if (current.role !== 'user') return res.status(400).json({ error: 'ADMIN_PASSWORD_MANAGED_BY_SERVER' });
+
+      const currentPassword = String(body.currentPassword || '');
+      const newPassword = String(body.newPassword || '');
+      if (newPassword.length < 10) throw new Error('WEAK_PASSWORD');
+      if (currentPassword === newPassword) return res.status(400).json({ error: 'NEW_PASSWORD_MUST_DIFFER' });
+
+      const record = await loadAccount(current.email);
+      if (!record || record.disabledAt) throw new Error(record?.disabledAt ? 'ACCOUNT_DISABLED' : 'ACCOUNT_NOT_FOUND');
+      if (!safeEqual(passwordHash(currentPassword, record.passwordSalt), record.passwordHash)) {
+        throw new Error('INVALID_CREDENTIALS');
+      }
+
+      const salt = randomBytes(16).toString('hex');
+      const updated: AccountRecord = {
+        ...record,
+        passwordSalt: salt,
+        passwordHash: passwordHash(newPassword, salt),
+      };
+      await saveAccount(updated);
+      await recordAuditEvent({
+        actorId: current.id,
+        actorRole: current.role,
+        action: 'auth.password-change',
+        targetType: 'user',
+        targetId: current.id,
+        outcome: 'success',
+      });
+      return res.status(200).json({ ok: true });
     }
 
     let session: AuthSession;
