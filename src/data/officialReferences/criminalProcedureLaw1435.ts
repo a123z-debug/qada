@@ -10,6 +10,7 @@ export const CRIMINAL_PROCEDURE_LAW_1435: OfficialReferenceSystem = {
   publicationDateHijri: '1435-02-03',
   sources: [
     { authority: 'هيئة الخبراء بمجلس الوزراء', url: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/8f1b7079-a5f0-425d-b5e0-a9a700f26b2d/1', purpose: 'المرجع الرسمي للنظام وبيانات الإصدار والنشر والحالة والمواد.' },
+    { authority: 'هيئة الخبراء بمجلس الوزراء', url: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1', purpose: 'المرسوم الملكي م/43 وقرار مجلس الوزراء 283 لنظام الإثبات، ويتضمنان تعديل المادة (218/1) من نظام الإجراءات الجزائية.' },
     { authority: 'جريدة أم القرى', url: 'https://www.uqn.gov.sa/details?p=18590', purpose: 'قرار مجلس الوزراء رقم (187) وتاريخ 27/03/1443هـ الخاص بتعديل المادة (25).' },
     { authority: 'جريدة أم القرى', url: 'https://uqn.gov.sa/?p=8756&preview=true', purpose: 'المرسوم الملكي رقم (م/28) وتاريخ 29/03/1443هـ الخاص بتعديل المادة (25).' },
   ],
@@ -20,12 +21,14 @@ export const CRIMINAL_PROCEDURE_LAW_1435: OfficialReferenceSystem = {
     { number: '4', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/8f1b7079-a5f0-425d-b5e0-a9a700f26b2d/1', note: 'مطابقة مباشرة مع المصدر الرسمي.' },
     { number: '5', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/8f1b7079-a5f0-425d-b5e0-a9a700f26b2d/1', note: 'مطابقة مباشرة مع المصدر الرسمي.' },
     { number: '25', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18590', note: 'ثبت تعديل المادة رسمياً في 1443هـ.' },
+    { number: '218/1', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1', note: 'عدلها المرسوم الملكي م/43 لنظام الإثبات بحيث تطبق أحكام نظام المرافعات الشرعية ونظام الإثبات فيما لم يرد فيه حكم في نظام الإجراءات الجزائية وبما لا يتعارض مع طبيعة القضايا الجزائية.' },
   ],
   regulations: [
     { name: 'اللائحة التنفيذية لنظام الإجراءات الجزائية', status: 'needs-correction', note: 'لا يعتمد نص اللائحة أو بياناتها التفصيلية حتى تتم مطابقتها مباشرة مع نسخة رسمية مستقلة.' },
   ],
   amendments: [
     { label: 'تعديل المادة (25) - 1443هـ', status: 'verified', sourceUrl: 'https://uqn.gov.sa/?p=8756&preview=true', note: 'المرسوم الملكي (م/28) بتاريخ 29/03/1443هـ بناءً على قرار مجلس الوزراء (187) بتاريخ 27/03/1443هـ.' },
+    { label: 'تعديل الفقرة (1) من المادة (218) - 1443هـ', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/2716057c-c097-4bad-8e1e-ae1400c678d5/1', note: 'ثبت التعديل في المرسوم الملكي م/43 بتاريخ 26/05/1443هـ وقرار مجلس الوزراء 283 بتاريخ 24/05/1443هـ، ويسري متزامناً مع نفاذ نظام الإثبات.' },
   ],
   versions: [
     { label: 'الإصدار الأساسي 1435هـ', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/8f1b7079-a5f0-425d-b5e0-a9a700f26b2d/1', note: 'الإصدار 22/01/1435هـ، النشر 03/02/1435هـ، والحالة ساري وفق هيئة الخبراء.' },
