@@ -173,7 +173,7 @@ export function GeneralWorkspace({
     let prompt = '';
     if (currentService === 'general_claim') {
       prompt = `صغ مسودة لائحة دعوى حقوقية/عامة للمراجعة:
-المدعي: ${claimantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 المدعى عليه: ${defendantName}
 موضوع النزاع: ${disputeSubject}
 الأسانيد المدخلة أو المستخرجة: ${legalGrounds}
@@ -185,7 +185,7 @@ ${claimDemands}
 ${sharedRules}`;
     } else if (currentService === 'general_appeal') {
       prompt = `صغ مسودة اعتراض أو استئناف في قضية حقوقية/مدنية للمراجعة، وحدد ما يلزم التحقق منه من الحكم والتبليغ والميعاد وأسباب الاعتراض.
-المستأنف: ${claimantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 المستأنف ضده: ${defendantName}
 موضوع النزاع: ${disputeSubject}
 ${storyAddon}
@@ -193,7 +193,7 @@ ${storyAddon}
 ${sharedRules}`;
     } else if (currentService === 'general_memo') {
       prompt = `صغ مسودة مذكرة جوابية أو دفاع مدني للمراجعة، واعتمد فقط على الوقائع والمستندات والأسانيد التي يمكن التحقق منها.
-صاحب الشأن: ${claimantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 الطرف الآخر: ${defendantName}
 موضوع النزاع: ${disputeSubject}
 ${storyAddon}
@@ -201,7 +201,7 @@ ${storyAddon}
 ${sharedRules}`;
     } else {
       prompt = `صغ مسودة مذكرة إيداع ومراجعة لعقود أو بينات في قضية أمام المحكمة العامة، واربط كل ملاحظة بما يظهر فعلاً في المستند.
-صاحب الشأن: ${claimantName}
+صاحب الشأن: [محجوب من طلب الذكاء]
 الطرف الآخر: ${defendantName}
 المرفق: ${uploadedFileName || 'مرفقات القضية'}
 ${storyAddon}
