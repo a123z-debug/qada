@@ -1,6 +1,6 @@
 import type { Attachment } from '../types';
 
-export const INLINE_ATTACHMENT_MAX_BYTES = 3 * 1024 * 1024;
+export const INLINE_ATTACHMENT_MAX_BYTES = 2.5 * 1024 * 1024;
 
 export function isSupportedInlineAttachment(file: File): boolean {
   const name = file.name.toLowerCase();
@@ -14,7 +14,7 @@ export async function readFileAsAttachment(file: File): Promise<Attachment> {
     throw new Error('الملف غير مدعوم هنا. استخدم PDF أو صورة فقط.');
   }
   if (file.size > INLINE_ATTACHMENT_MAX_BYTES) {
-    throw new Error('حجم الملف يتجاوز 3 ميجابايت؛ حلله على دفعات أو استخدم ملفاً أصغر.');
+    throw new Error('حجم الملف يتجاوز 2.5 ميجابايت؛ حلله على دفعات أو استخدم ملفاً أصغر.');
   }
 
   const dataUrl = await new Promise<string>((resolve, reject) => {
