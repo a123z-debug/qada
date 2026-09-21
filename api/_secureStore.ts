@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto';
 
 function dataRootSecret(): Buffer {
-  const source = (process.env.DATA_SECRET || process.env.AUTH_SECRET || '').trim();
+  const source = (process.env.DATA_SECRET || '').trim();
   if (!source || source.length < 32) throw new Error('DATA_SECRET_MISSING');
   return createHash('sha256').update(`qada-data-v1:${source}`).digest();
 }
