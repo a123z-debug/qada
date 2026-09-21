@@ -297,13 +297,19 @@ function enforceVerificationGate(report: ReturnType<typeof normalizeReport>, ver
 function combineWithoutFinalAgent(args: {
   intake: any;
   legislative: any;
+  judicial: any;
   procedural: any;
+  evidence: any;
   reasoning: any;
+  rebuttal: any;
 }) {
   const rawIssues = [
     ...(Array.isArray(args.legislative?.issues) ? args.legislative.issues : []),
+    ...(Array.isArray(args.judicial?.issues) ? args.judicial.issues : []),
     ...(Array.isArray(args.procedural?.issues) ? args.procedural.issues : []),
+    ...(Array.isArray(args.evidence?.issues) ? args.evidence.issues : []),
     ...(Array.isArray(args.reasoning?.issues) ? args.reasoning.issues : []),
+    ...(Array.isArray(args.rebuttal?.issues) ? args.rebuttal.issues : []),
   ];
 
   return normalizeReport({
@@ -315,16 +321,26 @@ function combineWithoutFinalAgent(args: {
       ...stringList(args.intake?.missingFacts),
       ...stringList(args.procedural?.missingFacts),
     ],
-    missingEvidence: stringList(args.reasoning?.missingEvidence),
-    conflictingPoints: stringList(args.reasoning?.conflictingPoints),
+    missingEvidence: stringList(args.evidence?.missingEvidence),
+    conflictingPoints: [
+      ...stringList(args.judicial?.conflictingPoints),
+      ...stringList(args.evidence?.conflictingPoints),
+      ...stringList(args.reasoning?.conflictingPoints),
+      ...stringList(args.rebuttal?.conflictingPoints),
+    ],
     strongestVerifiedPoints: [
       ...stringList(args.legislative?.verifiedPoints),
+      ...stringList(args.evidence?.strongestVerifiedPoints),
       ...stringList(args.reasoning?.strongestVerifiedPoints),
+      ...stringList(args.rebuttal?.strongestVerifiedPoints),
     ],
     verificationQueue: [
       ...stringList(args.legislative?.verificationQueue),
+      ...stringList(args.judicial?.verificationQueue),
       ...stringList(args.procedural?.verificationQueue),
+      ...stringList(args.evidence?.verificationQueue),
       ...stringList(args.reasoning?.verificationQueue),
+      ...stringList(args.rebuttal?.verificationQueue),
     ],
     finalNotes: 'المراجع النهائي غير متاح في هذه المحاولة؛ لا تعتبر هذه النسخة تقريراً نهائياً.',
   });
@@ -446,7 +462,7 @@ ${workingText || 'لم يتوفر نص كافٍ بعد الاستخراج.'}
 
 ${sourceNotice}`;
 
-  const [legislative, procedural, reasoning] = await Promise.all([
+  const [legislative, judicial, procedural, evidence, reasoning, rebuttal] = await Promise.all([
     generateJsonAgent<any>({
       clients,
       agentId: 'legislative-flaws',
@@ -466,9 +482,26 @@ ${sharedRules}
     }),
     generateJsonAgent<any>({
       clients,
+      agentId: 'judicial-flaws',
+      label: 'وكيل العيوب القضائية والمبادئ',
+      clientOffset: 2,
+      systemInstruction: `أنت وكيل مراجعة قضائية سعودي.
+افحص منطق الحكم القضائي، مدى معالجة الدفوع الجوهرية، التناقض بين الأسباب والمنطوق، وحدود الاستناد إلى المبادئ والأحكام السابقة.
+لا تنسب رقماً أو مبدأً إلى حكم أو دائرة إلا إذا ورد ذلك صراحة في حزمة المصدر الرسمية. إذا كانت قاعدة السوابق غير مكتملة فاجعل أي استناد من هذا النوع verificationNeeded=true.
+${sharedRules}
+أعد JSON فقط:
+{
+  "issues": [],
+  "conflictingPoints": [],
+  "verificationQueue": []
+}`,
+      parts: [{ text: specialistInput }],
+    }),
+    generateJsonAgent<any>({
+      clients,
       agentId: 'procedural-flaws',
       label: 'وكيل الاختصاص والإجراءات',
-      clientOffset: 2,
+      clientOffset: 3,
       systemInstruction: `أنت وكيل اختصاص وإجراءات قضائية سعودية.
 افحص الاختصاص الولائي والنوعي، الصفة والمصلحة، المواعيد، التظلم السابق عند لزومه، تسلسل الإجراءات، الطلبات الشكلية، وما إذا كانت الوقائع المتاحة تكفي للجزم بأي نقطة إجرائية.
 ${sharedRules}
@@ -482,12 +515,12 @@ ${sharedRules}
     }),
     generateJsonAgent<any>({
       clients,
-      agentId: 'reasoning-flaws',
-      label: 'وكيل الإثبات والتكييف والتسبيب',
-      clientOffset: 3,
-      systemInstruction: `أنت وكيل نقد قضائي متخصص في الإثبات والتكييف والتسبيب.
-افحص ترابط الوقائع بالأدلة، عبء الإثبات، التناقضات، التكييف النظامي، علاقة الأسباب بالمنطوق، الرد على الدفوع الجوهرية، واتساق الطلبات مع النتيجة.
-لا تفترض أن مجرد اختلاف الرأي مع المحكمة عيب قانوني.
+      agentId: 'evidence-flaws',
+      label: 'وكيل الإثبات والمرفقات',
+      clientOffset: 0,
+      systemInstruction: `أنت وكيل إثبات قضائي سعودي.
+اربط كل واقعة أو ادعاء بما يسنده في المستند والمرفقات، وحدد الفجوات والتناقضات وعبء الإثبات والمستندات الناقصة.
+لا تفترض وجود دليل لم يرفق ولا تعتبر مجرد ذكر مستند إثباتاً لمضمونه.
 ${sharedRules}
 أعد JSON فقط:
 {
@@ -499,13 +532,52 @@ ${sharedRules}
 }`,
       parts: [{ text: specialistInput }],
     }),
+    generateJsonAgent<any>({
+      clients,
+      agentId: 'reasoning-flaws',
+      label: 'وكيل التكييف والتسبيب',
+      clientOffset: 1,
+      systemInstruction: `أنت وكيل تكييف وتسبيب قضائي سعودي.
+افحص التكييف النظامي للوقائع، البدائل الممكنة، علاقة الأسباب بالطلبات والمنطوق، وأي قفزة منطقية أو تعارض داخلي.
+لا تعتبر مجرد وجود تكييف مختلف خطأً؛ بين لماذا قد يكون التكييف محل مراجعة وما السند الذي يحتاج تحققاً.
+${sharedRules}
+أعد JSON فقط:
+{
+  "issues": [],
+  "conflictingPoints": [],
+  "strongestVerifiedPoints": [],
+  "verificationQueue": []
+}`,
+      parts: [{ text: specialistInput }],
+    }),
+    generateJsonAgent<any>({
+      clients,
+      agentId: 'rebuttal-review',
+      label: 'وكيل مراجعة الدفوع والردود',
+      clientOffset: 2,
+      systemInstruction: `أنت وكيل مراجعة دفوع وردود.
+استخرج كل دفع جوهري أو جواب عليه، وحدد ما إذا كان الرد يعالج جوهر الدفع أم يتجاوزه، وما الذي يحتاج سنداً أو إثباتاً إضافياً.
+لا تصف دفعاً بأنه حاسم أو منتج إلا مع بيان الأساس والتحقق المطلوب.
+${sharedRules}
+أعد JSON فقط:
+{
+  "issues": [],
+  "conflictingPoints": [],
+  "strongestVerifiedPoints": [],
+  "verificationQueue": []
+}`,
+      parts: [{ text: specialistInput }],
+    }),
   ]);
 
   const synthesisPayload = {
     intake: intake.data,
     legislative: legislative.data,
+    judicial: judicial.data,
     procedural: procedural.data,
+    evidence: evidence.data,
     reasoning: reasoning.data,
+    rebuttal: rebuttal.data,
     sourceVerification: sourceBundle.verification,
   };
 
@@ -544,8 +616,11 @@ ${ISSUE_SCHEMA}`,
     : combineWithoutFinalAgent({
         intake: intake.data,
         legislative: legislative.data,
+        judicial: judicial.data,
         procedural: procedural.data,
+        evidence: evidence.data,
         reasoning: reasoning.data,
+        rebuttal: rebuttal.data,
       });
 
   const report = enforceVerificationGate(rawReport, sourceBundle.verification);
@@ -564,7 +639,7 @@ ${ISSUE_SCHEMA}`,
     label: 'موجّه القضية',
     status: 'success',
     durationMs: 1,
-    summary: `فعّل ${sourceRuns.length} وكلاء مصادر و3 مسارات تحليل تخصصية.`,
+    summary: `فعّل ${sourceRuns.length} وكلاء مصادر و6 مسارات تحليل تخصصية.`,
   };
 
   const coreRun: AgentRun = {
@@ -584,8 +659,11 @@ ${ISSUE_SCHEMA}`,
     coreRun,
     ...sourceRuns,
     legislative.run,
+    judicial.run,
     procedural.run,
+    evidence.run,
     reasoning.run,
+    rebuttal.run,
     final.run,
   ];
 
