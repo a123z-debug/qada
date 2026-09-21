@@ -3,6 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
 import { readSession } from './session.ts';
+import { enforceRateLimit } from './_rateLimit.ts';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -24,7 +25,7 @@ function toGatewayMessages(messages: IncomingMessage[], systemInstruction: strin
   const converted: any[] = [{ role: 'system', content: systemInstruction }];
 
   for (const message of messages) {
-    const role = message.role === 'assistant' || message.role === 'model' ? 'assistant' : 'user';
+    const role = 'user';
     const text = typeof message.content === 'string' ? message.content.trim().slice(0, 12000) : '';
     const attachments = Array.isArray(message.attachments) ? message.attachments : [];
     const imageParts = attachments
@@ -113,20 +114,15 @@ const SERVER_LEGAL_INSTRUCTION = `أنت مستشار منصة أصول القض
 - عند وجود مرفق، اقرأ المرفق أولاً وحدد نوعه وموضوعه واختصاصه قبل اقتراح أي سند نظامي.
 - لا تفترض أن كل مستند يتعلق بالمادة (8) أو بالخدمة العسكرية أو ببدلات معينة.`;
 
-type RateEntry = { count: number; resetAt: number };
-const rateLimitStore = new Map<string, RateEntry>();
-const RATE_WINDOW_MS = 10 * 60 * 1000;
-const RATE_MAX = 30;
-function checkRateLimit(key: string): { allowed: boolean; retryAfterSeconds: number } {
-  const now = Date.now();
-  const current = rateLimitStore.get(key);
-  if (!current || current.resetAt <= now) {
-    rateLimitStore.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return { allowed: true, retryAfterSeconds: 0 };
-  }
-  if (current.count >= RATE_MAX) return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
-  current.count += 1;
-  return { allowed: true, retryAfterSeconds: 0 };
+function trustedUserMessages(messages: IncomingMessage[]): IncomingMessage[] {
+  return messages
+    .filter((message) => message.role !== 'assistant' && message.role !== 'model')
+    .slice(-8)
+    .map((message) => ({
+      role: 'user',
+      content: typeof message.content === 'string' ? message.content : '',
+      attachments: Array.isArray(message.attachments) ? message.attachments : [],
+    }));
 }
 
 function sanitizeMimeType(type?: string, name?: string): string | null {
@@ -153,7 +149,7 @@ function toGeminiContents(messages: IncomingMessage[]) {
     const text = typeof message.content === 'string' ? message.content.trim().slice(0, 12000) : '';
     if (text) parts.push({ text });
     if (parts.length === 0) return null;
-    return { role: message.role === 'assistant' || message.role === 'model' ? 'model' : 'user', parts };
+    return { role: 'user', parts };
   }).filter(Boolean);
 }
 
@@ -166,19 +162,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'AUTH_REQUIRED' });
   }
 
-  const forwarded = req.headers['x-forwarded-for'];
-  const rawClientId = Array.isArray(forwarded)
-    ? forwarded[0]
-    : forwarded || req.socket?.remoteAddress || 'anonymous';
-  const clientId = String(rawClientId).split(',')[0].trim().slice(0, 80);
-  const limit = checkRateLimit(clientId);
-  if (!limit.allowed) { res.setHeader('Retry-After', String(limit.retryAfterSeconds)); return res.status(429).json({ error: 'تم تجاوز حد الاستخدام المؤقت. حاول لاحقاً.' }); }
+  let limit;
+  try {
+    limit = await enforceRateLimit('chat', session.id, 30, 10 * 60);
+  } catch (error) {
+    console.error('Distributed rate limit unavailable:', error instanceof Error ? error.message : error);
+    return res.status(503).json({ error: 'RATE_LIMIT_STORE_UNAVAILABLE' });
+  }
+  res.setHeader('X-RateLimit-Remaining', String(limit.remaining));
+  if (!limit.allowed) {
+    res.setHeader('Retry-After', String(limit.retryAfterSeconds));
+    return res.status(429).json({ error: 'تم تجاوز حد الاستخدام المؤقت. حاول لاحقاً.' });
+  }
 
   const body = (req.body ?? {}) as { message?: string; messages?: IncomingMessage[]; history?: IncomingMessage[]; targetCourt?: string };
-  const incomingMessages: IncomingMessage[] = Array.isArray(body.messages) && body.messages.length > 0 ? body.messages : [
+  const clientMessages: IncomingMessage[] = Array.isArray(body.messages) && body.messages.length > 0 ? body.messages : [
     ...(Array.isArray(body.history) ? body.history : []),
     ...(typeof body.message === 'string' && body.message.trim() ? [{ role: 'user', content: body.message }] : []),
   ];
+  const incomingMessages = trustedUserMessages(clientMessages);
   const contents = toGeminiContents(incomingMessages);
   if (contents.length === 0) return res.status(400).json({ error: 'Invalid request payload.' });
 
