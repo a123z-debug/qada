@@ -65,11 +65,19 @@ interface ReferenceSearchMeta {
   precedentCorpusReady: boolean;
 }
 
+interface JudgesSourceAudit {
+  officialSources: number;
+  verifiedArticles: number;
+  blockers: string[];
+  literalQuotationReady: boolean;
+  precedentCorpusReady: boolean;
+}
+
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
   const normalizeSection = (section: any, title: string) => ({
     title: section?.title || title,
     items: Array.isArray(section?.items) ? section.items.filter((item: unknown): item is string => typeof item === 'string') : [],
-    severity: ['عالية', 'متوسطة', 'منخفضة'].includes(section?.severity) ? section.severity : 'منخفضة',
+    severity: ['عالية', 'متوسطة', 'منخفضة', 'غير مقيمة'].includes(section?.severity) ? section.severity : 'غير مقيمة',
   });
 
   const judges = Array.isArray(raw?.judges) && raw.judges.length > 0
@@ -78,19 +86,19 @@ function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesRe
         judgeName: judge?.judgeName || judge?.name || judge?.role || `عضو الهيئة ${index + 1}`,
         judgeTitle: judge?.judgeTitle || judge?.title || 'فحص وتدقيق المحرر القضائي',
         courtCategory: judge?.courtCategory || 'هيئة المراجعة القضائية',
-        verdict: judge?.verdict || 'بحاجة لتصحيح جوهري',
-        scoreOutOf100: Number(judge?.scoreOutOf100) || 80,
+        verdict: judge?.verdict || 'لم يكتمل الفحص الآلي',
+        scoreOutOf100: Number.isFinite(Number(judge?.scoreOutOf100)) ? Number(judge.scoreOutOf100) : null,
         errorsIdentified: Array.isArray(judge?.errorsIdentified) ? judge.errorsIdentified : [],
         critique: judge?.critique || judge?.opinion || 'لم يرد تفصيل كافٍ في تقرير الهيئة.',
         specificAmendment: judge?.specificAmendment || '',
       }))
     : [{
         judgeId: 'judge_review',
-        judgeName: 'هيئة المراجعة القضائية',
+        judgeName: 'المراجع الآلي',
         judgeTitle: 'فحص وتدقيق المحرر القضائي',
-        courtCategory: 'هيئة المراجعة القضائية',
-        verdict: 'بحاجة لتصحيح جوهري',
-        scoreOutOf100: 80,
+        courtCategory: 'هيئة المراجعة التحليلية',
+        verdict: 'لم يكتمل الفحص الآلي',
+        scoreOutOf100: null,
         errorsIdentified: [],
         critique: 'تعذر استكمال تفاصيل التقرير. راجع النص وحاول الفحص مرة أخرى.',
         specificAmendment: '',
@@ -98,7 +106,7 @@ function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesRe
 
   return {
     documentType: raw?.documentType || 'محرر قضائي',
-    overallStatus: raw?.overallStatus || 'معيب بحاجة لتصحيح',
+    overallStatus: raw?.overallStatus || 'تعذر إكمال الفحص الآلي',
     primaryFatalDefect: raw?.primaryFatalDefect || '',
     judges,
     cassationErrors: normalizeSection(raw?.cassationErrors, 'أخطاء الطعن والنقض'),
@@ -144,6 +152,7 @@ export function LegalReviewEditor({
 
   // 3-Judge Cassation, Appeal & Attachments Panel State
   const [judgesReport, setJudgesReport] = useState<DetailedJudgesReviewReport | null>(null);
+  const [judgesSourceAudit, setJudgesSourceAudit] = useState<JudgesSourceAudit | null>(null);
   const [isLoadingJudges, setIsLoadingJudges] = useState(false);
   const [previousContent, setPreviousContent] = useState<string | null>(null);
   const [revisionToast, setRevisionToast] = useState<string | null>(null);
@@ -162,6 +171,7 @@ export function LegalReviewEditor({
 
   const handleRunJudgesAudit = async () => {
     setIsLoadingJudges(true);
+    setJudgesSourceAudit(null);
     setActiveTab('judges');
     try {
       const response = await fetch('/api/judges-review', {
@@ -179,11 +189,12 @@ export function LegalReviewEditor({
       });
 
       if (!response.ok) {
-        throw new Error('تعذر استدعاء هيئة قضاة النقض والاستئناف');
+        throw new Error('تعذر تشغيل هيئة المراجعة القضائية الآلية');
       }
 
       const data = await response.json();
       const report = data.report || data.auditReport;
+      setJudgesSourceAudit(data.sourceAudit || null);
       if (report) {
         setJudgesReport(normalizeJudgesReport(report, content));
       }
@@ -200,18 +211,18 @@ export function LegalReviewEditor({
     if (onContentChange) {
       onContentChange(revisedText);
     }
-    setRevisionToast('تم استبدال نص المذكرة بالصياغة المعدلة المعتمدة من قضاة النقض والاستئناف بنجاح ✓');
+    setRevisionToast('تم تطبيق الصياغة المقترحة من هيئة المراجعة الآلية في المحرر ✓');
     setTimeout(() => setRevisionToast(null), 5000);
   };
 
   const handleApplySpecificAmendment = (amendmentText: string) => {
     setPreviousContent(content);
-    const newContent = `${content}\n\n[تعديل قضائي معتمد]:\n${amendmentText}`;
+    const newContent = `${content}\n\n[تعديل مقترح من المراجعة الآلية]:\n${amendmentText}`;
     setContent(newContent);
     if (onContentChange) {
       onContentChange(newContent);
     }
-    setRevisionToast('تم إدراج تعديل فضيلة القاضي في صلب المذكرة بنجاح ✓');
+    setRevisionToast('تم إدراج التعديل المقترح في صلب المذكرة ✓');
     setTimeout(() => setRevisionToast(null), 5000);
   };
 
