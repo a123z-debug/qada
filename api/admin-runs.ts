@@ -10,6 +10,7 @@ type AdminRunSnapshot = {
   analyzedAt?: number;
   agentRuns?: unknown[];
   sourcePackets?: unknown[];
+  report?: Record<string, unknown>;
   meta?: Record<string, unknown>;
   [key: string]: unknown;
 };
