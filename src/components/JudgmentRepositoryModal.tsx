@@ -837,7 +837,7 @@ export function JudgmentRepositoryModal({
                       <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-900/40">
                         <div className="font-bold text-emerald-300 mb-2 flex items-center gap-1.5">
                           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          <span>أقوى الحجج والبراهين الرادعة لدعم الوكيل:</span>
+                          <span>الحجج والردود القانونية المسجلة:</span>
                         </div>
                         <ul className="space-y-1.5 text-neutral-300 list-disc list-inside">
                           {activeRecord.strongestRebuttals.map((reb, i) => (
