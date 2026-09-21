@@ -50,6 +50,12 @@ assert(
   'disabled accounts must invalidate active sessions on protected API requests',
 );
 assert(
+  sessionApi.includes('sessionRevision')
+    && sessionApi.includes('accountRevision !== sessionRevision')
+    && sessionApi.includes('Number(record.sessionRevision || 1) + 1'),
+  'password rotation must invalidate older signed sessions',
+);
+assert(
   !loginScreen.includes('accountProof')
     && !loginScreen.includes('qada_account_proofs_v1'),
   'browser-bound account proofs must not return',
