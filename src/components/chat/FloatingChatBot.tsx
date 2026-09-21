@@ -144,7 +144,6 @@ export function FloatingChatBot({
             { role: 'user', content: userText, attachments: pendingAttachments },
           ],
           targetCourt: getCourtLabel(),
-clientPersonName: userSession?.name,
           powerMode: true,
         }),
       });
