@@ -39,6 +39,39 @@ const SESSION_MAX_AGE = 12 * 60 * 60;
 const PBKDF2_ITERATIONS = 210_000;
 const ADMIN_CREDENTIAL_HASH = 'fd6c1229b3b7a4f740284e1fd113d274197316ecca6611be68e61cd14ac4ab54';
 
+type AuthAttemptEntry = { count: number; resetAt: number };
+const authAttempts = new Map<string, AuthAttemptEntry>();
+const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_MAX_ATTEMPTS = 10;
+
+function clientId(req: any): string {
+  const forwarded = req.headers?.['x-forwarded-for'];
+  const raw = Array.isArray(forwarded)
+    ? forwarded[0]
+    : forwarded || req.socket?.remoteAddress || 'unknown';
+  return String(raw).split(',')[0].trim().slice(0, 120);
+}
+
+function checkAuthAttempt(key: string): { allowed: boolean; retryAfter: number } {
+  const now = Date.now();
+  const current = authAttempts.get(key);
+
+  if (!current || current.resetAt <= now) {
+    authAttempts.set(key, { count: 1, resetAt: now + AUTH_WINDOW_MS });
+    return { allowed: true, retryAfter: 0 };
+  }
+
+  if (current.count >= AUTH_MAX_ATTEMPTS) {
+    return {
+      allowed: false,
+      retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)),
+    };
+  }
+
+  current.count += 1;
+  return { allowed: true, retryAfter: 0 };
+}
+
 function b64(value: Buffer | string) {
   return Buffer.from(value).toString('base64url');
 }
@@ -281,6 +314,15 @@ export default async function handler(req: any, res: any) {
   try {
     const body = (req.body ?? {}) as Record<string, unknown>;
     const action = String(body.action || '');
+
+    if (action === 'register' || action === 'user-login' || action === 'admin-login') {
+      const limit = checkAuthAttempt(`${action}:${clientId(req)}`);
+      if (!limit.allowed) {
+        res.setHeader('Retry-After', String(limit.retryAfter));
+        return res.status(429).json({ error: 'محاولات كثيرة. حاول مرة أخرى لاحقاً.' });
+      }
+    }
+
     let session: Session;
     let accountProof: string | undefined;
 
