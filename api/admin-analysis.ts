@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { readSession } from './_auth.ts';
+import { readSession } from './session.ts';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 
 type IncomingAttachment = {
