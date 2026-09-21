@@ -7,4 +7,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: sleep 15
-      - run: curl -sS -i https://promptmaster-nine.vercel.app/api/crypto-ping
+      - run: curl -sS -i https://promptmaster-nine.vercel.app/api/crypto-full-ping
+      - run: curl -sS -i https://promptmaster-nine.vercel.app/api/session
