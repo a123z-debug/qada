@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { Menu, Scale, ShieldCheck, LogOut, ArrowRight, FileText, Library, Bot, FileCheck, Sparkles, ArrowLeft, BookOpenCheck, Workflow, LockKeyhole, UploadCloud, ScanSearch, ChevronLeft, Home, FolderOpen } from 'lucide-react';
 import { UserSession, JudgmentRecord, Attachment } from './types';
+import { LoginScreen } from './components/LoginScreen';
 import { Sidebar, CourtJurisdiction } from './components/layout/Sidebar';
 import { WelcomeScreen } from './components/workspaces/WelcomeScreen';
 import { AdministrativeWorkspace } from './components/workspaces/AdministrativeWorkspace';
@@ -332,18 +333,8 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
 // ==========================================
 export default function App() {
   const [showLandingPage, setShowLandingPage] = useState(true);
-  const [session, setSession] = useState<UserSession | null>({
-    id: 'open-access',
-    name: 'مستخدم المنصة',
-    personName: 'مستخدم المنصة',
-    email: 'open-access@qada.local',
-    nationalId: '',
-    role: 'user',
-    agency: 'أصول القضاء',
-    loginMethod: 'email_password',
-    loginAt: Date.now(),
-  });
-  const [sessionChecked, setSessionChecked] = useState(true);
+  const [session, setSession] = useState<UserSession | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [activeCourt, setActiveCourt] = useState<CourtJurisdiction | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -374,6 +365,31 @@ export default function App() {
   useEffect(() => {
     localStorage.removeItem('diwan_user_session_v1');
     localStorage.removeItem(LEGACY_JUDGMENT_RECORDS_STORAGE_KEY);
+
+    let cancelled = false;
+    fetch('/api/session', {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const payload = await response.json();
+        return payload?.session as UserSession | undefined;
+      })
+      .then((restoredSession) => {
+        if (!cancelled && restoredSession) setSession(restoredSession);
+      })
+      .catch(() => {
+        // No active session; the login screen will be shown when the user enters the platform.
+      })
+      .finally(() => {
+        if (!cancelled) setSessionChecked(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const requestAssistant = (prefill = '', attachments: Attachment[] = []) => {
@@ -421,10 +437,22 @@ export default function App() {
     }
   };
 
+  const handleLoginSuccess = (userSession: UserSession) => {
+    setSession(userSession);
+    setSessionChecked(true);
+  };
+
   const handleLogout = () => {
+    void fetch('/api/session', {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    });
+    setSession(null);
+    setSessionChecked(true);
     setShowLandingPage(true);
     setActiveCourt(null);
     setActiveService(null);
+    setJudgmentRecords([]);
   };
 
   const handleSaveRecord = (record: JudgmentRecord) => {
@@ -462,17 +490,13 @@ export default function App() {
 
   if (!session) {
     return (
-      <div className="min-h-[100dvh] bg-slate-950 text-slate-200 flex items-center justify-center p-6" dir="rtl">
-        <div className="max-w-md rounded-2xl border border-slate-800 bg-slate-900/80 px-6 py-5 text-center">
-          <div className="text-base font-bold text-slate-100">تعذر بدء جلسة المنصة.</div>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 rounded-xl border border-amber-500/40 px-4 py-2 text-sm font-bold text-amber-300"
-          >
-            إعادة المحاولة
-          </button>
-        </div>
-      </div>
+      <LoginScreen
+        onLoginSuccess={handleLoginSuccess}
+        onBack={() => {
+          setPendingLaunch(null);
+          setShowLandingPage(true);
+        }}
+      />
     );
   }
 
