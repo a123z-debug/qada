@@ -217,7 +217,6 @@ ${sharedRules}`;
             attachments: uploadedAttachment ? [uploadedAttachment] : [],
           }],
           targetCourt: 'المحكمة الجزائية',
-          clientPersonName: defendantName,
           powerMode: true,
         }),
       });
