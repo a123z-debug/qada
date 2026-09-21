@@ -695,7 +695,14 @@ export default function App() {
         externalAttachments={assistantAttachments}
       />
 
-      <Article8CalculatorModal isOpen={isArticle8Open} onClose={() => setIsArticle8Open(false)} onInsertToPrompt={() => setIsArticle8Open(false)} />
+      <Article8CalculatorModal
+        isOpen={isArticle8Open}
+        onClose={() => setIsArticle8Open(false)}
+        onInsertToPrompt={(text) => {
+          setIsArticle8Open(false);
+          requestAssistant(text);
+        }}
+      />
       <CaseDossierModal isOpen={isDossierOpen} onClose={() => setIsDossierOpen(false)} judgmentRecords={judgmentRecords} initialNationalId={session.nationalId} currentUser={session} />
       <LegalReferencesModal
         isOpen={isReferencesOpen}
@@ -729,12 +736,10 @@ export default function App() {
         isOpen={isPdfModalOpen}
         onClose={() => setIsPdfModalOpen(false)}
         onAddAttachments={(attachments) => {
-          localStorage.setItem('diwan_pending_attachments_v1', JSON.stringify(attachments));
-          setIsDossierOpen(true);
+          requestAssistant('أرفقت مستندات للمراجعة. حدّد نوع كل مستند وما يمكن استخراجه منه، ولا تفترض سنداً قانونياً غير متحقق.', attachments);
         }}
         onAnalyzeImmediately={(attachments, prompt) => {
-          localStorage.setItem('diwan_pending_attachments_v1', JSON.stringify(attachments));
-          requestAssistant(prompt || 'حلل المرفقات المضافة إلى ملف القضية.', attachments);
+          requestAssistant(prompt || 'حلل المرفقات المضافة إلى المحادثة.', attachments);
         }}
       />
     </div>
