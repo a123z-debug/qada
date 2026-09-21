@@ -167,14 +167,22 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
         setError('يدعم التحليل ملفات PDF والصور PNG/JPG/WEBP فقط.');
         continue;
       }
-      if (file.size > 12 * 1024 * 1024) {
-        setError('حجم الملف الواحد يجب ألا يتجاوز 12MB في هذه المرحلة.');
+      if (file.size > 2.5 * 1024 * 1024) {
+        setError('حجم الملف الواحد يجب ألا يتجاوز 2.5MB عند الإرسال المباشر.');
         continue;
       }
       const data = await readFileAsDataUrl(file);
       next.push({ name: file.name, type, data });
     }
-    setAttachments((current) => [...current, ...next].slice(0, 5));
+    setAttachments((current) => {
+      const combined = [...current, ...next].slice(0, 5);
+      const totalBase64Chars = combined.reduce((sum, item) => sum + item.data.length, 0);
+      if (totalBase64Chars > 3_500_000) {
+        setError('إجمالي المرفقات تجاوز الحد الآمن للإرسال المباشر. حلل الملفات على دفعات أصغر.');
+        return current;
+      }
+      return combined;
+    });
   }
 
   async function runAnalysis() {
@@ -341,7 +349,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                 </span>
                 <div>
                   <div className="text-xs font-black text-slate-200">رفع حكم أو مذكرة أو مرفق</div>
-                  <div className="mt-1 text-[10px] text-slate-500">PDF أو PNG/JPG/WEBP — حتى 5 ملفات</div>
+                  <div className="mt-1 text-[10px] text-slate-500">PDF أو PNG/JPG/WEBP — حتى 5 ملفات بإجمالي إرسال لا يتجاوز نحو 2.5MB خام</div>
                 </div>
               </div>
             </label>
