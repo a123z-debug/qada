@@ -6,23 +6,53 @@ function assert(condition: unknown, message: string): asserts condition {
 
 const adminAnalysis = fs.readFileSync('api/admin-analysis.ts', 'utf8');
 const sessionApi = fs.readFileSync('api/session.ts', 'utf8');
+const loginScreen = fs.readFileSync('src/components/LoginScreen.tsx', 'utf8');
+const envExample = fs.readFileSync('.env.example', 'utf8');
 const server = fs.readFileSync('server.ts', 'utf8');
 
 assert(
   adminAnalysis.includes("import { readSession } from './session.ts';"),
-  'admin-analysis must read the active v4 session implementation',
+  'admin-analysis must read the active session implementation',
 );
 assert(
   !adminAnalysis.includes('_auth'),
   'admin-analysis must not import the removed legacy auth module',
 );
 assert(
-  sessionApi.includes("const SESSION_COOKIE = 'qada_session_v4';"),
-  'active session cookie must remain qada_session_v4',
+  sessionApi.includes("const SESSION_COOKIE = 'qada_session_v5';"),
+  'active session cookie must remain qada_session_v5',
 );
 assert(
-  sessionApi.includes("const OLD_SESSION_COOKIES = ['qada_session_v3', 'qada_session_v2'];"),
+  sessionApi.includes("const OLD_SESSION_COOKIES = ['qada_session_v4', 'qada_session_v3', 'qada_session_v2'];"),
   'session handler must explicitly clear known legacy cookies',
+);
+assert(
+  sessionApi.includes('process.env.AUTH_SECRET?.trim()')
+    && !sessionApi.includes("process.env.AUTH_SECRET?.trim() || process.env.GEMINI_API_KEY"),
+  'authentication secret must be isolated from AI provider keys',
+);
+assert(
+  sessionApi.includes('QADA_ADMIN_CREDENTIAL_HASH_V4')
+    && !sessionApi.includes("const ADMIN_CREDENTIAL_HASH = '"),
+  'admin credentials must be configured through environment, not source',
+);
+assert(
+  sessionApi.includes("redisCommand(['SET', key, encoded, 'NX'])"),
+  'user registration must persist through the server account store',
+);
+assert(
+  sessionApi.includes("redisCommand(['GET', key])"),
+  'user login must load the account from the server store',
+);
+assert(
+  !loginScreen.includes('accountProof')
+    && !loginScreen.includes('qada_account_proofs_v1'),
+  'browser-bound account proofs must not return',
+);
+assert(
+  envExample.includes('UPSTASH_REDIS_REST_URL')
+    && envExample.includes('UPSTASH_REDIS_REST_TOKEN'),
+  'production persistent store configuration must be documented',
 );
 assert(
   server.includes("import sessionHandler from './api/session';")
@@ -42,6 +72,8 @@ for (const name of apiFiles) {
 
 console.log(JSON.stringify({
   ok: true,
-  activeCookie: 'qada_session_v4',
+  activeCookie: 'qada_session_v5',
+  persistentAccounts: true,
+  isolatedAuthSecret: true,
   checkedApiFiles: apiFiles.length,
 }, null, 2));
