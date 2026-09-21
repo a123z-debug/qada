@@ -344,7 +344,7 @@ clientPersonName: userSession?.name,
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="اكتب استفسارك النظامي هنا..."
+                    placeholder="اكتب استفسارك النظامي هنا... (تُحجب المعرّفات المباشرة من النص تلقائياً)"
                     disabled={isSending}
                     className="flex-1 px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs focus:border-amber-500 outline-none placeholder:text-neutral-500 disabled:opacity-50"
                   />
