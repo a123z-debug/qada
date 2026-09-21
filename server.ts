@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import { buildOfficialLegalReferenceContext } from "./src/lib/legalRetrieval";
+import judgesReviewHandler from "./api/judges-review";
+import adminAnalysisHandler from "./api/admin-analysis";
+import legalSourceSearchHandler from "./api/legal-source-search";
 import {
   authErrorMessage,
   clearLegacySessionCookie,
@@ -854,193 +857,18 @@ requests: (مصفوفة Array للطلبات الختامية المتوقعة �
     }
   });
 
-  // Dedicated 3-Judge Review & Revision Endpoint (قضاة الاستئناف، المحكمة العليا/النقض، والمرفقات)
-  app.post("/api/judges-review", async (req, res) => {
-    const session = readSession(req.headers.cookie);
-    if (!session) {
-      res.status(401).json({ error: "يلزم تسجيل الدخول لاستخدام هذه الخدمة." });
-      return;
-    }
-    const {
-      text,
-      court = "administrative",
-      serviceId,
-      documentTitle = "محرر قضائي",
-      clientName = "صاحب الشأن",
-      attachmentsText = "",
-      uploadedFileName = "",
-      attachments = [],
-    } = req.body;
+  // Local development delegates critical legal routes to the same handlers used by Vercel.
+  // This prevents the local copy from drifting into a different legal-analysis behavior.
+  app.post("/api/legal-source-search", (req, res) => {
+    void legalSourceSearchHandler(req as any, res as any);
+  });
 
-    if (!text || typeof text !== "string" || !text.trim()) {
-      res.status(400).json({ error: "نص المذكرة القضائية مطلوب لعرضه على هيئة القضاة." });
-      return;
-    }
+  app.post("/api/admin-analysis", (req, res) => {
+    void adminAnalysisHandler(req as any, res as any);
+  });
 
-    try {
-      const aiClients = getGeminiClients();
-
-      const courtNameAr =
-        court === "administrative"
-          ? "المحاكم الإدارية (ديوان المظالم والمحكمة الإدارية العليا)"
-          : court === "criminal"
-          ? "المحاكم الجزائية (محكمة الاستئناف الجزائية والدائرة الجزائية بالمحكمة العليا)"
-          : "المحاكم العامة (محكمة الاستئناف العامة والدائرة الحقوقية بالمحكمة العليا)";
-
-      const isCassation = /نقض|المحكمة الإدارية العليا|المحكمة العليا|المادة 11|طعن بالنقض/i.test(text + " " + documentTitle);
-      const mentionsRoyalDecree = /م\/37|مرسوم ملكي|قرار مجلس الوزراء|المادة \(?17|المادة \(?11/i.test(text);
-      const hasProperRequests = /أصلياً|احتياطياً|التصدي|نقض الحكم|إلغاء الحكم/i.test(text);
-
-      const systemInstruction = `أنت تمثل هيئة تدقيق قضائي عليا ثلاثية بالمملكة العربية السعودية مشكلة لفحص وتعديل اللوائح والمذكرات، وتضم:
-1. [judge_appeal] مراجع الاستئناف العام (قاضي محكمة الاستئناف): فحص التسبيب والموضوع.
-2. [judge_cassation] مراجع النقض (قاضي المحكمة العليا / دوائر النقض): رقابة النقض وبطلان الأحكام والمادة 11 ديوان المظالم / 193 مرافعات.
-3. [judge_evidence] مراجع المرفقات والإثبات (قاضي تدقيق المرفقات والبينات وتوثيق السندات).
-
-⚠️ قواعد الفحص القضائي الإلزامية الصارمة (Guardrails) لمنع التنبيهات الخاطئة:
-1. تحديد مرحلة التقاضي أولاً:
-   - إذا كانت اللائحة موجهة لـ "المحكمة الإدارية العليا" أو تتضمن "طعن بالنقض"، يجب فوراً إيقاف كافة معايير وتنبيهات الدرجة الابتدائية.
-   - يُمنع منعاً باتاً المطالبة بـ "القرار الإداري المطعون فيه" أو "التظلم الوجوبي" في مرحلة النقض؛ فالمحل المطعون فيه هو "صك حكم الاستئناف" و"إشعار التبليغ بالحكم".
-2. تقييم أسباب الطعن بالنقض (محكمة قانون):
-   - عبارات مثل (مخالفة النظام، الخطأ في تطبيقه وتأويله، الفساد في الاستدلال، القصور في التسبيب) هي التزام أصيل وتام باختصاص المحكمة العليا وليست خوضاً في الوقائع!
-   - لا يجوز وصف مناقشة أسانيد الحكم ونصوصه بأنها "جدل موضوعي" أو "استطراد في الوقائع".
-3. استخراج الأسانيد النظامية:
-   - إذا ذكر النص مرسوماً أو قراراً أو مادةً نظامية، فتحقق من رقمها ومصدرها الرسمي قبل اعتمادها؛ ولا تعتبر مجرد ورودها في نص المستخدم دليلاً على صحتها.
-4. الطلبات الأصلية والاحتياطية:
-   - قيّم الطلبات الأصلية والاحتياطية وفق النص الرسمي والمرحلة القضائية، ولا تفترض صحتها أو خطأها مسبقاً.
-5. التحقق من اكتمال اللائحة وجودتها:
-   - قيّم اكتمال اللائحة بناءً على عناصر قابلة للتحقق فقط. لا تمنح درجة مرتفعة أو حالة جاهزية لمجرد جودة الصياغة، ولا تخترع أخطاء غير موجودة.
-6. حماية النص الأصلي والتفاصيل المكتملة (يُمنع منعاً باتاً التلخيص أو الحذف أو اختزال المعلومات):
-   - إذا كانت اللائحة صحيحة ومكتملة ومستوفية للأسباب والطلبات والأرقام والتواريخ وقائمة المرفقات (مثل لوائح الطعن بالنقض المحررة بالكامل)، يجب أن يحافظ حقل "revisedDocument" على النص الكامل والأرقام والتواريخ والأسانيد والمرفقات دون اختزال؛ ويُستثنى من ذلك أرقام الهوية والبيانات الشخصية الحساسة، فلا تُكرر في المخرجات إلا إذا طلب المستخدم إدراجها صراحة.
-   - يُمنع منعاً باتاً إخراج ملخص أو هيكل مختصر؛ ما هو صحيح يُعتمد ويُطبع بكامل تفاصيله، والتعديل يقتصر فقط على تصحيح الأخطاء الحقيقية إن وُجدت دون المساس بالتفاصيل الصحيحة.
-
-أرجع الاستجابة بصيغة JSON نظيفة بالهيكل التالي حصراً:
-{
-  "documentType": "لائحة طعن بالنقض" | "مذكرة اعتراض ونقض" | "لائحة استئناف" | "لائحة دعوى",
-  "overallStatus": "جاهز للإيداع المباشر" | "مكتمل ومستوفٍ للأصول" | "معيب بحاجة لتصحيح",
-  "primaryFatalDefect": "" أو الخلل الحقيقي المؤثر إن وجد،
-  "judges": [
-    {
-      "judgeId": "judge_appeal",
-      "judgeName": "مراجع الاستئناف العام",
-      "judgeTitle": "قاضي محكمة الاستئناف - فحص الموضوع والوقائع والتسبيب",
-      "courtCategory": "محكمة الاستئناف",
-      "verdict": "مقبول ومستوفٍ للأصول القضائية",
-      "scoreOutOf100": 98,
-      "errorsIdentified": [],
-      "critique": "تقييم القاضي بمواطن القوة والمطابقة",
-      "specificAmendment": ""
-    },
-    {
-      "judgeId": "judge_cassation",
-      "judgeName": "مراجع النقض",
-      "judgeTitle": "قاضي المحكمة العليا - رقابة النقض وبطلان الأحكام والأنظمة",
-      "courtCategory": "المحكمة العليا (النقض)",
-      "verdict": "مقبول ومستوفٍ لشرائط المادة 11",
-      "scoreOutOf100": 100,
-      "errorsIdentified": [],
-      "critique": "تقييم قاضي النقض",
-      "specificAmendment": ""
-    },
-    {
-      "judgeId": "judge_evidence",
-      "judgeName": "مراجع المرفقات والإثبات",
-      "judgeTitle": "قاضي تدقيق المرفقات والبينات وتوثيق السندات",
-      "courtCategory": "دائرة تدقيق المرفقات والإثبات",
-      "verdict": "مستوفٍ لكافة المحررات اللازمة",
-      "scoreOutOf100": 96,
-      "errorsIdentified": [],
-      "critique": "تقييم كفاية وحجية المرفقات",
-      "specificAmendment": ""
-    }
-  ],
-  "cassationErrors": {
-    "title": "أخطاء وعوار الطعن بالنقض والرقابة العليا",
-    "items": [],
-    "severity": "منخفضة"
-  },
-  "claimErrors": {
-    "title": "أخطاء وعيوب عريضة الدعوى وصياغة الطلبات",
-    "items": [],
-    "severity": "منخفضة"
-  },
-  "attachmentErrors": {
-    "title": "أخطاء ونواقص المرفقات والبينات المستند إليها",
-    "items": [],
-    "severity": "منخفضة",
-    "missingRequiredDocs": []
-  },
-  "revisedDocument": "النص الكامل المنقح والمعدل للمذكرة من البسملة إلى الخاتمة...",
-  "changeLog": ["تسجيل التعديلات التي ثبتت بالمصدر الرسمي", "التحقق من السند النظامي والنسخة النافذة"],
-  "synthesisAdvice": "الخلاصة القضائية الجامعة"
-}
-
-مهم: يجب ألا يحتوي JSON أو revisedDocument على رقم الهوية الوطنية أو أي معرّف شخصي حساس، إلا إذا طلب المستخدم إدراجه صراحة في طلبه الحالي.`;
-
-      let userPrompt = `المعاملة القضائية المعروضة أمام الهيئة:
-- الاختصاص: ${courtNameAr}
-- العنوان: ${documentTitle}
-- المستفيد: ${session.name}
-
-【تعليمات الخصوصية】
-- لا تعرض أو تكرر رقم الهوية الوطنية في التقرير أو revisedDocument.
-- إذا ورد رقم هوية داخل النص الأصلي أو المرفقات، فاعتبره بياناً خاصاً واحذفه من المخرجات ما لم يطلب المستخدم إدراجه صراحة.
-- لا تضف أي بيانات شخصية من عندك.
-
-【نص المذكرة القضائية الحالية المراد فحصها وتعديلها】:
-"""
-${text}
-"""`;
-
-      if (uploadedFileName || attachmentsText) {
-        userPrompt += `\n\n【بيانات المرفقات المودعة من المستفيد】:
-اسم الملف المرفق: ${uploadedFileName || "مرفق مستندات"}
-محتوى أو تفاصيل المرفق:
-"""
-${attachmentsText || "مستندات وبيانات مرفقة في ملف القضية"}
-"""`;
-      } else {
-        userPrompt += `\n\n(ملاحظة: لم يتم إرفاق مستندات مستقلة حتى الآن، لذا يجب على قاضي تدقيق المرفقات فحص ما إذا كانت الدعوى تفتقر إلى إرفاق عقود أو إشعارات أو قرارات لازمة وتوضيحها في attachmentErrors).`;
-      }
-
-      const reviewParts: any[] = [{ text: userPrompt }];
-      if (Array.isArray(attachments)) {
-        for (const att of attachments) {
-          const inline = normalizeInlineAttachment(att);
-          if (inline) reviewParts.push(inline);
-        }
-      }
-
-      const reviewContents = [{ role: "user", parts: reviewParts }];
-      const response = await generateContentWithFallback(
-        aiClients,
-        reviewContents,
-        systemInstruction,
-        0.2,
-        "application/json"
-      );
-      const raw = response.text?.trim() || "";
-      const parsed: any = parseModelJson<any>(raw);
-
-      if (!parsed || !parsed.revisedDocument || !Array.isArray(parsed.judges)) {
-        res.status(502).json({
-          error: "تعذر تكوين تقرير هيئة المراجعة بصيغة موثوقة. أعد المحاولة؛ لم يتم إنشاء مذكرة بديلة أو وقائع قانونية ثابتة من الكود.",
-          retryable: true,
-        });
-        return;
-      }
-
-      // لا نستبدل النص المنقح بالنص الأصلي لمجرد أن النسخة المنقحة أقصر.
-      // هذا كان يلغي تعديلات النموذج الحقيقية. نكتفي بالتأكد من وجود سجل تغييرات.
-      if (!Array.isArray(parsed.changeLog)) {
-        parsed.changeLog = [];
-      }
-
-      parsed.timestamp = Date.now();
-      res.json({ report: parsed });
-    } catch (err: any) {
-      console.error("Judges review error:", err);
-      res.status(500).json({ error: formatGeminiErrorMessage(err) });
-    }
+  app.post("/api/judges-review", (req, res) => {
+    void judgesReviewHandler(req as any, res as any);
   });
 
   // Vite middleware in dev, static files in production
