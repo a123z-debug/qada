@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { readSession } from './session.ts';
+import { readActiveSession } from './session.ts';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
 import { enforceRateLimit } from './_rateLimit.ts';
 import { recordAuditEvent } from './_audit.ts';
