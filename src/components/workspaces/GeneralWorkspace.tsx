@@ -135,6 +135,17 @@ export function GeneralWorkspace({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isPlainText = file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt');
+    if (!isPlainText) {
+      window.alert('هذا الحقل يقرأ ملفات TXT فقط. استخدم زر PDF/صورة لإرسال العقد أو المستند إلى المحادثة.');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 512 * 1024) {
+      window.alert('ملف TXT أكبر من 512 كيلوبايت. اختصره أو أرسله على أجزاء.');
+      e.target.value = '';
+      return;
+    }
     setUploadedFileName(file.name);
 
     const reader = new FileReader();
@@ -340,11 +351,21 @@ ${claimDemands}`;
                 </p>
               </div>
             </div>
-            <label className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow">
-              <UploadCloud className="w-4 h-4" />
-              <span>اختيار ملف من الجهاز</span>
-              <input type="file" onChange={handleFileUpload} className="hidden" accept=".pdf,.doc,.docx,.txt,image/*" />
-            </label>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={onOpenPdfModal}
+                disabled={!onOpenPdfModal}
+                className="px-4 py-2 rounded-xl border border-cyan-400/25 bg-cyan-400/10 text-cyan-200 text-xs font-bold disabled:opacity-40"
+              >
+                PDF / صورة للمحادثة
+              </button>
+              <label className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-neutral-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow">
+                <UploadCloud className="w-4 h-4" />
+                <span>إضافة TXT للمسودة</span>
+                <input type="file" onChange={handleFileUpload} className="hidden" accept=".txt,text/plain" />
+              </label>
+            </div>
           </div>
 
           {uploadedFileName && (
