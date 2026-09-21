@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
+  ArrowLeft,
   BadgeCheck,
   BookOpenCheck,
   Bot,
@@ -177,7 +178,7 @@ function edgePath(from: AgentNode, to: AgentNode) {
   return 'M ' + sx + ' ' + sy + ' C ' + mx + ' ' + sy + ', ' + mx + ' ' + ty + ', ' + tx + ' ' + ty;
 }
 
-export function AdminAgentMap() {
+export function AdminAgentMap({ onOpenAnalysisRoom }: { onOpenAnalysisRoom?: () => void }) {
   const [zoom, setZoom] = useState(0.82);
   const [filter, setFilter] = useState<'all' | 'admin' | 'linked' | 'planned'>('all');
   const [selectedId, setSelectedId] = useState('qada-core');
@@ -352,6 +353,18 @@ export function AdminAgentMap() {
           <div className="mt-4 rounded-xl border border-amber-400/15 bg-amber-500/5 p-3 text-[11px] leading-5 text-amber-100/80">
             الخريطة الآن تمثل الهيكل الحقيقي الذي سنبني عليه. حالة «متصل حالياً» تعني أن للمنصة مساراً قائماً يقابله، أما «قيد الربط» فلا يعني أن الوكيل يعمل فعلياً بعد.
           </div>
+
+          {onOpenAnalysisRoom && (selected.adminOnly || selected.id === 'qada-core' || selected.id === 'judgments') && (
+            <button
+              type="button"
+              onClick={onOpenAnalysisRoom}
+              className="mt-3 min-h-12 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-violet-400/35 bg-violet-500/15 px-4 text-xs font-black text-violet-100 hover:bg-violet-500/25 hover:border-violet-300/60 transition-colors"
+            >
+              <ScanSearch className="h-4 w-4" />
+              <span>فتح غرفة التحليل القضائي</span>
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+          )}
 
           <div className="mt-4 border-t border-slate-800 pt-4">
             <div className="text-[10px] font-black text-slate-500 mb-2">مفتاح الحالة</div>
