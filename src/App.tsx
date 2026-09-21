@@ -88,7 +88,7 @@ function SystemAgentBar() {
   const dotClass = ready ? 'bg-emerald-400' : checking ? 'bg-slate-400' : 'bg-amber-400';
   const statusText = ready ? 'مركز التحليل جاهز' : checking ? 'جاري فحص الخدمات' : 'بعض الخدمات تحتاج إعداداً';
   const detailText = ready
-    ? 'المصادقة والذكاء والمخزن الموزع تستجيب بصورة صحيحة.'
+    ? 'المصادقة والتخزين مهيآن، وRedis يستجيب، ومزود الذكاء مضبوط للتشغيل.'
     : checking
       ? 'يتم التحقق من حالة المكونات الخادمية...'
       : 'لن تعرض المنصة حالة اتصال ناجحة قبل اجتياز فحص الجاهزية.';
