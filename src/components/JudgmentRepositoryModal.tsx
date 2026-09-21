@@ -126,8 +126,8 @@ export function JudgmentRepositoryModal({
 
   const handleCreateRecord = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPersonName.trim() || !newNationalId.trim() || !newCourtType) {
-      alert('يرجى كتابة اسم الشخص ورقم هويته الوطنية واختيار المحكمة لحفظ السجل.');
+    if (!newPersonName.trim() || !newCourtType) {
+      alert('يرجى كتابة اسم صاحب الشأن واختيار المحكمة لحفظ السجل.');
       return;
     }
 
@@ -145,7 +145,7 @@ export function JudgmentRepositoryModal({
       .filter(Boolean);
 
     const newRecord: JudgmentRecord = {
-      id: `rec-${newNationalId.replace(/\s+/g, '')}-${Date.now()}`,
+      id: `rec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       personName: newPersonName.trim(),
       nationalId: newNationalId.trim(),
       agencyName: newAgencyName.trim(),
@@ -248,14 +248,14 @@ export function JudgmentRepositoryModal({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-extrabold text-base md:text-lg text-amber-200">
-                  سجل الأحكام القضائية والتدرج القضائي برقم الهوية
+                  سجل الأحكام والتدرج القضائي للحساب الحالي
                 </h3>
                 <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
                   {authorizedRecords.length} صكوك محفوظة
                 </span>
                 {isAdminView && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                    عرض كل مرفوعات المستخدمين
+                    عرض إداري محلي — لا يشمل حسابات أخرى
                   </span>
                 )}
               </div>
