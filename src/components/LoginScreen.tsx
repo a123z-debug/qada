@@ -9,29 +9,6 @@ interface LoginScreenProps {
 
 type Mode = 'user-login' | 'register' | 'admin';
 
-const ACCOUNT_PROOFS_KEY = 'qada_account_proofs_v1';
-
-function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
-}
-
-function readProofs(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(ACCOUNT_PROOFS_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveProof(email: string, proof: string) {
-  const proofs = readProofs();
-  proofs[normalizeEmail(email)] = proof;
-  localStorage.setItem(ACCOUNT_PROOFS_KEY, JSON.stringify(proofs));
-}
-
 export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
   const [mode, setMode] = useState<Mode>('user-login');
   const [name, setName] = useState('');
@@ -71,13 +48,10 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
           password,
         };
       } else {
-        const normalizedEmail = normalizeEmail(email);
-        const accountProof = readProofs()[normalizedEmail] || '';
         payload = {
           action: 'user-login',
-          email: normalizedEmail,
+          email: normalizeEmail(email),
           password,
-          accountProof,
         };
       }
 
@@ -91,10 +65,6 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(data?.error || 'تعذر تسجيل الدخول.');
-      }
-
-      if (mode === 'register' && data?.accountProof) {
-        saveProof(email, String(data.accountProof));
       }
 
       if (!data?.session) {
@@ -237,7 +207,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                   required
-                  minLength={mode === 'register' ? 8 : undefined}
+                  minLength={mode === 'register' ? 10 : undefined}
                   className="w-full rounded-xl border border-slate-700 bg-slate-900/80 py-3 pr-10 pl-10 text-sm outline-none focus:border-cyan-400/70"
                   placeholder="••••••••"
                   dir="ltr"
@@ -280,7 +250,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
             {mode === 'register' && (
               <div className="flex items-start gap-2 text-[11px] leading-5 text-slate-500">
                 <UserPlus className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>يُحفظ إثبات الحساب بصورة مشفرة في هذا المتصفح، ولا تُحفظ كلمة المرور كنص صريح.</span>
+                <span>يُحفظ الحساب في مخزن الخادم، وتُخزن كلمة المرور كبصمة مشتقة قوية وليست كنص صريح. يمكنك الدخول من جهاز آخر بنفس البريد وكلمة المرور.</span>
               </div>
             )}
           </form>
