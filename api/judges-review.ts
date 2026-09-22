@@ -145,7 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!raw) {
     const clients = getGeminiClients();
-    const models = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash'];
+    const models = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash'];
 
     let attempts = 0;
     outer: for (const client of clients) {
