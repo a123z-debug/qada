@@ -32,10 +32,10 @@ assert(
   'authentication secret must be isolated from AI provider keys',
 );
 assert(
-  sessionApi.includes('QADA_ADMIN_CREDENTIAL_HASH_V6')
-    && sessionApi.includes('BUILTIN_ADMIN_HASH_V6')
+  sessionApi.includes('QADA_ADMIN_CREDENTIAL_HASH_V7')
+    && sessionApi.includes('BUILTIN_ADMIN_HASH_V7')
     && sessionApi.includes('adminCredentialRevision'),
-  'admin login must use the versioned v6 credential path and invalidate stale admin sessions',
+  'admin login must use the versioned v7 credential path and invalidate stale admin sessions',
 );
 assert(
   sessionApi.includes("redisCommand(['SET', key, encoded, 'NX'])"),
@@ -66,19 +66,19 @@ assert(
     && loginScreen.includes("mode: 'simple'")
     && loginScreen.includes("mode: 'professional'")
     && loginScreen.includes("mode: 'admin'")
-    && loginScreen.includes('onLoginSuccess(session)'),
-  'test portal must expose direct Simple, Professional, and Admin access through the browser test-mode cookie without API dependency',
-);
-assert(
-  !loginScreen.includes('type="password"')
-    && !loginScreen.includes('كلمة المرور'),
-  'temporary test portal must not expose password fields',
+    && loginScreen.includes("action: 'admin-login'")
+    && loginScreen.includes('type="password"')
+    && loginScreen.includes('كلمة المرور'),
+  'Simple and Professional must remain direct while Admin requires the protected credential form',
 );
 assert(
   sessionApi.includes("const TEST_MODE_COOKIE = 'qada_test_mode'")
-    && sessionApi.includes("mode === 'simple' || mode === 'professional' || mode === 'admin'")
+    && sessionApi.includes("mode === 'simple' || mode === 'professional'")
+    && !sessionApi.includes("mode === 'simple' || mode === 'professional' || mode === 'admin'")
+    && sessionApi.includes("requestedMode === 'admin'")
+    && sessionApi.includes("واجهة الإدارة تتطلب رمز الدخول وكلمة المرور")
     && sessionApi.includes("loginMethod: 'test_open'"),
-  'server session must recognize role-aware passwordless test sessions from the test-mode cookie',
+  'passwordless test access must never mint an admin session',
 );
 assert(
   envExample.includes('UPSTASH_REDIS_REST_URL')
@@ -105,8 +105,8 @@ console.log(JSON.stringify({
   ok: true,
   activeCookie: 'qada_session_v6',
   persistentAccounts: true,
-  adminCredentialVersion: 'v6',
-  temporaryOpenTestAccess: true,
+  adminCredentialVersion: 'v7',
+  temporaryOpenTestAccess: 'simple-professional-only',
   isolatedAuthSecret: true,
   checkedApiFiles: apiFiles.length,
 }, null, 2));
