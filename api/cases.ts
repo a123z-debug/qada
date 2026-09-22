@@ -14,6 +14,19 @@ type StoredCase = {
   savedAt: number;
 };
 
+type SharedWorkspaceMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+};
+
+type SharedWorkspaceState = {
+  version: 1;
+  simpleMessages: SharedWorkspaceMessage[];
+  simpleDraft: string;
+  updatedAt: number;
+};
+
 const MAX_CASES_PER_USER = 100;
 const MAX_CASES_ADMIN_VIEW = 300;
 
@@ -31,6 +44,40 @@ function allIndexKey() {
 
 function caseKey(ownerId: string, caseId: string) {
   return `${redisPrefix()}:case:${digest(ownerId)}:${digest(caseId)}`;
+}
+
+function workspaceKey(ownerId: string) {
+  return `${redisPrefix()}:workspace:${digest(ownerId)}`;
+}
+
+function sanitizeWorkspaceMessage(input: unknown): SharedWorkspaceMessage | null {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  const item = input as Record<string, unknown>;
+  const role = item.role === 'assistant' ? 'assistant' : item.role === 'user' ? 'user' : null;
+  const content = typeof item.content === 'string' ? item.content.trim().slice(0, 40_000) : '';
+  const id = typeof item.id === 'string' ? item.id.trim().slice(0, 180) : '';
+  if (!role || !content || !id) return null;
+  return { id, role, content };
+}
+
+function sanitizeWorkspaceState(input: unknown): SharedWorkspaceState {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('INVALID_WORKSPACE_STATE');
+  const raw = input as Record<string, unknown>;
+  const simpleMessages = Array.isArray(raw.simpleMessages)
+    ? raw.simpleMessages
+        .map(sanitizeWorkspaceMessage)
+        .filter((item): item is SharedWorkspaceMessage => Boolean(item))
+        .slice(-40)
+    : [];
+  const simpleDraft = typeof raw.simpleDraft === 'string' ? raw.simpleDraft.slice(0, 20_000) : '';
+  const state: SharedWorkspaceState = {
+    version: 1,
+    simpleMessages,
+    simpleDraft,
+    updatedAt: Date.now(),
+  };
+  if (JSON.stringify(state).length > 250_000) throw new Error('WORKSPACE_STATE_TOO_LARGE');
+  return state;
 }
 
 function sanitizeRecord(input: unknown): Record<string, unknown> {
@@ -63,6 +110,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!limit.allowed) {
       res.setHeader('Retry-After', String(limit.retryAfterSeconds));
       return res.status(429).json({ error: 'RATE_LIMITED' });
+    }
+
+    const workspaceMode = String(req.query?.workspace || '') === '1';
+    if (workspaceMode) {
+      if (req.method === 'GET') {
+        const stored = await redisCommand(['GET', workspaceKey(session.id)]);
+        const state = unprotectJson<SharedWorkspaceState>(
+          typeof stored === 'string' ? stored : '',
+          'workspace-state',
+        );
+        return res.status(200).json({
+          state: state?.version === 1
+            ? state
+            : { version: 1, simpleMessages: [], simpleDraft: '', updatedAt: 0 },
+        });
+      }
+
+      if (req.method === 'PUT' || req.method === 'POST') {
+        const state = sanitizeWorkspaceState((req.body as any)?.state);
+        await redisCommand(['SET', workspaceKey(session.id), protectJson(state, 'workspace-state')]);
+        return res.status(200).json({ ok: true, state });
+      }
+
+      if (req.method === 'DELETE') {
+        await redisCommand(['DEL', workspaceKey(session.id)]);
+        return res.status(204).end();
+      }
+
+      res.setHeader('Allow', 'GET, PUT, POST, DELETE');
+      return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     if (req.method === 'GET') {
@@ -137,8 +214,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     const code = error instanceof Error ? error.message : '';
     console.error('Case store error:', code);
-    if (code === 'INVALID_CASE' || code === 'INVALID_CASE_ID') return res.status(400).json({ error: code });
+    if (code === 'INVALID_CASE' || code === 'INVALID_CASE_ID' || code === 'INVALID_WORKSPACE_STATE') return res.status(400).json({ error: code });
     if (code === 'CASE_TOO_LARGE') return res.status(413).json({ error: 'CASE_TOO_LARGE' });
+    if (code === 'WORKSPACE_STATE_TOO_LARGE') return res.status(413).json({ error: 'WORKSPACE_STATE_TOO_LARGE' });
     return res.status(503).json({ error: 'CASE_STORE_UNAVAILABLE' });
   }
 }
