@@ -29,20 +29,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
     setError('');
 
     try {
-      const response = await fetchWithTimeout('/api/session', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'test-access',
-          workspaceMode,
-        }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data?.session) {
-        throw new Error(data?.error || 'تعذر فتح الواجهة.');
-      }
+      document.cookie = `qada_test_mode=${workspaceMode}; Path=/; Max-Age=43200; SameSite=Lax; Secure`;
 
       const verification = await fetchWithTimeout('/api/session', {
         method: 'GET',
@@ -53,7 +40,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
       const session = verified?.session as UserSession | undefined;
 
       if (!verification.ok || !verified?.authenticated || !session) {
-        throw new Error('تم إنشاء الجلسة لكن تعذر تثبيتها في المتصفح.');
+        throw new Error('تعذر تفعيل جلسة الاختبار على الخادم.');
       }
       if (session.workspaceMode !== workspaceMode) {
         throw new Error('نوع الواجهة في الجلسة لا يطابق الاختيار.');
