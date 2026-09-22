@@ -196,6 +196,13 @@ function buildBogPacket(query: string): LegalSourcePacket {
     BOARD_OF_GRIEVANCES_EXECUTION_LAW_1443,
   ];
 
+  const personnelRegulations = retrieveOfficialJudicialRegulations(
+    [query, 'نظام خدمة الأفراد اللائحة التنفيذية'].join(' '),
+    6,
+  ).filter((regulation) =>
+    containsAny([regulation.parentSystem, regulation.regulationName].join(' '), ['خدمة الأفراد'])
+  );
+
   const requestedArticles = articleNumbers(query);
   const verifiedArticles = details.flatMap((system) =>
     system.articles
@@ -299,6 +306,14 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
           ? 'مرجع نظامي مفهرس ومتحقق'
           : 'مرجع نظامي مفهرس مع قيد تحقق في بيانات أداة الإصدار',
         note: source.purpose,
+      })),
+      ...personnelRegulations.map((regulation) => ({
+        name: regulation.regulationName,
+        authority: regulation.officialSourceAuthority,
+        sourceUrl: regulation.officialSourceUrl,
+        issueInstrument: regulation.issueInstrument,
+        coverage: regulation.textCoverage,
+        note: regulation.verificationNote,
       })),
       ...rights.map((right) => ({
         name: right.title,
