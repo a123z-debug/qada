@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { isRedisConfigured, redisPipeline, redisPrefix } from './_redis.ts';
+import { isRedisConfigured, redisCommand, redisPipeline, redisPrefix } from './_redis.ts';
 
 type LocalEntry = { count: number; resetAt: number };
 const localLimits = new Map<string, LocalEntry>();
@@ -66,4 +66,26 @@ export async function enforceRateLimit(
   }
 
   return localLimit(key, safeLimit, safeWindow);
+}
+
+export async function clearRateLimit(
+  namespace: string,
+  identity: string,
+  windowSeconds: number,
+): Promise<void> {
+  const safeWindow = Math.max(1, Math.floor(windowSeconds));
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const bucket = Math.floor(nowSeconds / safeWindow);
+  const key = `${redisPrefix()}:rate:${namespace}:${digest(identity)}:${bucket}`;
+
+  if (isRedisConfigured()) {
+    try {
+      await redisCommand(['DEL', key]);
+    } catch {
+      // Authentication must not fail because a best-effort rate-limit reset failed.
+    }
+    return;
+  }
+
+  localLimits.delete(key);
 }
