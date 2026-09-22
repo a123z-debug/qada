@@ -458,6 +458,18 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!session) return;
+    if (session.workspaceMode === 'admin') {
+      setActiveCourt(null);
+      setActiveService(null);
+      setIsAdminAnalysisOpen(false);
+      setIsAdminUsersOpen(false);
+      setIsAdminAuditOpen(false);
+      setIsAdminMapOpen(true);
+    }
+  }, [session?.id, session?.workspaceMode]);
+
   const requestAssistant = (prefill = '', attachments: Attachment[] = []) => {
     setAssistantPrefill(prefill);
     setAssistantAttachments(attachments);
@@ -506,6 +518,12 @@ export default function App() {
   const handleLoginSuccess = (userSession: UserSession) => {
     setSession(userSession);
     setSessionChecked(true);
+    setActiveCourt(null);
+    setActiveService(null);
+    setIsAdminAnalysisOpen(false);
+    setIsAdminUsersOpen(false);
+    setIsAdminAuditOpen(false);
+    setIsAdminMapOpen(userSession.workspaceMode === 'admin');
   };
 
   const handleLogout = () => {
@@ -679,7 +697,7 @@ export default function App() {
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(true);
         } : undefined}
-        onOpenAccountSecurity={() => setIsAccountSecurityOpen(true)}
+        onOpenAccountSecurity={session.loginMethod === 'test_open' ? undefined : () => setIsAccountSecurityOpen(true)}
       />
 
       <div className="w-full lg:w-3/4 flex-1 flex flex-col h-full overflow-hidden relative z-10">
@@ -799,6 +817,7 @@ export default function App() {
               userName={session.name}
               message="مرحباً بك في مساحة القضية الرقمية."
               isAdmin={session.role === 'admin'}
+              defaultMode={session.workspaceMode === 'professional' ? 'professional' : 'simple'}
               onOpenAdminOverview={() => {
                 setActiveCourt(null);
                 setActiveService(null);
@@ -872,11 +891,13 @@ export default function App() {
         </div>
       </nav>
 
-      <AccountSecurityModal
-        isOpen={isAccountSecurityOpen}
-        onClose={() => setIsAccountSecurityOpen(false)}
-        session={session}
-      />
+      {session.loginMethod !== 'test_open' && (
+        <AccountSecurityModal
+          isOpen={isAccountSecurityOpen}
+          onClose={() => setIsAccountSecurityOpen(false)}
+          session={session}
+        />
+      )}
 
       <FloatingChatBot
         position="bottom-left"
