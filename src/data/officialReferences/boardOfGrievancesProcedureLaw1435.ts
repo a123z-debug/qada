@@ -17,6 +17,7 @@ export const BOARD_OF_GRIEVANCES_PROCEDURE_LAW_1435: OfficialReferenceSystem = {
     { number: '1', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/f2f7b465-b576-4f47-a8e7-a9a700f27202/1', note: 'ظهرت المادة صراحة في المصدر الرسمي.' },
     { number: '2', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/f2f7b465-b576-4f47-a8e7-a9a700f27202/1', note: 'ظهرت المادة صراحة في المصدر الرسمي.' },
     { number: '3', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/f2f7b465-b576-4f47-a8e7-a9a700f27202/1', note: 'ظهرت المادة صراحة في المصدر الرسمي.' },
+    { number: '8', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/f2f7b465-b576-4f47-a8e7-a9a700f27202/1', note: 'ظهرت المادة صراحة في المصدر الرسمي، وتبين مسار التظلم والمواعيد السابقة على رفع دعاوى الحقوق الوظيفية، بما فيها الحقوق المقررة في نظم الخدمة العسكرية، مع التفصيل الوارد في فقرات المادة.' },
     { number: '60', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18825', note: 'ثبت تعديل المادة رسمياً بالمرسوم الملكي (م/43) بتاريخ 26/05/1443هـ؛ ويقرر النص المعدل تطبيق أحكام نظام المرافعات الشرعية ونظام الإثبات فيما لم يرد فيه حكم في هذا النظام بما لا يتعارض مع طبيعة المنازعة الإدارية.' },
   ],
   regulations: [],

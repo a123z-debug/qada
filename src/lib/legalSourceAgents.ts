@@ -14,6 +14,7 @@ import { CRIMINAL_PROCEDURE_LAW_1435 } from '../data/officialReferences/criminal
 import { EXECUTION_LAW_1447 } from '../data/officialReferences/executionLaw1447.js';
 import { JUDICIARY_LAW_1428 } from '../data/officialReferences/judiciaryLaw1428.js';
 import { LAW_PRACTICE_LAW_1422 } from '../data/officialReferences/lawPracticeLaw1422.js';
+import { PERSONNEL_SERVICE_LAW_1397 } from '../data/officialReferences/personnelServiceLaw1397.js';
 
 export type SourceAgentStatus = 'success' | 'warning' | 'error';
 
@@ -72,6 +73,7 @@ const DETAILED_REFERENCE_SYSTEMS: OfficialReferenceSystem[] = [
   EXECUTION_LAW_1447,
   JUDICIARY_LAW_1428,
   LAW_PRACTICE_LAW_1422,
+  PERSONNEL_SERVICE_LAW_1397,
 ];
 
 function normalizeArabic(value: string): string {
@@ -246,33 +248,47 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
     8,
   );
 
-  const refs = retrieveOfficialLegalReferences(
-    [query, 'نظام خدمة الأفراد الخدمة العسكرية'].join(' '),
-    8,
-  );
+  const requestedArticles = articleNumbers(query);
+  const verifiedArticles = PERSONNEL_SERVICE_LAW_1397.articles
+    .filter((article) => article.status === 'verified')
+    .filter((article) => requestedArticles.length === 0 || requestedArticles.includes(article.number))
+    .map((article) => ({
+      system: PERSONNEL_SERVICE_LAW_1397.name,
+      article: article.number,
+      sourceUrl: article.sourceUrl,
+      note: article.note,
+    }))
+    .slice(0, 24);
 
-  const personnelRef = refs.find((ref) => containsAny(ref.name, ['خدمة الأفراد']));
   const blockers = [
-    'السجل العام لنظام خدمة الأفراد في الفهرس القضائي موسوم needs-correction بسبب تعارض تاريخ قرار مجلس الوزراء رقم (324) بين البيانات الرسمية؛ لذلك لا يعتمد النظام كاملاً كنص حرفي من هذا المسار.',
+    ...PERSONNEL_SERVICE_LAW_1397.versions
+      .filter((version) => version.status !== 'verified')
+      .map((version) => `${version.label}: ${version.note}`),
+    ...PERSONNEL_SERVICE_LAW_1397.regulations
+      .filter((regulation) => regulation.status !== 'verified')
+      .map((regulation) => `${regulation.name}: ${regulation.note}`),
   ];
 
-  if (rights.length === 0) {
-    blockers.push('لم يعثر فهرس الحقوق العسكرية الموثقة على حق محدد ذي صلة كافية بالسؤال.');
+  if (rights.length === 0 && verifiedArticles.length === 0) {
+    blockers.push('لم يعثر الفهرس على مادة أو حق عسكري موثق ذي صلة كافية بالسؤال.');
   }
 
   return {
     agentId: 'src-personnel',
     label: 'وكيل نظام خدمة الأفراد',
-    status: 'warning',
-    scope: 'حقوق وضمانات الأفراد العسكريين التي ثبتت بمصدر رسمي مستقل، مع منع تعميم أي حق خارج شروطه.',
+    status: blockers.length ? 'warning' : 'success',
+    scope: 'نظام خدمة الأفراد ومواده وتعديلاته واللائحة التنفيذية بحدود ما ثبت من المصادر الرسمية، مع ربط الحقوق العسكرية باختصاص ديوان المظالم.',
     references: [
-      ...(personnelRef ? [{
-        name: personnelRef.name,
-        sourceUrl: personnelRef.officialSourceUrl,
-        issueInstrument: personnelRef.issueInstrument,
-        coverage: personnelRef.textCoverage,
-        note: personnelRef.verificationNote,
-      }] : []),
+      ...PERSONNEL_SERVICE_LAW_1397.sources.map((source) => ({
+        name: PERSONNEL_SERVICE_LAW_1397.name,
+        authority: source.authority,
+        sourceUrl: source.url,
+        issueInstrument: PERSONNEL_SERVICE_LAW_1397.royalDecree,
+        coverage: PERSONNEL_SERVICE_LAW_1397.status === 'verified'
+          ? 'مرجع نظامي مفهرس ومتحقق'
+          : 'مرجع نظامي مفهرس مع قيد تحقق في بيانات أداة الإصدار',
+        note: source.purpose,
+      })),
       ...rights.map((right) => ({
         name: right.title,
         authority: right.sourceAuthority,
@@ -281,8 +297,8 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
         coverage: 'حق/ضمانة موثقة بنطاق وشروط محددة',
         note: `${right.verificationNote} الشروط: ${right.conditions.join(' | ') || 'لا توجد شروط إضافية مفهرسة.'}`,
       })),
-    ].slice(0, 12),
-    verifiedArticles: [],
+    ].slice(0, 16),
+    verifiedArticles,
     blockers,
   };
 }
