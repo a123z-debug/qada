@@ -571,6 +571,15 @@ export default function App() {
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload?.error || 'تعذر حفظ القضية.');
+        const savedRecord = payload?.record as JudgmentRecord | undefined;
+        if (savedRecord?.id) {
+          setJudgmentRecords((prev) => {
+            const exists = prev.some((item) => item.id === savedRecord.id);
+            return exists
+              ? prev.map((item) => (item.id === savedRecord.id ? savedRecord : item))
+              : [savedRecord, ...prev];
+          });
+        }
       })
       .catch((error) => {
         setJudgmentRecords(previous);
