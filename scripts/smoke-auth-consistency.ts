@@ -62,6 +62,13 @@ assert(
   'browser-bound account proofs must not return',
 );
 assert(
+  loginScreen.includes('/api/session?health=1')
+    && loginScreen.includes('verifyCreatedSession')
+    && loginScreen.includes('Retry-After')
+    && loginScreen.includes('fetchWithTimeout'),
+  'login UI must preflight service health, verify the cookie session, surface throttling, and bound network waits',
+);
+assert(
   envExample.includes('UPSTASH_REDIS_REST_URL')
     && envExample.includes('UPSTASH_REDIS_REST_TOKEN'),
   'production persistent store configuration must be documented',
