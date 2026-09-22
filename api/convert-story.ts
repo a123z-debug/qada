@@ -72,7 +72,7 @@ async function askAi(prompt: string): Promise<any | null> {
   }
 
   const clients = getGeminiClients();
-  const models = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash'];
+  const models = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash'];
   const failures: string[] = [];
   let attempts = 0;
   outer: for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
@@ -87,7 +87,10 @@ async function askAi(prompt: string): Promise<any | null> {
           config: { temperature: 0.05, responseMimeType: 'application/json' },
         }), 18_000, 'AI_STORY_TIMEOUT');
         const parsed = parseJson(response.text || '');
-        if (parsed) return parsed;
+        if (parsed) {
+          console.info('QADA story AI selected:', `key${clientIndex + 1}:${model}`);
+          return parsed;
+        }
         failures.push(`key${clientIndex + 1}:${model}:EMPTY_OR_INVALID_JSON`);
       } catch (error: any) {
         const status = Number(error?.status || error?.response?.status || 0);
