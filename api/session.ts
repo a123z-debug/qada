@@ -22,7 +22,7 @@ export type AuthSession = {
   nationalId: string;
   role: SessionRole;
   agency?: string;
-  loginMethod: 'admin_password' | 'email_password';
+  loginMethod: 'admin_password' | 'email_password' | 'guest';
   loginAt: number;
   sessionRevision?: number;
   adminCredentialRevision?: string;
@@ -239,6 +239,7 @@ export async function readActiveSession(header?: string | string[]): Promise<Aut
   if (session.role === 'admin') {
     return session.adminCredentialRevision === adminCredentialRevision() ? session : null;
   }
+  if (session.loginMethod === 'guest') return session;
 
   try {
     const account = await loadAccount(session.email);
@@ -464,7 +465,7 @@ export default async function handler(req: any, res: any) {
       const dataConfigured = Boolean((process.env.DATA_SECRET || '').trim().length >= 32);
       const storeConfigured = isRedisConfigured();
       const adminReady = authConfigured && adminConfigured;
-      const userReady = authConfigured && dataConfigured && (storeConfigured || !isProductionRuntime());
+      const userReady = authConfigured;
       const ready = adminReady && userReady;
       return res.status(ready ? 200 : 503).json({
         ok: ready,
@@ -512,10 +513,12 @@ export default async function handler(req: any, res: any) {
     const action = String(body.action || '');
 
     let rateLimitIdentity = '';
-    if (action === 'register' || action === 'user-login' || action === 'admin-login' || action === 'change-password') {
+    if (action === 'register' || action === 'user-login' || action === 'admin-login' || action === 'guest-login' || action === 'change-password') {
       const accountHint = action === 'admin-login'
         ? String(body.adminCode || '').trim().toLowerCase()
-        : normalizeEmail(String(body.email || ''));
+        : action === 'guest-login'
+          ? 'guest'
+          : normalizeEmail(String(body.email || ''));
       rateLimitIdentity = `${clientId(req)}:${accountHint.slice(0, 180)}`;
       const limit = await enforceRateLimit(`auth:${action}`, rateLimitIdentity, AUTH_ATTEMPT_LIMIT, AUTH_WINDOW_SECONDS);
       if (!limit.allowed) {
@@ -572,7 +575,19 @@ export default async function handler(req: any, res: any) {
 
     let session: AuthSession;
 
-    if (action === 'register') {
+    if (action === 'guest-login') {
+      const guestId = `guest-${randomBytes(12).toString('hex')}`;
+      session = {
+        id: guestId,
+        name: 'مستخدم QADA',
+        personName: 'مستخدم QADA',
+        email: `${guestId}@guest.qada.local`,
+        nationalId: '',
+        role: 'user',
+        loginMethod: 'guest',
+        loginAt: Date.now(),
+      };
+    } else if (action === 'register') {
       const record = await createAccount(
         String(body.name || ''),
         String(body.email || ''),
@@ -615,7 +630,7 @@ export default async function handler(req: any, res: any) {
     await recordAuditEvent({
       actorId: session.id,
       actorRole: session.role,
-      action: action === 'register' ? 'auth.register' : action === 'admin-login' ? 'auth.admin-login' : 'auth.login',
+      action: action === 'guest-login' ? 'auth.guest-login' : action === 'register' ? 'auth.register' : action === 'admin-login' ? 'auth.admin-login' : 'auth.login',
       outcome: 'success',
     });
 
