@@ -31,6 +31,10 @@ const apiDir = fs.readdirSync('api').filter((name) => name.endsWith('.ts'));
 for (const name of apiDir) {
   const source = fs.readFileSync('api/' + name, 'utf8');
   assert(!source.includes('new Map<string, RateEntry>'), name + ': legacy in-memory rate limiter found');
+  assert(
+    !/from\s+['"]\.\.?\/[^'"]+\.ts['"]/.test(source),
+    name + ': serverless runtime import must use the emitted .js specifier rather than .ts',
+  );
 }
 
 const srcFiles = [
@@ -57,7 +61,7 @@ const boundedAiFiles = [
 ];
 for (const file of boundedAiFiles) {
   const source = fs.readFileSync(file, 'utf8');
-  assert(source.includes("from './_async.ts'"), file + ': bounded async helper missing');
+  assert(source.includes("from './_async.js'"), file + ': bounded async helper missing');
   assert(source.includes('withTimeout(') || source.includes('AbortSignal.timeout('), file + ': provider timeout missing');
 }
 const secureStore = fs.readFileSync('api/_secureStore.ts', 'utf8');
