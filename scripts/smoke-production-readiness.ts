@@ -5,9 +5,14 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 const env = fs.readFileSync('.env.example', 'utf8');
-for (const key of ['AUTH_SECRET', 'DATA_SECRET', 'QADA_ADMIN_CREDENTIAL_HASH_V7', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN']) {
+for (const key of ['AUTH_SECRET', 'DATA_SECRET', 'QADA_ADMIN_CREDENTIAL_HASH_V7', 'REDIS_URL', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN']) {
   assert(env.includes(key + '='), '.env.example missing ' + key);
 }
+
+const redis = fs.readFileSync('api/_redis.ts', 'utf8');
+assert(redis.includes('process.env.REDIS_URL'), 'Redis adapter must support Railway/native Redis');
+assert(redis.includes("from 'node:net'"), 'native Redis adapter must use Node TCP without extra runtime dependency');
+assert(redis.includes('UPSTASH_REDIS_REST_URL'), 'Redis adapter must preserve Upstash REST compatibility');
 
 const health = fs.readFileSync('api/health.ts', 'utf8');
 assert(health.includes("hasLongSecret('AUTH_SECRET')"), 'health must require AUTH_SECRET');
