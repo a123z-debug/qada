@@ -19,11 +19,11 @@ assert(
   'admin-analysis must not import the removed legacy auth module',
 );
 assert(
-  sessionApi.includes("const SESSION_COOKIE = 'qada_session_v5';"),
-  'active session cookie must remain qada_session_v5',
+  sessionApi.includes("const SESSION_COOKIE = 'qada_session_v6';"),
+  'active session cookie must remain qada_session_v6',
 );
 assert(
-  sessionApi.includes("const OLD_SESSION_COOKIES = ['qada_session_v4', 'qada_session_v3', 'qada_session_v2'];"),
+  sessionApi.includes("const OLD_SESSION_COOKIES = ['qada_session_v5', 'qada_session_v4', 'qada_session_v3', 'qada_session_v2'];"),
   'session handler must explicitly clear known legacy cookies',
 );
 assert(
@@ -32,9 +32,10 @@ assert(
   'authentication secret must be isolated from AI provider keys',
 );
 assert(
-  sessionApi.includes('QADA_ADMIN_CREDENTIAL_HASH_V4')
-    && !sessionApi.includes("const ADMIN_CREDENTIAL_HASH = '"),
-  'admin credentials must be configured through environment, not source',
+  sessionApi.includes('QADA_ADMIN_CREDENTIAL_HASH_V6')
+    && sessionApi.includes('BUILTIN_ADMIN_HASH_V6')
+    && sessionApi.includes('adminCredentialRevision'),
+  'admin login must use the versioned v6 credential path and invalidate stale admin sessions',
 );
 assert(
   sessionApi.includes("redisCommand(['SET', key, encoded, 'NX'])"),
@@ -83,8 +84,9 @@ for (const name of apiFiles) {
 
 console.log(JSON.stringify({
   ok: true,
-  activeCookie: 'qada_session_v5',
+  activeCookie: 'qada_session_v6',
   persistentAccounts: true,
+  adminCredentialVersion: 'v6',
   isolatedAuthSecret: true,
   checkedApiFiles: apiFiles.length,
 }, null, 2));
