@@ -150,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let attempts = 0;
     outer: for (const client of clients) {
       for (const model of models) {
-        if (attempts >= 5) break outer;
+        if (attempts >= clients.length * models.length) break outer;
         attempts += 1;
         try {
           const response = await withTimeout(client.models.generateContent({
