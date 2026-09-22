@@ -156,6 +156,11 @@ function createSessionToken(session: AuthSession) {
   return encryptJson(payload, 'session', 'v6');
 }
 
+function clientSession(session: AuthSession): Omit<AuthSession, 'adminCredentialRevision'> {
+  const { adminCredentialRevision: _revision, ...publicSession } = session;
+  return publicSession;
+}
+
 export function readSession(header?: string | string[]): AuthSession | null {
   try {
     const token = cookies(header)[SESSION_COOKIE];
@@ -476,7 +481,7 @@ export default async function handler(req: any, res: any) {
 
     const session = await readActiveSession(req.headers?.cookie);
     if (!session) return res.status(401).json({ authenticated: false });
-    return res.status(200).json({ authenticated: true, session });
+    return res.status(200).json({ authenticated: true, session: clientSession(session) });
   }
 
   if (req.method === 'DELETE') {
@@ -562,7 +567,7 @@ export default async function handler(req: any, res: any) {
         loginAt: Date.now(),
       };
       res.setHeader('Set-Cookie', cookieForSession(refreshedSession));
-      return res.status(200).json({ ok: true, session: refreshedSession });
+      return res.status(200).json({ ok: true, session: clientSession(refreshedSession) });
     }
 
     let session: AuthSession;
@@ -614,7 +619,7 @@ export default async function handler(req: any, res: any) {
       outcome: 'success',
     });
 
-    return res.status(200).json({ session });
+    return res.status(200).json({ session: clientSession(session) });
   } catch (error) {
     const mapped = authError(error);
     return res.status(mapped.status).json({ error: mapped.error, code: mapped.code });
