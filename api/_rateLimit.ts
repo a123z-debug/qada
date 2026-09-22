@@ -48,21 +48,21 @@ export async function enforceRateLimit(
   const key = `${redisPrefix()}:rate:${namespace}:${digest(identity)}:${bucket}`;
 
   if (isRedisConfigured()) {
-    const [countRaw] = await redisPipeline([
-      ['INCR', key],
-      ['EXPIRE', key, safeWindow + 5],
-    ]);
-    const count = Number(countRaw || 0);
-    return {
-      allowed: count <= safeLimit,
-      remaining: Math.max(0, safeLimit - count),
-      retryAfterSeconds: count <= safeLimit ? 0 : retryAfterSeconds,
-      backend: 'redis',
-    };
-  }
-
-  if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
-    throw new Error('RATE_LIMIT_STORE_UNAVAILABLE');
+    try {
+      const [countRaw] = await redisPipeline([
+        ['INCR', key],
+        ['EXPIRE', key, safeWindow + 5],
+      ]);
+      const count = Number(countRaw || 0);
+      return {
+        allowed: count <= safeLimit,
+        remaining: Math.max(0, safeLimit - count),
+        retryAfterSeconds: count <= safeLimit ? 0 : retryAfterSeconds,
+        backend: 'redis',
+      };
+    } catch {
+      return localLimit(key, safeLimit, safeWindow);
+    }
   }
 
   return localLimit(key, safeLimit, safeWindow);
