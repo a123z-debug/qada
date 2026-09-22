@@ -18,7 +18,15 @@ assert(health.includes('redisReachable'), 'health must verify Redis reachability
 const server = fs.readFileSync('server.ts', 'utf8');
 assert(server.includes("import healthHandler from './api/health';"), 'local server must reuse production health handler');
 assert(server.includes("app.get('/api/health'"), 'local health route missing');
+assert(server.includes("import workspaceStateHandler from './api/workspace-state';"), 'local shared workspace handler missing');
+assert(server.includes("app.all('/api/workspace-state'"), 'local shared workspace route missing');
 assert(server.includes("express.json({ limit: '4mb' })"), 'local JSON payload limit must match serverless design');
+
+const workspaceState = fs.readFileSync('api/workspace-state.ts', 'utf8');
+assert(workspaceState.includes('readActiveSession'), 'shared workspace must require an active server session');
+assert(workspaceState.includes('protectJson'), 'shared workspace must be encrypted at rest');
+assert(workspaceState.includes('isRedisConfigured'), 'shared workspace must use the production Redis store');
+assert(workspaceState.includes("enforceRateLimit('workspace-state'"), 'shared workspace must be rate limited');
 
 const apiDir = fs.readdirSync('api').filter((name) => name.endsWith('.ts'));
 for (const name of apiDir) {
