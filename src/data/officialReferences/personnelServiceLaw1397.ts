@@ -55,11 +55,14 @@ export const PERSONNEL_SERVICE_LAW_1397: OfficialReferenceSystem = {
   ],
   articles: [
     { number: '1', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1', note: 'ظهرت المادة صراحة في المصدر الرسمي وتحدد نطاق تطبيق النظام.' },
-    { number: '2', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1', note: 'ظهرت المادة صراحة في المصدر الرسمي وتتضمن التعريفات الأساسية للنظام.' },
+    { number: '2', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1', note: 'ظهرت المادة صراحة في المصدر الرسمي وتتضمن التعريفات الأساسية؛ الفقرة (هـ) تعرف الفرد الفني، ولا تعد وحدها نص الاستحقاق المالي للعلاوة الفنية.' },
     { number: '3', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1', note: 'ظهرت المادة صراحة في المصدر الرسمي وتبين الرتب العسكرية للأفراد.' },
     { number: '4', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=18231', note: 'ثبتت الفقرة (د) بصيغتها المعدلة رسمياً: حد أدنى 18 عاماً وحد أقصى 40 عاماً، مع عدم الإخلال بالتعيينات السابقة لنفاذ التعديل.' },
     { number: '8', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1', note: 'ظهرت المادة صراحة في المصدر الرسمي وتتعلق بشروط ترقية الأفراد.' },
     { number: '14 مكرراً', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1', note: 'ثبتت إضافة المادة بموجب المرسوم الملكي رقم (م/30) وتاريخ 01/06/1425هـ، وتتعلق بالحجز على راتب الفرد وحدوده وأولوية دين النفقة.' },
+    { number: '16', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1', note: 'ظهرت المادة صراحة في المصدر الرسمي وتتعلق باستحقاق الفرد الفني للعلاوة الفنية وفق الجدول والضوابط النظامية. عند التطبيق يجب الرجوع إلى النص واللائحة والنسخة النافذة في فترة المطالبة.' },
+    { number: '17', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1', note: 'ظهرت المادة صراحة في المصدر الرسمي وتتعلق بالعلاوات الأخرى وقواعد الجمع. لا يعتمد QADA صيغة تاريخية منسوبة إلى تعديل سابق إلا بعد مطابقة أداة التعديل الرسمية أو نسخة النظام النافذة في التاريخ محل النزاع.' },
+    { number: '19', status: 'verified', sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1', note: 'ظهرت المادة صراحة في المصدر الرسمي وتتصل باستمرار أو سقوط العلاوات بحسب مزاولة العمل المخصص لها، وهي ذات صلة مباشرة بالنزاع حول ثبوت الممارسة الفعلية.' },
     { number: '28', status: 'verified', sourceUrl: 'https://www.uqn.gov.sa/details?p=23613', note: 'ثبت تعديل المادة رسمياً في 1445هـ لتشمل حالات بدل الترحيل، ومنها الانتداب لمدة أو لمدد ثلاثة أشهر فأكثر.' },
     { number: '46', status: 'verified', sourceUrl: 'https://uqn.gov.sa/wp-content/uploads/2022/09/4858.pdf', note: 'ثبت تعديل المادة رسمياً ضمن تعديلات 1442هـ المتعلقة بأنواع الإجازات.' },
     { number: '47', status: 'verified', sourceUrl: 'https://uqn.gov.sa/wp-content/uploads/2022/09/4858.pdf', note: 'ثبت تعديل الفقرة (ج) من المادة ضمن تعديلات 1442هـ.' },
@@ -88,6 +91,12 @@ export const PERSONNEL_SERVICE_LAW_1397: OfficialReferenceSystem = {
     },
   ],
   amendments: [
+    {
+      label: 'الاستناد إلى المرسوم الملكي (م/37) وتاريخ 30/06/1430هـ لتعديل المادة (17/ب)',
+      status: 'needs-correction',
+      sourceUrl: 'https://laws.boe.gov.sa/BoeLaws/Laws/LawDetails/9b461caf-dc11-46bd-a8fd-ac74009a8724/1',
+      note: 'ورد هذا الاستناد في مستندات المستخدم ومصادر ثانوية، لكن أداة التعديل الرسمية المستقلة أو نسخة الإصدار التي تثبت الصياغة المنسوبة لم تُفهرس بعد داخل QADA. يمنع تقديمه كسند رسمي متحقق إلى حين المطابقة.',
+    },
     {
       label: 'إضافة المادة (14 مكرراً) - 1425هـ',
       status: 'verified',

@@ -16,7 +16,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
   const [adminCode, setAdminCode] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
-  function openWorkspace(workspaceMode: WorkspaceMode) {
+  async function openWorkspace(workspaceMode: WorkspaceMode) {
     if (busyMode) return;
     setError('');
 
@@ -28,23 +28,31 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
     setBusyMode(workspaceMode);
 
     try {
-      document.cookie = `qada_test_mode=${workspaceMode}; Path=/; Max-Age=43200; SameSite=Lax; Secure`;
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'test-access',
+          workspaceMode,
+        }),
+      });
 
-      const session: UserSession = {
-        id: 'test-user',
-        name: workspaceMode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
-        personName: workspaceMode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
-        email: 'test-user@qada.local',
-        nationalId: '',
-        role: 'user',
-        loginMethod: 'test_open',
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof payload?.error === 'string' ? payload.error : 'تعذر فتح واجهة QADA.');
+      }
+      if (!payload?.session || payload.session.role !== 'user') {
+        throw new Error('لم يتم إنشاء جلسة استخدام صالحة.');
+      }
+
+      onLoginSuccess({
+        ...(payload.session as UserSession),
         workspaceMode,
-        loginAt: Date.now(),
-      };
-
-      onLoginSuccess(session);
-    } catch {
-      setError('تعذر فتح واجهة الاختبار في هذا المتصفح.');
+      });
+    } catch (workspaceError) {
+      setError(workspaceError instanceof Error ? workspaceError.message : 'تعذر فتح واجهة QADA.');
     } finally {
       setBusyMode(null);
     }

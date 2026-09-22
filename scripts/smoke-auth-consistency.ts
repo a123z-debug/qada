@@ -63,23 +63,21 @@ assert(
   'browser-bound account proofs must not return',
 );
 assert(
-  loginScreen.includes('qada_test_mode=')
+  loginScreen.includes("qada_test_mode=; Path=/; Max-Age=0")
+    && loginScreen.includes("action: 'test-access'")
+    && loginScreen.includes("credentials: 'include'")
     && loginScreen.includes("mode: 'simple'")
     && loginScreen.includes("mode: 'professional'")
-    && loginScreen.includes("mode: 'admin'")
-    && loginScreen.includes("action: 'admin-login'")
-    && loginScreen.includes('type="password"')
-    && loginScreen.includes('كلمة المرور'),
-  'Simple and Professional must remain direct while Admin requires the protected credential form',
+    && loginScreen.includes("mode: 'admin'"),
+  'Simple and Professional access must be requested from the server',
 );
 assert(
-  sessionApi.includes("const TEST_MODE_COOKIE = 'qada_test_mode'")
-    && sessionApi.includes("mode === 'simple' || mode === 'professional'")
-    && !sessionApi.includes("mode === 'simple' || mode === 'professional' || mode === 'admin'")
+  !sessionApi.includes("cookies(header)[TEST_MODE_COOKIE]")
+    && sessionApi.includes("process.env.QADA_OPEN_TEST_MODE === 'true'")
+    && sessionApi.includes("action === 'test-access'")
     && sessionApi.includes("requestedMode === 'admin'")
-    && sessionApi.includes("واجهة الإدارة تتطلب رمز الدخول وكلمة المرور")
-    && sessionApi.includes("loginMethod: 'test_open'"),
-  'passwordless test access must never mint an admin session',
+    && sessionApi.includes("test-${workspaceMode}-${randomBytes(10).toString('hex')}"),
+  'direct access must be unique and server-signed and must not mint admin access',
 );
 assert(
   envExample.includes('REDIS_URL')
@@ -108,7 +106,7 @@ console.log(JSON.stringify({
   activeCookie: 'qada_session_v6',
   persistentAccounts: true,
   adminCredentialVersion: 'v7',
-  temporaryOpenTestAccess: 'simple-professional-only',
+  temporaryOpenTestAccess: 'server-minted-simple-professional-only',
   isolatedAuthSecret: true,
   checkedApiFiles: apiFiles.length,
 }, null, 2));

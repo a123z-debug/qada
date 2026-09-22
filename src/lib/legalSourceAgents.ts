@@ -260,6 +260,7 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
     }))
     .slice(0, 24);
 
+  const queryNormalized = normalizeArabic(query);
   const blockers = [
     ...PERSONNEL_SERVICE_LAW_1397.versions
       .filter((version) => version.status !== 'verified')
@@ -267,6 +268,16 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
     ...PERSONNEL_SERVICE_LAW_1397.regulations
       .filter((regulation) => regulation.status !== 'verified')
       .map((regulation) => `${regulation.name}: ${regulation.note}`),
+    ...PERSONNEL_SERVICE_LAW_1397.amendments
+      .filter((amendment) => amendment.status !== 'verified')
+      .filter((amendment) => {
+        const amendmentText = normalizeArabic(`${amendment.label} ${amendment.note}`);
+        return queryNormalized.includes('م 37')
+          || queryNormalized.includes('1430')
+          || queryNormalized.includes('17 ب')
+          || amendmentText.split(' ').some((token) => token.length >= 6 && queryNormalized.includes(token));
+      })
+      .map((amendment) => `${amendment.label}: ${amendment.note}`),
   ];
 
   if (rights.length === 0 && verifiedArticles.length === 0) {
@@ -420,7 +431,9 @@ function buildOfficialSourcePacket(query: string): LegalSourcePacket {
     })),
   ].slice(0, 16);
 
-  const verifiedArticles = refs.flatMap((ref) =>
+  const verifiedArticles = refs
+    .filter((ref) => ref.status === 'official-verified')
+    .flatMap((ref) =>
     ref.materialIndex
       .map((label) => {
         const match = label.match(/(?:المادة|مادة)\s*\(?\s*(\d{1,3}(?:\s*\/\s*\d{1,3})?)\s*\)?/);

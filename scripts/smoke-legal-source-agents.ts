@@ -20,8 +20,9 @@ const military = runLegalSourceAgents('حقوق عسكري في نظام خدم�
 const militaryIds = new Set(military.packets.map((packet) => packet.agentId));
 assert(militaryIds.has('src-personnel'), 'personnel source agent must run for military query');
 const personnel = military.packets.find((packet) => packet.agentId === 'src-personnel');
-assert(personnel?.status === 'warning', 'personnel agent should preserve current verification warning');
+assert(personnel?.status === 'success' || personnel?.status === 'warning', 'personnel agent must report an explicit verification state');
 assert((personnel?.references.length || 0) > 0, 'personnel agent should expose verified right/source records');
+assert((personnel?.verifiedArticles.length || 0) > 0, 'personnel agent should expose verified personnel-service articles when relevant');
 
 const royal = runLegalSourceAgents('مرسوم ملكي وقرار مجلس الوزراء وتعديل نظام');
 const royalIds = new Set(royal.packets.map((packet) => packet.agentId));

@@ -50,7 +50,7 @@ const SESSION_MAX_AGE = 12 * 60 * 60;
 const PBKDF2_ITERATIONS = 310_000;
 const AUTH_WINDOW_SECONDS = 15 * 60;
 const AUTH_ATTEMPT_LIMIT = 10;
-const OPEN_TEST_MODE = true;
+const OPEN_TEST_MODE = process.env.QADA_OPEN_TEST_MODE === 'true' || !isProductionRuntime();
 
 const DEV_ADMIN_HASH_V7 = sha256('qada-local-admin:qada-local-password');
 const localAccounts = new Map<string, string>();
@@ -239,23 +239,8 @@ async function loadAccount(email: string): Promise<AccountRecord | null> {
 }
 
 export async function readActiveSession(header?: string | string[]): Promise<AuthSession | null> {
-  if (OPEN_TEST_MODE) {
-    const mode = cookies(header)[TEST_MODE_COOKIE];
-    if (mode === 'simple' || mode === 'professional') {
-      return {
-        id: 'test-user',
-        name: mode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
-        personName: mode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
-        email: 'test-user@qada.local',
-        nationalId: '',
-        role: 'user',
-        loginMethod: 'test_open',
-        workspaceMode: mode,
-        loginAt: Date.now(),
-      };
-    }
-  }
-
+  // Protected APIs accept only the encrypted HttpOnly QADA session.
+  // Legacy qada_test_mode is cleared on logout but is never trusted for authentication.
   const session = readSession(header);
   if (!session) return null;
   if (session.role === 'admin') {
@@ -272,8 +257,6 @@ export async function readActiveSession(header?: string | string[]): Promise<Aut
     if (accountRevision !== sessionRevision) return null;
     return session;
   } catch {
-    // Fail closed if the account store cannot confirm an ordinary user session.
-    // Admin sessions are handled above and do not depend on the user-account store.
     return isProductionRuntime() ? null : session;
   }
 }
@@ -537,12 +520,14 @@ export default async function handler(req: any, res: any) {
     const action = String(body.action || '');
 
     let rateLimitIdentity = '';
-    if (action === 'register' || action === 'user-login' || action === 'admin-login' || action === 'guest-login' || action === 'change-password') {
+    if (action === 'register' || action === 'user-login' || action === 'admin-login' || action === 'guest-login' || action === 'test-access' || action === 'change-password') {
       const accountHint = action === 'admin-login'
         ? String(body.adminCode || '').trim().toLowerCase()
         : action === 'guest-login'
           ? 'guest'
-          : normalizeEmail(String(body.email || ''));
+          : action === 'test-access'
+            ? String(body.workspaceMode || 'simple').slice(0, 40)
+            : normalizeEmail(String(body.email || ''));
       rateLimitIdentity = `${clientId(req)}:${accountHint.slice(0, 180)}`;
       const limit = await enforceRateLimit(`auth:${action}`, rateLimitIdentity, AUTH_ATTEMPT_LIMIT, AUTH_WINDOW_SECONDS);
       if (!limit.allowed) {
@@ -600,6 +585,7 @@ export default async function handler(req: any, res: any) {
     let session: AuthSession;
 
     if (action === 'test-access') {
+      if (!OPEN_TEST_MODE) return res.status(403).json({ error: 'الدخول المباشر غير مفعّل على هذه البيئة.' });
       const requestedMode = String(body.workspaceMode || 'simple');
       if (requestedMode === 'admin') {
         return res.status(403).json({ error: 'واجهة الإدارة تتطلب رمز الدخول وكلمة المرور.' });
