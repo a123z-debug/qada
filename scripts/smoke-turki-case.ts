@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -66,6 +67,39 @@ assert(
   'source agents must include personnel materials without promoting needs-correction records',
 );
 
+const turkiDraftQuery = `
+لائحة طعن بالنقض أمام المحكمة الإدارية العليا في حكم محكمة الاستئناف الإدارية.
+فرد عسكري بالقوات البرية يطالب بمكافأة الحاسب الآلي، ويستند إلى المادة (53) للميعاد،
+والمادة (11) من نظام ديوان المظالم، والمادة (17/ب) والمادة (2/هـ) من نظام خدمة الأفراد،
+والمرسوم الملكي م/37 لعام 1430هـ، ويدفع باختلاف مناط العلاوة الفنية ومكافأة الحاسب
+وبثبوت الممارسة الفعلية للعمل.
+`;
+const turkiBundle = runLegalSourceAgents(turkiDraftQuery);
+const articleKeys = new Set(
+  turkiBundle.packets.flatMap((packet) =>
+    packet.verifiedArticles.map((article) => `${article.system}|${article.article}`)
+  )
+);
+for (const key of [
+  'نظام ديوان المظالم|11',
+  'نظام ديوان المظالم|13',
+  'نظام المرافعات أمام ديوان المظالم|33',
+  'نظام المرافعات أمام ديوان المظالم|45',
+  'نظام المرافعات أمام ديوان المظالم|46',
+  'نظام المرافعات أمام ديوان المظالم|53',
+  'نظام المرافعات أمام ديوان المظالم|54',
+  'نظام خدمة الأفراد|2',
+  'نظام خدمة الأفراد|16',
+  'نظام خدمة الأفراد|17',
+  'نظام خدمة الأفراد|19',
+]) {
+  assert(articleKeys.has(key), 'Turki semantic retrieval missing controlling article: ' + key);
+}
+assert(
+  turkiBundle.verification.blockers.some((item) => item.includes('م/37') || item.includes('م 37')),
+  'Turki query must keep M/37 historical-amendment claim behind an explicit verification blocker',
+);
+
 console.log(JSON.stringify({
   ok: true,
   scenario: 'Turki administrative cassation / computer allowance',
@@ -75,6 +109,7 @@ console.log(JSON.stringify({
     militaryPersonnel: ['2', '16', '17', '19'],
   },
   historicalAmendmentM37: 'needs-correction',
+  semanticRetrieval: Array.from(articleKeys).filter((key) => /ديوان المظالم|خدمة الأفراد/.test(key)),
   attachmentContinuity: true,
   isolatedDirectSessions: true,
 }, null, 2));
