@@ -53,8 +53,8 @@ const AUTH_ATTEMPT_LIMIT = 10;
 const OPEN_TEST_MODE = true;
 
 // Stable bootstrap hash for the owner-selected Administration credentials.
-// A valid QADA_ADMIN_CREDENTIAL_HASH_V6 environment value overrides this.
-const BUILTIN_ADMIN_HASH_V6 = '4b999367e80365715c601e9d36d406de28f980a5e75f9e38429322d057f3e0a2';
+// A valid QADA_ADMIN_CREDENTIAL_HASH_V7 environment value overrides this.
+const BUILTIN_ADMIN_HASH_V7 = 'aa21537421a711d07befc6c10de4cd4e938bbfd1d3d9ce2bc8566739747ebb15';
 const localAccounts = new Map<string, string>();
 
 function b64(value: Buffer | string) {
@@ -95,11 +95,11 @@ function rootSecret() {
 }
 
 function adminCredentialConfig() {
-  const configured = process.env.QADA_ADMIN_CREDENTIAL_HASH_V6?.trim().toLowerCase() || '';
+  const configured = process.env.QADA_ADMIN_CREDENTIAL_HASH_V7?.trim().toLowerCase() || '';
   if (/^[a-f0-9]{64}$/i.test(configured)) {
     return { hash: configured, source: 'environment' as const };
   }
-  return { hash: BUILTIN_ADMIN_HASH_V6, source: 'bootstrap' as const };
+  return { hash: BUILTIN_ADMIN_HASH_V7, source: 'bootstrap' as const };
 }
 
 function adminCredentialHash() {
