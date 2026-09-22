@@ -19,8 +19,9 @@
     "test:production-readiness": "tsx scripts/smoke-production-readiness.ts",
     "test:blueprint-map": "tsx scripts/smoke-blueprint-map.ts",
     "test:interaction-wiring": "tsx scripts/smoke-interaction-wiring.ts",
+    "test:serverless-runtime": "tsx scripts/smoke-serverless-runtime.ts",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
-    "verify": "npm run lint && npm run test:legal-sources && npm run test:legal-guard && npm run test:legal-ui-safety && npm run test:api-auth && npm run test:auth-consistency && npm run test:privacy-storage && npm run test:multimodal-evidence && npm run test:production-readiness && npm run test:blueprint-map && npm run test:interaction-wiring"
+    "verify": "npm run lint && npm run test:legal-sources && npm run test:legal-guard && npm run test:legal-ui-safety && npm run test:api-auth && npm run test:auth-consistency && npm run test:privacy-storage && npm run test:multimodal-evidence && npm run test:production-readiness && npm run test:blueprint-map && npm run test:interaction-wiring && npm run test:serverless-runtime"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
