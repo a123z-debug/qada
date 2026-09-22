@@ -24,6 +24,16 @@ async function startServer() {
   const app = express();
 
   app.disable('x-powered-by');
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader('X-Frame-Options', 'DENY');
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+    next();
+  });
   app.use(express.json({ limit: '4mb' }));
   app.use(express.urlencoded({ limit: '4mb', extended: true }));
 
@@ -37,6 +47,18 @@ async function startServer() {
 
   app.get('/api/health', (req, res) => {
     void healthHandler(req as any, res as any);
+  });
+
+  app.get('/robots.txt', (req, res) => {
+    const base = (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+    res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`);
+  });
+
+  app.get('/sitemap.xml', (req, res) => {
+    const base = (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+    res.type('application/xml').send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${base}/</loc></url></urlset>`
+    );
   });
 
   // Local development and self-hosted production use the exact same API handlers
