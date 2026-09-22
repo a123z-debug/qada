@@ -8,7 +8,7 @@ import {
   timingSafeEqual,
 } from 'node:crypto';
 import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.ts';
-import { enforceRateLimit } from './_rateLimit.ts';
+import { clearRateLimit, enforceRateLimit } from './_rateLimit.ts';
 import { protectJson, unprotectJson } from './_secureStore.ts';
 import { recordAuditEvent } from './_audit.ts';
 
@@ -25,6 +25,7 @@ export type AuthSession = {
   loginMethod: 'admin_password' | 'email_password';
   loginAt: number;
   sessionRevision?: number;
+  adminCredentialRevision?: string;
 };
 
 type SessionPayload = AuthSession & { iat: number; exp: number };
@@ -41,10 +42,16 @@ type AccountRecord = {
   disabledAt?: number;
 };
 
-const SESSION_COOKIE = 'qada_session_v5';
-const OLD_SESSION_COOKIES = ['qada_session_v4', 'qada_session_v3', 'qada_session_v2'];
+const SESSION_COOKIE = 'qada_session_v6';
+const OLD_SESSION_COOKIES = ['qada_session_v5', 'qada_session_v4', 'qada_session_v3', 'qada_session_v2'];
 const SESSION_MAX_AGE = 12 * 60 * 60;
 const PBKDF2_ITERATIONS = 310_000;
+const AUTH_WINDOW_SECONDS = 15 * 60;
+const AUTH_ATTEMPT_LIMIT = 10;
+
+// Stable bootstrap hash for the owner-selected Administration credentials.
+// A valid QADA_ADMIN_CREDENTIAL_HASH_V6 environment value overrides this.
+const BUILTIN_ADMIN_HASH_V6 = '4b999367e80365715c601e9d36d406de28f980a5e75f9e38429322d057f3e0a2';
 const localAccounts = new Map<string, string>();
 
 function b64(value: Buffer | string) {
@@ -78,15 +85,23 @@ function rootSecret() {
   if (!explicit || explicit.length < 32) {
     throw new Error('AUTH_SECRET_MISSING');
   }
-  return createHash('sha256').update(`qada-session-v5:${explicit}`).digest();
+  return createHash('sha256').update(`qada-session-v6:${explicit}`).digest();
+}
+
+function adminCredentialConfig() {
+  const configured = process.env.QADA_ADMIN_CREDENTIAL_HASH_V6?.trim().toLowerCase() || '';
+  if (/^[a-f0-9]{64}$/i.test(configured)) {
+    return { hash: configured, source: 'environment' as const };
+  }
+  return { hash: BUILTIN_ADMIN_HASH_V6, source: 'bootstrap' as const };
 }
 
 function adminCredentialHash() {
-  const configured = process.env.QADA_ADMIN_CREDENTIAL_HASH_V4?.trim();
-  if (!configured || !/^[a-f0-9]{64}$/i.test(configured)) {
-    throw new Error('ADMIN_CREDENTIAL_NOT_CONFIGURED');
-  }
-  return configured.toLowerCase();
+  return adminCredentialConfig().hash;
+}
+
+function adminCredentialRevision() {
+  return adminCredentialHash().slice(0, 16);
 }
 
 function keyFor(purpose: string) {
@@ -138,14 +153,14 @@ function createSessionToken(session: AuthSession) {
     iat: now,
     exp: now + SESSION_MAX_AGE * 1000,
   };
-  return encryptJson(payload, 'session', 'v5');
+  return encryptJson(payload, 'session', 'v6');
 }
 
 export function readSession(header?: string | string[]): AuthSession | null {
   try {
     const token = cookies(header)[SESSION_COOKIE];
     if (!token) return null;
-    const payload = decryptJson<SessionPayload>(token, 'session', 'v5');
+    const payload = decryptJson<SessionPayload>(token, 'session', 'v6');
     if (!payload || payload.exp <= Date.now() || !payload.id || !payload.email || !payload.role) return null;
     const { iat: _iat, exp: _exp, ...session } = payload;
     return session;
@@ -216,7 +231,9 @@ async function loadAccount(email: string): Promise<AccountRecord | null> {
 export async function readActiveSession(header?: string | string[]): Promise<AuthSession | null> {
   const session = readSession(header);
   if (!session) return null;
-  if (session.role === 'admin') return session;
+  if (session.role === 'admin') {
+    return session.adminCredentialRevision === adminCredentialRevision() ? session : null;
+  }
 
   try {
     const account = await loadAccount(session.email);
@@ -377,8 +394,13 @@ export async function setUserAccountDisabled(userId: string, disabled: boolean):
 }
 
 function loginAdmin(adminCodeInput: string, password: string): AuthSession {
+  const adminCode = adminCodeInput.trim();
+  if (!adminCode || adminCode.length > 128 || !password || password.length > 256) {
+    throw new Error('INVALID_CREDENTIALS');
+  }
+
   const expected = adminCredentialHash();
-  const actual = sha256(`${adminCodeInput.trim()}:${password}`);
+  const actual = sha256(`${adminCode}:${password}`);
   if (!safeEqual(actual, expected)) throw new Error('INVALID_CREDENTIALS');
 
   return {
@@ -391,6 +413,7 @@ function loginAdmin(adminCodeInput: string, password: string): AuthSession {
     agency: process.env.ADMIN_AGENCY?.trim() || 'إدارة أصول القضاء',
     loginMethod: 'admin_password',
     loginAt: Date.now(),
+    adminCredentialRevision: adminCredentialRevision(),
   };
 }
 
@@ -404,19 +427,18 @@ function clientId(req: any): string {
 
 function authError(error: unknown) {
   const code = error instanceof Error ? error.message : '';
-  if (code === 'INVALID_NAME' || code === 'INVALID_EMAIL') return { status: 400, error: 'بيانات التسجيل غير صحيحة.' };
-  if (code === 'WEAK_PASSWORD') return { status: 400, error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' };
-  if (code === 'ACCOUNT_EXISTS') return { status: 409, error: 'يوجد حساب مسجل بهذا البريد.' };
-  if (code === 'ACCOUNT_NOT_FOUND') return { status: 401, error: 'الحساب غير موجود أو بيانات الدخول غير صحيحة.' };
-  if (code === 'ACCOUNT_DISABLED') return { status: 403, error: 'الحساب موقوف. راجع إدارة المنصة.' };
-  if (code === 'INVALID_CREDENTIALS') return { status: 401, error: 'بيانات الدخول غير صحيحة.' };
-  if (code === 'AUTH_SECRET_MISSING') return { status: 503, error: 'AUTH_SECRET غير مضبوط أو أقصر من الحد المطلوب.' };
-  if (code === 'DATA_SECRET_MISSING') return { status: 503, error: 'DATA_SECRET غير مضبوط أو أقصر من الحد المطلوب.' };
-  if (code === 'ADMIN_CREDENTIAL_NOT_CONFIGURED') return { status: 503, error: 'بيانات اعتماد الإدارة غير مضبوطة على الخادم.' };
+  if (code === 'INVALID_NAME' || code === 'INVALID_EMAIL') return { status: 400, code, error: 'تحقق من الاسم والبريد الإلكتروني ثم أعد المحاولة.' };
+  if (code === 'WEAK_PASSWORD') return { status: 400, code, error: 'كلمة المرور يجب أن تكون 10 أحرف على الأقل.' };
+  if (code === 'ACCOUNT_EXISTS') return { status: 409, code, error: 'يوجد حساب مسجل بهذا البريد. انتقل إلى تسجيل الدخول.' };
+  if (code === 'ACCOUNT_NOT_FOUND') return { status: 401, code, error: 'الحساب غير موجود أو بيانات الدخول غير صحيحة.' };
+  if (code === 'ACCOUNT_DISABLED') return { status: 403, code, error: 'الحساب موقوف. راجع إدارة المنصة.' };
+  if (code === 'INVALID_CREDENTIALS') return { status: 401, code, error: 'رمز الدخول أو كلمة المرور غير صحيحة.' };
+  if (code === 'AUTH_SECRET_MISSING') return { status: 503, code, error: 'خدمة تسجيل الدخول غير مهيأة على الخادم.' };
+  if (code === 'DATA_SECRET_MISSING') return { status: 503, code, error: 'خدمة حماية البيانات غير مهيأة على الخادم.' };
   if (code === 'ACCOUNT_STORE_UNAVAILABLE' || code === 'RATE_LIMIT_STORE_UNAVAILABLE' || code.startsWith('REDIS_')) {
-    return { status: 503, error: 'مخزن الحسابات والحماية الموزعة غير متاح.' };
+    return { status: 503, code, error: 'خدمة الحسابات غير متاحة مؤقتاً. أعد المحاولة بعد قليل.' };
   }
-  return { status: 500, error: 'تعذر إكمال عملية المصادقة.' };
+  return { status: 500, code: code || 'AUTH_UNKNOWN', error: 'تعذر إكمال تسجيل الدخول حالياً.' };
 }
 
 export default async function handler(req: any, res: any) {
@@ -436,12 +458,17 @@ export default async function handler(req: any, res: any) {
       } catch {}
       const dataConfigured = Boolean((process.env.DATA_SECRET || '').trim().length >= 32);
       const storeConfigured = isRedisConfigured();
-      const ready = authConfigured && dataConfigured && adminConfigured && (storeConfigured || !isProductionRuntime());
+      const adminReady = authConfigured && adminConfigured;
+      const userReady = authConfigured && dataConfigured && (storeConfigured || !isProductionRuntime());
+      const ready = adminReady && userReady;
       return res.status(ready ? 200 : 503).json({
         ok: ready,
         authConfigured,
         dataConfigured,
         adminConfigured,
+        adminReady,
+        userReady,
+        adminCredentialSource: adminCredentialConfig().source,
         accountStore: storeConfigured ? 'redis' : (isProductionRuntime() ? 'missing' : 'memory-dev'),
         sessionCookie: SESSION_COOKIE,
       });
@@ -479,11 +506,20 @@ export default async function handler(req: any, res: any) {
     const body = (req.body ?? {}) as Record<string, unknown>;
     const action = String(body.action || '');
 
+    let rateLimitIdentity = '';
     if (action === 'register' || action === 'user-login' || action === 'admin-login' || action === 'change-password') {
-      const limit = await enforceRateLimit(`auth:${action}`, clientId(req), 10, 15 * 60);
+      const accountHint = action === 'admin-login'
+        ? String(body.adminCode || '').trim().toLowerCase()
+        : normalizeEmail(String(body.email || ''));
+      rateLimitIdentity = `${clientId(req)}:${accountHint.slice(0, 180)}`;
+      const limit = await enforceRateLimit(`auth:${action}`, rateLimitIdentity, AUTH_ATTEMPT_LIMIT, AUTH_WINDOW_SECONDS);
       if (!limit.allowed) {
         res.setHeader('Retry-After', String(limit.retryAfterSeconds));
-        return res.status(429).json({ error: 'محاولات كثيرة. حاول مرة أخرى لاحقاً.' });
+        return res.status(429).json({
+          code: 'RATE_LIMITED',
+          error: 'تم إيقاف المحاولات مؤقتاً لحماية الحساب.',
+          retryAfterSeconds: limit.retryAfterSeconds,
+        });
       }
     }
 
@@ -567,6 +603,10 @@ export default async function handler(req: any, res: any) {
       cookieForSession(session),
     ]);
 
+    if (rateLimitIdentity) {
+      await clearRateLimit(`auth:${action}`, rateLimitIdentity, AUTH_WINDOW_SECONDS);
+    }
+
     await recordAuditEvent({
       actorId: session.id,
       actorRole: session.role,
@@ -577,6 +617,6 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json({ session });
   } catch (error) {
     const mapped = authError(error);
-    return res.status(mapped.status).json({ error: mapped.error });
+    return res.status(mapped.status).json({ error: mapped.error, code: mapped.code });
   }
 }
