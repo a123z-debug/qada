@@ -22,6 +22,9 @@ import {
   LockKeyhole
 } from 'lucide-react';
 import { CourtJurisdiction, COURT_CATEGORIES } from '../layout/Sidebar';
+import { readSseTextResponse } from '../../lib/readSseTextResponse';
+import { readFileAsAttachment } from '../../lib/clientAttachments';
+import type { Attachment } from '../../types';
 
 interface WelcomeScreenProps {
   onSelectCourt: (court: CourtJurisdiction) => void;
@@ -30,7 +33,6 @@ interface WelcomeScreenProps {
   message?: string;
   isAdmin?: boolean;
   onOpenAdminOverview?: () => void;
-  onOpenAssistant?: (prefill?: string) => void;
 }
 
 export function WelcomeScreen({
@@ -40,10 +42,13 @@ export function WelcomeScreen({
   message = 'الرجاء اختيار الاختصاص القضائي للبدء',
   isAdmin = false,
   onOpenAdminOverview,
-  onOpenAssistant,
 }: WelcomeScreenProps) {
   const [interfaceMode, setInterfaceMode] = useState<'simple' | 'professional'>(isAdmin ? 'professional' : 'simple');
   const [simpleRequest, setSimpleRequest] = useState('');
+  const [simpleMessages, setSimpleMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([]);
+  const [simpleBusy, setSimpleBusy] = useState(false);
+  const [simpleError, setSimpleError] = useState('');
+  const [simpleAttachments, setSimpleAttachments] = useState<Attachment[]>([]);
 
   const handleQuickLaunch = (court: CourtJurisdiction, serviceId: string) => {
     onSelectCourt(court);
@@ -59,14 +64,82 @@ export function WelcomeScreen({
     { title: 'ابحث عن حقي النظامي', text: 'اشرح مشكلتي أولاً ثم حدد المسائل النظامية المحتملة، وابحث في المراجع الرسمية المتاحة، وميز بوضوح بين النص المتحقق وما يحتاج مراجعة.' },
   ];
 
-  const openSimpleTask = (request: string) => {
+  const openSimpleTask = async (request: string) => {
     const task = request.trim();
-    if (!task || !onOpenAssistant) return;
-    onOpenAssistant(
-      'أنت تعمل الآن في واجهة QADA Simple. أنجز للمستخدم المهمة من البداية إلى النهاية بطريقة مبسطة. ' +
-      'ابدأ بفهم الهدف، ثم اطلب البيانات أو المستندات الناقصة فقط، ثم نفذ التحليل والصياغة والمراجعة بالتتابع. ' +
-      'لا تختلق مادة أو حكماً أو ميعاداً، وميّز دائماً بين المصدر الرسمي المتحقق وما يحتاج تحققاً.\n\nطلب المستخدم: ' + task
-    );
+    if (!task || simpleBusy) return;
+
+    const userMessage = { id: 'simple-user-' + Date.now(), role: 'user' as const, content: task };
+    const assistantId = 'simple-assistant-' + Date.now();
+    const assistantMessage = { id: assistantId, role: 'assistant' as const, content: '' };
+    const previousMessages = simpleMessages;
+
+    setSimpleRequest('');
+    setSimpleError('');
+    setSimpleBusy(true);
+    setSimpleMessages([...previousMessages, userMessage, assistantMessage]);
+
+    const simpleInstruction =
+      'أنت تعمل في واجهة QADA Simple. هدفك إنجاز طلب المستخدم من البداية إلى النهاية بطريقة مبسطة. ' +
+      'ابدأ بفهم النتيجة المطلوبة، ثم اطلب فقط البيانات أو المستندات الناقصة، ثم نفذ التحليل والصياغة والمراجعة بالتتابع. ' +
+      'لا تفترض الاختصاص أو المواعيد أو أرقام المواد من الذاكرة، ولا تختلق حكماً أو مرسوماً أو سابقة. ' +
+      'ميّز بوضوح بين المصدر الرسمي المتحقق وما يحتاج تحققاً، ولا تصف أي مخرج بأنه معتمد قضائياً أو جاهز للإيداع تلقائياً.';
+
+    try {
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'user', content: simpleInstruction },
+            ...previousMessages
+              .filter((message) => message.content.trim())
+              .map((message) => ({ role: message.role, content: message.content })),
+            { role: 'user', content: task, attachments: simpleAttachments },
+          ],
+          targetCourt: 'الاستشارة القضائية العامة',
+          powerMode: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || 'تعذر تشغيل مسار الإنجاز.');
+      }
+
+      const result = await readSseTextResponse(response, (fullText) => {
+        setSimpleMessages((current) =>
+          current.map((message) => message.id === assistantId ? { ...message, content: fullText } : message)
+        );
+      });
+
+      if (!result.trim()) {
+        throw new Error('لم يصل رد صالح من محرك التحليل.');
+      }
+      setSimpleAttachments([]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'تعذر إكمال المهمة.';
+      setSimpleError(message);
+      setSimpleMessages((current) =>
+        current.map((item) =>
+          item.id === assistantId
+            ? { ...item, content: 'تعذر إكمال التحليل الآلي حالياً، ولم تعتمد QADA أي نتيجة قانونية. أعد المحاولة بعد التحقق من جاهزية الخدمة.' }
+            : item
+        )
+      );
+    } finally {
+      setSimpleBusy(false);
+    }
+  };
+
+  const addSimpleAttachments = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setSimpleError('');
+    try {
+      const attachments = await Promise.all(Array.from(files).map((file) => readFileAsAttachment(file)));
+      setSimpleAttachments((current) => [...current, ...attachments].slice(0, 6));
+    } catch (error) {
+      setSimpleError(error instanceof Error ? error.message : 'تعذر قراءة المرفق.');
+    }
   };
 
   if (interfaceMode === 'simple') {
@@ -101,22 +174,74 @@ export function WelcomeScreen({
               لا تحتاج لمعرفة اسم المحكمة أو المادة أو الأداة. اكتب مشكلتك أو النتيجة التي تريدها، وسيبدأ QADA بجمع الناقص ثم ينتقل إلى التحليل والمراجع والصياغة والمراجعة.
             </p>
 
+            {simpleMessages.length > 0 && (
+              <div className="mt-7 max-h-[48vh] space-y-3 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950/60 p-3 sm:p-4 custom-scrollbar">
+                {simpleMessages.map((message) => (
+                  <div key={message.id} className={message.role === 'user' ? 'mr-auto max-w-[92%] rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3' : 'ml-auto max-w-[96%] rounded-2xl border border-slate-800 bg-slate-900 p-3'}>
+                    <div className="mb-1 text-[10px] font-black text-slate-500">{message.role === 'user' ? 'أنت' : 'QADA'}</div>
+                    <div className="whitespace-pre-wrap text-sm leading-7 text-slate-200">
+                      {message.content || <span className="text-slate-500">جاري إكمال المهمة...</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="mt-7 rounded-2xl border border-slate-700 bg-slate-950/80 p-3 sm:p-4">
               <textarea
                 value={simpleRequest}
                 onChange={(event) => setSimpleRequest(event.target.value)}
-                placeholder="مثال: صدر بحقي قرار من جهة حكومية وأريد أعرف كيف أعترض عليه وأجهز الطلب كامل..."
+                placeholder={simpleMessages.length ? 'أجب عن السؤال أو أضف أي معلومة لازمة لإكمال المهمة...' : 'مثال: صدر بحقي قرار من جهة حكومية وأريد أعرف كيف أعترض عليه وأجهز الطلب كامل...'}
                 className="min-h-32 w-full resize-y rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm leading-7 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400/50"
               />
+
+              {simpleAttachments.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {simpleAttachments.map((attachment) => (
+                    <button
+                      key={attachment.id}
+                      type="button"
+                      onClick={() => setSimpleAttachments((current) => current.filter((item) => item.id !== attachment.id))}
+                      className="rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-2.5 py-1.5 text-[10px] font-bold text-cyan-200 hover:border-rose-400/30 hover:text-rose-200"
+                      title="إزالة المرفق"
+                    >
+                      {attachment.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {simpleError && (
+                <div className="mt-3 rounded-xl border border-rose-400/20 bg-rose-400/5 px-3 py-2 text-xs font-bold text-rose-200">
+                  {simpleError}
+                </div>
+              )}
+
               <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-[11px] leading-5 text-slate-500">يمكنك لاحقاً إرفاق PDF أو صورة من داخل المستشار؛ وسيبقى ملف القضية نفسه متاحاً في الواجهة الاحترافية.</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 text-xs font-bold text-slate-300 hover:border-cyan-400/35">
+                    <FileText className="h-4 w-4" />
+                    <span>إرفاق PDF أو صورة</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="application/pdf,image/*"
+                      className="hidden"
+                      onChange={(event) => {
+                        void addSimpleAttachments(event.target.files);
+                        event.currentTarget.value = '';
+                      }}
+                    />
+                  </label>
+                  <p className="text-[10px] leading-5 text-slate-500">حتى 6 مرفقات، وبحد 2.5MB لكل ملف حسب مسار التحليل الحالي.</p>
+                </div>
                 <button
                   type="button"
-                  disabled={!simpleRequest.trim() || !onOpenAssistant}
-                  onClick={() => openSimpleTask(simpleRequest)}
+                  disabled={!simpleRequest.trim() || simpleBusy}
+                  onClick={() => void openSimpleTask(simpleRequest)}
                   className="min-h-11 shrink-0 rounded-xl bg-cyan-400 px-5 text-sm font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  ابدأ إنجاز المهمة
+                  {simpleBusy ? 'جاري الإنجاز...' : simpleMessages.length ? 'متابعة المهمة' : 'ابدأ إنجاز المهمة'}
                 </button>
               </div>
             </div>
