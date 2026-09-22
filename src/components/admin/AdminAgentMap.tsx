@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -275,7 +275,10 @@ export function AdminAgentMap({
   onOpenAnalysisRoom?: () => void;
   onNavigateNode?: (nodeId: string) => void;
 }) {
-  const [zoom, setZoom] = useState(0.82);
+  const [zoom, setZoom] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const mapPanelRef = useRef<HTMLDivElement | null>(null);
+  const canvasViewportRef = useRef<HTMLDivElement | null>(null);
   const [filter, setFilter] = useState<'all' | 'admin' | 'linked' | 'planned' | 'last-run'>('all');
   const [selectedId, setSelectedId] = useState('qada-core');
   const [runtime, setRuntime] = useState<RuntimeSnapshot | null>(null);
@@ -300,6 +303,58 @@ export function AdminAgentMap({
     'editor-tool',
     'final-output',
   ]);
+
+  const fitCanvasToViewport = useCallback(() => {
+    const viewport = canvasViewportRef.current;
+    if (!viewport) return;
+    const horizontalPadding = 24;
+    const verticalPadding = 24;
+    const availableWidth = Math.max(320, viewport.clientWidth - horizontalPadding);
+    const availableHeight = Math.max(420, viewport.clientHeight - verticalPadding);
+    const scaleX = availableWidth / CANVAS_WIDTH;
+    const scaleY = availableHeight / CANVAS_HEIGHT;
+    const nextZoom = Math.max(0.58, Math.min(1.12, Math.min(scaleX, scaleY)));
+    setZoom(Number(nextZoom.toFixed(3)));
+    viewport.scrollTo({ top: 0, left: viewport.scrollWidth, behavior: 'smooth' });
+  }, []);
+
+  const toggleMapFullscreen = useCallback(async () => {
+    const panel = mapPanelRef.current;
+    if (!panel) return;
+    try {
+      if (document.fullscreenElement === panel) {
+        await document.exitFullscreen();
+      } else {
+        await panel.requestFullscreen();
+      }
+    } catch {
+      // Fullscreen is optional; the map remains usable if the browser blocks it.
+    }
+  }, []);
+
+  useEffect(() => {
+    const viewport = canvasViewportRef.current;
+    if (!viewport) return;
+
+    const fit = () => window.requestAnimationFrame(() => fitCanvasToViewport());
+    fit();
+
+    const observer = new ResizeObserver(fit);
+    observer.observe(viewport);
+    window.addEventListener('resize', fit);
+
+    const handleFullscreen = () => {
+      setIsFullscreen(document.fullscreenElement === mapPanelRef.current);
+      fit();
+    };
+    document.addEventListener('fullscreenchange', handleFullscreen);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', fit);
+      document.removeEventListener('fullscreenchange', handleFullscreen);
+    };
+  }, [fitCanvasToViewport]);
 
 
   useEffect(() => {
@@ -602,8 +657,8 @@ export function AdminAgentMap({
         </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-3">
-        <div className="flex-1 rounded-2xl border border-slate-800 bg-slate-950/90 overflow-hidden">
+      <div className="flex flex-col gap-3">
+        <div ref={mapPanelRef} className="flex-1 rounded-2xl border border-slate-800 bg-slate-950/95 overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/70 px-3 py-2.5">
             <div className="flex flex-wrap gap-1.5">
               <FilterButton active={filter === 'all'} onClick={() => setFilter('all')}>الكل</FilterButton>
@@ -619,15 +674,28 @@ export function AdminAgentMap({
               <button type="button" onClick={() => setZoom((value) => Math.max(0.58, Number((value - 0.08).toFixed(2))))} className="min-h-10 min-w-10 inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-white" title="تصغير">
                 <ZoomOut className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => { setZoom(0.82); setFilter('all'); setSelectedId('qada-core'); }} className="min-h-10 min-w-10 inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-white" title="إعادة الضبط">
+              <button type="button" onClick={() => { fitCanvasToViewport(); setFilter('all'); setSelectedId('qada-core'); }} className="min-h-10 min-w-10 inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-white" title="ملاءمة الخريطة للشاشة">
                 <RotateCcw className="h-4 w-4" />
               </button>
+              <button type="button" onClick={() => void toggleMapFullscreen()} className="min-h-10 inline-flex items-center justify-center gap-1.5 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 text-[10px] font-black text-cyan-100 hover:bg-cyan-500/20" title={isFullscreen ? 'الخروج من العرض الكامل' : 'عرض الخريطة بكامل الشاشة'}>
+                <span className="text-base leading-none">{isFullscreen ? '↙' : '⛶'}</span>
+                <span>{isFullscreen ? 'خروج' : 'عرض كامل'}</span>
+              </button>
+              <span className="min-h-10 inline-flex items-center rounded-lg border border-slate-800 bg-slate-950 px-2.5 text-[10px] font-mono text-slate-400">
+                {Math.round(zoom * 100)}%
+              </span>
             </div>
           </div>
 
-          <div className="relative overflow-auto custom-scrollbar bg-[#020817] min-h-[640px]">
+          <div
+            ref={canvasViewportRef}
+            className={
+              'relative overflow-auto custom-scrollbar bg-[#020817] w-full ' +
+              (isFullscreen ? 'h-[calc(100vh-62px)] min-h-[760px]' : 'h-[calc(100vh-210px)] min-h-[720px]')
+            }
+          >
             <div
-              className="relative origin-top-right transition-transform duration-200"
+              className="relative ml-auto origin-top-right transition-transform duration-200"
               style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, transform: 'scale(' + zoom + ')' }}
             >
               <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(rgba(56,189,248,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,.05) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
@@ -688,7 +756,14 @@ export function AdminAgentMap({
                   );
                   const hasRuntimeError = fromRuntime?.status === 'error' || toRuntime?.status === 'error';
                   const hasRuntimeWarning = fromRuntime?.status === 'warning' || toRuntime?.status === 'warning';
-                  const runtimeStroke = hasRuntimeError ? '#fb7185' : hasRuntimeWarning ? '#fbbf24' : stroke;
+                  const hasRuntimeRunning = fromRuntime?.status === 'running' || toRuntime?.status === 'running';
+                  const runtimeStroke = hasRuntimeError
+                    ? '#fb7185'
+                    : hasRuntimeWarning
+                      ? '#fbbf24'
+                      : hasRuntimeRunning
+                        ? '#22d3ee'
+                        : '#34d399';
                   const path = edgePath(from, to);
                   return (
                     <g key={edge.from + '-' + edge.to + '-' + index}>
@@ -701,18 +776,33 @@ export function AdminAgentMap({
                         filter={visible ? 'url(#qadaGlow)' : undefined}
                       />
                       {activeRuntimeEdge && visible && (
-                        <path
-                          d={path}
-                          fill="none"
-                          stroke={runtimeStroke}
-                          strokeWidth={edge.kind === 'admin' ? 3.2 : 2.8}
-                          strokeOpacity={0.95}
-                          strokeLinecap="round"
-                          strokeDasharray="10 16"
-                          filter="url(#qadaGlow)"
-                        >
-                          <animate attributeName="stroke-dashoffset" from="0" to="-52" dur="1.4s" repeatCount="indefinite" />
-                        </path>
+                        <>
+                          <path
+                            d={path}
+                            fill="none"
+                            stroke={runtimeStroke}
+                            strokeWidth={edge.kind === 'admin' ? 3.6 : 3.1}
+                            strokeOpacity={0.98}
+                            strokeLinecap="round"
+                            strokeDasharray="10 16"
+                            filter="url(#qadaGlow)"
+                          >
+                            <animate attributeName="stroke-dashoffset" from="0" to="-52" dur="1.05s" repeatCount="indefinite" />
+                          </path>
+                          <circle r="6" fill={runtimeStroke} opacity="0.98" filter="url(#qadaGlow)">
+                            <animate attributeName="r" values="4.5;7;4.5" dur="0.9s" repeatCount="indefinite" />
+                            <animateMotion dur="2.15s" repeatCount="indefinite" path={path} />
+                          </circle>
+                          <circle r="3" fill="#ffffff" opacity="0.98">
+                            <animateMotion dur="2.15s" repeatCount="indefinite" path={path} />
+                          </circle>
+                          <circle r="5" fill={runtimeStroke} opacity="0.78" filter="url(#qadaGlow)">
+                            <animateMotion dur="2.15s" begin="0.72s" repeatCount="indefinite" path={path} />
+                          </circle>
+                          <circle r="5" fill={runtimeStroke} opacity="0.58" filter="url(#qadaGlow)">
+                            <animateMotion dur="2.15s" begin="1.44s" repeatCount="indefinite" path={path} />
+                          </circle>
+                        </>
                       )}
                     </g>
                   );
@@ -745,7 +835,7 @@ export function AdminAgentMap({
                       'absolute rounded-2xl border p-3 text-right transition-all shadow-[0_14px_35px_rgba(0,0,0,.28)] backdrop-blur-md ' +
                       toneClass(node.tone) +
                       (selectedNode ? ' ring-2 ring-white/25 scale-[1.02] ' : ' ') +
-                      (runtimeRun?.status === 'running' ? ' ring-2 ring-cyan-300/70 shadow-[0_0_28px_rgba(34,211,238,.28)] ' : ' ') +
+                      (runtimeRun?.status === 'running' ? ' ring-2 ring-cyan-200 shadow-[0_0_40px_rgba(34,211,238,.55)] animate-pulse ' : ' ') +
                       (visible ? ' opacity-100 ' : ' opacity-15 ')
                     }
                     style={{ left: node.x, top: node.y, width: node.width, height: node.height }}
@@ -753,8 +843,8 @@ export function AdminAgentMap({
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span className="min-w-0">
-                        <span className="block truncate text-[12px] font-black text-white">{node.title}</span>
-                        <span className="mt-1 block truncate text-[10px] text-slate-400">{node.subtitle}</span>
+                        <span className="block truncate text-[13px] font-black text-white">{node.title}</span>
+                        <span className="mt-1 block truncate text-[11px] text-slate-300">{node.subtitle}</span>
                       </span>
                       <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-white/10 bg-black/20 text-white">
                         <Icon className="h-4 w-4" />
@@ -774,7 +864,7 @@ export function AdminAgentMap({
           </div>
         </div>
 
-        <aside className="lg:w-[320px] shrink-0 rounded-2xl border border-slate-800 bg-slate-950/90 p-4 h-fit">
+        <aside className="w-full rounded-2xl border border-slate-800 bg-slate-950/90 p-4 h-fit">
           <div className="flex items-center justify-between gap-3">
             <div>
               <span className="text-[10px] font-black text-slate-500">تفاصيل العقدة</span>
