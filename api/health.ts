@@ -26,12 +26,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const redisConfigured = isRedisConfigured();
     let redisReachable = false;
+    let redisStatus = redisConfigured ? 'configured-unchecked' : 'not-configured';
 
     if (redisConfigured) {
       try {
         redisReachable = String(await redisCommand(['PING'])).toUpperCase() === 'PONG';
-      } catch {
-        redisReachable = false;
+        redisStatus = redisReachable ? 'reachable' : 'unexpected-ping-response';
+      } catch (error) {
+        const code = error instanceof Error ? error.message.split(':')[0].slice(0, 80) : 'REDIS_UNKNOWN';
+        redisStatus = code;
+        console.error('QADA health Redis check failed:', code);
       }
     }
 
@@ -44,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const ready =
       authConfigured &&
       dataConfigured &&
-      geminiConfigured &&
+      aiConfigured &&
       redisConfigured &&
       redisReachable;
 
@@ -59,6 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         gatewayConfigured,
         redisConfigured,
         redisReachable,
+        redisStatus,
       },
       build: {
         commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.QADA_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || '',
