@@ -384,6 +384,8 @@ function buildExactTextPacket(query: string): LegalSourcePacket {
 function buildOfficialSourcePacket(query: string): LegalSourcePacket {
   const refs = retrieveOfficialLegalReferences(query, 10);
   const regs = retrieveOfficialJudicialRegulations(query, 8);
+  const requested = articleNumbers(query);
+
   const references = [
     ...refs.map((ref) => ({
       name: ref.name,
@@ -402,17 +404,40 @@ function buildOfficialSourcePacket(query: string): LegalSourcePacket {
     })),
   ].slice(0, 16);
 
+  const verifiedArticles = refs.flatMap((ref) =>
+    ref.materialIndex
+      .map((label) => {
+        const match = label.match(/(?:المادة|مادة)\s*\(?\s*(\d{1,3}(?:\s*\/\s*\d{1,3})?)\s*\)?/);
+        if (!match) return null;
+        const article = match[1].replace(/\s+/g, '');
+        if (requested.length > 0 && !requested.includes(article)) return null;
+        return {
+          system: ref.name,
+          article,
+          sourceUrl: ref.officialSourceUrl,
+          note: ref.textCoverage === 'full-verified'
+            ? 'المادة مفهرسة ضمن مصدر رسمي بتغطية نصية كاملة.'
+            : 'المادة مثبتة في الفهرس الرسمي؛ يعرض QADA رقمها ومضمون التحليل المتحقق، ويحتفظ بالرابط للتحقق دون طباعته في متن الإجابة.',
+        };
+      })
+      .filter((item): item is { system: string; article: string; sourceUrl: string; note: string } => Boolean(item))
+  ).slice(0, 24);
+
   const blockers = references.length
     ? []
     : ['لم يعثر الفهرس الرسمي الداخلي على مصدر متحقق ذي صلة كافية.'];
+
+  if (references.length > 0 && verifiedArticles.length === 0) {
+    blockers.push('عُثر على مصدر رسمي، لكن لا توجد مادة مرقمة مفهرسة بدرجة كافية لهذا الاستفسار؛ لا تُعرض الروابط بديلاً عن المادة.');
+  }
 
   return {
     agentId: 'official-source',
     label: 'مدقق المصدر الرسمي',
     status: blockers.length ? 'warning' : 'success',
-    scope: 'تثبيت هوية المصدر الرسمي وأداة الإصدار والتغطية المتاحة.',
+    scope: 'تثبيت هوية المصدر الرسمي وأداة الإصدار، ثم تقديم المواد النظامية المفهرسة قبل روابط التحقق.',
     references,
-    verifiedArticles: [],
+    verifiedArticles,
     blockers,
   };
 }
