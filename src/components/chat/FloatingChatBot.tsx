@@ -168,6 +168,7 @@ export function FloatingChatBot({
             { role: 'user', content: userText, attachments: pendingAttachments },
           ],
           targetCourt: getCourtLabel(),
+          responseMode: userSession?.workspaceMode === 'professional' || userSession?.workspaceMode === 'admin' ? 'professional' : 'simple',
           powerMode: true,
         }),
       });
