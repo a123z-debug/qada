@@ -9,6 +9,7 @@ const app = fs.readFileSync('src/App.tsx', 'utf8');
 const admin = fs.readFileSync('api/admin-analysis.ts', 'utf8');
 const sourceAgents = fs.readFileSync('src/lib/legalSourceAgents.ts', 'utf8');
 const map = fs.readFileSync('src/components/admin/AdminAgentMap.tsx', 'utf8');
+const welcome = fs.readFileSync('src/components/workspaces/WelcomeScreen.tsx', 'utf8');
 
 const workspaces: Record<string, string> = {
   administrative: fs.readFileSync('src/components/workspaces/AdministrativeWorkspace.tsx', 'utf8'),
@@ -100,6 +101,14 @@ for (const workspace of Object.values(workspaces)) {
   assert(workspace.includes('readFileAsAttachment'), 'Workspace attachment button is not wired');
 }
 
+assert(welcome.includes('QADA SIMPLE'), 'Simple interface label missing');
+assert(welcome.includes('QADA PROFESSIONAL'), 'Professional interface label missing');
+assert(welcome.includes('واجهة الإدارة'), 'Admin interface entry missing');
+assert(welcome.includes("fetch('/api/ai'"), 'Simple interface is not wired to the canonical assistant API');
+assert(welcome.includes('readSseTextResponse'), 'Simple interface streaming parser missing');
+assert(welcome.includes('readFileAsAttachment'), 'Simple interface attachment handling missing');
+assert(welcome.includes('ما الذي تريد من QADA أن ينجزه لك؟'), 'Simple interface primary task prompt missing');
+
 console.log(JSON.stringify({
   ok: true,
   sidebarServices: serviceIds.length,
@@ -107,4 +116,5 @@ console.log(JSON.stringify({
   operationalAgentNodes: requiredAgentNodes.length,
   workspaceFamilies: Object.keys(workspaces).length,
   inertButtons: inertButtons.length,
+  interfaceModes: ['simple', 'professional', 'admin'],
 }, null, 2));
