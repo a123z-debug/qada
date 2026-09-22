@@ -22,7 +22,8 @@ export type AuthSession = {
   nationalId: string;
   role: SessionRole;
   agency?: string;
-  loginMethod: 'admin_password' | 'email_password' | 'guest';
+  loginMethod: 'admin_password' | 'email_password' | 'guest' | 'test_open';
+  workspaceMode?: 'simple' | 'professional' | 'admin';
   loginAt: number;
   sessionRevision?: number;
   adminCredentialRevision?: string;
@@ -513,12 +514,14 @@ export default async function handler(req: any, res: any) {
     const action = String(body.action || '');
 
     let rateLimitIdentity = '';
-    if (action === 'register' || action === 'user-login' || action === 'admin-login' || action === 'guest-login' || action === 'change-password') {
+    if (action === 'register' || action === 'user-login' || action === 'admin-login' || action === 'guest-login' || action === 'test-access' || action === 'change-password') {
       const accountHint = action === 'admin-login'
         ? String(body.adminCode || '').trim().toLowerCase()
         : action === 'guest-login'
           ? 'guest'
-          : normalizeEmail(String(body.email || ''));
+          : action === 'test-access'
+            ? String(body.workspaceMode || 'simple').trim().toLowerCase()
+            : normalizeEmail(String(body.email || ''));
       rateLimitIdentity = `${clientId(req)}:${accountHint.slice(0, 180)}`;
       const limit = await enforceRateLimit(`auth:${action}`, rateLimitIdentity, AUTH_ATTEMPT_LIMIT, AUTH_WINDOW_SECONDS);
       if (!limit.allowed) {
@@ -575,7 +578,28 @@ export default async function handler(req: any, res: any) {
 
     let session: AuthSession;
 
-    if (action === 'guest-login') {
+    if (action === 'test-access') {
+      const requestedMode = String(body.workspaceMode || 'simple');
+      if (!['simple', 'professional', 'admin'].includes(requestedMode)) {
+        return res.status(400).json({ error: 'واجهة الاختبار غير معروفة.' });
+      }
+      const workspaceMode = requestedMode as 'simple' | 'professional' | 'admin';
+      const isAdminMode = workspaceMode === 'admin';
+      const testId = `test-${workspaceMode}-${randomBytes(10).toString('hex')}`;
+      session = {
+        id: testId,
+        name: isAdminMode ? 'إدارة QADA' : workspaceMode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
+        personName: isAdminMode ? 'إدارة QADA' : workspaceMode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
+        email: `${testId}@test.qada.local`,
+        nationalId: '',
+        role: isAdminMode ? 'admin' : 'user',
+        agency: isAdminMode ? 'إدارة أصول القضاء' : undefined,
+        loginMethod: 'test_open',
+        workspaceMode,
+        loginAt: Date.now(),
+        ...(isAdminMode ? { adminCredentialRevision: adminCredentialRevision() } : {}),
+      };
+    } else if (action === 'guest-login') {
       const guestId = `guest-${randomBytes(12).toString('hex')}`;
       session = {
         id: guestId,
@@ -630,7 +654,7 @@ export default async function handler(req: any, res: any) {
     await recordAuditEvent({
       actorId: session.id,
       actorRole: session.role,
-      action: action === 'guest-login' ? 'auth.guest-login' : action === 'register' ? 'auth.register' : action === 'admin-login' ? 'auth.admin-login' : 'auth.login',
+      action: action === 'test-access' ? 'auth.test-access' : action === 'guest-login' ? 'auth.guest-login' : action === 'register' ? 'auth.register' : action === 'admin-login' ? 'auth.admin-login' : 'auth.login',
       outcome: 'success',
     });
 
