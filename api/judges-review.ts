@@ -56,8 +56,8 @@ async function generateReviewViaGateway(prompt: string): Promise<string> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-3.6-flash',
-      models: ['google/gemini-3.5-flash-lite'],
+      model: 'google/gemini-3.8-flash',
+      models: ['google/gemini-3.7-flash', 'google/gemini-3.6-flash'],
       messages: [
         { role: 'system', content: 'أعد JSON صالحاً فقط دون أي نص خارج JSON.' },
         { role: 'user', content: prompt },
@@ -145,7 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!raw) {
     const clients = getGeminiClients();
-    const models = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    const models = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash'];
 
     let attempts = 0;
     outer: for (const client of clients) {
