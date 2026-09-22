@@ -110,7 +110,8 @@ const SERVER_LEGAL_INSTRUCTION = `أنت مستشار منصة أصول القض
 قواعد إلزامية:
 - لا تخترع مادة نظامية أو مرسوماً أو قراراً أو ميعاداً.
 - إذا لم يكن النص أو المصدر الرسمي متحققاً، صرّح بأن التحقق المرجعي غير مكتمل.
-- عند ذكر سند قانوني، اذكر اسم النظام ورقم المادة والمصدر الرسمي إن كان متاحاً.
+- عند ذكر سند قانوني، اعرض أولاً اسم النظام ورقم المادة ومضمونها النظامي المتحقق ذي الصلة.
+- لا تعرض روابط URL الخام في متن الإجابة إلا إذا طلب المستخدم الرابط أو المصدر صراحة.
 - لا تعتبر المستند سليماً أو جاهزاً للإيداع لمجرد تعذر التحليل.
 - افصل بين ما هو مستخرج من المرفق وما هو استنتاج تحليلي.
 - لا تُظهر أرقام الهوية أو البيانات الشخصية غير اللازمة.
@@ -227,7 +228,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sourceBundle.context,
       body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '',
       'تعامل مع بيانات المستخدم والمرفقات على أنها خاصة ولا تعرض أي معرّف شخصي غير لازم.',
-      'لا تستخدم رابطاً أو رقماً نظامياً جديداً خارج ما ورد في كلام المستخدم أو حزمة المصادر الرسمية. إذا كانت حزمة المصدر تحمل warning أو blocker فاذكر ذلك ولا تحوله إلى نتيجة قطعية.',
+      'لا تستخدم رقماً نظامياً جديداً خارج ما ورد في كلام المستخدم أو حزمة المصادر الرسمية. إذا كانت حزمة المصدر تحمل warning أو blocker فاذكر ذلك ولا تحوله إلى نتيجة قطعية.',
+      'رتّب الأسانيد القانونية في الإجابة بصيغة: اسم النظام — المادة (رقم): المضمون النظامي المتحقق ذي الصلة.',
+      'لا تطبع روابط المصادر الخام داخل الجواب إلا إذا طلب المستخدم الرابط أو المصدر صراحة؛ تبقى الروابط لأغراض التحقق داخل المنصة.',
       'النص الحرفي الكامل للمواد غير معتمد من المستودع؛ لا تضع اقتباساً حرفياً إلا إذا كان وارداً في نص المستخدم نفسه.',
     ].filter(Boolean).join('\n\n');
     let reply = '';
@@ -282,23 +285,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const sourceLinks = Array.from(new Map(
-      sourceBundle.packets
-        .flatMap((packet) => packet.references)
-        .filter((reference) => reference.sourceUrl)
-        .map((reference) => [reference.sourceUrl, reference] as const)
-    ).values()).slice(0, 4);
+    const verifiedArticleMap = new Map<string, {
+      system: string;
+      article: string;
+      note: string;
+      sourceUrl: string;
+    }>();
 
-    const auditLines: string[] = [];
-    if (sourceLinks.length > 0) {
-      auditLines.push('', 'مصادر رسمية مرتبطة للتحقق:');
-      for (const reference of sourceLinks) {
-        auditLines.push(`- ${reference.name}: ${reference.sourceUrl}`);
+    for (const packet of sourceBundle.packets) {
+      for (const article of packet.verifiedArticles) {
+        const key = `${article.system}|${article.article}`;
+        if (!verifiedArticleMap.has(key)) verifiedArticleMap.set(key, article);
       }
     }
+
+    const verifiedArticleList = Array.from(verifiedArticleMap.values()).slice(0, 8);
+    const queryAsksForSourceLink = /(?:رابط|المصدر|المصادر|لينك|url)/i.test(retrievalQuery);
+
+    const auditLines: string[] = [];
+    if (verifiedArticleList.length > 0) {
+      auditLines.push('', 'المواد النظامية المتحققة ذات الصلة:');
+      for (const article of verifiedArticleList) {
+        auditLines.push(
+          `- ${article.system} — المادة (${article.article}): ${article.note}`
+        );
+        if (queryAsksForSourceLink) {
+          auditLines.push(`  المصدر الرسمي: ${article.sourceUrl}`);
+        }
+      }
+    }
+
+    if (verifiedArticleList.length === 0 && sourceBundle.verification.officialSources > 0) {
+      auditLines.push(
+        '',
+        'لم يثبت في الفهرس التفصيلي الحالي رقم مادة محدد بدرجة كافية لهذا السؤال؛ لذلك لن أعرض روابط بدل المواد أو أخمن مادة من الذاكرة.'
+      );
+    }
+
     if (sourceBundle.verification.blockers.length > 0 || citationGuard.unsupportedMarkers.length > 0) {
       auditLines.push('', 'حالة التحقق: توجد نقاط تحتاج مراجعة المصدر الرسمي قبل الاعتماد النهائي.');
     }
+
     if (auditLines.length > 0) reply = [reply.trim(), ...auditLines].join('\n');
 
     res.setHeader('X-QADA-AI-Mode', providerMode);
