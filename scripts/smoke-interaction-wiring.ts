@@ -10,6 +10,7 @@ const admin = fs.readFileSync('api/admin-analysis.ts', 'utf8');
 const sourceAgents = fs.readFileSync('src/lib/legalSourceAgents.ts', 'utf8');
 const map = fs.readFileSync('src/components/admin/AdminAgentMap.tsx', 'utf8');
 const welcome = fs.readFileSync('src/components/workspaces/WelcomeScreen.tsx', 'utf8');
+const login = fs.readFileSync('src/components/LoginScreen.tsx', 'utf8');
 
 const workspaces: Record<string, string> = {
   administrative: fs.readFileSync('src/components/workspaces/AdministrativeWorkspace.tsx', 'utf8'),
@@ -110,6 +111,11 @@ assert(welcome.includes('readFileAsAttachment'), 'Simple interface attachment ha
 assert(welcome.includes("fetch('/api/cases?workspace=1'"), 'Simple and Professional shared workspace persistence missing');
 assert(welcome.includes('ملف العمل المشترك بين Simple وProfessional'), 'Professional shared-workspace handoff missing');
 assert(welcome.includes('ما الذي تريد من QADA أن ينجزه لك؟'), 'Simple interface primary task prompt missing');
+assert(login.includes("mode: 'simple'"), 'Simple portal missing');
+assert(login.includes("mode: 'professional'"), 'Professional portal missing');
+assert(login.includes("mode: 'admin'"), 'Admin portal missing');
+assert(app.includes("defaultMode={session.workspaceMode === 'professional' ? 'professional' : 'simple'}"), 'Selected portal is not routed to its workspace');
+assert(app.includes("setIsAdminMapOpen(userSession.workspaceMode === 'admin')"), 'Admin portal does not open the admin workspace directly');
 
 console.log(JSON.stringify({
   ok: true,
