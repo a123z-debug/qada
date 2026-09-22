@@ -32,6 +32,7 @@ interface WelcomeScreenProps {
   userName?: string;
   message?: string;
   isAdmin?: boolean;
+  defaultMode?: 'simple' | 'professional';
   onOpenAdminOverview?: () => void;
 }
 
@@ -41,9 +42,14 @@ export function WelcomeScreen({
   userName,
   message = 'الرجاء اختيار الاختصاص القضائي للبدء',
   isAdmin = false,
+  defaultMode,
   onOpenAdminOverview,
 }: WelcomeScreenProps) {
-  const [interfaceMode, setInterfaceMode] = useState<'simple' | 'professional'>(isAdmin ? 'professional' : 'simple');
+  const [interfaceMode, setInterfaceMode] = useState<'simple' | 'professional'>(defaultMode || (isAdmin ? 'professional' : 'simple'));
+
+  useEffect(() => {
+    if (defaultMode) setInterfaceMode(defaultMode);
+  }, [defaultMode]);
   const [simpleRequest, setSimpleRequest] = useState('');
   const [simpleMessages, setSimpleMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([]);
   const [simpleBusy, setSimpleBusy] = useState(false);
