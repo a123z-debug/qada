@@ -78,14 +78,14 @@ async function generateViaGateway(messages: IncomingMessage[], systemInstruction
 
   const response = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
     method: 'POST',
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(30_000),
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-3.6-flash',
-      models: ['google/gemini-3.5-flash-lite'],
+      model: 'google/gemini-3.8-flash',
+      models: ['google/gemini-3.7-flash', 'google/gemini-3.6-flash'],
       messages: toGatewayMessages(messages, systemInstruction),
       temperature: 0.2,
       max_tokens: 3500,
@@ -138,6 +138,33 @@ function sanitizeMimeType(type?: string, name?: string): string | null {
   if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) return 'image/jpeg';
   if (filename.endsWith('.webp')) return 'image/webp';
   return null;
+}
+
+function buildSafeFallbackReply(messages: IncomingMessage[], targetCourt?: string): string {
+  const lastText = [...messages]
+    .reverse()
+    .map((message) => typeof message.content === 'string' ? message.content.trim() : '')
+    .find(Boolean) || '';
+
+  const normalized = lastText.replace(/\s+/g, ' ').slice(0, 900);
+  const court = (targetCourt || '').trim();
+
+  const lines = [
+    'فهمت طلبك، وسأكمل معك حتى تتضح الوقائع والمستندات والخطوة التالية.',
+    normalized ? `ملخص ما ذكرت: «${normalized}»` : '',
+    court ? `المسار المفتوح حالياً: ${court}.` : '',
+    '',
+    'حتى أبني التحليل بشكل صحيح، أحتاج منك فقط المعلومات الناقصة التالية:',
+    '1) ما المبلغ أو الحق محل المطالبة؟',
+    '2) متى حصلت الواقعة أو التحويل أو الاتفاق؟',
+    '3) ما المستندات المتوفرة لديك: تحويل بنكي، عقد، رسائل، إقرار، فاتورة، أو غيرها؟',
+    '4) هل طالبت الطرف الآخر بالسداد أو التنفيذ؟ وما كان رده؟',
+    '5) ما النتيجة التي تريدها الآن: استرداد مبلغ، إعداد دعوى، مراجعة مستندات، أو معرفة المسار النظامي؟',
+    '',
+    'تنبيه: مزود التحليل الذكي غير متاح مؤقتاً في هذه اللحظة، لذلك لن أذكر مادة أو ميعاداً أو اختصاصاً نهائياً من غير تحقق رسمي. يمكنك متابعة إرسال الوقائع والمستندات، وسيبقى الملف مرتباً للمراجعة والتحليل عند عودة المزود.',
+  ];
+
+  return lines.filter((line, index, all) => line || (index > 0 && all[index - 1])).join('\n').trim();
 }
 
 function toGeminiContents(messages: IncomingMessage[]) {
@@ -215,7 +242,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!reply) {
       const clients = getGeminiClients();
-      const models = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+      const models = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash'];
       let response: any;
 
       let attempts = 0;
@@ -241,8 +268,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         || '';
     }
 
+    let providerMode: 'ai' | 'fallback' = 'ai';
     if (!reply.trim()) {
-      throw lastError || new Error('No AI provider is currently available.');
+      providerMode = 'fallback';
+      console.error('All AI providers unavailable, using safe fallback:', lastError instanceof Error ? lastError.message : lastError);
+      reply = buildSafeFallbackReply(incomingMessages, body.targetCourt);
     }
 
     const citationGuard = guardIntroducedLegalCitations(retrievalQuery, reply, sourceBundle.context);
@@ -271,6 +301,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (auditLines.length > 0) reply = [reply.trim(), ...auditLines].join('\n');
 
+    res.setHeader('X-QADA-AI-Mode', providerMode);
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8'); res.setHeader('Cache-Control', 'no-cache, no-transform'); res.setHeader('Connection', 'keep-alive');
     res.write(`data: ${JSON.stringify({ text: reply })}\n\n`); res.write('data: [DONE]\n\n'); return res.end();
   } catch (error: any) {
