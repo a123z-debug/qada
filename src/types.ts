@@ -99,6 +99,8 @@ export interface PartyDialogue {
   rebuttalArg?: string; // الرد الصاعق والحجة والبراهين
 }
 
+export type CaseOutcomeForPerson = 'لصالح صاحب الشأن' | 'ضد صاحب الشأن' | 'جزئي' | 'إجرائي فقط' | 'غير محسوم';
+
 export interface CaseStageRecord {
   id: string;
   stageLevel: CaseStageLevel;
@@ -113,10 +115,35 @@ export interface CaseStageRecord {
   rebuttalsAndExchanges?: string; // المناقشات والردود بين الأطراف
   status: 'مكتمل' | 'قيد النظر' | 'تم الطعن عليه' | 'محكوم نهائياً';
   deadlinesNote?: string; // ملاحظات الميعاد (مثلاً 30 يوماً للاستئناف أو النقض)
+
+  // سجل المستند القضائي المرتبط بهذه المرحلة. الهدف هو حفظ مسار النزاع كما وقع
+  // فعلاً، لا إنشاء وقائع جديدة من المنصة.
+  documentType?: 'تظلم' | 'لائحة دعوى' | 'مذكرة' | 'حكم ابتدائي' | 'صحيفة استئناف' | 'حكم استئناف' | 'صحيفة نقض' | 'حكم عليا' | 'التماس' | 'قرار إداري' | 'مرفق إثبات' | 'أخرى';
+  documentTitle?: string;
+  sourceFileName?: string;
+  sourceDocumentHash?: string;
+  fullExtractedText?: string;
+  legalMaterials?: string[];
+  judicialCharacterization?: string;
+  judicialReasoning?: string;
+  outcomeForPerson?: CaseOutcomeForPerson;
+  judgePanel?: string[];
+  relatedCaseNumbers?: string[];
+  relatedJudgmentNumbers?: string[];
+  previousStageId?: string;
 }
 
 export interface JudgmentRecord {
   id: string;
+  // معرف ملف النزاع. يولده الخادم ويربط به الأحكام والمذكرات المتعاقبة
+  // لنفس الشخص والنزاع، مع إبقاء القضايا الأخرى للشخص نفسه مستقلة.
+  dossierId?: string;
+  dossierLinkStatus?: 'linked' | 'new' | 'candidate';
+  candidateDossierId?: string;
+  rootCaseNumber?: string;
+  relatedCaseNumbers?: string[];
+  relatedJudgmentNumbers?: string[];
+  matterTitle?: string;
   // Internal repository ownership metadata. Returned only to administrators when
   // they inspect cross-user records; normal users never receive it.
   storageOwnerId?: string;
@@ -145,6 +172,9 @@ export interface JudgmentRecord {
 
   // 4. تسلسل مسار المعاملة عبر المحاكم
   caseChronology: CaseStageRecord[];
+
+  // بصمة داخلية اختيارية يعيدها الخادم للربط والعرض دون استخدام رقم الهوية كمفتاح Redis مكشوف.
+  identityFingerprint?: string;
 
   createdAt: number;
   updatedAt: number;
