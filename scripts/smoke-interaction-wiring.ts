@@ -11,6 +11,7 @@ const sourceAgents = fs.readFileSync('src/lib/legalSourceAgents.ts', 'utf8');
 const map = fs.readFileSync('src/components/admin/AdminAgentMap.tsx', 'utf8');
 const welcome = fs.readFileSync('src/components/workspaces/WelcomeScreen.tsx', 'utf8');
 const login = fs.readFileSync('src/components/LoginScreen.tsx', 'utf8');
+const chatApi = fs.readFileSync('api/chat.ts', 'utf8');
 
 const workspaces: Record<string, string> = {
   administrative: fs.readFileSync('src/components/workspaces/AdministrativeWorkspace.tsx', 'utf8'),
@@ -117,6 +118,12 @@ assert(floatingChat.includes("credentials: 'same-origin'"), 'Floating assistant 
 assert(floatingChat.includes("cache: 'no-store'"), 'Floating assistant requests must not reuse stale responses');
 assert(welcome.includes('simpleAssistantHttpError'), 'Simple mode must expose actionable HTTP errors');
 assert(welcome.includes("credentials: 'same-origin'"), 'Simple mode must explicitly send the QADA session cookie');
+assert(welcome.includes("responseMode: 'simple'"), 'Simple interface must request concise response mode');
+assert(floatingChat.includes("workspaceMode === 'professional'") && floatingChat.includes("'professional' : 'simple'"),
+  'Floating assistant must follow the selected Simple/Professional response mode');
+assert(chatApi.includes('SIMPLE_RESPONSE_INSTRUCTION'), 'Chat API missing dedicated Simple response contract');
+assert(chatApi.includes("responseMode === 'professional' && verifiedArticleList.length > 0"),
+  'Simple mode must not auto-append the verified legal article list');
 assert(login.includes("mode: 'simple'"), 'Simple portal missing');
 assert(login.includes("mode: 'professional'"), 'Professional portal missing');
 assert(login.includes("mode: 'admin'"), 'Admin portal missing');
