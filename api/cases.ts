@@ -50,6 +50,149 @@ function workspaceKey(ownerId: string) {
   return `${redisPrefix()}:workspace:${digest(ownerId)}`;
 }
 
+function normalizeNationalId(value: unknown): string {
+  return String(value || '').replace(/\D/g, '').slice(0, 20);
+}
+
+function normalizeToken(value: unknown): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s\u064B-\u065F\u0670]+/g, '')
+    .replace(/[^\p{L}\p{N}]/gu, '')
+    .slice(0, 180);
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 80)
+    : [];
+}
+
+function personIndexKey(ownerId: string, nationalId: string) {
+  return `${redisPrefix()}:cases:person:${digest(ownerId)}:${digest(nationalId)}`;
+}
+
+function collectCaseNumbers(record: Record<string, unknown>): Set<string> {
+  const values = [
+    record.caseNumber,
+    record.rootCaseNumber,
+    ...stringList(record.relatedCaseNumbers),
+    ...(Array.isArray(record.caseChronology)
+      ? record.caseChronology.flatMap((stage) => {
+          if (!stage || typeof stage !== 'object') return [];
+          const row = stage as Record<string, unknown>;
+          return [row.caseNumber, ...stringList(row.relatedCaseNumbers)];
+        })
+      : []),
+  ];
+  return new Set(values.map(normalizeToken).filter(Boolean));
+}
+
+function collectJudgmentNumbers(record: Record<string, unknown>): Set<string> {
+  const values = [
+    record.judgmentNumber,
+    ...stringList(record.relatedJudgmentNumbers),
+    ...(Array.isArray(record.caseChronology)
+      ? record.caseChronology.flatMap((stage) => {
+          if (!stage || typeof stage !== 'object') return [];
+          const row = stage as Record<string, unknown>;
+          return stringList(row.relatedJudgmentNumbers);
+        })
+      : []),
+  ];
+  return new Set(values.map(normalizeToken).filter(Boolean));
+}
+
+function intersects(a: Set<string>, b: Set<string>) {
+  for (const value of a) if (b.has(value)) return true;
+  return false;
+}
+
+function dossierScore(record: Record<string, unknown>, existing: Record<string, unknown>): number {
+  const nationalId = normalizeNationalId(record.nationalId);
+  if (!nationalId || nationalId !== normalizeNationalId(existing.nationalId)) return -1;
+
+  let score = 0;
+  if (normalizeToken(record.agencyName) && normalizeToken(record.agencyName) === normalizeToken(existing.agencyName)) score += 20;
+  if (intersects(collectCaseNumbers(record), collectCaseNumbers(existing))) score += 100;
+  if (intersects(collectJudgmentNumbers(record), collectJudgmentNumbers(existing))) score += 80;
+
+  const root = normalizeToken(record.rootCaseNumber);
+  if (root && collectCaseNumbers(existing).has(root)) score += 100;
+
+  const matter = normalizeToken(record.matterTitle);
+  if (matter && matter === normalizeToken(existing.matterTitle)) score += 70;
+  return score;
+}
+
+async function existingPersonCases(ownerId: string, nationalId: string): Promise<StoredCase[]> {
+  if (!nationalId) return [];
+  let members = await redisCommand(['SMEMBERS', personIndexKey(ownerId, nationalId)]);
+  let keys = Array.isArray(members) ? members.filter((item): item is string => typeof item === 'string') : [];
+
+  // Backfill support for records saved before the person index existed.
+  if (!keys.length) {
+    members = await redisCommand(['SMEMBERS', userIndexKey(ownerId)]);
+    keys = Array.isArray(members) ? members.filter((item): item is string => typeof item === 'string') : [];
+  }
+
+  const records = await loadMany(keys.slice(0, MAX_CASES_PER_USER));
+  return records.filter((item) => normalizeNationalId(item.record.nationalId) === nationalId);
+}
+
+async function attachDossierMetadata(ownerId: string, record: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const nationalId = normalizeNationalId(record.nationalId);
+  if (!nationalId) {
+    return {
+      ...record,
+      dossierId: typeof record.dossierId === 'string' && record.dossierId.trim()
+        ? record.dossierId.trim().slice(0, 180)
+        : `dos-${digest(`${ownerId}:${String(record.id)}`).slice(0, 24)}`,
+      dossierLinkStatus: 'new',
+    };
+  }
+
+  const identityFingerprint = digest(`${ownerId}:${nationalId}`).slice(0, 24);
+  const explicitDossierId = typeof record.dossierId === 'string' ? record.dossierId.trim().slice(0, 180) : '';
+  if (explicitDossierId) {
+    return { ...record, identityFingerprint, dossierId: explicitDossierId, dossierLinkStatus: 'linked', candidateDossierId: undefined };
+  }
+
+  const existing = (await existingPersonCases(ownerId, nationalId))
+    .filter((item) => String(item.record.id || '') !== String(record.id || ''))
+    .map((item) => ({ item, score: dossierScore(record, item.record) }))
+    .sort((a, b) => b.score - a.score);
+
+  const best = existing[0];
+  const existingDossier = best && typeof best.item.record.dossierId === 'string'
+    ? String(best.item.record.dossierId)
+    : '';
+
+  if (best && best.score >= 80 && existingDossier) {
+    return {
+      ...record,
+      identityFingerprint,
+      dossierId: existingDossier,
+      dossierLinkStatus: 'linked',
+      candidateDossierId: undefined,
+    };
+  }
+
+  const dossierId = `dos-${digest(`${ownerId}:${nationalId}:${String(record.id)}`).slice(0, 24)}`;
+  if (best && best.score >= 20 && existingDossier) {
+    return {
+      ...record,
+      identityFingerprint,
+      dossierId,
+      dossierLinkStatus: 'candidate',
+      candidateDossierId: existingDossier,
+    };
+  }
+
+  return { ...record, identityFingerprint, dossierId, dossierLinkStatus: 'new', candidateDossierId: undefined };
+}
+
 function sanitizeWorkspaceMessage(input: unknown): SharedWorkspaceMessage | null {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
   const item = input as Record<string, unknown>;
@@ -172,7 +315,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const record = sanitizeRecord((req.body as any)?.record);
       const requestedOwner = typeof record.storageOwnerId === 'string' ? record.storageOwnerId.trim() : '';
       const ownerId = session.role === 'admin' && requestedOwner ? requestedOwner : session.id;
-      const { storageOwnerId: _storageOwnerId, ...cleanRecord } = record;
+      const { storageOwnerId: _storageOwnerId, ...cleanInputRecord } = record;
+      const cleanRecord = await attachDossierMetadata(ownerId, cleanInputRecord);
       const id = String(cleanRecord.id);
       const key = caseKey(ownerId, id);
       const value: StoredCase = {
@@ -185,6 +329,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await redisCommand(['SET', key, protectJson(value, 'case-record')]);
       await redisCommand(['SADD', userIndexKey(ownerId), key]);
       await redisCommand(['SADD', allIndexKey(), key]);
+      const nationalId = normalizeNationalId(cleanRecord.nationalId);
+      if (nationalId) await redisCommand(['SADD', personIndexKey(ownerId, nationalId), key]);
       await recordAuditEvent({
         actorId: session.id,
         actorRole: session.role,
@@ -192,7 +338,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         targetType: 'case',
         targetId: `${ownerId}:${id}`,
         outcome: 'success',
-        metadata: { adminCrossUser: ownerId !== session.id },
+        metadata: {
+          adminCrossUser: ownerId !== session.id,
+          dossierId: String(cleanRecord.dossierId || ''),
+          dossierLinkStatus: String(cleanRecord.dossierLinkStatus || ''),
+          identityFingerprint: String(cleanRecord.identityFingerprint || ''),
+        },
       });
       return res.status(200).json({ ok: true, record: session.role === 'admin' ? { ...cleanRecord, storageOwnerId: ownerId } : cleanRecord });
     }
@@ -203,9 +354,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const requestedOwner = String(req.query?.ownerId || '').trim();
       const ownerId = session.role === 'admin' && requestedOwner ? requestedOwner : session.id;
       const key = caseKey(ownerId, caseId);
+      const encodedBeforeDelete = await redisCommand(['GET', key]);
+      const storedBeforeDelete = unprotectJson<StoredCase>(
+        typeof encodedBeforeDelete === 'string' ? encodedBeforeDelete : '',
+        'case-record',
+      );
       await redisCommand(['DEL', key]);
       await redisCommand(['SREM', userIndexKey(ownerId), key]);
       await redisCommand(['SREM', allIndexKey(), key]);
+      const nationalIdBeforeDelete = normalizeNationalId(storedBeforeDelete?.record?.nationalId);
+      if (nationalIdBeforeDelete) {
+        await redisCommand(['SREM', personIndexKey(ownerId, nationalIdBeforeDelete), key]);
+      }
       await recordAuditEvent({
         actorId: session.id,
         actorRole: session.role,
