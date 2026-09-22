@@ -208,7 +208,7 @@ export function FloatingChatBot({
       );
     } finally {
       setIsSending(false);
-      setPendingAttachments([]);
+      // Keep evidence attached for follow-up questions until the user removes it explicitly.
     }
   };
 
