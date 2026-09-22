@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Building2,
   Scale,
@@ -49,6 +49,59 @@ export function WelcomeScreen({
   const [simpleBusy, setSimpleBusy] = useState(false);
   const [simpleError, setSimpleError] = useState('');
   const [simpleAttachments, setSimpleAttachments] = useState<Attachment[]>([]);
+  const [workspaceLoaded, setWorkspaceLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/workspace-state', {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const payload = await response.json().catch(() => ({}));
+        return payload?.state as { simpleMessages?: Array<{ id: string; role: 'user' | 'assistant'; content: string }>; simpleDraft?: string } | undefined;
+      })
+      .then((state) => {
+        if (cancelled || !state) return;
+        if (Array.isArray(state.simpleMessages)) setSimpleMessages(state.simpleMessages.slice(-40));
+        if (typeof state.simpleDraft === 'string') setSimpleRequest(state.simpleDraft);
+      })
+      .catch(() => {
+        // The interface still works if the shared workspace store is temporarily unavailable.
+      })
+      .finally(() => {
+        if (!cancelled) setWorkspaceLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!workspaceLoaded) return;
+    const timer = window.setTimeout(() => {
+      void fetch('/api/workspace-state', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: {
+            simpleMessages: simpleMessages.filter((message) => message.content.trim()).slice(-40),
+            simpleDraft: simpleRequest,
+          },
+        }),
+      }).catch(() => {
+        // Saving is best-effort in the UI; server-side errors are surfaced by the next explicit action.
+      });
+    }, 600);
+
+    return () => window.clearTimeout(timer);
+  }, [simpleMessages, simpleRequest, workspaceLoaded]);
+
+  const sharedTask = [...simpleMessages].reverse().find((message) => message.role === 'user' && message.content.trim());
 
   const handleQuickLaunch = (court: CourtJurisdiction, serviceId: string) => {
     onSelectCourt(court);
@@ -296,6 +349,21 @@ export function WelcomeScreen({
           )}
         </div>
       </div>
+
+      {sharedTask && (
+        <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-[11px] font-black text-cyan-200">ملف العمل المشترك بين Simple وProfessional</div>
+              <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-400">{sharedTask.content}</p>
+              <p className="mt-1 text-[10px] text-slate-600">محفوظ في مخزن QADA المشفر لحسابك، ويمكنك الرجوع إلى Simple ومتابعة نفس السياق.</p>
+            </div>
+            <button type="button" onClick={() => setInterfaceMode('simple')} className="min-h-10 shrink-0 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 text-xs font-black text-cyan-200 hover:bg-cyan-400/15">
+              متابعة الملف في Simple
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* 1. بانر الـ Hero الرئيسي */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-amber-500/20 p-6 sm:p-10 shadow-2xl">
