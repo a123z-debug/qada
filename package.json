@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "npm run verify && vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
@@ -19,7 +19,8 @@
     "test:production-readiness": "tsx scripts/smoke-production-readiness.ts",
     "test:blueprint-map": "tsx scripts/smoke-blueprint-map.ts",
     "test:interaction-wiring": "tsx scripts/smoke-interaction-wiring.ts",
-    "audit:prod": "npm audit --omit=dev --audit-level=high"
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "verify": "npm run lint && npm run test:legal-sources && npm run test:legal-guard && npm run test:legal-ui-safety && npm run test:api-auth && npm run test:auth-consistency && npm run test:privacy-storage && npm run test:multimodal-evidence && npm run test:production-readiness && npm run test:blueprint-map && npm run test:interaction-wiring"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
