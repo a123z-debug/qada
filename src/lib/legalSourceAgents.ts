@@ -196,13 +196,6 @@ function buildBogPacket(query: string): LegalSourcePacket {
     BOARD_OF_GRIEVANCES_EXECUTION_LAW_1443,
   ];
 
-  const personnelRegulations = retrieveOfficialJudicialRegulations(
-    [query, 'نظام خدمة الأفراد اللائحة التنفيذية'].join(' '),
-    6,
-  ).filter((regulation) =>
-    containsAny([regulation.parentSystem, regulation.regulationName].join(' '), ['خدمة الأفراد'])
-  );
-
   const requestedArticles = articleNumbers(query);
   const verifiedArticles = details.flatMap((system) =>
     system.articles
@@ -253,6 +246,13 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
   const rights = retrieveVerifiedMilitaryPersonnelRights(
     [query, 'نظام خدمة الأفراد الخدمة العسكرية الحقوق العسكرية'].join(' '),
     8,
+  );
+
+  const personnelRegulations = retrieveOfficialJudicialRegulations(
+    [query, 'نظام خدمة الأفراد اللائحة التنفيذية'].join(' '),
+    6,
+  ).filter((regulation) =>
+    containsAny([regulation.parentSystem, regulation.regulationName].join(' '), ['خدمة الأفراد'])
   );
 
   const requestedArticles = articleNumbers(query);
