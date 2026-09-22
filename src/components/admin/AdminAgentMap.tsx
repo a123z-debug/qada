@@ -116,6 +116,7 @@ type RuntimeSnapshot = {
     warningAgents?: number;
     failedAgents?: number;
     architecture?: string;
+    buildCommit?: string;
   };
 };
 
@@ -410,11 +411,20 @@ export function AdminAgentMap({
     }
   };
 
+  const runtimeIsStale = useMemo(() => {
+    if (!runtime || !health?.build?.commit) return false;
+    const current = health.build.commit.trim();
+    const runCommit = String(runtime.meta?.buildCommit || '').trim();
+    if (!runCommit) return true;
+    return current !== runCommit && !current.startsWith(runCommit) && !runCommit.startsWith(current);
+  }, [runtime, health?.build?.commit]);
+
   const runtimeById = useMemo(() => {
     const map = new Map<string, RuntimeAgentRun>();
+    if (runtimeIsStale) return map;
     for (const run of runtime?.agentRuns || []) map.set(run.id, run);
     return map;
-  }, [runtime]);
+  }, [runtime, runtimeIsStale]);
 
   const sourcePacketById = useMemo(() => {
     const map = new Map<string, RuntimeSourcePacket>();
@@ -519,10 +529,16 @@ export function AdminAgentMap({
               {healthError && <div className="mt-1 font-bold text-amber-200">{healthError}</div>}
             </div>
             {runtime && (
-              <div className="mt-2 rounded-xl border border-emerald-400/15 bg-emerald-500/5 px-3 py-2 text-[10px] text-slate-400">
+              <div className={
+                'mt-2 rounded-xl border px-3 py-2 text-[10px] text-slate-400 ' +
+                (runtimeIsStale
+                  ? 'border-amber-400/20 bg-amber-500/5'
+                  : 'border-emerald-400/15 bg-emerald-500/5')
+              }>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     التشغيل المعروض: <span className="font-bold text-slate-200">{runtime.documentTitle || 'تحليل قضائي'}</span>
+                    {runtimeIsStale && <span className="mr-2 font-black text-amber-300">• تشغيل محفوظ من إصدار سابق — لا يمثل الحالة الحالية</span>}
                     {runtime.analyzedAt && <span> • {new Date(runtime.analyzedAt).toLocaleString('ar-SA')}</span>}
                     <span> • مكتمل {runtime.meta?.completedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'success').length ?? 0}</span>
                     <span> • تحذير {runtime.meta?.warningAgents ?? runtime.agentRuns?.filter((run) => run.status === 'warning').length ?? 0}</span>

@@ -61,8 +61,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         redisReachable,
       },
       build: {
-        commit: process.env.VERCEL_GIT_COMMIT_SHA || '',
-        environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'local',
+        commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.QADA_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || '',
+        environment: process.env.RAILWAY_ENVIRONMENT_NAME || process.env.VERCEL_ENV || process.env.NODE_ENV || 'local',
       },
       checkedAt: new Date().toISOString(),
     });

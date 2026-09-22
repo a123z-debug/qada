@@ -6,7 +6,7 @@ import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
 import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
-import { USER_AI_MODELS, isQuotaError } from './_aiRuntime.js';
+import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -280,7 +280,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       let attempts = 0;
       outer: for (const model of models) {
-        let quotaErrorsForModel = 0;
+        if (isModelCoolingDown(model)) continue;
         for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
           const ai = clients[clientIndex];
           if (attempts >= clients.length * models.length) break outer;
@@ -296,11 +296,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           } catch (error) {
             lastError = error;
             if (isQuotaError(error)) {
-              quotaErrorsForModel += 1;
-              if (quotaErrorsForModel >= Math.min(2, clients.length)) {
-                console.warn('QADA model quota exhausted, switching model:', model);
-                break;
-              }
+              markModelQuotaError(model, error);
+              console.warn('QADA model quota exhausted, switching model:', model);
+              break;
             }
           }
         }

@@ -35,3 +35,25 @@ export function isQuotaError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error ?? '');
   return status === 429 || /RESOURCE_EXHAUSTED|quota exceeded|rate.?limit|code["']?\s*:\s*429/i.test(message);
 }
+
+
+const modelCooldownUntil = new Map<string, number>();
+
+export function isModelCoolingDown(model: string): boolean {
+  const until = modelCooldownUntil.get(model) || 0;
+  if (until <= Date.now()) {
+    if (until) modelCooldownUntil.delete(model);
+    return false;
+  }
+  return true;
+}
+
+export function markModelQuotaError(model: string, error: unknown): void {
+  if (!isQuotaError(error)) return;
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  const retryMatch = message.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/i)
+    || message.match(/retry\s+in\s+(\d+(?:\.\d+)?)s/i);
+  const retrySeconds = retryMatch ? Number(retryMatch[1]) : 60;
+  const cooldownMs = Math.min(10 * 60_000, Math.max(90_000, Math.ceil(retrySeconds * 1000) + 5_000));
+  modelCooldownUntil.set(model, Date.now() + cooldownMs);
+}

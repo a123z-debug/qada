@@ -6,7 +6,7 @@ import { enforceRateLimit } from './_rateLimit.js';
 import { recordAuditEvent } from './_audit.js';
 import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
-import { ADMIN_AI_MODELS, USER_AI_MODELS, isQuotaError } from './_aiRuntime.js';
+import { ADMIN_AI_MODELS, USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -204,7 +204,7 @@ async function generateJsonAgent<T>(args: {
 
   let attempts = 0;
   for (const model of modelOrder) {
-    let quotaErrorsForModel = 0;
+    if (isModelCoolingDown(model)) continue;
     for (let i = 0; i < clients.length && attempts < 8; i++) {
       attempts += 1;
       const client = clients[(i + clientOffset) % clients.length];
@@ -239,8 +239,9 @@ async function generateJsonAgent<T>(args: {
       } catch (error) {
         lastError = error;
         if (isQuotaError(error)) {
-          quotaErrorsForModel += 1;
-          if (quotaErrorsForModel >= Math.min(2, clients.length)) break;
+          markModelQuotaError(model, error);
+          console.warn(`[${agentId}] model quota exhausted, switching model:`, model);
+          break;
         }
       }
     }
@@ -583,8 +584,8 @@ ${workingText || 'لم يتوفر نص كافٍ بعد الاستخراج.'}
 
 ${sourceNotice}`;
 
-  const [legislative, judicial, procedural, evidence, reasoning, rebuttal] = await Promise.all([
-    generateJsonAgent<any>({
+  const specialistTasks = [
+    () => generateJsonAgent<any>({
       clients,
       agentId: 'legislative-flaws',
       label: 'وكيل التشريعات والسريان والمراجع',
@@ -601,7 +602,7 @@ ${sharedRules}
 }`,
       parts: [{ text: specialistInput }],
     }),
-    generateJsonAgent<any>({
+    () => generateJsonAgent<any>({
       clients,
       agentId: 'judicial-flaws',
       label: 'وكيل العيوب القضائية والمبادئ',
@@ -618,7 +619,7 @@ ${sharedRules}
 }`,
       parts: [{ text: specialistInput }],
     }),
-    generateJsonAgent<any>({
+    () => generateJsonAgent<any>({
       clients,
       agentId: 'procedural-flaws',
       label: 'وكيل الاختصاص والإجراءات',
@@ -634,7 +635,7 @@ ${sharedRules}
 }`,
       parts: [{ text: specialistInput }],
     }),
-    generateJsonAgent<any>({
+    () => generateJsonAgent<any>({
       clients,
       agentId: 'evidence-flaws',
       label: 'وكيل الإثبات والمرفقات',
@@ -653,7 +654,7 @@ ${sharedRules}
 }`,
       parts: [{ text: specialistInput }],
     }),
-    generateJsonAgent<any>({
+    () => generateJsonAgent<any>({
       clients,
       agentId: 'reasoning-flaws',
       label: 'وكيل التكييف والتسبيب',
@@ -671,7 +672,7 @@ ${sharedRules}
 }`,
       parts: [{ text: specialistInput }],
     }),
-    generateJsonAgent<any>({
+    () => generateJsonAgent<any>({
       clients,
       agentId: 'rebuttal-review',
       label: 'وكيل مراجعة الدفوع والردود',
@@ -689,7 +690,19 @@ ${sharedRules}
 }`,
       parts: [{ text: specialistInput }],
     }),
-  ]);
+
+  ];
+  const specialistResults: AgentResult<any>[] = [];
+  for (let offset = 0; offset < specialistTasks.length; offset += 2) {
+    const batch = await Promise.all(
+      specialistTasks.slice(offset, offset + 2).map((runAgent) => runAgent())
+    );
+    specialistResults.push(...batch);
+    if (offset + 2 < specialistTasks.length) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+  const [legislative, judicial, procedural, evidence, reasoning, rebuttal] = specialistResults;
 
   const synthesisPayload = {
     intake: intake.data,
@@ -949,7 +962,8 @@ ${ISSUE_SCHEMA}`,
       completedAgents: completed,
       warningAgents: warnings,
       failedAgents: failed,
-      architecture: 'multi-agent-v3-source-gated',
+      architecture: 'multi-agent-v4-quota-aware',
+      buildCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.QADA_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || '',
     },
   });
 }
