@@ -44,6 +44,7 @@ type AccountRecord = {
 };
 
 const SESSION_COOKIE = 'qada_session_v6';
+const TEST_MODE_COOKIE = 'qada_test_mode';
 const OLD_SESSION_COOKIES = ['qada_session_v5', 'qada_session_v4', 'qada_session_v3', 'qada_session_v2'];
 const SESSION_MAX_AGE = 12 * 60 * 60;
 const PBKDF2_ITERATIONS = 310_000;
@@ -239,6 +240,25 @@ async function loadAccount(email: string): Promise<AccountRecord | null> {
 }
 
 export async function readActiveSession(header?: string | string[]): Promise<AuthSession | null> {
+  if (OPEN_TEST_MODE) {
+    const mode = cookies(header)[TEST_MODE_COOKIE];
+    if (mode === 'simple' || mode === 'professional' || mode === 'admin') {
+      const isAdmin = mode === 'admin';
+      return {
+        id: isAdmin ? 'test-admin' : 'test-user',
+        name: isAdmin ? 'إدارة QADA' : mode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
+        personName: isAdmin ? 'إدارة QADA' : mode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
+        email: isAdmin ? 'test-admin@qada.local' : 'test-user@qada.local',
+        nationalId: '',
+        role: isAdmin ? 'admin' : 'user',
+        agency: isAdmin ? 'إدارة أصول القضاء' : undefined,
+        loginMethod: 'test_open',
+        workspaceMode: mode,
+        loginAt: Date.now(),
+      };
+    }
+  }
+
   const session = readSession(header);
   if (!session) return null;
   if (session.role === 'admin') {
@@ -495,6 +515,7 @@ export default async function handler(req: any, res: any) {
     const current = readSession(req.headers?.cookie);
     res.setHeader('Set-Cookie', [
       expiredCookie(SESSION_COOKIE),
+      expiredCookie(TEST_MODE_COOKIE),
       ...OLD_SESSION_COOKIES.map(expiredCookie),
     ]);
     if (current) {
