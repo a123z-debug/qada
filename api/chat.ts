@@ -245,11 +245,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!reply) {
       const clients = getGeminiClients();
-      const models = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash'];
+      const models = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash'];
       let response: any;
+      let selectedProvider = '';
 
       let attempts = 0;
-      outer: for (const ai of clients) {
+      outer: for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
+        const ai = clients[clientIndex];
         for (const model of models) {
           if (attempts >= clients.length * models.length) break outer;
           attempts += 1;
@@ -259,12 +261,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               contents: contents as any,
               config: { systemInstruction: contextInstruction, temperature: 0.2 },
             }), 25_000, 'AI_CHAT_TIMEOUT');
+            selectedProvider = `key${clientIndex + 1}:${model}`;
             break outer;
           } catch (error) {
             lastError = error;
           }
         }
       }
+      if (response && selectedProvider) console.info('QADA direct AI selected:', selectedProvider);
 
       reply = response?.text
         || response?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('')
