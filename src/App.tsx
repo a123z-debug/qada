@@ -509,21 +509,29 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    const clearLocalSession = () => {
+      setSession(null);
+      setSessionChecked(true);
+      setShowLandingPage(true);
+      setActiveCourt(null);
+      setActiveService(null);
+      setIsAdminMapOpen(false);
+      setIsAdminAnalysisOpen(false);
+      setIsAdminUsersOpen(false);
+      setIsAdminAuditOpen(false);
+      setIsAccountSecurityOpen(false);
+      setJudgmentRecords([]);
+    };
+
     void fetch('/api/session', {
       method: 'DELETE',
       credentials: 'same-origin',
-    });
-    setSession(null);
-    setSessionChecked(true);
-    setShowLandingPage(true);
-    setActiveCourt(null);
-    setActiveService(null);
-    setIsAdminMapOpen(false);
-    setIsAdminAnalysisOpen(false);
-    setIsAdminUsersOpen(false);
-    setIsAdminAuditOpen(false);
-    setIsAccountSecurityOpen(false);
-    setJudgmentRecords([]);
+      cache: 'no-store',
+    })
+      .catch(() => {
+        // Local state is cleared even if the network is temporarily unavailable.
+      })
+      .finally(clearLocalSession);
   };
 
   const handleSaveRecord = (record: JudgmentRecord) => {
