@@ -242,16 +242,14 @@ async function loadAccount(email: string): Promise<AccountRecord | null> {
 export async function readActiveSession(header?: string | string[]): Promise<AuthSession | null> {
   if (OPEN_TEST_MODE) {
     const mode = cookies(header)[TEST_MODE_COOKIE];
-    if (mode === 'simple' || mode === 'professional' || mode === 'admin') {
-      const isAdmin = mode === 'admin';
+    if (mode === 'simple' || mode === 'professional') {
       return {
-        id: isAdmin ? 'test-admin' : 'test-user',
-        name: isAdmin ? 'إدارة QADA' : mode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
-        personName: isAdmin ? 'إدارة QADA' : mode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
-        email: isAdmin ? 'test-admin@qada.local' : 'test-user@qada.local',
+        id: 'test-user',
+        name: mode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
+        personName: mode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
+        email: 'test-user@qada.local',
         nationalId: '',
-        role: isAdmin ? 'admin' : 'user',
-        agency: isAdmin ? 'إدارة أصول القضاء' : undefined,
+        role: 'user',
         loginMethod: 'test_open',
         workspaceMode: mode,
         loginAt: Date.now(),
@@ -604,24 +602,24 @@ export default async function handler(req: any, res: any) {
 
     if (action === 'test-access') {
       const requestedMode = String(body.workspaceMode || 'simple');
-      if (!['simple', 'professional', 'admin'].includes(requestedMode)) {
+      if (requestedMode === 'admin') {
+        return res.status(403).json({ error: 'واجهة الإدارة تتطلب رمز الدخول وكلمة المرور.' });
+      }
+      if (!['simple', 'professional'].includes(requestedMode)) {
         return res.status(400).json({ error: 'واجهة الاختبار غير معروفة.' });
       }
-      const workspaceMode = requestedMode as 'simple' | 'professional' | 'admin';
-      const isAdminMode = workspaceMode === 'admin';
+      const workspaceMode = requestedMode as 'simple' | 'professional';
       const testId = `test-${workspaceMode}-${randomBytes(10).toString('hex')}`;
       session = {
         id: testId,
-        name: isAdminMode ? 'إدارة QADA' : workspaceMode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
-        personName: isAdminMode ? 'إدارة QADA' : workspaceMode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
+        name: workspaceMode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
+        personName: workspaceMode === 'professional' ? 'مستخدم QADA المتقدم' : 'مستخدم QADA البسيط',
         email: `${testId}@test.qada.local`,
         nationalId: '',
-        role: isAdminMode ? 'admin' : 'user',
-        agency: isAdminMode ? 'إدارة أصول القضاء' : undefined,
+        role: 'user',
         loginMethod: 'test_open',
         workspaceMode,
         loginAt: Date.now(),
-        ...(isAdminMode ? { adminCredentialRevision: adminCredentialRevision() } : {}),
       };
     } else if (action === 'guest-login') {
       const guestId = `guest-${randomBytes(12).toString('hex')}`;
