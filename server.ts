@@ -11,7 +11,6 @@ import legalSourceSearchHandler from './api/legal-source-search';
 import adminAnalysisHandler from './api/admin-analysis';
 import judgesReviewHandler from './api/judges-review';
 import casesHandler from './api/cases';
-import workspaceStateHandler from './api/workspace-state';
 import adminRunsHandler from './api/admin-runs';
 import healthHandler from './api/health';
 import adminUsersHandler from './api/admin-users';
@@ -65,10 +64,6 @@ async function startServer() {
 
   app.all('/api/cases', (req, res) => {
     void casesHandler(req as any, res as any);
-  });
-
-  app.all('/api/workspace-state', (req, res) => {
-    void workspaceStateHandler(req as any, res as any);
   });
 
   app.all('/api/admin-runs', (req, res) => {
