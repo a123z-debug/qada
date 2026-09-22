@@ -168,6 +168,7 @@ export function retrieveOfficialLegalReferences(query: string, limit = 5) {
       cabinetResolution: reference.cabinetResolution,
       issueDateHijri: reference.issueDateHijri,
       publicationDateHijri: reference.publicationDateHijri,
+      status: reference.status,
       materialIndex: reference.materialIndex,
       regulation: reference.regulation,
       amendments: reference.amendments,
