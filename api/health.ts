@@ -1,20 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { isRedisConfigured, redisCommand } from './_redis.ts';
-import { OFFICIAL_JUDICIAL_REFERENCE_INDEX } from '../src/data/officialJudicialReferenceIndex.ts';
-import { OFFICIAL_JUDICIAL_REGULATIONS } from '../src/data/officialJudicialRegulations.ts';
-import { OFFICIAL_JUDICIAL_AMENDMENTS } from '../src/data/officialJudicialAmendments.ts';
 
 function hasLongSecret(name: string) {
   return Boolean((process.env[name] || '').trim().length >= 32);
-}
-
-function adminCredentialStatus() {
-  const configured = (process.env.QADA_ADMIN_CREDENTIAL_HASH_V6 || '').trim();
-  const environmentConfigured = /^[a-f0-9]{64}$/i.test(configured);
-  return {
-    configured: true,
-    source: environmentConfigured ? 'environment' : 'bootstrap',
-  };
 }
 
 function hasGatewayProvider() {
@@ -29,56 +17,62 @@ function hasGeminiProvider() {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
+
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const redisConfigured = isRedisConfigured();
-  let redisReachable = false;
-  if (redisConfigured) {
-    try {
-      redisReachable = String(await redisCommand(['PING'])).toUpperCase() === 'PONG';
-    } catch {
-      redisReachable = false;
+  try {
+    const redisConfigured = isRedisConfigured();
+    let redisReachable = false;
+
+    if (redisConfigured) {
+      try {
+        redisReachable = String(await redisCommand(['PING'])).toUpperCase() === 'PONG';
+      } catch {
+        redisReachable = false;
+      }
     }
+
+    const authConfigured = hasLongSecret('AUTH_SECRET');
+    const dataConfigured = hasLongSecret('DATA_SECRET');
+    const geminiConfigured = hasGeminiProvider();
+    const gatewayConfigured = hasGatewayProvider();
+    const aiConfigured = geminiConfigured || gatewayConfigured;
+
+    const ready =
+      authConfigured &&
+      dataConfigured &&
+      geminiConfigured &&
+      redisConfigured &&
+      redisReachable;
+
+    return res.status(ready ? 200 : 503).json({
+      status: ready ? 'ready' : 'degraded',
+      ready,
+      services: {
+        authConfigured,
+        dataConfigured,
+        aiConfigured,
+        geminiConfigured,
+        gatewayConfigured,
+        redisConfigured,
+        redisReachable,
+      },
+      build: {
+        commit: process.env.VERCEL_GIT_COMMIT_SHA || '',
+        environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'local',
+      },
+      checkedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Health endpoint failed:', error instanceof Error ? error.message : error);
+    return res.status(503).json({
+      status: 'degraded',
+      ready: false,
+      error: 'HEALTH_CHECK_FAILED',
+      checkedAt: new Date().toISOString(),
+    });
   }
-
-  const authConfigured = hasLongSecret('AUTH_SECRET');
-  const dataConfigured = hasLongSecret('DATA_SECRET');
-  const adminCredential = adminCredentialStatus();
-  const adminConfigured = adminCredential.configured;
-  const geminiConfigured = hasGeminiProvider();
-  const gatewayConfigured = hasGatewayProvider();
-  const aiConfigured = geminiConfigured || gatewayConfigured;
-  const officialSystems = OFFICIAL_JUDICIAL_REFERENCE_INDEX.filter((item) => item.status === 'official-verified').length;
-  const officialRegulations = OFFICIAL_JUDICIAL_REGULATIONS.filter((item) => item.status === 'official-verified').length;
-  const officialAmendments = OFFICIAL_JUDICIAL_AMENDMENTS.filter((item) => item.status === 'official-verified').length;
-
-  const ready = authConfigured && dataConfigured && adminConfigured && geminiConfigured && redisConfigured && redisReachable;
-  return res.status(ready ? 200 : 503).json({
-    status: ready ? 'ready' : 'degraded',
-    ready,
-    services: {
-      authConfigured,
-      dataConfigured,
-      adminConfigured,
-      adminCredentialSource: adminCredential.source,
-      aiConfigured,
-      geminiConfigured,
-      gatewayConfigured,
-      redisConfigured,
-      redisReachable,
-    },
-    legalCorpus: {
-      officialSystems,
-      officialRegulations,
-      officialAmendments,
-    },
-    build: {
-      commit: process.env.VERCEL_GIT_COMMIT_SHA || '',
-      environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'local',
-    },
-    checkedAt: new Date().toISOString(),
-  });
 }
