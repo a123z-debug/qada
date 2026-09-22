@@ -5,7 +5,7 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 const env = fs.readFileSync('.env.example', 'utf8');
-for (const key of ['AUTH_SECRET', 'DATA_SECRET', 'QADA_ADMIN_CREDENTIAL_HASH_V4', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN']) {
+for (const key of ['AUTH_SECRET', 'DATA_SECRET', 'QADA_ADMIN_CREDENTIAL_HASH_V6', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN']) {
   assert(env.includes(key + '='), '.env.example missing ' + key);
 }
 
