@@ -35,7 +35,7 @@ type AgentResult<T = any> = {
   run: AgentRun;
 };
 
-const MODELS = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash'];
+const MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
 
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
