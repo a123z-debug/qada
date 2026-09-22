@@ -9,21 +9,12 @@ interface LoginScreenProps {
 
 type WorkspaceMode = 'simple' | 'professional' | 'admin';
 
-async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 12_000) {
-  const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(input, { ...init, signal: controller.signal });
-  } finally {
-    window.clearTimeout(timer);
-  }
-}
 
 export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
   const [busyMode, setBusyMode] = useState<WorkspaceMode | null>(null);
   const [error, setError] = useState('');
 
-  async function openWorkspace(workspaceMode: WorkspaceMode) {
+  function openWorkspace(workspaceMode: WorkspaceMode) {
     if (busyMode) return;
     setBusyMode(workspaceMode);
     setError('');
@@ -31,28 +22,31 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
     try {
       document.cookie = `qada_test_mode=${workspaceMode}; Path=/; Max-Age=43200; SameSite=Lax; Secure`;
 
-      const verification = await fetchWithTimeout('/api/session', {
-        method: 'GET',
-        credentials: 'same-origin',
-        cache: 'no-store',
-      }, 7_000);
-      const verified = await verification.json().catch(() => ({}));
-      const session = verified?.session as UserSession | undefined;
-
-      if (!verification.ok || !verified?.authenticated || !session) {
-        throw new Error('تعذر تفعيل جلسة الاختبار على الخادم.');
-      }
-      if (session.workspaceMode !== workspaceMode) {
-        throw new Error('نوع الواجهة في الجلسة لا يطابق الاختيار.');
-      }
+      const isAdmin = workspaceMode === 'admin';
+      const session: UserSession = {
+        id: isAdmin ? 'test-admin' : 'test-user',
+        name: isAdmin
+          ? 'إدارة QADA'
+          : workspaceMode === 'professional'
+            ? 'مستخدم QADA المتقدم'
+            : 'مستخدم QADA البسيط',
+        personName: isAdmin
+          ? 'إدارة QADA'
+          : workspaceMode === 'professional'
+            ? 'مستخدم QADA المتقدم'
+            : 'مستخدم QADA البسيط',
+        email: isAdmin ? 'test-admin@qada.local' : 'test-user@qada.local',
+        nationalId: '',
+        role: isAdmin ? 'admin' : 'user',
+        agency: isAdmin ? 'إدارة أصول القضاء' : undefined,
+        loginMethod: 'test_open',
+        workspaceMode,
+        loginAt: Date.now(),
+      };
 
       onLoginSuccess(session);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        setError('انتهت مهلة الاتصال بالخادم. أعد المحاولة.');
-      } else {
-        setError(err instanceof Error ? err.message : 'تعذر فتح الواجهة.');
-      }
+    } catch {
+      setError('تعذر فتح واجهة الاختبار في هذا المتصفح.');
     } finally {
       setBusyMode(null);
     }
@@ -129,7 +123,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                 key={mode}
                 type="button"
                 disabled={Boolean(busyMode)}
-                onClick={() => void openWorkspace(mode)}
+                onClick={() => openWorkspace(mode)}
                 className={`group min-h-[220px] rounded-2xl border p-5 text-right transition-all disabled:cursor-not-allowed disabled:opacity-60 ${tone}`}
               >
                 <div className="flex items-start justify-between gap-3">
