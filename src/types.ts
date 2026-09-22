@@ -203,7 +203,8 @@ export interface UserSession {
   role: 'admin' | 'user';
   militaryNumber?: string;
   agency?: string;
-  loginMethod: 'admin_password' | 'email_password' | 'email_otp' | 'guest';
+  loginMethod: 'admin_password' | 'email_password' | 'email_otp' | 'guest' | 'test_open';
+  workspaceMode?: 'simple' | 'professional' | 'admin';
   token?: string;
   loginAt: number;
 }
