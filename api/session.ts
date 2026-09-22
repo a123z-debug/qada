@@ -52,9 +52,7 @@ const AUTH_WINDOW_SECONDS = 15 * 60;
 const AUTH_ATTEMPT_LIMIT = 10;
 const OPEN_TEST_MODE = true;
 
-// Stable bootstrap hash for the owner-selected Administration credentials.
-// A valid QADA_ADMIN_CREDENTIAL_HASH_V7 environment value overrides this.
-const BUILTIN_ADMIN_HASH_V7 = 'aa21537421a711d07befc6c10de4cd4e938bbfd1d3d9ce2bc8566739747ebb15';
+const DEV_ADMIN_HASH_V7 = sha256('qada-local-admin:qada-local-password');
 const localAccounts = new Map<string, string>();
 
 function b64(value: Buffer | string) {
@@ -99,7 +97,8 @@ function adminCredentialConfig() {
   if (/^[a-f0-9]{64}$/i.test(configured)) {
     return { hash: configured, source: 'environment' as const };
   }
-  return { hash: BUILTIN_ADMIN_HASH_V7, source: 'bootstrap' as const };
+  if (isProductionRuntime()) throw new Error('ADMIN_CREDENTIAL_MISSING');
+  return { hash: DEV_ADMIN_HASH_V7, source: 'development' as const };
 }
 
 function adminCredentialHash() {
@@ -463,7 +462,7 @@ function authError(error: unknown) {
   if (code === 'ACCOUNT_NOT_FOUND') return { status: 401, code, error: 'الحساب غير موجود أو بيانات الدخول غير صحيحة.' };
   if (code === 'ACCOUNT_DISABLED') return { status: 403, code, error: 'الحساب موقوف. راجع إدارة المنصة.' };
   if (code === 'INVALID_CREDENTIALS') return { status: 401, code, error: 'رمز الدخول أو كلمة المرور غير صحيحة.' };
-  if (code === 'AUTH_SECRET_MISSING') return { status: 503, code, error: 'خدمة تسجيل الدخول غير مهيأة على الخادم.' };
+  if (code === 'AUTH_SECRET_MISSING' || code === 'ADMIN_CREDENTIAL_MISSING') return { status: 503, code, error: 'خدمة تسجيل الدخول الإداري غير مهيأة على الخادم.' };
   if (code === 'DATA_SECRET_MISSING') return { status: 503, code, error: 'خدمة حماية البيانات غير مهيأة على الخادم.' };
   if (code === 'ACCOUNT_STORE_UNAVAILABLE' || code === 'RATE_LIMIT_STORE_UNAVAILABLE' || code.startsWith('REDIS_')) {
     return { status: 503, code, error: 'خدمة الحسابات غير متاحة مؤقتاً. أعد المحاولة بعد قليل.' };
