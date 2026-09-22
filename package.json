@@ -47,5 +47,8 @@
     "typescript": "~5.8.2",
     "vercel": "^59.20.0",
     "vite": "^6.2.3"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import chatHandler from './chat.ts';
+import chatHandler from './chat.js';
 
 // Compatibility endpoint used by the floating assistant.
 // Delegate to the canonical chat handler so authentication, attachment handling,

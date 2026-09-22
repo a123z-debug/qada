@@ -1,19 +1,19 @@
 import {
   OFFICIAL_JUDICIAL_REFERENCE_INDEX,
   OfficialJudicialReference,
-} from '../data/officialJudicialReferenceIndex.ts';
+} from '../data/officialJudicialReferenceIndex.js';
 import {
   OFFICIAL_JUDICIAL_REGULATIONS,
   OfficialJudicialRegulationReference,
-} from '../data/officialJudicialRegulations.ts';
+} from '../data/officialJudicialRegulations.js';
 import {
   OFFICIAL_JUDICIAL_AMENDMENTS,
   OfficialJudicialAmendment,
-} from '../data/officialJudicialAmendments.ts';
+} from '../data/officialJudicialAmendments.js';
 import {
   VERIFIED_MILITARY_PERSONNEL_RIGHTS,
   VerifiedMilitaryPersonnelRight,
-} from '../data/verifiedMilitaryPersonnelRights.ts';
+} from '../data/verifiedMilitaryPersonnelRights.js';
 
 function normalizeArabic(value: string): string {
   return (value || '')

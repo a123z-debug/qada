@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { listUserAccounts, readActiveSession, setUserAccountDisabled } from './session.ts';
-import { enforceRateLimit } from './_rateLimit.ts';
-import { recordAuditEvent } from './_audit.ts';
+import { listUserAccounts, readActiveSession, setUserAccountDisabled } from './session.js';
+import { enforceRateLimit } from './_rateLimit.js';
+import { recordAuditEvent } from './_audit.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');

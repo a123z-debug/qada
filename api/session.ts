@@ -7,10 +7,10 @@ import {
   randomBytes,
   timingSafeEqual,
 } from 'node:crypto';
-import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.ts';
-import { clearRateLimit, enforceRateLimit } from './_rateLimit.ts';
-import { protectJson, unprotectJson } from './_secureStore.ts';
-import { recordAuditEvent } from './_audit.ts';
+import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
+import { clearRateLimit, enforceRateLimit } from './_rateLimit.js';
+import { protectJson, unprotectJson } from './_secureStore.js';
+import { recordAuditEvent } from './_audit.js';
 
 export type SessionRole = 'admin' | 'user';
 

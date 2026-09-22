@@ -3,17 +3,17 @@ import {
   retrieveOfficialJudicialRegulations,
   retrieveOfficialLegalReferences,
   retrieveVerifiedMilitaryPersonnelRights,
-} from './legalRetrieval.ts';
-import type { OfficialReferenceSystem } from '../data/officialReferenceIndex.ts';
-import { BOARD_OF_GRIEVANCES_LAW_1428 } from '../data/officialReferences/boardOfGrievancesLaw1428.ts';
-import { BOARD_OF_GRIEVANCES_PROCEDURE_LAW_1435 } from '../data/officialReferences/boardOfGrievancesProcedureLaw1435.ts';
-import { BOARD_OF_GRIEVANCES_EXECUTION_LAW_1443 } from '../data/officialReferences/boardOfGrievancesExecutionLaw1443.ts';
-import { CIVIL_PROCEDURE_LAW_1435 } from '../data/officialReferences/civilProcedureLaw1435.ts';
-import { COMMERCIAL_COURTS_LAW_1441 } from '../data/officialReferences/commercialCourtsLaw1441.ts';
-import { CRIMINAL_PROCEDURE_LAW_1435 } from '../data/officialReferences/criminalProcedureLaw1435.ts';
-import { EXECUTION_LAW_1447 } from '../data/officialReferences/executionLaw1447.ts';
-import { JUDICIARY_LAW_1428 } from '../data/officialReferences/judiciaryLaw1428.ts';
-import { LAW_PRACTICE_LAW_1422 } from '../data/officialReferences/lawPracticeLaw1422.ts';
+} from './legalRetrieval.js';
+import type { OfficialReferenceSystem } from '../data/officialReferenceIndex.js';
+import { BOARD_OF_GRIEVANCES_LAW_1428 } from '../data/officialReferences/boardOfGrievancesLaw1428.js';
+import { BOARD_OF_GRIEVANCES_PROCEDURE_LAW_1435 } from '../data/officialReferences/boardOfGrievancesProcedureLaw1435.js';
+import { BOARD_OF_GRIEVANCES_EXECUTION_LAW_1443 } from '../data/officialReferences/boardOfGrievancesExecutionLaw1443.js';
+import { CIVIL_PROCEDURE_LAW_1435 } from '../data/officialReferences/civilProcedureLaw1435.js';
+import { COMMERCIAL_COURTS_LAW_1441 } from '../data/officialReferences/commercialCourtsLaw1441.js';
+import { CRIMINAL_PROCEDURE_LAW_1435 } from '../data/officialReferences/criminalProcedureLaw1435.js';
+import { EXECUTION_LAW_1447 } from '../data/officialReferences/executionLaw1447.js';
+import { JUDICIARY_LAW_1428 } from '../data/officialReferences/judiciaryLaw1428.js';
+import { LAW_PRACTICE_LAW_1422 } from '../data/officialReferences/lawPracticeLaw1422.js';
 
 export type SourceAgentStatus = 'success' | 'warning' | 'error';
 

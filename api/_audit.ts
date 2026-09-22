@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.ts';
-import { protectJson, unprotectJson } from './_secureStore.ts';
+import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
+import { protectJson, unprotectJson } from './_secureStore.js';
 
 export type AuditRole = 'admin' | 'user' | 'system';
 

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isRedisConfigured, redisCommand } from './_redis.ts';
+import { isRedisConfigured, redisCommand } from './_redis.js';
 
 function hasLongSecret(name: string) {
   return Boolean((process.env[name] || '').trim().length >= 32);

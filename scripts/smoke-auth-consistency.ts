@@ -11,7 +11,7 @@ const envExample = fs.readFileSync('.env.example', 'utf8');
 const server = fs.readFileSync('server.ts', 'utf8');
 
 assert(
-  adminAnalysis.includes("import { readActiveSession } from './session.ts';"),
+  adminAnalysis.includes("import { readActiveSession } from './session.js';"),
   'admin-analysis must verify that the account behind the signed session is still active',
 );
 assert(

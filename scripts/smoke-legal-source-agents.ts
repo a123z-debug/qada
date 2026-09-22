@@ -1,4 +1,4 @@
-import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);

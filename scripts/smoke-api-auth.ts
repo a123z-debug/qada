@@ -58,7 +58,7 @@ for (const file of rateLimitedEndpoints) {
 }
 
 const aiCompat = fs.readFileSync('api/ai.ts', 'utf8');
-if (!aiCompat.includes("import chatHandler from './chat.ts';")) {
+if (!aiCompat.includes("import chatHandler from './chat.js';")) {
   violations.push('api/ai.ts: must delegate to canonical chat handler');
 }
 if (!aiCompat.includes('return chatHandler(req, res)')) {

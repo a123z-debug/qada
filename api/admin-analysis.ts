@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { readActiveSession } from './session.ts';
-import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
-import { enforceRateLimit } from './_rateLimit.ts';
-import { recordAuditEvent } from './_audit.ts';
-import { redactDirectIdentifiers } from './_privacy.ts';
-import { withTimeout } from './_async.ts';
+import { readActiveSession } from './session.js';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
+import { enforceRateLimit } from './_rateLimit.js';
+import { recordAuditEvent } from './_audit.js';
+import { redactDirectIdentifiers } from './_privacy.js';
+import { withTimeout } from './_async.js';
 
 type IncomingAttachment = {
   name?: string;

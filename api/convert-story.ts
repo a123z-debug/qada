@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
-import { readActiveSession } from './session.ts';
-import { enforceRateLimit } from './_rateLimit.ts';
-import { withTimeout } from './_async.ts';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
+import { readActiveSession } from './session.js';
+import { enforceRateLimit } from './_rateLimit.js';
+import { withTimeout } from './_async.js';
 
 type Court = 'administrative' | 'general' | 'criminal';
 function getGeminiClients(): GoogleGenAI[] {

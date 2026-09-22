@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.ts';
-import { readActiveSession } from './session.ts';
-import { enforceRateLimit } from './_rateLimit.ts';
+import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
+import { readActiveSession } from './session.js';
+import { enforceRateLimit } from './_rateLimit.js';
 
 type Court = 'administrative' | 'general' | 'criminal';
 

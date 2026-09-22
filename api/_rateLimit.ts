@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { isRedisConfigured, redisCommand, redisPipeline, redisPrefix } from './_redis.ts';
+import { isRedisConfigured, redisCommand, redisPipeline, redisPrefix } from './_redis.js';
 
 type LocalEntry = { count: number; resetAt: number };
 const localLimits = new Map<string, LocalEntry>();

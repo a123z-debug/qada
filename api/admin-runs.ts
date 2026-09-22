@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readActiveSession } from './session.ts';
-import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.ts';
-import { enforceRateLimit } from './_rateLimit.ts';
-import { protectJson, unprotectJson } from './_secureStore.ts';
+import { readActiveSession } from './session.js';
+import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
+import { enforceRateLimit } from './_rateLimit.js';
+import { protectJson, unprotectJson } from './_secureStore.js';
 
 type AdminRunSnapshot = {
   runId?: string;

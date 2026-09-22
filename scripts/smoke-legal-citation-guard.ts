@@ -1,4 +1,4 @@
-import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.ts';
+import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.js';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);

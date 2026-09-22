@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readActiveSession } from './session.ts';
-import { enforceRateLimit } from './_rateLimit.ts';
-import { listAuditEvents, recordAuditEvent } from './_audit.ts';
+import { readActiveSession } from './session.js';
+import { enforceRateLimit } from './_rateLimit.js';
+import { listAuditEvents, recordAuditEvent } from './_audit.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
