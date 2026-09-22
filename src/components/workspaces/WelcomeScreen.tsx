@@ -53,7 +53,7 @@ export function WelcomeScreen({
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/workspace-state', {
+    fetch('/api/cases?workspace=1', {
       method: 'GET',
       credentials: 'same-origin',
       cache: 'no-store',
@@ -83,7 +83,7 @@ export function WelcomeScreen({
   useEffect(() => {
     if (!workspaceLoaded) return;
     const timer = window.setTimeout(() => {
-      void fetch('/api/workspace-state', {
+      void fetch('/api/cases?workspace=1', {
         method: 'PUT',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -96,7 +96,7 @@ export function WelcomeScreen({
       }).catch(() => {
         // Saving is best-effort in the UI; server-side errors are surfaced by the next explicit action.
       });
-    }, 600);
+    }, 1500);
 
     return () => window.clearTimeout(timer);
   }, [simpleMessages, simpleRequest, workspaceLoaded]);
