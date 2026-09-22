@@ -63,7 +63,7 @@ assert(
   'browser-bound account proofs must not return',
 );
 assert(
-  !loginScreen.includes('document.cookie')
+  loginScreen.includes("qada_test_mode=; Path=/; Max-Age=0")
     && loginScreen.includes("action: 'test-access'")
     && loginScreen.includes("credentials: 'include'")
     && loginScreen.includes("mode: 'simple'")
