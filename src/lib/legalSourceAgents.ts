@@ -14,6 +14,7 @@ import { CRIMINAL_PROCEDURE_LAW_1435 } from '../data/officialReferences/criminal
 import { EXECUTION_LAW_1447 } from '../data/officialReferences/executionLaw1447.js';
 import { JUDICIARY_LAW_1428 } from '../data/officialReferences/judiciaryLaw1428.js';
 import { LAW_PRACTICE_LAW_1422 } from '../data/officialReferences/lawPracticeLaw1422.js';
+import { MILITARY_PERSONNEL_SERVICE_LAW_1397 } from '../data/officialReferences/militaryPersonnelServiceLaw1397.js';
 
 export type SourceAgentStatus = 'success' | 'warning' | 'error';
 
@@ -72,6 +73,7 @@ const DETAILED_REFERENCE_SYSTEMS: OfficialReferenceSystem[] = [
   EXECUTION_LAW_1447,
   JUDICIARY_LAW_1428,
   LAW_PRACTICE_LAW_1422,
+  MILITARY_PERSONNEL_SERVICE_LAW_1397,
 ];
 
 function normalizeArabic(value: string): string {
@@ -252,20 +254,50 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
   );
 
   const personnelRef = refs.find((ref) => containsAny(ref.name, ['خدمة الأفراد']));
-  const blockers = [
-    'السجل العام لنظام خدمة الأفراد في الفهرس القضائي موسوم needs-correction بسبب تعارض تاريخ قرار مجلس الوزراء رقم (324) بين البيانات الرسمية؛ لذلك لا يعتمد النظام كاملاً كنص حرفي من هذا المسار.',
-  ];
+  const requestedArticles = articleNumbers(query);
+  const verifiedArticles = MILITARY_PERSONNEL_SERVICE_LAW_1397.articles
+    .filter((article) => article.status === 'verified')
+    .filter((article) => requestedArticles.length === 0 || requestedArticles.includes(article.number))
+    .map((article) => ({
+      system: MILITARY_PERSONNEL_SERVICE_LAW_1397.name,
+      article: article.number,
+      sourceUrl: article.sourceUrl,
+      note: article.note,
+    }));
 
-  if (rights.length === 0) {
-    blockers.push('لم يعثر فهرس الحقوق العسكرية الموثقة على حق محدد ذي صلة كافية بالسؤال.');
+  const blockers: string[] = [];
+  const pendingAmendments = MILITARY_PERSONNEL_SERVICE_LAW_1397.amendments
+    .filter((item) => item.status !== 'verified')
+    .filter((item) => {
+      const normalized = normalizeArabic([item.label, item.note].join(' '));
+      const queryNormalized = normalizeArabic(query);
+      return queryNormalized.includes('م 37')
+        || queryNormalized.includes('م/37')
+        || queryNormalized.includes('1430')
+        || queryNormalized.includes('17 ب')
+        || normalized.split(' ').some((token) => token.length >= 5 && queryNormalized.includes(token));
+    });
+
+  for (const item of pendingAmendments) {
+    blockers.push(`${item.label}: ${item.note}`);
+  }
+  if (rights.length === 0 && verifiedArticles.length === 0) {
+    blockers.push('لم يعثر فهرس الحقوق العسكرية الموثقة على حق أو مادة محددة ذات صلة كافية بالسؤال.');
   }
 
   return {
     agentId: 'src-personnel',
     label: 'وكيل نظام خدمة الأفراد',
-    status: 'warning',
-    scope: 'حقوق وضمانات الأفراد العسكريين التي ثبتت بمصدر رسمي مستقل، مع منع تعميم أي حق خارج شروطه.',
+    status: blockers.length ? 'warning' : 'success',
+    scope: 'مواد نظام خدمة الأفراد والحقوق العسكرية التي ثبتت بمصدر رسمي، مع فصل المواد الحالية عن التعديلات التاريخية غير المكتملة التحقق.',
     references: [
+      {
+        name: MILITARY_PERSONNEL_SERVICE_LAW_1397.name,
+        sourceUrl: MILITARY_PERSONNEL_SERVICE_LAW_1397.sources[0].url,
+        issueInstrument: MILITARY_PERSONNEL_SERVICE_LAW_1397.royalDecree,
+        coverage: 'مواد 2 و16 و17 و19 مفهرسة من المصدر الرسمي؛ النسخ التاريخية والتعديلات تخضع للتحقق المستقل',
+        note: 'لا تُعامل الإحالة إلى تعديل تاريخي أو مرسوم مذكور من المستخدم كسند متحقق إلا إذا كان التعديل نفسه مثبتاً في سجل الإصدار الرسمي.',
+      },
       ...(personnelRef ? [{
         name: personnelRef.name,
         sourceUrl: personnelRef.officialSourceUrl,
@@ -282,7 +314,7 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
         note: `${right.verificationNote} الشروط: ${right.conditions.join(' | ') || 'لا توجد شروط إضافية مفهرسة.'}`,
       })),
     ].slice(0, 12),
-    verifiedArticles: [],
+    verifiedArticles,
     blockers,
   };
 }
@@ -404,7 +436,9 @@ function buildOfficialSourcePacket(query: string): LegalSourcePacket {
     })),
   ].slice(0, 16);
 
-  const verifiedArticles = refs.flatMap((ref) =>
+  const verifiedArticles = refs
+    .filter((ref) => ref.status === 'official-verified')
+    .flatMap((ref) =>
     ref.materialIndex
       .map((label) => {
         const match = label.match(/(?:المادة|مادة)\s*\(?\s*(\d{1,3}(?:\s*\/\s*\d{1,3})?)\s*\)?/);
