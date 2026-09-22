@@ -107,7 +107,7 @@ assert(welcome.includes('واجهة الإدارة'), 'Admin interface entry mis
 assert(welcome.includes("fetch('/api/ai'"), 'Simple interface is not wired to the canonical assistant API');
 assert(welcome.includes('readSseTextResponse'), 'Simple interface streaming parser missing');
 assert(welcome.includes('readFileAsAttachment'), 'Simple interface attachment handling missing');
-assert(welcome.includes("fetch('/api/workspace-state'"), 'Simple and Professional shared workspace persistence missing');
+assert(welcome.includes("fetch('/api/cases?workspace=1'"), 'Simple and Professional shared workspace persistence missing');
 assert(welcome.includes('ملف العمل المشترك بين Simple وProfessional'), 'Professional shared-workspace handoff missing');
 assert(welcome.includes('ما الذي تريد من QADA أن ينجزه لك؟'), 'Simple interface primary task prompt missing');
 
