@@ -33,9 +33,10 @@ assert(
 );
 assert(
   sessionApi.includes('QADA_ADMIN_CREDENTIAL_HASH_V7')
-    && sessionApi.includes('BUILTIN_ADMIN_HASH_V7')
+    && sessionApi.includes('ADMIN_CREDENTIAL_MISSING')
+    && !sessionApi.includes('BUILTIN_ADMIN_HASH_V7')
     && sessionApi.includes('adminCredentialRevision'),
-  'admin login must use the versioned v7 credential path and invalidate stale admin sessions',
+  'production admin login must require the versioned v7 environment credential and invalidate stale admin sessions',
 );
 assert(
   sessionApi.includes("redisCommand(['SET', key, encoded, 'NX'])"),
@@ -81,9 +82,10 @@ assert(
   'passwordless test access must never mint an admin session',
 );
 assert(
-  envExample.includes('UPSTASH_REDIS_REST_URL')
+  envExample.includes('REDIS_URL')
+    && envExample.includes('UPSTASH_REDIS_REST_URL')
     && envExample.includes('UPSTASH_REDIS_REST_TOKEN'),
-  'production persistent store configuration must be documented',
+  'production persistent store configuration must document Railway/native Redis and Upstash REST',
 );
 assert(
   server.includes("import sessionHandler from './api/session';")
