@@ -76,7 +76,7 @@ async function askAi(prompt: string): Promise<any | null> {
   let attempts = 0;
   outer: for (const client of clients) {
     for (const model of models) {
-      if (attempts >= 4) break outer;
+      if (attempts >= clients.length * models.length) break outer;
       attempts += 1;
       try {
         const response = await withTimeout(client.models.generateContent({
