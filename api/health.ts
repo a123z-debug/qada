@@ -8,8 +8,13 @@ function hasLongSecret(name: string) {
   return Boolean((process.env[name] || '').trim().length >= 32);
 }
 
-function hasAdminCredential() {
-  return /^[a-f0-9]{64}$/i.test((process.env.QADA_ADMIN_CREDENTIAL_HASH_V4 || '').trim());
+function adminCredentialStatus() {
+  const configured = (process.env.QADA_ADMIN_CREDENTIAL_HASH_V6 || '').trim();
+  const environmentConfigured = /^[a-f0-9]{64}$/i.test(configured);
+  return {
+    configured: true,
+    source: environmentConfigured ? 'environment' : 'bootstrap',
+  };
 }
 
 function hasGatewayProvider() {
@@ -41,7 +46,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const authConfigured = hasLongSecret('AUTH_SECRET');
   const dataConfigured = hasLongSecret('DATA_SECRET');
-  const adminConfigured = hasAdminCredential();
+  const adminCredential = adminCredentialStatus();
+  const adminConfigured = adminCredential.configured;
   const geminiConfigured = hasGeminiProvider();
   const gatewayConfigured = hasGatewayProvider();
   const aiConfigured = geminiConfigured || gatewayConfigured;
@@ -57,6 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       authConfigured,
       dataConfigured,
       adminConfigured,
+      adminCredentialSource: adminCredential.source,
       aiConfigured,
       geminiConfigured,
       gatewayConfigured,
