@@ -133,6 +133,17 @@ export interface CaseStageRecord {
   previousStageId?: string;
 }
 
+export interface CaseKnowledgeNote {
+  id: string;
+  kind: 'confirmed-fact' | 'strength' | 'risk' | 'comparison' | 'evidence-needed';
+  title: string;
+  detail: string;
+  status: 'confirmed' | 'needs-verification' | 'pending-evidence';
+  sourceLabel?: string;
+  sourceDate?: string;
+  createdAt: number;
+}
+
 export interface JudgmentRecord {
   id: string;
   // معرف ملف النزاع. يولده الخادم ويربط به الأحكام والمذكرات المتعاقبة
@@ -169,6 +180,10 @@ export interface JudgmentRecord {
   courtPrecedents: string[]; // السوابق القضائية ومبادئ المحكمة العليا المقيدة
   fatalFlawsFound: string[]; // جميع الأخطاء المرصودة (إجرائية، عيب سبب، انحراف بالسلطة، مخالفة الأنظمة)
   strongestRebuttals: string[]; // أقوى الحجج والبراهين والردود لإظهار تمكن الوكيل أمام الدائرة
+
+  // 3.5 ذاكرة القضية الخاصة: حقائق ثابتة واستراتيجية ومخاطر وأدلة لازمة.
+  // تحفظ داخل سجل القضية المشفر ولا تدخل قاعدة المراجع العامة.
+  caseKnowledge?: CaseKnowledgeNote[];
 
   // 4. تسلسل مسار المعاملة عبر المحاكم
   caseChronology: CaseStageRecord[];
