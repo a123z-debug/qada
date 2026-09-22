@@ -35,7 +35,7 @@ type AgentResult<T = any> = {
   run: AgentRun;
 };
 
-const MODELS = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+const MODELS = ['gemini-3.5-flash'];
 
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
@@ -68,8 +68,8 @@ async function tryGatewayJson(systemInstruction: string, parts: any[]): Promise<
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-3.8-flash',
-      models: ['google/gemini-3.7-flash', 'google/gemini-3.6-flash'],
+      model: 'google/gemini-3.5-flash',
+      models: [],
       messages: [
         { role: 'system', content: systemInstruction },
         { role: 'user', content: textParts.join('\n\n') },

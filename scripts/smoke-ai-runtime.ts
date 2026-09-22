@@ -15,20 +15,16 @@ for (let index = 0; index < keyNames.length; index += 1) {
   present += 1;
 
   try {
+    // Validate key + model availability without consuming generateContent quota.
     const endpoint =
       'https://generativelanguage.googleapis.com/v1beta/models/' +
       MODEL +
-      ':generateContent?key=' +
+      '?key=' +
       encodeURIComponent(apiKey);
 
     const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Reply only OK' }] }],
-        generationConfig: { maxOutputTokens: 8, temperature: 0 },
-      }),
-      signal: AbortSignal.timeout(15_000),
+      method: 'GET',
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (response.ok) {

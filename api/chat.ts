@@ -84,8 +84,8 @@ async function generateViaGateway(messages: IncomingMessage[], systemInstruction
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-3.8-flash',
-      models: ['google/gemini-3.7-flash', 'google/gemini-3.6-flash'],
+      model: 'google/gemini-3.5-flash',
+      models: [],
       messages: toGatewayMessages(messages, systemInstruction),
       temperature: 0.2,
       max_tokens: 3500,
@@ -245,14 +245,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!reply) {
       const clients = getGeminiClients();
-      const models = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+      const models = ['gemini-3.5-flash'];
       let response: any;
       let selectedProvider = '';
 
       let attempts = 0;
-      outer: for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
-        const ai = clients[clientIndex];
-        for (const model of models) {
+      outer: for (const model of models) {
+        for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
+          const ai = clients[clientIndex];
           if (attempts >= clients.length * models.length) break outer;
           attempts += 1;
           try {
