@@ -73,8 +73,10 @@ async function askAi(prompt: string): Promise<any | null> {
 
   const clients = getGeminiClients();
   const models = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash'];
+  const failures: string[] = [];
   let attempts = 0;
-  outer: for (const client of clients) {
+  outer: for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
+    const client = clients[clientIndex];
     for (const model of models) {
       if (attempts >= clients.length * models.length) break outer;
       attempts += 1;
@@ -86,9 +88,15 @@ async function askAi(prompt: string): Promise<any | null> {
         }), 18_000, 'AI_STORY_TIMEOUT');
         const parsed = parseJson(response.text || '');
         if (parsed) return parsed;
-      } catch {}
+        failures.push(`key${clientIndex + 1}:${model}:EMPTY_OR_INVALID_JSON`);
+      } catch (error: any) {
+        const status = Number(error?.status || error?.response?.status || 0);
+        const code = String(error?.code || error?.name || 'AI_ERROR').replace(/[^A-Z0-9_.-]/gi, '').slice(0, 80);
+        failures.push(`key${clientIndex + 1}:${model}:${status || code || 'AI_ERROR'}`);
+      }
     }
   }
+  if (failures.length > 0) console.error('Convert-story AI attempts failed:', failures.join(','));
   return null;
 }
 
