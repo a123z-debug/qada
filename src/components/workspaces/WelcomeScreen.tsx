@@ -111,6 +111,7 @@ export function WelcomeScreen({
       void fetch('/api/cases?workspace=1', {
         method: 'PUT',
         credentials: 'same-origin',
+        cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           state: {
@@ -118,8 +119,12 @@ export function WelcomeScreen({
             simpleDraft: simpleRequest,
           },
         }),
+      }).then((response) => {
+        if (!response.ok) {
+          setSimpleError('تعذر حفظ مساحة العمل على الخادم. المحادثة الحالية ما زالت ظاهرة في هذا المتصفح، لكن لا تعتبرها محفوظة دائماً حتى تعود خدمة الحفظ.');
+        }
       }).catch(() => {
-        // Saving is best-effort in the UI; server-side errors are surfaced by the next explicit action.
+        setSimpleError('تعذر الاتصال بخدمة حفظ مساحة العمل. المحادثة الحالية ما زالت ظاهرة في هذا المتصفح.');
       });
     }, 1500);
 
@@ -156,12 +161,6 @@ export function WelcomeScreen({
     setSimpleBusy(true);
     setSimpleMessages([...previousMessages, userMessage, assistantMessage]);
 
-    const simpleInstruction =
-      'أنت تعمل في واجهة QADA Simple. هدفك إعطاء المستخدم ما يحتاج فعله الآن بلغة مباشرة ومختصرة. ' +
-      'ابدأ بخلاصة عملية، ثم حدد النقطة الحاسمة والخطوة التالية. إذا كان هناك حكم أو قرار مرفق فاستخرج منطوقه وسبب النتيجة أولاً. ' +
-      'اسأل بحد أقصى سؤالين حاسمين عند الحاجة، ولا تعرض قائمة مواد أو أسانيد أو مراجع إلا إذا طلبها المستخدم صراحة. ' +
-      'لا تفترض الاختصاص أو المواعيد أو أرقام المواد من الذاكرة، ولا تختلق حكماً أو مرسوماً أو سابقة، ولا تصف أي مخرج بأنه معتمد قضائياً أو جاهزاً للإيداع تلقائياً.';
-
     try {
       const response = await fetch('/api/ai', {
         method: 'POST',
@@ -170,7 +169,6 @@ export function WelcomeScreen({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [
-            { role: 'user', content: simpleInstruction },
             ...previousMessages
               .filter((message) => message.content.trim())
               .map((message) => ({ role: message.role, content: message.content })),
@@ -195,7 +193,7 @@ export function WelcomeScreen({
       if (!result.trim()) {
         throw new Error('لم يصل رد صالح من محرك التحليل.');
       }
-      setSimpleAttachments([]);
+      // Keep the current evidence attached across follow-up questions until the user removes it.
     } catch (error) {
       const message = error instanceof Error ? error.message : 'تعذر إكمال المهمة.';
       setSimpleError(message);
@@ -313,7 +311,7 @@ export function WelcomeScreen({
                       }}
                     />
                   </label>
-                  <p className="text-[10px] leading-5 text-slate-500">حتى 6 مرفقات، وبحد 2.5MB لكل ملف حسب مسار التحليل الحالي.</p>
+                  <p className="text-[10px] leading-5 text-slate-500">حتى 6 مرفقات، وبحد 2.5MB لكل ملف. يبقى المرفق مرتبطاً بمتابعة المهمة حتى تزيله؛ لا يُحفظ ملفه الخام داخل سجل المحادثة الدائم.</p>
                 </div>
                 <button
                   type="button"
