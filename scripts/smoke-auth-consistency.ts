@@ -66,8 +66,8 @@ assert(
     && loginScreen.includes("mode: 'simple'")
     && loginScreen.includes("mode: 'professional'")
     && loginScreen.includes("mode: 'admin'")
-    && loginScreen.includes('fetchWithTimeout'),
-  'test portal must expose direct Simple, Professional, and Admin access through the browser test-mode cookie',
+    && loginScreen.includes('onLoginSuccess(session)'),
+  'test portal must expose direct Simple, Professional, and Admin access through the browser test-mode cookie without API dependency',
 );
 assert(
   !loginScreen.includes('type="password"')
