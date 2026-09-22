@@ -72,7 +72,7 @@ async function askAi(prompt: string): Promise<any | null> {
   }
 
   const clients = getGeminiClients();
-  const models = ['gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.7-flash'];
+  const models = ['gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
   const failures: string[] = [];
   let attempts = 0;
   outer: for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
