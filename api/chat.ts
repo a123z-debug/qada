@@ -117,7 +117,7 @@ const SERVER_LEGAL_INSTRUCTION = `أنت مستشار منصة أصول القض
 - افصل بين ما هو مستخرج من المرفق وما هو استنتاج تحليلي.
 - لا تُظهر أرقام الهوية أو البيانات الشخصية غير اللازمة.
 - عند وجود مرفق، اقرأ المرفق أولاً وحدد نوعه وموضوعه واختصاصه قبل اقتراح أي سند نظامي.
-- لا تفترض أن كل مستند يتعلق بالمادة (8) أو بالخدمة العسكرية أو ببدلات معينة.`;
+- لا تفترض أن كل مستند يتعلق بالمادة (8) أو بالخدمة العسكرية أو ببدلات معينة.\n- عند صياغة اعتراض أمام المحكمة الإدارية العليا، اربط كل وجه طعن بسبب نظامي متحقق من الأسباب المحددة لاختصاصها، ولا تجعل وصفاً مثل القصور في التسبيب أو بطلان الإجراء سبباً مستقلاً ما لم تبين وجه اندراجه نظاماً.\n- عند التحقق من ميعاد، استند إلى المادة التي تنشئ الميعاد نفسه لا إلى مادة لاحقة تنظم أثر فواته أو إجراءات ما بعده.`;
 
 const SIMPLE_RESPONSE_INSTRUCTION = `وضع الإجابة: QADA Simple.
 - خاطب المستخدم كشخص يريد معرفة ماذا يفعل الآن، لا كمتخصص قانوني.
@@ -216,6 +216,75 @@ function toGeminiContents(messages: IncomingMessage[]) {
   }).filter(Boolean);
 }
 
+
+function hasAttachedEvidence(messages: IncomingMessage[]): boolean {
+  return messages.some((message) =>
+    (message.attachments || []).some((attachment) => Boolean(attachment.data && sanitizeMimeType(attachment.type, attachment.name)))
+  );
+}
+
+async function extractAttachmentReferenceHints(messages: IncomingMessage[]): Promise<string> {
+  if (!hasAttachedEvidence(messages)) return '';
+
+  const userText = messages
+    .filter((message) => message.role !== 'assistant' && message.role !== 'model')
+    .map((message) => typeof message.content === 'string' ? message.content : '')
+    .join(' ');
+
+  // Avoid a second provider call when the user already supplied enough legal reference signals.
+  if (/(?:الماد(?:ة|ه)|نظام|مرسوم|قرار مجلس الوزراء|لائح(?:ة|ه)|علاو(?:ة|ه)|مكافأ(?:ة|ه)|ديوان المظالم)/i.test(userText)) {
+    return '';
+  }
+
+  const evidenceMessages = messages
+    .filter((message) => Array.isArray(message.attachments) && message.attachments.length > 0)
+    .slice(-2)
+    .map((message) => ({
+      role: 'user',
+      content: typeof message.content === 'string' ? redactDirectIdentifiers(message.content).text : 'استخرج الإحالات النظامية من المرفق.',
+      attachments: message.attachments,
+    }));
+  const evidenceContents = toGeminiContents(evidenceMessages);
+  if (evidenceContents.length === 0) return '';
+
+  const clients = getGeminiClients();
+  if (!clients.length) return '';
+
+  const systemInstruction = [
+    'مهمتك استخراج مؤشرات مرجعية فقط من المستند المرفق لمساعدة محرك البحث القانوني.',
+    'أخرج باختصار: نوع المستند، الجهة أو نوع القضاء، موضوع النزاع، أسماء الأنظمة واللوائح، أرقام المواد، أرقام المراسيم وقرارات مجلس الوزراء والتواريخ النظامية المذكورة صراحة.',
+    'لا تقدم رأياً قانونياً ولا نتيجة ولا تخمن مرجعاً غير موجود في المستند.',
+    'لا تخرج اسم الشخص أو رقم الهوية أو رقم الجوال أو البريد أو أي معرف شخصي.',
+    'الحد الأقصى 1800 حرف.',
+  ].join('\n');
+
+  let attempts = 0;
+  for (const model of USER_AI_MODELS) {
+    if (isModelCoolingDown(model)) continue;
+    for (const ai of clients) {
+      if (attempts >= 2) return '';
+      attempts += 1;
+      try {
+        const response: any = await withTimeout(ai.models.generateContent({
+          model,
+          contents: evidenceContents as any,
+          config: { systemInstruction, temperature: 0 },
+        }), 15_000, 'AI_ATTACHMENT_REFERENCE_TIMEOUT');
+        const text = response?.text
+          || response?.candidates?.[0]?.content?.parts?.map((part: any) => part.text || '').join('')
+          || '';
+        if (text.trim()) return redactDirectIdentifiers(text).text.slice(0, 1800);
+      } catch (error) {
+        if (isQuotaError(error)) {
+          markModelQuotaError(model, error);
+          break;
+        }
+      }
+    }
+  }
+  return '';
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ error: 'Method Not Allowed' }); }
@@ -254,8 +323,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .map((message) => typeof message.content === 'string' ? redactDirectIdentifiers(message.content).text : '')
       .join('\n')
       .slice(0, 24000);
+    const attachmentReferenceHints = await extractAttachmentReferenceHints(clientMessages);
+    const sourceQuery = [retrievalQuery, attachmentReferenceHints].filter(Boolean).join('\n').slice(0, 26000);
     const sourceBundle = runLegalSourceAgents(
-      [body.targetCourt || '', retrievalQuery].filter(Boolean).join('\n')
+      [body.targetCourt || '', sourceQuery].filter(Boolean).join('\n')
     );
     const contextInstruction = [
       SERVER_LEGAL_INSTRUCTION,
@@ -325,7 +396,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       reply = buildSafeFallbackReply(incomingMessages, body.targetCourt, responseMode);
     }
 
-    const citationGuard = guardIntroducedLegalCitations(retrievalQuery, reply, sourceBundle.context);
+    const citationGuard = guardIntroducedLegalCitations(sourceQuery, reply, sourceBundle.context);
     if (citationGuard.unsupportedMarkers.length > 0) {
       for (const marker of citationGuard.unsupportedMarkers) {
         reply = reply.split(marker).join(`${marker} [غير متحقق من حزمة المصادر الرسمية]`);
