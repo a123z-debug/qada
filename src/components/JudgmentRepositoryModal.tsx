@@ -77,6 +77,9 @@ export function JudgmentRepositoryModal({
   const [newCourtType, setNewCourtType] = useState<CourtType | ''>('');
   const [newCircuitName, setNewCircuitName] = useState('');
   const [newCaseNumber, setNewCaseNumber] = useState('');
+  const [newRootCaseNumber, setNewRootCaseNumber] = useState('');
+  const [newRelatedCaseNumbersInput, setNewRelatedCaseNumbersInput] = useState('');
+  const [newMatterTitle, setNewMatterTitle] = useState('');
   const [newJudgmentNumber, setNewJudgmentNumber] = useState('');
   const [newJudgmentDate, setNewJudgmentDate] = useState('');
   const [newJudgmentType, setNewJudgmentType] = useState<JudgmentRecord['judgmentType']>('غير محدد');
@@ -95,6 +98,12 @@ export function JudgmentRepositoryModal({
   const [newStageReasons, setNewStageReasons] = useState('');
   const [newStageFacts, setNewStageFacts] = useState('');
   const [newStageDate, setNewStageDate] = useState('');
+  const [newStageCaseNumber, setNewStageCaseNumber] = useState('');
+  const [newStageJudgmentNumber, setNewStageJudgmentNumber] = useState('');
+  const [newStageDocumentType, setNewStageDocumentType] = useState<NonNullable<CaseStageRecord['documentType']>>('حكم ابتدائي');
+  const [newStageLegalMaterialsInput, setNewStageLegalMaterialsInput] = useState('');
+  const [newStageCharacterization, setNewStageCharacterization] = useState('');
+  const [newStageOutcome, setNewStageOutcome] = useState<NonNullable<CaseStageRecord['outcomeForPerson']>>('غير محسوم');
 
   // Filtered records
   const filteredRecords = useMemo(() => {
@@ -145,6 +154,10 @@ export function JudgmentRepositoryModal({
       courtType: newCourtType,
       circuitName: newCircuitName.trim(),
       caseNumber: newCaseNumber.trim(),
+      rootCaseNumber: newRootCaseNumber.trim() || newCaseNumber.trim(),
+      relatedCaseNumbers: newRelatedCaseNumbersInput.split(/[,،\n]/).map((s) => s.trim()).filter(Boolean),
+      relatedJudgmentNumbers: [],
+      matterTitle: newMatterTitle.trim(),
       judgmentNumber: newJudgmentNumber.trim(),
       judgmentDate: newJudgmentDate.trim(),
       judgmentType: newJudgmentType,
@@ -175,6 +188,9 @@ export function JudgmentRepositoryModal({
     setNewCircuitName('');
     setNewJudgmentType('غير محدد');
     setNewCaseNumber('');
+    setNewRootCaseNumber('');
+    setNewRelatedCaseNumbersInput('');
+    setNewMatterTitle('');
     setNewJudgmentNumber('');
     setNewJudgmentDate('');
     setNewFacts('');
@@ -193,10 +209,18 @@ export function JudgmentRepositoryModal({
       id: `stage-${Date.now()}`,
       stageLevel: newStageLevel,
       courtName: newStageCourt,
+      caseNumber: newStageCaseNumber.trim(),
       rulingDate: newStageDate.trim(),
       rulingSummary: newStageRuling.trim(),
       rulingReasons: newStageReasons.trim(),
+      judicialReasoning: newStageReasons.trim(),
       factsSummary: newStageFacts.trim(),
+      documentType: newStageDocumentType,
+      legalMaterials: newStageLegalMaterialsInput.split('\n').map((s) => s.trim()).filter(Boolean),
+      judicialCharacterization: newStageCharacterization.trim(),
+      outcomeForPerson: newStageOutcome,
+      relatedCaseNumbers: newStageCaseNumber.trim() ? [newStageCaseNumber.trim()] : [],
+      relatedJudgmentNumbers: newStageJudgmentNumber.trim() ? [newStageJudgmentNumber.trim()] : [],
       status: 'قيد النظر',
       // لا تُفترض مدد نظامية أو مواعيد طعن تلقائياً داخل سجل واقعي.
       deadlinesNote: '',
@@ -214,6 +238,11 @@ export function JudgmentRepositoryModal({
     setNewStageReasons('');
     setNewStageFacts('');
     setNewStageDate('');
+    setNewStageCaseNumber('');
+    setNewStageJudgmentNumber('');
+    setNewStageLegalMaterialsInput('');
+    setNewStageCharacterization('');
+    setNewStageOutcome('غير محسوم');
   };
 
   const copyText = async (text: string, id: string) => {
@@ -511,6 +540,39 @@ export function JudgmentRepositoryModal({
                       onChange={(e) => setNewAgencyName(e.target.value)}
                       className="w-full p-2.5 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 focus:outline-hidden focus:border-amber-500"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-neutral-400 mb-1 font-medium">موضوع النزاع</label>
+                      <input
+                        type="text"
+                        placeholder="مثال: مكافأة الحاسب الآلي"
+                        value={newMatterTitle}
+                        onChange={(e) => setNewMatterTitle(e.target.value)}
+                        className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-neutral-400 mb-1 font-medium">رقم القضية الأصلية</label>
+                      <input
+                        type="text"
+                        placeholder="رقم دعوى الدرجة الأولى"
+                        value={newRootCaseNumber}
+                        onChange={(e) => setNewRootCaseNumber(e.target.value)}
+                        className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-neutral-400 mb-1 font-medium">أرقام قضايا مرتبطة</label>
+                      <input
+                        type="text"
+                        placeholder="استئناف، نقض... مفصولة بفواصل"
+                        value={newRelatedCaseNumbersInput}
+                        onChange={(e) => setNewRelatedCaseNumbersInput(e.target.value)}
+                        className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 font-mono"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -910,6 +972,39 @@ export function JudgmentRepositoryModal({
                               className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100"
                             />
                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                          <div>
+                            <label className="block text-neutral-400 mb-1">نوع المستند</label>
+                            <select value={newStageDocumentType} onChange={(e) => setNewStageDocumentType(e.target.value as NonNullable<CaseStageRecord['documentType']>)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100">
+                              {['تظلم','لائحة دعوى','مذكرة','حكم ابتدائي','صحيفة استئناف','حكم استئناف','صحيفة نقض','حكم عليا','التماس','قرار إداري','مرفق إثبات','أخرى'].map((item) => <option key={item} value={item}>{item}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-neutral-400 mb-1">رقم القضية</label>
+                            <input value={newStageCaseNumber} onChange={(e) => setNewStageCaseNumber(e.target.value)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100 font-mono" />
+                          </div>
+                          <div>
+                            <label className="block text-neutral-400 mb-1">رقم الحكم/الصك</label>
+                            <input value={newStageJudgmentNumber} onChange={(e) => setNewStageJudgmentNumber(e.target.value)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100 font-mono" />
+                          </div>
+                          <div>
+                            <label className="block text-neutral-400 mb-1">النتيجة لصاحب الشأن</label>
+                            <select value={newStageOutcome} onChange={(e) => setNewStageOutcome(e.target.value as NonNullable<CaseStageRecord['outcomeForPerson']>)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100">
+                              {['لصالح صاحب الشأن','ضد صاحب الشأن','جزئي','إجرائي فقط','غير محسوم'].map((item) => <option key={item} value={item}>{item}</option>)}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-neutral-400 mb-1">تكييف المحكمة للواقعة</label>
+                          <textarea value={newStageCharacterization} onChange={(e) => setNewStageCharacterization(e.target.value)} rows={2} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100" placeholder="كيف وصفت المحكمة النزاع أو مناط الاستحقاق؟" />
+                        </div>
+
+                        <div>
+                          <label className="block text-neutral-400 mb-1">المواد والقرارات التي اعتمدت عليها المحكمة</label>
+                          <textarea value={newStageLegalMaterialsInput} onChange={(e) => setNewStageLegalMaterialsInput(e.target.value)} rows={3} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100" placeholder="كل مادة أو قرار في سطر مستقل" />
                         </div>
 
                         <div>
