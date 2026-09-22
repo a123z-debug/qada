@@ -180,6 +180,13 @@ async function nativeRedisCommands(commands: RedisScalar[][]): Promise<any[]> {
 }
 
 export async function redisCommand(command: RedisScalar[]): Promise<any> {
+  // Prefer Railway/native Redis when configured. This prevents stale Upstash REST
+  // credentials from shadowing a healthy in-project Redis database.
+  if (hasNativeRedis()) {
+    const [result] = await nativeRedisCommands([command]);
+    return result;
+  }
+
   if (hasUpstashRedis()) {
     const response = await fetch(upstashRedisUrl(), {
       method: 'POST',
@@ -194,15 +201,15 @@ export async function redisCommand(command: RedisScalar[]): Promise<any> {
     return payload?.result;
   }
 
-  if (hasNativeRedis()) {
-    const [result] = await nativeRedisCommands([command]);
-    return result;
-  }
-
   throw new Error('REDIS_NOT_CONFIGURED');
 }
 
 export async function redisPipeline(commands: RedisScalar[][]): Promise<any[]> {
+  // Keep the same precedence for pipelines and single commands.
+  if (hasNativeRedis()) {
+    return nativeRedisCommands(commands);
+  }
+
   if (hasUpstashRedis()) {
     const response = await fetch(`${upstashRedisUrl()}/pipeline`, {
       method: 'POST',
@@ -219,10 +226,6 @@ export async function redisPipeline(commands: RedisScalar[][]): Promise<any[]> {
       if (item?.error) throw new Error(`REDIS_ERROR:${String(item.error).slice(0, 180)}`);
       return item?.result;
     });
-  }
-
-  if (hasNativeRedis()) {
-    return nativeRedisCommands(commands);
   }
 
   throw new Error('REDIS_NOT_CONFIGURED');
