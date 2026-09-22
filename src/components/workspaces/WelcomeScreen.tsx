@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Building2,
   Scale,
@@ -30,6 +30,7 @@ interface WelcomeScreenProps {
   message?: string;
   isAdmin?: boolean;
   onOpenAdminOverview?: () => void;
+  onOpenAssistant?: (prefill?: string) => void;
 }
 
 export function WelcomeScreen({
@@ -39,14 +40,137 @@ export function WelcomeScreen({
   message = 'الرجاء اختيار الاختصاص القضائي للبدء',
   isAdmin = false,
   onOpenAdminOverview,
+  onOpenAssistant,
 }: WelcomeScreenProps) {
+  const [interfaceMode, setInterfaceMode] = useState<'simple' | 'professional'>(isAdmin ? 'professional' : 'simple');
+  const [simpleRequest, setSimpleRequest] = useState('');
+
   const handleQuickLaunch = (court: CourtJurisdiction, serviceId: string) => {
     onSelectCourt(court);
     onSelectService(serviceId);
   };
 
+  const simpleActions = [
+    { title: 'حلّل قضيتي', text: 'حلل قضيتي من البداية إلى النهاية، واسألني فقط عن البيانات الناقصة، ثم رتب الوقائع والطلبات والمستندات والمراجع والخطوة التالية.' },
+    { title: 'اكتب لائحة دعوى', text: 'أريد إعداد لائحة دعوى كاملة. اجمع مني البيانات الناقصة خطوة بخطوة، وحدد الاختصاص والطلبات والمستندات، ولا تضف سنداً نظامياً إلا بعد التحقق من مصدره الرسمي.' },
+    { title: 'اعتراض أو استئناف', text: 'أريد مراجعة حكم أو قرار وإعداد مسار اعتراض أو استئناف. ابدأ بفهم القرار والمواعيد والمستندات، ثم ابنِ مسودة قابلة للمراجعة مع المراجع المتحققة.' },
+    { title: 'راجع قراراً إدارياً', text: 'أريد مراجعة قرار إداري ومعرفة المسار النظامي المناسب. اجمع الوقائع والتواريخ والجهة والطلبات، ثم وضح الخيارات والإجراءات والمراجع الرسمية ذات الصلة.' },
+    { title: 'راجع مستنداتي', text: 'أريد فحص مستنداتي كملف قضية واحد: صنفها، استخرج النواقص والتعارضات، اربطها بالوقائع، ثم اقترح ما يلزم استكماله قبل إعداد المخرج النهائي.' },
+    { title: 'ابحث عن حقي النظامي', text: 'اشرح مشكلتي أولاً ثم حدد المسائل النظامية المحتملة، وابحث في المراجع الرسمية المتاحة، وميز بوضوح بين النص المتحقق وما يحتاج مراجعة.' },
+  ];
+
+  const openSimpleTask = (request: string) => {
+    const task = request.trim();
+    if (!task || !onOpenAssistant) return;
+    onOpenAssistant(
+      'أنت تعمل الآن في واجهة QADA Simple. أنجز للمستخدم المهمة من البداية إلى النهاية بطريقة مبسطة. ' +
+      'ابدأ بفهم الهدف، ثم اطلب البيانات أو المستندات الناقصة فقط، ثم نفذ التحليل والصياغة والمراجعة بالتتابع. ' +
+      'لا تختلق مادة أو حكماً أو ميعاداً، وميّز دائماً بين المصدر الرسمي المتحقق وما يحتاج تحققاً.\n\nطلب المستخدم: ' + task
+    );
+  };
+
+  if (interfaceMode === 'simple') {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6 py-4 px-2 sm:px-6" dir="rtl">
+        <div className="flex flex-col gap-3 rounded-2xl border border-cyan-400/20 bg-slate-900/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="text-[11px] font-black text-cyan-300">QADA SIMPLE</div>
+            <p className="mt-1 text-xs text-slate-400">واجهة إنجاز مبسطة؛ صف ما تريد وسيتولى QADA ترتيب المسار معك حتى المخرج النهائي.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setInterfaceMode('professional')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
+              الواجهة الاحترافية
+            </button>
+            {isAdmin && onOpenAdminOverview && (
+              <button type="button" onClick={onOpenAdminOverview} className="min-h-10 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 text-xs font-black text-violet-200 hover:bg-violet-500/20">
+                واجهة الإدارة
+              </button>
+            )}
+          </div>
+        </div>
+
+        <section className="relative overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-slate-900 via-[#07172d] to-slate-950 p-6 sm:p-10 shadow-2xl">
+          <div className="absolute -top-24 -left-20 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-black text-cyan-200">
+              <Sparkles className="h-4 w-4" />
+              مسار واحد من الطلب إلى النتيجة
+            </div>
+            <h1 className="mt-5 text-3xl font-black leading-tight text-white sm:text-5xl">ما الذي تريد من QADA أن ينجزه لك؟</h1>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
+              لا تحتاج لمعرفة اسم المحكمة أو المادة أو الأداة. اكتب مشكلتك أو النتيجة التي تريدها، وسيبدأ QADA بجمع الناقص ثم ينتقل إلى التحليل والمراجع والصياغة والمراجعة.
+            </p>
+
+            <div className="mt-7 rounded-2xl border border-slate-700 bg-slate-950/80 p-3 sm:p-4">
+              <textarea
+                value={simpleRequest}
+                onChange={(event) => setSimpleRequest(event.target.value)}
+                placeholder="مثال: صدر بحقي قرار من جهة حكومية وأريد أعرف كيف أعترض عليه وأجهز الطلب كامل..."
+                className="min-h-32 w-full resize-y rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm leading-7 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400/50"
+              />
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[11px] leading-5 text-slate-500">يمكنك لاحقاً إرفاق PDF أو صورة من داخل المستشار؛ وسيبقى ملف القضية نفسه متاحاً في الواجهة الاحترافية.</p>
+                <button
+                  type="button"
+                  disabled={!simpleRequest.trim() || !onOpenAssistant}
+                  onClick={() => openSimpleTask(simpleRequest)}
+                  className="min-h-11 shrink-0 rounded-xl bg-cyan-400 px-5 text-sm font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ابدأ إنجاز المهمة
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-black text-white">أو اختر ما تريد مباشرة</h2>
+            <span className="text-[10px] font-bold text-slate-500">يمكن تغيير المسار أثناء المحادثة</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {simpleActions.map((action) => (
+              <button
+                key={action.title}
+                type="button"
+                onClick={() => openSimpleTask(action.text)}
+                className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-right transition hover:border-cyan-400/35 hover:bg-slate-900"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-black text-white group-hover:text-cyan-200">{action.title}</span>
+                  <ArrowLeft className="h-4 w-4 text-slate-600 group-hover:text-cyan-300" />
+                </div>
+                <p className="mt-2 line-clamp-3 text-xs leading-6 text-slate-500">{action.text}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <div className="rounded-2xl border border-amber-400/15 bg-amber-400/5 p-4 text-xs leading-6 text-slate-400">
+          <span className="font-black text-amber-200">طريقة العمل:</span> الواجهة البسيطة تخفي التفاصيل التقنية فقط؛ نفس ملف القضية والمراجع ومحرك التحليل يُستخدم عند الانتقال إلى Professional، بينما أدوات الإدارة لا تظهر إلا لحساب الإدارة.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 py-4 px-2 sm:px-6 select-none" dir="rtl">
+      <div className="flex flex-col gap-3 rounded-2xl border border-amber-400/15 bg-slate-900/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-[11px] font-black text-amber-300">QADA PROFESSIONAL</div>
+          <p className="mt-1 text-xs text-slate-400">تحكم كامل في الاختصاصات والأدوات والمراجع ومسارات المراجعة.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setInterfaceMode('simple')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
+            الواجهة البسيطة
+          </button>
+          {isAdmin && onOpenAdminOverview && (
+            <button type="button" onClick={onOpenAdminOverview} className="min-h-10 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 text-xs font-black text-violet-200 hover:bg-violet-500/20">
+              واجهة الإدارة
+            </button>
+          )}
+        </div>
+      </div>
       
       {/* 1. بانر الـ Hero الرئيسي */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-amber-500/20 p-6 sm:p-10 shadow-2xl">
@@ -88,7 +212,7 @@ export function WelcomeScreen({
           <div className="w-full md:w-80 bg-slate-950/80 border border-amber-500/30 rounded-2xl p-5 shadow-2xl backdrop-blur-md shrink-0">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
               <span className="font-bold text-xs text-amber-400 flex items-center gap-1.5">
-                <FolderOpen className="w-4 h-4" /> مساحة قضيتي النشطة
+                <FolderOpen className="w-4 h-4" /> مساحة قضيتي
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">
                 قيد المراجعة
@@ -247,9 +371,9 @@ export function WelcomeScreen({
             <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-white">المدير الذكي الاستباقي</h4>
+            <h4 className="text-xs font-bold text-white">تحقق مرجعي منظم</h4>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              متابعة التحديثات النظامية وتنبيهك لأي تعديلات قد تؤثر على دعواك.
+              تمييز المراجع المتحققة من المصادر الرسمية عن النصوص التي ما زالت تحتاج مراجعة.
             </p>
           </div>
         </div>
