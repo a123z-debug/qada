@@ -1,0 +1,70 @@
+name: QADA Production Smoke
+
+on:
+  push:
+    branches:
+      - ops-prod-smoke-20260922
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: End-to-end production smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://qada-production.up.railway.app"
+          JAR="/tmp/qada-cookies.txt"
+
+          status="$(curl -sS -o /tmp/root.html -w '%{http_code}' "$BASE/")"
+          test "$status" = "200"
+          echo "root=200"
+
+          status="$(curl -sS -o /tmp/health.json -w '%{http_code}' "$BASE/api/health")"
+          test "$status" = "200"
+          jq -e '.ready == true and .services.geminiConfigured == true and .services.redisConfigured == true and .services.redisReachable == true' /tmp/health.json >/dev/null
+          echo "health=200 ready=true"
+
+          status="$(curl -sS -c "$JAR" -o /tmp/session.json -w '%{http_code}'             -X POST "$BASE/api/session"             -H 'Content-Type: application/json'             --data-binary '{"action":"test-access","workspaceMode":"simple"}')"
+          test "$status" = "200"
+          jq -e '.session.workspaceMode == "simple"' /tmp/session.json >/dev/null
+          echo "session=200"
+
+          status="$(curl -sS -b "$JAR" -o /tmp/legal.json -w '%{http_code}'             -X POST "$BASE/api/legal-source-search"             -H 'Content-Type: application/json'             --data-binary '{"query":"نظام المرافعات أمام ديوان المظالم","court":"administrative"}')"
+          test "$status" = "200"
+          jq -e '(.references | type == "array") and (.verifiedArticles | type == "array")' /tmp/legal.json >/dev/null
+          echo "legal-source-search=200"
+
+          status="$(curl -sS --max-time 90 -b "$JAR" -o /tmp/story.json -w '%{http_code}'             -X POST "$BASE/api/convert-story"             -H 'Content-Type: application/json'             --data-binary '{"story":"صدر قرار إداري وأرغب في معرفة طريقة الاعتراض عليه","court":"administrative"}')"
+          test "$status" = "200"
+          jq -e '(.subject | type == "string" and length > 0) and (.requests | type == "array")' /tmp/story.json >/dev/null
+          echo "convert-story=200 ai-output=true"
+
+          status="$(curl -sS --max-time 90 -D /tmp/chat.headers -b "$JAR" -o /tmp/chat.sse -w '%{http_code}'             -X POST "$BASE/api/chat"             -H 'Content-Type: application/json'             --data-binary '{"message":"أجب بكلمة واحدة فقط: تم"}')"
+          test "$status" = "200"
+          grep -Eiq '^x-qada-ai-mode:[[:space:]]*ai' /tmp/chat.headers
+          grep -q '^data:' /tmp/chat.sse
+          echo "chat=200 ai-mode=ai"
+
+          status="$(curl -sS --max-time 120 -b "$JAR" -o /tmp/review.json -w '%{http_code}'             -X POST "$BASE/api/judges-review"             -H 'Content-Type: application/json'             --data-binary '{"text":"أتقدم بهذه المذكرة اعتراضاً على قرار إداري وأطلب مراجعته وفق الأنظمة ذات الصلة.","court":"administrative","documentTitle":"اختبار تقني مؤقت"}')"
+          test "$status" = "200"
+          jq -e '(.report | type == "object") and (.sourceAudit | type == "object")' /tmp/review.json >/dev/null
+          echo "judges-review=200 ai-output=true"
+
+          CASE_ID="qada-smoke-$(date +%s)"
+          NOW="$(date +%s000)"
+          status="$(curl -sS -b "$JAR" -o /tmp/case-put.json -w '%{http_code}'             -X PUT "$BASE/api/cases"             -H 'Content-Type: application/json'             --data-binary "{\"record\":{\"id\":\"$CASE_ID\",\"title\":\"اختبار تقني مؤقت\",\"updatedAt\":$NOW}}")"
+          test "$status" = "200"
+          jq -e '.ok == true' /tmp/case-put.json >/dev/null
+
+          status="$(curl -sS -b "$JAR" -o /tmp/cases.json -w '%{http_code}' "$BASE/api/cases")"
+          test "$status" = "200"
+          jq -e --arg id "$CASE_ID" '.records | any(.id == $id)' /tmp/cases.json >/dev/null
+
+          status="$(curl -sS -b "$JAR" -o /dev/null -w '%{http_code}' -X DELETE "$BASE/api/cases?id=$CASE_ID")"
+          test "$status" = "204"
+          echo "cases-crud=passed"
+
+          echo "QADA_PRODUCTION_SMOKE=PASS"
