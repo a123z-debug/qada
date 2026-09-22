@@ -196,11 +196,30 @@ function buildBogPacket(query: string): LegalSourcePacket {
     BOARD_OF_GRIEVANCES_EXECUTION_LAW_1443,
   ];
 
-  const requestedArticles = articleNumbers(query);
+  const requestedArticles = new Set(articleNumbers(query));
+  const normalized = normalizeArabic(query);
+  const supremeReview = containsAny(normalized, [
+    'المحكمه الاداريه العليا', 'طعن', 'نقض', 'اعتراض', 'ميعاد', 'ثلاثين يوما', 'ثلاثين يوم',
+  ]);
+  const militaryServiceDispute = containsAny(normalized, [
+    'خدمه عسكريه', 'فرد عسكري', 'القوات البريه', 'وزاره الدفاع', 'بدل', 'علاوه', 'مكافاه',
+  ]);
+
   const verifiedArticles = details.flatMap((system) =>
     system.articles
       .filter((article) => article.status === 'verified')
-      .filter((article) => requestedArticles.length === 0 || requestedArticles.includes(article.number))
+      .filter((article) => {
+        if (requestedArticles.size === 0) return true;
+        if (requestedArticles.has(article.number)) return true;
+        if (supremeReview && system.id === BOARD_OF_GRIEVANCES_LAW_1428.id && ['11'].includes(article.number)) return true;
+        if (militaryServiceDispute && system.id === BOARD_OF_GRIEVANCES_LAW_1428.id && article.number === '13') return true;
+        if (
+          supremeReview
+          && system.id === BOARD_OF_GRIEVANCES_PROCEDURE_LAW_1435.id
+          && ['33', '45', '46', '53', '54'].includes(article.number)
+        ) return true;
+        return false;
+      })
       .map((article) => ({
         system: system.name,
         article: article.number,
@@ -255,10 +274,18 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
     containsAny([regulation.parentSystem, regulation.regulationName].join(' '), ['خدمة الأفراد'])
   );
 
-  const requestedArticles = articleNumbers(query);
+  const requestedArticles = new Set(articleNumbers(query));
+  const personnelQuery = normalizeArabic(query);
+  const allowanceDispute = containsAny(personnelQuery, [
+    'علاوه', 'بدل', 'مكافاه', 'حاسب', 'فني', 'ممارسه', 'مزاوله', 'جمع', '50', 'م 37', '1430',
+  ]);
   const verifiedArticles = PERSONNEL_SERVICE_LAW_1397.articles
     .filter((article) => article.status === 'verified')
-    .filter((article) => requestedArticles.length === 0 || requestedArticles.includes(article.number))
+    .filter((article) =>
+      requestedArticles.size === 0
+      || requestedArticles.has(article.number)
+      || (allowanceDispute && ['2', '16', '17', '19'].includes(article.number))
+    )
     .map((article) => ({
       system: PERSONNEL_SERVICE_LAW_1397.name,
       article: article.number,
