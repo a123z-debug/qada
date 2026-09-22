@@ -103,6 +103,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
   const session = await readActiveSession(req.headers?.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
+
+  if (!isRedisConfigured() && req.method === 'GET') {
+    return res.status(200).json({
+      records: [],
+      degraded: true,
+      warning: 'مخزن القضايا الدائم غير مهيأ بعد.',
+      meta: { scope: String(req.query?.scope || '') === 'all' ? 'all' : 'user', count: 0, truncated: false },
+    });
+  }
   if (!isRedisConfigured()) return res.status(503).json({ error: 'CASE_STORE_UNAVAILABLE' });
 
   try {
