@@ -33,7 +33,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-type AgentStatus = 'linked' | 'planned' | 'warning' | 'error' | 'running' | 'completed';
+type AgentStatus = 'linked' | 'planned' | 'warning' | 'error' | 'running' | 'completed' | 'queued';
 type AgentTone = 'cyan' | 'amber' | 'emerald' | 'violet' | 'slate' | 'rose';
 
 type AgentNode = {
@@ -60,7 +60,7 @@ type Edge = {
 type RuntimeAgentRun = {
   id: string;
   label: string;
-  status: 'success' | 'warning' | 'error';
+  status: 'success' | 'warning' | 'error' | 'running' | 'queued';
   durationMs: number;
   model?: string;
   summary: string;
@@ -117,6 +117,10 @@ type RuntimeSnapshot = {
     failedAgents?: number;
     architecture?: string;
     buildCommit?: string;
+    live?: boolean;
+    state?: 'running' | 'completed' | 'failed';
+    currentAgentIds?: string[];
+    updatedAt?: string;
   };
 };
 
@@ -242,7 +246,8 @@ const statusMeta: Record<AgentStatus, { label: string; dot: string; text: string
   warning: { label: 'يحتاج مراجعة', dot: 'bg-amber-400', text: 'text-amber-300' },
   error: { label: 'خطأ', dot: 'bg-rose-500', text: 'text-rose-300' },
   running: { label: 'يعمل الآن', dot: 'bg-cyan-400', text: 'text-cyan-300' },
-  completed: { label: 'آخر تشغيل مكتمل', dot: 'bg-emerald-300', text: 'text-emerald-200' },
+  completed: { label: 'اكتمل', dot: 'bg-emerald-300', text: 'text-emerald-200' },
+  queued: { label: 'بانتظار الدور', dot: 'bg-slate-500', text: 'text-slate-400' },
 };
 
 function toneClass(tone: AgentTone) {
@@ -357,6 +362,7 @@ export function AdminAgentMap({
     setSelfTestRunning(true);
     setSelfTestError('');
 
+    const runId = 'selftest-' + Date.now();
     const documentTitle = 'اختبار تشغيلي حي لوكلاء QADA';
     const text = [
       'هذا مستند اختبار تقني داخلي وليس قضية حقيقية ولا رأياً قانونياً.',
@@ -365,12 +371,34 @@ export function AdminAgentMap({
       'لا تستنتج حقاً أو التزاماً من هذا النص؛ الغرض قياس جاهزية الوكلاء ومسارات التحقق فقط.',
     ].join('\n');
 
+    let liveTimer: number | null = null;
+    const pollLive = async () => {
+      try {
+        const response = await fetch('/api/admin-runs?live=1&runId=' + encodeURIComponent(runId), {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (response.ok && payload?.live?.runId === runId) {
+          setRuntime(payload.live as RuntimeSnapshot);
+          setFilter('last-run');
+        }
+      } catch {
+        // The analysis request remains authoritative; a missed telemetry poll should not stop it.
+      }
+    };
+
+    liveTimer = window.setInterval(() => void pollLive(), 650);
+    void pollLive();
+
     try {
       const response = await fetch('/api/admin-analysis', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          runId,
           documentTitle,
           court: 'اختبار تشغيلي متعدد المصادر',
           text,
@@ -381,7 +409,7 @@ export function AdminAgentMap({
       if (!response.ok) throw new Error(payload?.error || 'تعذر تشغيل الاختبار الحي للوكلاء.');
 
       const snapshot: RuntimeSnapshot = {
-        runId: 'selftest-' + Date.now(),
+        runId: payload?.runId || runId,
         documentTitle,
         analyzedAt: payload?.meta?.analyzedAt || new Date().toISOString(),
         agentRuns: Array.isArray(payload?.agentRuns) ? payload.agentRuns : [],
@@ -407,12 +435,14 @@ export function AdminAgentMap({
     } catch (error) {
       setSelfTestError(error instanceof Error ? error.message : 'تعذر تشغيل الاختبار الحي للوكلاء.');
     } finally {
+      if (liveTimer !== null) window.clearInterval(liveTimer);
+      await pollLive();
       setSelfTestRunning(false);
     }
   };
 
   const runtimeIsStale = useMemo(() => {
-    if (!runtime || !health?.build?.commit) return false;
+    if (!runtime || runtime.meta?.live || runtime.meta?.state === 'running' || !health?.build?.commit) return false;
     const current = health.build.commit.trim();
     const runCommit = String(runtime.meta?.buildCommit || '').trim();
     if (!runCommit) return true;
@@ -538,6 +568,7 @@ export function AdminAgentMap({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     التشغيل المعروض: <span className="font-bold text-slate-200">{runtime.documentTitle || 'تحليل قضائي'}</span>
+                    {runtime.meta?.state === 'running' && <span className="mr-2 font-black text-cyan-300">• مباشر الآن</span>}
                     {runtimeIsStale && <span className="mr-2 font-black text-amber-300">• تشغيل محفوظ من إصدار سابق — لا يمثل الحالة الحالية</span>}
                     {runtime.analyzedAt && <span> • {new Date(runtime.analyzedAt).toLocaleString('ar-SA')}</span>}
                     <span> • مكتمل {runtime.meta?.completedAgents ?? runtime.agentRuns?.filter((run) => run.status === 'success').length ?? 0}</span>
@@ -579,7 +610,7 @@ export function AdminAgentMap({
               <FilterButton active={filter === 'admin'} onClick={() => setFilter('admin')}>غرفة الأدمن</FilterButton>
               <FilterButton active={filter === 'linked'} onClick={() => setFilter('linked')}>المتصل حالياً</FilterButton>
               <FilterButton active={filter === 'planned'} onClick={() => setFilter('planned')}>قيد الربط</FilterButton>
-              <FilterButton active={filter === 'last-run'} onClick={() => setFilter('last-run')}>آخر تشغيل فعلي</FilterButton>
+              <FilterButton active={filter === 'last-run'} onClick={() => setFilter('last-run')}>{runtime?.meta?.state === 'running' ? 'التشغيل الحي' : 'آخر تشغيل فعلي'}</FilterButton>
             </div>
             <div className="flex items-center gap-1">
               <button type="button" onClick={() => setZoom((value) => Math.min(1.15, Number((value + 0.08).toFixed(2))))} className="min-h-10 min-w-10 inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-white" title="تكبير">
@@ -649,9 +680,14 @@ export function AdminAgentMap({
                   if (!from || !to) return null;
                   const visible = visibleIds.has(from.id) && visibleIds.has(to.id);
                   const stroke = edge.kind === 'admin' ? '#a78bfa' : edge.kind === 'verification' ? '#fbbf24' : '#38bdf8';
-                  const activeRuntimeEdge = runtimeById.has(from.id) && runtimeById.has(to.id);
-                  const hasRuntimeError = runtimeById.get(from.id)?.status === 'error' || runtimeById.get(to.id)?.status === 'error';
-                  const hasRuntimeWarning = runtimeById.get(from.id)?.status === 'warning' || runtimeById.get(to.id)?.status === 'warning';
+                  const fromRuntime = runtimeById.get(from.id);
+                  const toRuntime = runtimeById.get(to.id);
+                  const activeRuntimeEdge = Boolean(
+                    fromRuntime && toRuntime &&
+                    (fromRuntime.status === 'running' || toRuntime.status === 'running')
+                  );
+                  const hasRuntimeError = fromRuntime?.status === 'error' || toRuntime?.status === 'error';
+                  const hasRuntimeWarning = fromRuntime?.status === 'warning' || toRuntime?.status === 'warning';
                   const runtimeStroke = hasRuntimeError ? '#fb7185' : hasRuntimeWarning ? '#fbbf24' : stroke;
                   const path = edgePath(from, to);
                   return (
@@ -687,7 +723,15 @@ export function AdminAgentMap({
                 const Icon = node.icon;
                 const runtimeRun = runtimeById.get(node.id);
                 const effectiveStatus: AgentStatus = runtimeRun
-                  ? (runtimeRun.status === 'success' ? 'completed' : runtimeRun.status === 'warning' ? 'warning' : 'error')
+                  ? (runtimeRun.status === 'success'
+                      ? 'completed'
+                      : runtimeRun.status === 'warning'
+                        ? 'warning'
+                        : runtimeRun.status === 'error'
+                          ? 'error'
+                          : runtimeRun.status === 'running'
+                            ? 'running'
+                            : 'queued')
                   : infrastructureStatus(node);
                 const meta = statusMeta[effectiveStatus];
                 const visible = visibleIds.has(node.id);
@@ -701,6 +745,7 @@ export function AdminAgentMap({
                       'absolute rounded-2xl border p-3 text-right transition-all shadow-[0_14px_35px_rgba(0,0,0,.28)] backdrop-blur-md ' +
                       toneClass(node.tone) +
                       (selectedNode ? ' ring-2 ring-white/25 scale-[1.02] ' : ' ') +
+                      (runtimeRun?.status === 'running' ? ' ring-2 ring-cyan-300/70 shadow-[0_0_28px_rgba(34,211,238,.28)] ' : ' ') +
                       (visible ? ' opacity-100 ' : ' opacity-15 ')
                     }
                     style={{ left: node.x, top: node.y, width: node.width, height: node.height }}
@@ -735,7 +780,7 @@ export function AdminAgentMap({
               <span className="text-[10px] font-black text-slate-500">تفاصيل العقدة</span>
               <h3 className="mt-1 text-base font-black text-white">{selected.title}</h3>
             </div>
-            <span className={'h-3 w-3 rounded-full ' + statusMeta[runtimeById.get(selected.id) ? (runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : 'error') : infrastructureStatus(selected)].dot} />
+            <span className={'h-3 w-3 rounded-full ' + statusMeta[runtimeById.get(selected.id) ? (runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : runtimeById.get(selected.id)?.status === 'error' ? 'error' : runtimeById.get(selected.id)?.status === 'running' ? 'running' : 'queued') : infrastructureStatus(selected)].dot} />
           </div>
 
           <p className="mt-3 text-xs leading-6 text-slate-400">{selected.detail}</p>
@@ -744,7 +789,7 @@ export function AdminAgentMap({
             <DetailRow
               label="الحالة"
               value={runtimeById.get(selected.id)
-                ? statusMeta[runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : 'error'].label
+                ? statusMeta[runtimeById.get(selected.id)?.status === 'success' ? 'completed' : runtimeById.get(selected.id)?.status === 'warning' ? 'warning' : runtimeById.get(selected.id)?.status === 'error' ? 'error' : runtimeById.get(selected.id)?.status === 'running' ? 'running' : 'queued'].label
                 : statusMeta[selected.status].label}
             />
             <DetailRow label="النطاق" value={selected.adminOnly ? 'خاص بالأدمن' : 'منصة عامة / محرك'} />

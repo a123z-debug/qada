@@ -7,6 +7,8 @@ import { recordAuditEvent } from './_audit.js';
 import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
 import { ADMIN_AI_MODELS, USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
+import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
+import { protectJson } from './_secureStore.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -19,6 +21,38 @@ type AdminAnalysisRequest = {
   documentTitle?: string;
   court?: string;
   attachments?: IncomingAttachment[];
+  runId?: string;
+};
+
+type LiveAgentStatus = 'queued' | 'running' | 'success' | 'warning' | 'error';
+
+type LiveAgentRun = {
+  id: string;
+  label: string;
+  status: LiveAgentStatus;
+  durationMs: number;
+  model?: string;
+  summary: string;
+  blockers?: string[];
+};
+
+type LiveRunSnapshot = {
+  runId: string;
+  documentTitle: string;
+  analyzedAt: string;
+  agentRuns: LiveAgentRun[];
+  sourcePackets: unknown[];
+  meta: {
+    live: true;
+    state: 'running' | 'completed' | 'failed';
+    currentAgentIds: string[];
+    completedAgents: number;
+    warningAgents: number;
+    failedAgents: number;
+    architecture: string;
+    buildCommit: string;
+    updatedAt: string;
+  };
 };
 
 type AgentRun = {
@@ -37,6 +71,90 @@ type AgentResult<T = any> = {
 };
 
 const MODELS = ADMIN_AI_MODELS;
+
+const LIVE_LABELS: Record<string, string> = {
+  'admin-entry': 'غرفة التحليل للأدمن',
+  'document-reader': 'قارئ المستندات',
+  'case-router': 'موجّه القضية',
+  'qada-core': 'QADA AI Orchestrator',
+  'facts': 'محلل الوقائع',
+  'judgment-audit': 'إيجنت تحليل الأحكام',
+  'memo-audit': 'إيجنت تحليل المذكرات',
+  'legislative-flaws': 'كشف العيوب التشريعية',
+  'judicial-flaws': 'كشف العيوب القضائية',
+  'procedural-flaws': 'كشف العيوب الإجرائية',
+  'evidence-flaws': 'فحص الإثبات',
+  'reasoning-flaws': 'فحص التكييف والتسبيب',
+  'rebuttal-review': 'مراجعة الدفوع والردود',
+  'jurisdiction': 'محلل الاختصاص',
+  'characterization': 'محلل التكييف',
+  'evidence': 'محلل الإثبات',
+  'reasoning': 'محلل التسبيب',
+  'procedure': 'محلل الإجراءات',
+  'admin-final': 'التقرير التحليلي للأدمن',
+  'conflicts': 'كاشف التعارض',
+  'final-review': 'بوابة المراجعة النهائية',
+};
+
+function liveRunKey(userId: string) {
+  return `${redisPrefix()}:admin:live:${userId}`;
+}
+
+function liveBuildCommit() {
+  return process.env.RAILWAY_GIT_COMMIT_SHA
+    || process.env.QADA_RELEASE
+    || process.env.VERCEL_GIT_COMMIT_SHA
+    || '';
+}
+
+function liveEntry(id: string, status: LiveAgentStatus = 'queued', summary = 'بانتظار الدور'): LiveAgentRun {
+  return {
+    id,
+    label: LIVE_LABELS[id] || id,
+    status,
+    durationMs: 0,
+    summary,
+  };
+}
+
+function upsertLiveAgent(snapshot: LiveRunSnapshot, run: Partial<LiveAgentRun> & { id: string }) {
+  const index = snapshot.agentRuns.findIndex((item) => item.id === run.id);
+  const current = index >= 0 ? snapshot.agentRuns[index] : liveEntry(run.id);
+  const next: LiveAgentRun = {
+    ...current,
+    ...run,
+    label: run.label || current.label || LIVE_LABELS[run.id] || run.id,
+    durationMs: Number(run.durationMs ?? current.durationMs ?? 0),
+    summary: String(run.summary ?? current.summary ?? ''),
+  };
+  if (index >= 0) snapshot.agentRuns[index] = next;
+  else snapshot.agentRuns.push(next);
+}
+
+function recalcLive(snapshot: LiveRunSnapshot) {
+  snapshot.meta.currentAgentIds = snapshot.agentRuns.filter((run) => run.status === 'running').map((run) => run.id);
+  snapshot.meta.completedAgents = snapshot.agentRuns.filter((run) => run.status === 'success').length;
+  snapshot.meta.warningAgents = snapshot.agentRuns.filter((run) => run.status === 'warning').length;
+  snapshot.meta.failedAgents = snapshot.agentRuns.filter((run) => run.status === 'error').length;
+  snapshot.meta.updatedAt = new Date().toISOString();
+}
+
+async function saveLiveRun(userId: string, snapshot: LiveRunSnapshot) {
+  recalcLive(snapshot);
+  if (!isRedisConfigured()) return;
+  try {
+    await redisCommand([
+      'SET',
+      liveRunKey(userId),
+      protectJson(snapshot, 'admin-live-run'),
+      'EX',
+      900,
+    ]);
+  } catch (error) {
+    console.warn('Admin live telemetry unavailable:', error instanceof Error ? error.message : error);
+  }
+}
+
 
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
@@ -488,16 +606,67 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = (req.body ?? {}) as AdminAnalysisRequest;
+  const runId = String(body.runId || `admin-${Date.now()}`).replace(/[^a-zA-Z0-9._:-]/g, '').slice(0, 180) || `admin-${Date.now()}`;
+  const documentTitle = String(body.documentTitle || 'تحليل قضائي').slice(0, 300);
+  const live: LiveRunSnapshot = {
+    runId,
+    documentTitle,
+    analyzedAt: new Date().toISOString(),
+    agentRuns: [
+      liveEntry('admin-entry', 'success', 'استقبلت غرفة الأدمن طلب التحليل.'),
+      liveEntry('document-reader', 'running', 'يقرأ المستند ويستخرج الوقائع الأساسية الآن.'),
+      liveEntry('case-router'),
+      liveEntry('qada-core'),
+      liveEntry('facts'),
+      liveEntry('judgment-audit'),
+      liveEntry('memo-audit'),
+      liveEntry('legislative-flaws'),
+      liveEntry('judicial-flaws'),
+      liveEntry('procedural-flaws'),
+      liveEntry('evidence-flaws'),
+      liveEntry('reasoning-flaws'),
+      liveEntry('rebuttal-review'),
+      liveEntry('jurisdiction'),
+      liveEntry('characterization'),
+      liveEntry('evidence'),
+      liveEntry('reasoning'),
+      liveEntry('procedure'),
+      liveEntry('admin-final'),
+      liveEntry('conflicts'),
+      liveEntry('final-review'),
+    ],
+    sourcePackets: [],
+    meta: {
+      live: true,
+      state: 'running',
+      currentAgentIds: ['document-reader'],
+      completedAgents: 1,
+      warningAgents: 0,
+      failedAgents: 0,
+      architecture: 'multi-agent-v5-live-telemetry',
+      buildCommit: liveBuildCommit(),
+      updatedAt: new Date().toISOString(),
+    },
+  };
+  await saveLiveRun(session.id, live);
+
   const rawInputText = typeof body.text === 'string' ? body.text.trim().slice(0, 45000) : '';
   const inputText = redactDirectIdentifiers(rawInputText).text;
   const attachments = cleanAttachments(Array.isArray(body.attachments) ? body.attachments : []);
 
   if (!inputText && attachments.length === 0) {
+    upsertLiveAgent(live, { id: 'document-reader', status: 'error', summary: 'لم يصل مستند أو نص للتحليل.' });
+    live.meta.state = 'failed';
+    await saveLiveRun(session.id, live);
     return res.status(400).json({ error: 'DOCUMENT_REQUIRED' });
   }
 
   const clients = getGeminiClients();
   if (clients.length === 0) {
+    upsertLiveAgent(live, { id: 'document-reader', status: 'error', summary: 'لا يوجد مزود ذكاء مهيأ.' });
+    upsertLiveAgent(live, { id: 'qada-core', status: 'error', summary: 'توقف المحرك لعدم وجود مزود ذكاء.' });
+    live.meta.state = 'failed';
+    await saveLiveRun(session.id, live);
     return res.status(503).json({ error: 'AI_PROVIDER_UNAVAILABLE' });
   }
 
@@ -538,6 +707,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     parts: [...baseParts, { text: intakePrompt }],
   });
 
+  upsertLiveAgent(live, { ...intake.run, id: 'document-reader' });
+  upsertLiveAgent(live, {
+    id: 'facts',
+    status: intake.data ? 'success' : 'warning',
+    durationMs: intake.run.durationMs,
+    model: intake.run.model,
+    summary: intake.data ? 'اكتمل استخراج الوقائع الأساسية.' : 'اكتمل القارئ دون طبقة وقائع كاملة.',
+  });
+  upsertLiveAgent(live, { id: 'case-router', status: 'running', summary: 'يحدد المسار القانوني والوكلاء المطلوبين الآن.' });
+  upsertLiveAgent(live, { id: 'qada-core', status: 'running', summary: 'يبني حزمة المصادر ويوجّه التحليل الآن.' });
+  await saveLiveRun(session.id, live);
+
   const workingText = [
     inputText,
     intake.data?.documentExtract ? `استخراج الوكيل من المرفقات:\n${String(intake.data.documentExtract).slice(0, 18000)}` : '',
@@ -551,9 +732,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ].filter(Boolean).join('\n');
 
   const sourceBundle = runLegalSourceAgents(retrievalQuery);
+  for (const sourceRun of sourceBundle.runs) {
+    upsertLiveAgent(live, {
+      id: sourceRun.id,
+      label: sourceRun.label,
+      status: sourceRun.status,
+      durationMs: sourceRun.durationMs,
+      summary: sourceRun.summary,
+      blockers: sourceRun.blockers,
+    });
+  }
+  upsertLiveAgent(live, { id: 'case-router', status: 'success', durationMs: 1, summary: 'تم تحديد مسارات التحليل المطلوبة.' });
+  upsertLiveAgent(live, {
+    id: 'qada-core',
+    status: sourceBundle.runs.some((run) => run.status === 'warning') ? 'warning' : 'success',
+    durationMs: 1,
+    summary: sourceBundle.runs.some((run) => run.status === 'warning')
+      ? 'اكتمل التوجيه مع قيود تحقق مرجعية.'
+      : 'اكتمل التوجيه وبناء حزمة المصادر.',
+    blockers: sourceBundle.verification.blockers,
+  });
+  live.sourcePackets = sourceBundle.packets;
+  await saveLiveRun(session.id, live);
   const documentTypeLabel = String(intake.data?.documentType || body.documentTitle || '').trim();
   const auditIsJudgment = /حكم|قرار قضائي|قضاء|دائرة/i.test(documentTypeLabel);
   const analysisMode = auditIsJudgment ? 'تحليل حكم/قرار قضائي' : 'تحليل مذكرة/لائحة/دفاع';
+  const auditId = auditIsJudgment ? 'judgment-audit' : 'memo-audit';
+  const inactiveAuditId = auditIsJudgment ? 'memo-audit' : 'judgment-audit';
+  upsertLiveAgent(live, { id: auditId, status: 'success', durationMs: 1, summary: `تم اختيار مسار ${analysisMode}.` });
+  live.agentRuns = live.agentRuns.filter((run) => run.id !== inactiveAuditId);
+  await saveLiveRun(session.id, live);
   const sourceNotice = [
     'نتيجة وكلاء المراجع القانونية لهذه العملية:',
     sourceBundle.context,
@@ -692,12 +900,42 @@ ${sharedRules}
     }),
 
   ];
+  const specialistIds = [
+    'legislative-flaws',
+    'judicial-flaws',
+    'procedural-flaws',
+    'evidence-flaws',
+    'reasoning-flaws',
+    'rebuttal-review',
+  ];
   const specialistResults: AgentResult<any>[] = [];
   for (let offset = 0; offset < specialistTasks.length; offset += 2) {
+    const activeIds = specialistIds.slice(offset, offset + 2);
+    for (const id of activeIds) {
+      upsertLiveAgent(live, { id, status: 'running', summary: 'يعمل الآن على المستند.' });
+    }
+    await saveLiveRun(session.id, live);
+
     const batch = await Promise.all(
       specialistTasks.slice(offset, offset + 2).map((runAgent) => runAgent())
     );
     specialistResults.push(...batch);
+    for (const result of batch) {
+      upsertLiveAgent(live, result.run);
+      if (result.run.id === 'procedural-flaws') {
+        upsertLiveAgent(live, { id: 'jurisdiction', status: result.data ? 'success' : 'warning', durationMs: result.run.durationMs, model: result.run.model, summary: result.data ? 'اكتمل فحص الاختصاص.' : 'فحص الاختصاص يحتاج مراجعة.' });
+        upsertLiveAgent(live, { id: 'procedure', status: result.data ? 'success' : 'warning', durationMs: result.run.durationMs, model: result.run.model, summary: result.data ? 'اكتمل فحص الإجراءات.' : 'فحص الإجراءات يحتاج مراجعة.' });
+      }
+      if (result.run.id === 'evidence-flaws') {
+        upsertLiveAgent(live, { id: 'evidence', status: result.data ? 'success' : 'warning', durationMs: result.run.durationMs, model: result.run.model, summary: result.data ? 'اكتمل فحص الإثبات.' : 'فحص الإثبات يحتاج مراجعة.' });
+      }
+      if (result.run.id === 'reasoning-flaws') {
+        upsertLiveAgent(live, { id: 'characterization', status: result.data ? 'success' : 'warning', durationMs: result.run.durationMs, model: result.run.model, summary: result.data ? 'اكتمل فحص التكييف.' : 'فحص التكييف يحتاج مراجعة.' });
+        upsertLiveAgent(live, { id: 'reasoning', status: result.data ? 'success' : 'warning', durationMs: result.run.durationMs, model: result.run.model, summary: result.data ? 'اكتمل فحص التسبيب.' : 'فحص التسبيب يحتاج مراجعة.' });
+      }
+    }
+    await saveLiveRun(session.id, live);
+
     if (offset + 2 < specialistTasks.length) {
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
@@ -714,6 +952,10 @@ ${sharedRules}
     rebuttal: rebuttal.data,
     sourceVerification: sourceBundle.verification,
   };
+
+  upsertLiveAgent(live, { id: 'admin-final', status: 'running', summary: 'يجمع نتائج الوكلاء ويبني التقرير التحليلي الآن.' });
+  upsertLiveAgent(live, { id: 'final-review', status: 'queued', summary: 'بانتظار التقرير النهائي.' });
+  await saveLiveRun(session.id, live);
 
   const final = await generateJsonAgent<any>({
     clients,
@@ -744,6 +986,9 @@ ${ISSUE_SCHEMA}`,
     parts: [{ text: JSON.stringify(synthesisPayload) }],
     temperature: 0.02,
   });
+
+  upsertLiveAgent(live, final.run);
+  await saveLiveRun(session.id, live);
 
   const rawReport = final.data
     ? normalizeReport(final.data)
@@ -909,6 +1154,8 @@ ${ISSUE_SCHEMA}`,
     blockers: report.conflictingPoints,
   };
   agentRuns.push(conflictRun);
+  upsertLiveAgent(live, conflictRun);
+  await saveLiveRun(session.id, live);
 
   const failedBeforeGate = agentRuns.filter((run) => run.status === 'error').length;
   const finalReviewRun: AgentRun = {
@@ -928,6 +1175,7 @@ ${ISSUE_SCHEMA}`,
     ].slice(0, 12),
   };
   agentRuns.push(finalReviewRun);
+  upsertLiveAgent(live, finalReviewRun);
 
   const completed = agentRuns.filter((run) => run.status === 'success').length;
   const warnings = agentRuns.filter((run) => run.status === 'warning').length;
@@ -949,7 +1197,21 @@ ${ISSUE_SCHEMA}`,
     },
   });
 
+  live.agentRuns = agentRuns.map((run) => ({
+    id: run.id,
+    label: run.label,
+    status: run.status,
+    durationMs: run.durationMs,
+    model: run.model,
+    summary: run.summary,
+    blockers: run.blockers,
+  }));
+  live.sourcePackets = sourceBundle.packets;
+  live.meta.state = failed > 0 ? 'failed' : 'completed';
+  await saveLiveRun(session.id, live);
+
   return res.status(200).json({
+    runId,
     report,
     agentRuns,
     sourcePackets: sourceBundle.packets,
@@ -962,7 +1224,7 @@ ${ISSUE_SCHEMA}`,
       completedAgents: completed,
       warningAgents: warnings,
       failedAgents: failed,
-      architecture: 'multi-agent-v4-quota-aware',
+      architecture: 'multi-agent-v5-live-telemetry',
       buildCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.QADA_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || '',
     },
   });

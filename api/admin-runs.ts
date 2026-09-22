@@ -19,6 +19,10 @@ function runsKey() {
   return `${redisPrefix()}:admin:runs`;
 }
 
+function liveRunKey(userId: string) {
+  return `${redisPrefix()}:admin:live:${userId}`;
+}
+
 function sanitizeSnapshot(input: unknown): AdminRunSnapshot {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('INVALID_RUN');
   const snapshot = input as AdminRunSnapshot;
@@ -33,13 +37,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
   if (session.role !== 'admin') return res.status(403).json({ error: 'ADMIN_ONLY' });
 
+  const liveRequested = req.method === 'GET' && String((req.query as any)?.live || '') === '1';
+
   if (!isRedisConfigured()) {
     if (req.method === 'GET') {
-      return res.status(200).json({
-        runs: [],
-        degraded: true,
-        warning: 'سجل التشغيل الدائم غير مهيأ بعد؛ التحليل نفسه يمكن أن يعمل دون هذا السجل.',
-      });
+      return res.status(200).json(liveRequested
+        ? { live: null, degraded: true, warning: 'تتبع التشغيل الحي يحتاج Redis.' }
+        : {
+            runs: [],
+            degraded: true,
+            warning: 'سجل التشغيل الدائم غير مهيأ بعد؛ التحليل نفسه يمكن أن يعمل دون هذا السجل.',
+          });
     }
     if (req.method === 'POST') {
       return res.status(202).json({
@@ -51,6 +59,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    if (liveRequested) {
+      const liveLimit = await enforceRateLimit('admin-runs-live', session.id, 900, 10 * 60);
+      if (!liveLimit.allowed) {
+        res.setHeader('Retry-After', String(liveLimit.retryAfterSeconds));
+        return res.status(429).json({ error: 'RATE_LIMITED' });
+      }
+      const value = await redisCommand(['GET', liveRunKey(session.id)]);
+      const live = unprotectJson<AdminRunSnapshot>(typeof value === 'string' ? value : '', 'admin-live-run');
+      const requestedRunId = String((req.query as any)?.runId || '').trim();
+      if (requestedRunId && live?.runId !== requestedRunId) {
+        return res.status(200).json({ live: null });
+      }
+      return res.status(200).json({ live: live || null });
+    }
+
     const limit = await enforceRateLimit('admin-runs', session.id, 120, 10 * 60);
     if (!limit.allowed) {
       res.setHeader('Retry-After', String(limit.retryAfterSeconds));
