@@ -14,6 +14,7 @@ const files = [
   'src/components/workspaces/GeneralWorkspace.tsx',
   'src/components/workspaces/LegalReviewEditor.tsx',
   'src/components/LegalReferencesModal.tsx',
+  'api/chat.ts',
 ];
 
 const banned: Array<{ pattern: RegExp; reason: string }> = [
