@@ -111,6 +111,12 @@ assert(welcome.includes('readFileAsAttachment'), 'Simple interface attachment ha
 assert(welcome.includes("fetch('/api/cases?workspace=1'"), 'Simple and Professional shared workspace persistence missing');
 assert(welcome.includes('ملف العمل المشترك بين Simple وProfessional'), 'Professional shared-workspace handoff missing');
 assert(welcome.includes('ما الذي تريد من QADA أن ينجزه لك؟'), 'Simple interface primary task prompt missing');
+const floatingChat = fs.readFileSync('src/components/chat/FloatingChatBot.tsx', 'utf8');
+assert(floatingChat.includes('assistantHttpError'), 'Floating assistant must expose actionable HTTP errors');
+assert(floatingChat.includes("credentials: 'same-origin'"), 'Floating assistant must explicitly send the QADA session cookie');
+assert(floatingChat.includes("cache: 'no-store'"), 'Floating assistant requests must not reuse stale responses');
+assert(welcome.includes('simpleAssistantHttpError'), 'Simple mode must expose actionable HTTP errors');
+assert(welcome.includes("credentials: 'same-origin'"), 'Simple mode must explicitly send the QADA session cookie');
 assert(login.includes("mode: 'simple'"), 'Simple portal missing');
 assert(login.includes("mode: 'professional'"), 'Professional portal missing');
 assert(login.includes("mode: 'admin'"), 'Admin portal missing');

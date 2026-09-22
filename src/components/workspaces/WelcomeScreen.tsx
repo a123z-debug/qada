@@ -26,6 +26,25 @@ import { readSseTextResponse } from '../../lib/readSseTextResponse';
 import { readFileAsAttachment } from '../../lib/clientAttachments';
 import type { Attachment } from '../../types';
 
+async function simpleAssistantHttpError(response: Response): Promise<string> {
+  const payload = await response.json().catch(() => ({} as Record<string, unknown>));
+  const code = typeof payload?.error === 'string' ? payload.error : '';
+  const retryAfter = Number(response.headers.get('Retry-After') || 0);
+
+  if (response.status === 401 || code === 'AUTH_REQUIRED') {
+    return 'انتهت جلسة الاستخدام. حدّث الصفحة واختر واجهة QADA من جديد.';
+  }
+  if (response.status === 429) {
+    return retryAfter > 0
+      ? `تم بلوغ حد الاستخدام المؤقت. أعد المحاولة بعد نحو ${retryAfter} ثانية.`
+      : 'تم بلوغ حد الاستخدام المؤقت. أعد المحاولة بعد قليل.';
+  }
+  if (response.status === 400) {
+    return 'تعذر قراءة الطلب أو أحد المرفقات. راجع المدخلات ثم أعد المحاولة.';
+  }
+  return `تعذر تشغيل محرك التحليل حالياً (HTTP ${response.status}).`;
+}
+
 interface WelcomeScreenProps {
   onSelectCourt: (court: CourtJurisdiction) => void;
   onSelectService: (service: string) => void;
@@ -146,6 +165,8 @@ export function WelcomeScreen({
     try {
       const response = await fetch('/api/ai', {
         method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [
@@ -161,8 +182,7 @@ export function WelcomeScreen({
       });
 
       if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload?.error || 'تعذر تشغيل مسار الإنجاز.');
+        throw new Error(await simpleAssistantHttpError(response));
       }
 
       const result = await readSseTextResponse(response, (fullText) => {
@@ -181,7 +201,7 @@ export function WelcomeScreen({
       setSimpleMessages((current) =>
         current.map((item) =>
           item.id === assistantId
-            ? { ...item, content: 'تعذر إكمال التحليل الآلي حالياً، ولم تعتمد QADA أي نتيجة قانونية. أعد المحاولة بعد التحقق من جاهزية الخدمة.' }
+            ? { ...item, content: message }
             : item
         )
       );

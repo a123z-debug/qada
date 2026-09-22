@@ -305,7 +305,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8'); res.setHeader('Cache-Control', 'no-cache, no-transform'); res.setHeader('Connection', 'keep-alive');
     res.write(`data: ${JSON.stringify({ text: reply })}\n\n`); res.write('data: [DONE]\n\n'); return res.end();
   } catch (error: any) {
-    console.error('AI provider error:', error?.message || error);
-    return res.status(503).json({ error: 'AI_PROVIDER_UNAVAILABLE' });
+    console.error('AI analysis pipeline error:', error?.message || error);
+    const fallbackReply = buildSafeFallbackReply(incomingMessages, body.targetCourt);
+    res.setHeader('X-QADA-AI-Mode', 'fallback-error');
+    res.setHeader('X-QADA-Error-Class', 'ANALYSIS_PIPELINE_FALLBACK');
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.write(`data: ${JSON.stringify({ text: fallbackReply })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    return res.end();
   }
 }

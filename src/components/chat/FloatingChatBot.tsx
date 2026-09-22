@@ -36,6 +36,28 @@ interface ChatMsg {
   timestamp: number;
 }
 
+async function assistantHttpError(response: Response): Promise<string> {
+  const payload = await response.json().catch(() => ({} as Record<string, unknown>));
+  const code = typeof payload?.error === 'string' ? payload.error : '';
+  const retryAfter = Number(response.headers.get('Retry-After') || 0);
+
+  if (response.status === 401 || code === 'AUTH_REQUIRED') {
+    return 'انتهت جلسة الاستخدام أو لم تصل إلى الخادم. حدّث الصفحة واختر واجهة QADA من جديد.';
+  }
+  if (response.status === 429) {
+    return retryAfter > 0
+      ? `تم بلوغ حد الاستخدام المؤقت. أعد المحاولة بعد نحو ${retryAfter} ثانية.`
+      : 'تم بلوغ حد الاستخدام المؤقت. أعد المحاولة بعد قليل.';
+  }
+  if (response.status === 400) {
+    return 'تعذر قراءة الطلب بصورته الحالية. اختصر النص أو أزل المرفق غير المدعوم ثم أعد المحاولة.';
+  }
+  if (code === 'RATE_LIMIT_STORE_UNAVAILABLE') {
+    return 'خدمة تنظيم الطلبات غير متاحة مؤقتاً. أعد المحاولة بعد قليل.';
+  }
+  return `تعذر إكمال الطلب حالياً (رمز HTTP ${response.status}). لم تعتمد QADA أي نتيجة قانونية من هذه المحاولة.`;
+}
+
 export function FloatingChatBot({
   activeCourt,
   activeService,
@@ -137,6 +159,8 @@ export function FloatingChatBot({
     try {
       const response = await fetch('/api/ai', {
         method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [
@@ -148,7 +172,7 @@ export function FloatingChatBot({
         }),
       });
 
-      if (!response.ok) throw new Error('فشل إرسال الرسالة');
+      if (!response.ok) throw new Error(await assistantHttpError(response));
 
       const streamText = await readSseTextResponse(response, (nextText) => {
         setMessages((prev) =>
@@ -171,14 +195,13 @@ export function FloatingChatBot({
       }
     } catch (err) {
       console.error(err);
+      const message = err instanceof Error
+        ? err.message
+        : 'تعذر إكمال الطلب حالياً. لم تعتمد QADA أي نتيجة قانونية من هذه المحاولة.';
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantMsgId
-            ? {
-                ...m,
-                content:
-                  'عذراً، حدث خطأ مؤقت أثناء المعالجة القضائية. يرجى إعادة المحاولة.',
-              }
+            ? { ...m, content: message }
             : m
         )
       );
