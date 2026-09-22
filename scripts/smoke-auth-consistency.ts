@@ -62,12 +62,12 @@ assert(
   'browser-bound account proofs must not return',
 );
 assert(
-  loginScreen.includes("action: 'test-access'")
+  loginScreen.includes('qada_test_mode=')
     && loginScreen.includes("mode: 'simple'")
     && loginScreen.includes("mode: 'professional'")
     && loginScreen.includes("mode: 'admin'")
     && loginScreen.includes('fetchWithTimeout'),
-  'test portal must expose direct Simple, Professional, and Admin access through the server session endpoint',
+  'test portal must expose direct Simple, Professional, and Admin access through the browser test-mode cookie',
 );
 assert(
   !loginScreen.includes('type="password"')
@@ -75,10 +75,10 @@ assert(
   'temporary test portal must not expose password fields',
 );
 assert(
-  sessionApi.includes("action === 'test-access'")
-    && sessionApi.includes("workspaceMode")
+  sessionApi.includes("const TEST_MODE_COOKIE = 'qada_test_mode'")
+    && sessionApi.includes("mode === 'simple' || mode === 'professional' || mode === 'admin'")
     && sessionApi.includes("loginMethod: 'test_open'"),
-  'server session must issue role-aware passwordless test sessions',
+  'server session must recognize role-aware passwordless test sessions from the test-mode cookie',
 );
 assert(
   envExample.includes('UPSTASH_REDIS_REST_URL')
