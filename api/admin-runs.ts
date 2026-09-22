@@ -32,7 +32,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const session = await readActiveSession(req.headers?.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
   if (session.role !== 'admin') return res.status(403).json({ error: 'ADMIN_ONLY' });
-  if (!isRedisConfigured()) return res.status(503).json({ error: 'AUDIT_STORE_UNAVAILABLE' });
+
+  if (!isRedisConfigured()) {
+    if (req.method === 'GET') {
+      return res.status(200).json({
+        runs: [],
+        degraded: true,
+        warning: 'سجل التشغيل الدائم غير مهيأ بعد؛ التحليل نفسه يمكن أن يعمل دون هذا السجل.',
+      });
+    }
+    if (req.method === 'POST') {
+      return res.status(202).json({
+        ok: false,
+        degraded: true,
+        warning: 'اكتمل التشغيل، لكن لم يُحفظ سجل دائم لأن Redis غير مهيأ.',
+      });
+    }
+  }
 
   try {
     const limit = await enforceRateLimit('admin-runs', session.id, 120, 10 * 60);
