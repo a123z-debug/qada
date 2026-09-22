@@ -62,11 +62,23 @@ assert(
   'browser-bound account proofs must not return',
 );
 assert(
-  loginScreen.includes('/api/session?health=1')
-    && loginScreen.includes('verifyCreatedSession')
-    && loginScreen.includes('Retry-After')
+  loginScreen.includes("action: 'test-access'")
+    && loginScreen.includes("mode: 'simple'")
+    && loginScreen.includes("mode: 'professional'")
+    && loginScreen.includes("mode: 'admin'")
     && loginScreen.includes('fetchWithTimeout'),
-  'login UI must preflight service health, verify the cookie session, surface throttling, and bound network waits',
+  'test portal must expose direct Simple, Professional, and Admin access through the server session endpoint',
+);
+assert(
+  !loginScreen.includes('type="password"')
+    && !loginScreen.includes('كلمة المرور'),
+  'temporary test portal must not expose password fields',
+);
+assert(
+  sessionApi.includes("action === 'test-access'")
+    && sessionApi.includes("workspaceMode")
+    && sessionApi.includes("loginMethod: 'test_open'"),
+  'server session must issue role-aware passwordless test sessions',
 );
 assert(
   envExample.includes('UPSTASH_REDIS_REST_URL')
@@ -94,6 +106,7 @@ console.log(JSON.stringify({
   activeCookie: 'qada_session_v6',
   persistentAccounts: true,
   adminCredentialVersion: 'v6',
+  temporaryOpenTestAccess: true,
   isolatedAuthSecret: true,
   checkedApiFiles: apiFiles.length,
 }, null, 2));
