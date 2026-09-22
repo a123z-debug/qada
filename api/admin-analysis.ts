@@ -6,6 +6,7 @@ import { enforceRateLimit } from './_rateLimit.js';
 import { recordAuditEvent } from './_audit.js';
 import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
+import { ADMIN_AI_MODELS, USER_AI_MODELS, isQuotaError } from './_aiRuntime.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -35,7 +36,7 @@ type AgentResult<T = any> = {
   run: AgentRun;
 };
 
-const MODELS = ['gemini-3.5-flash'];
+const MODELS = ADMIN_AI_MODELS;
 
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
@@ -69,7 +70,7 @@ async function tryGatewayJson(systemInstruction: string, parts: any[]): Promise<
     },
     body: JSON.stringify({
       model: 'google/gemini-3.5-flash',
-      models: [],
+      models: ['google/gemini-3.5-flash-lite', 'google/gemini-3.1-flash-lite', 'google/gemini-3.6-flash'],
       messages: [
         { role: 'system', content: systemInstruction },
         { role: 'user', content: textParts.join('\n\n') },
@@ -197,9 +198,14 @@ async function generateJsonAgent<T>(args: {
     };
   }
 
+  const baseModels = agentId === 'admin-final' ? USER_AI_MODELS : MODELS;
+  const modelOffset = agentId === 'admin-final' ? 0 : clientOffset % baseModels.length;
+  const modelOrder = [...baseModels.slice(modelOffset), ...baseModels.slice(0, modelOffset)];
+
   let attempts = 0;
-  for (const model of MODELS) {
-    for (let i = 0; i < clients.length && attempts < 4; i++) {
+  for (const model of modelOrder) {
+    let quotaErrorsForModel = 0;
+    for (let i = 0; i < clients.length && attempts < 8; i++) {
       attempts += 1;
       const client = clients[(i + clientOffset) % clients.length];
       try {
@@ -232,6 +238,10 @@ async function generateJsonAgent<T>(args: {
         };
       } catch (error) {
         lastError = error;
+        if (isQuotaError(error)) {
+          quotaErrorsForModel += 1;
+          if (quotaErrorsForModel >= Math.min(2, clients.length)) break;
+        }
       }
     }
   }

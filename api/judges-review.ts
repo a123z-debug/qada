@@ -6,6 +6,7 @@ import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
 import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
+import { USER_AI_MODELS, isQuotaError } from './_aiRuntime.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -57,7 +58,7 @@ async function generateReviewViaGateway(prompt: string): Promise<string> {
     },
     body: JSON.stringify({
       model: 'google/gemini-3.5-flash',
-      models: [],
+      models: ['google/gemini-3.5-flash-lite', 'google/gemini-3.1-flash-lite', 'google/gemini-3.6-flash'],
       messages: [
         { role: 'system', content: 'أعد JSON صالحاً فقط دون أي نص خارج JSON.' },
         { role: 'user', content: prompt },
@@ -145,10 +146,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (!raw) {
     const clients = getGeminiClients();
-    const models = ['gemini-3.5-flash'];
+    const models = USER_AI_MODELS;
 
     let attempts = 0;
     outer: for (const model of models) {
+      let quotaErrorsForModel = 0;
       for (const client of clients) {
         if (attempts >= clients.length * models.length) break outer;
         attempts += 1;
@@ -163,6 +165,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (raw) break outer;
         } catch (error) {
           lastError = error;
+          if (isQuotaError(error)) {
+            quotaErrorsForModel += 1;
+            if (quotaErrorsForModel >= Math.min(2, clients.length)) break;
+          }
         }
       }
     }

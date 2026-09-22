@@ -4,6 +4,7 @@ import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
 import { withTimeout } from './_async.js';
+import { ECONOMY_AI_MODELS, isQuotaError } from './_aiRuntime.js';
 
 type Court = 'administrative' | 'general' | 'criminal';
 function getGeminiClients(): GoogleGenAI[] {
@@ -50,7 +51,7 @@ async function askAi(prompt: string): Promise<any | null> {
         headers: { Authorization: `Bearer ${gatewayToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'google/gemini-3.5-flash',
-          models: [],
+          models: ['google/gemini-3.5-flash-lite', 'google/gemini-3.1-flash-lite', 'google/gemini-3.6-flash'],
           messages: [
             { role: 'system', content: 'أعد JSON صالحاً فقط. لا تضف مواد نظامية أو أرقام أنظمة أو أحكام قضائية.' },
             { role: 'user', content: prompt },
@@ -72,10 +73,11 @@ async function askAi(prompt: string): Promise<any | null> {
   }
 
   const clients = getGeminiClients();
-  const models = ['gemini-3.5-flash'];
+  const models = ECONOMY_AI_MODELS;
   const failures: string[] = [];
   let attempts = 0;
   outer: for (const model of models) {
+    let quotaErrorsForModel = 0;
     for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
       const client = clients[clientIndex];
       if (attempts >= clients.length * models.length) break outer;
@@ -96,6 +98,10 @@ async function askAi(prompt: string): Promise<any | null> {
         const status = Number(error?.status || error?.response?.status || 0);
         const code = String(error?.code || error?.name || 'AI_ERROR').replace(/[^A-Z0-9_.-]/gi, '').slice(0, 80);
         failures.push(`key${clientIndex + 1}:${model}:${status || code || 'AI_ERROR'}`);
+        if (isQuotaError(error)) {
+          quotaErrorsForModel += 1;
+          if (quotaErrorsForModel >= Math.min(2, clients.length)) break;
+        }
       }
     }
   }

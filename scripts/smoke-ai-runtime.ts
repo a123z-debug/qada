@@ -1,4 +1,5 @@
 const MODEL = 'gemini-3.5-flash';
+const BACKUP_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.6-flash'];
 const keyNames = ['GEMINI_API_KEY', 'GEMINI_API_KEY_2', 'GEMINI_API_KEY_3', 'GEMINI_API_KEY_4'];
 
 let present = 0;
@@ -43,4 +44,22 @@ console.log('[AI_KEY_SUMMARY]', usable + '/' + present, 'OK');
 
 if (present === 0 || usable === 0) {
   process.exitCode = 2;
+}
+
+
+const firstKey = keyNames.map((name) => process.env[name]?.trim()).find(Boolean);
+if (firstKey) {
+  for (const model of BACKUP_MODELS) {
+    try {
+      const response = await fetch(
+        'https://generativelanguage.googleapis.com/v1beta/models/' + model + '?key=' + encodeURIComponent(firstKey),
+        { method: 'GET', signal: AbortSignal.timeout(10_000) },
+      );
+      console.log('[AI_MODEL_TEST]', model, response.ok ? 'OK' : 'FAIL ' + response.status);
+      if (!response.ok) process.exitCode = 2;
+    } catch (error) {
+      console.log('[AI_MODEL_TEST]', model, 'FAIL', error instanceof Error ? error.name : 'UNKNOWN');
+      process.exitCode = 2;
+    }
+  }
 }
