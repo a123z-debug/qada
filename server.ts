@@ -27,6 +27,14 @@ async function startServer() {
   app.use(express.json({ limit: '4mb' }));
   app.use(express.urlencoded({ limit: '4mb', extended: true }));
 
+  // Lightweight process liveness endpoint for self-hosted platforms such as
+  // Railway. It deliberately does not depend on Gemini or Redis so a healthy
+  // web process can become ready while /api/health continues to report the
+  // full dependency state.
+  app.get('/api/live', (_req, res) => {
+    res.status(200).json({ ok: true, service: 'qada' });
+  });
+
   app.get('/api/health', (req, res) => {
     void healthHandler(req as any, res as any);
   });
