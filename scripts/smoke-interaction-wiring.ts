@@ -150,7 +150,9 @@ assert(chatApi.includes("responseMode === 'professional' && verifiedArticleList.
   'Simple mode must not auto-append the verified legal article list');
 assert(login.includes("mode: 'simple'"), 'Simple portal missing');
 assert(login.includes("mode: 'professional'"), 'Professional portal missing');
-assert(login.includes("mode: 'admin'"), 'Admin portal missing');
+assert(!login.includes("mode: 'admin',\n      title: 'الإدارة'"), 'Admin must not be exposed as a primary portal card');
+assert(login.includes('setInterfaceMenuOpen') && login.includes('setAdminOpen(true)'),
+  'Admin access must remain available only from the QADA interface chooser');
 assert(app.includes("defaultMode={session.workspaceMode === 'professional' ? 'professional' : 'simple'}"), 'Selected portal is not routed to its workspace');
 assert(app.includes("setIsAdminMapOpen(userSession.workspaceMode === 'admin')"), 'Admin portal does not open the admin workspace directly');
 
@@ -161,5 +163,5 @@ console.log(JSON.stringify({
   operationalAgentNodes: requiredAgentNodes.length,
   workspaceFamilies: Object.keys(workspaces).length,
   inertButtons: inertButtons.length,
-  interfaceModes: ['simple', 'professional', 'admin'],
+  interfaceModes: ['simple', 'professional', 'admin-hidden-in-chooser'],
 }, null, 2));
