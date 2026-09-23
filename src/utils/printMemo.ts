@@ -19,25 +19,29 @@ export function printLegalMemo(
     return;
   }
 
-  const escapedContent = cleanContent
+  const escapeHtml = (value: string) => value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const escapedContent = escapeHtml(cleanContent);
+  const escapedTitle = escapeHtml(title);
 
   const formattedHtml = `
     <!DOCTYPE html>
     <html dir="rtl" lang="ar">
     <head>
       <meta charset="utf-8">
-      <title>${title}</title>
+      <title>${escapedTitle}</title>
       <style>
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@400;500;700&display=swap');
         @page {
           size: A4;
           margin: 20mm 15mm 20mm 15mm;
         }
         body {
-          font-family: 'Amiri', 'Traditional Arabic', 'Tajawal', serif, sans-serif;
+          font-family: 'Traditional Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
           font-size: 15pt;
           line-height: 1.85;
           color: #0f172a;
@@ -111,13 +115,6 @@ export function printLegalMemo(
         <div>أصول القضاء - منصة القضايا والدفوعات</div>
         <div>صفحة طباعة معتمدة</div>
       </div>
-      <script>
-        window.onload = function() {
-          setTimeout(function() {
-            window.print();
-          }, 250);
-        };
-      </script>
     </body>
     </html>
   `;
@@ -125,4 +122,12 @@ export function printLegalMemo(
   printWindow.document.open();
   printWindow.document.write(formattedHtml);
   printWindow.document.close();
+  window.setTimeout(() => {
+    try {
+      printWindow.focus();
+      printWindow.print();
+    } catch (error) {
+      console.error('Unable to open print dialog', error);
+    }
+  }, 250);
 }

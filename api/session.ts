@@ -52,7 +52,6 @@ const AUTH_WINDOW_SECONDS = 15 * 60;
 const AUTH_ATTEMPT_LIMIT = 10;
 const OPEN_TEST_MODE = process.env.QADA_OPEN_TEST_MODE === 'true' || !isProductionRuntime();
 
-const DEV_ADMIN_HASH_V7 = sha256('qada-local-admin:qada-local-password');
 const localAccounts = new Map<string, string>();
 
 function b64(value: Buffer | string) {
@@ -68,9 +67,11 @@ function sha256(value: string) {
 }
 
 function safeEqual(a: string, b: string) {
-  const aa = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return aa.length === bb.length && timingSafeEqual(aa, bb);
+  // Normalize both inputs to fixed-length digests before timingSafeEqual.
+  // This avoids a length-dependent early return that can create a timing side channel.
+  const aa = createHash('sha256').update(a).digest();
+  const bb = createHash('sha256').update(b).digest();
+  return timingSafeEqual(aa, bb);
 }
 
 function normalizeEmail(value: string) {
@@ -83,13 +84,8 @@ function isProductionRuntime() {
 
 function rootSecret() {
   const explicit = process.env.AUTH_SECRET?.trim();
-  if (explicit && explicit.length >= 32) {
-    return createHash('sha256').update(`qada-session-v6:${explicit}`).digest();
-  }
-  if (OPEN_TEST_MODE) {
-    return createHash('sha256').update('qada-open-test-session-v1').digest();
-  }
-  throw new Error('AUTH_SECRET_MISSING');
+  if (!explicit || explicit.length < 32) throw new Error('AUTH_SECRET_MISSING');
+  return createHash('sha256').update(`qada-session-v6:${explicit}`).digest();
 }
 
 function adminCredentialConfig() {
@@ -97,8 +93,7 @@ function adminCredentialConfig() {
   if (/^[a-f0-9]{64}$/i.test(configured)) {
     return { hash: configured, source: 'environment' as const };
   }
-  if (isProductionRuntime()) throw new Error('ADMIN_CREDENTIAL_MISSING');
-  return { hash: DEV_ADMIN_HASH_V7, source: 'development' as const };
+  throw new Error('ADMIN_CREDENTIAL_MISSING');
 }
 
 function adminCredentialHash() {
@@ -312,11 +307,16 @@ async function createAccount(nameInput: string, emailInput: string, password: st
 async function loginUser(emailInput: string, password: string): Promise<AuthSession> {
   const email = normalizeEmail(emailInput);
   const record = await loadAccount(email);
-  if (!record) throw new Error('ACCOUNT_NOT_FOUND');
+
+  // Always perform the expensive password derivation, even for an unknown account.
+  // This reduces account-enumeration and timing differences between failure paths.
+  const verificationSalt = record?.passwordSalt || sha256(`login-dummy-salt:${email}`).slice(0, 32);
+  const candidateHash = passwordHash(password, verificationSalt);
+  const expectedHash = record?.passwordHash || sha256(`login-dummy-hash:${candidateHash}`);
+  const credentialsMatch = safeEqual(candidateHash, expectedHash);
+
+  if (!record || !credentialsMatch) throw new Error('INVALID_CREDENTIALS');
   if (record.disabledAt) throw new Error('ACCOUNT_DISABLED');
-  if (!safeEqual(passwordHash(password, record.passwordSalt), record.passwordHash)) {
-    throw new Error('INVALID_CREDENTIALS');
-  }
   return {
     id: record.id,
     name: record.name,

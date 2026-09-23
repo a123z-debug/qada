@@ -27,7 +27,7 @@ body,
 }
 
 body {
-  font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Arial, sans-serif;
   background: var(--app-bg);
   color: var(--app-text);
   line-height: 1.6;
@@ -83,7 +83,7 @@ a:focus-visible {
 }
 
 .font-legal {
-  font-family: 'Amiri', serif;
+  font-family: 'Traditional Arabic', 'Noto Naskh Arabic', Tahoma, serif;
 }
 
 /* ========================================================

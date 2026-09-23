@@ -69,6 +69,52 @@ function stringList(value: unknown): string[] {
     : [];
 }
 
+function sanitizeCaseKnowledge(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) return [];
+  const allowedKinds = new Set(['confirmed-fact', 'strength', 'risk', 'comparison', 'evidence-needed']);
+  const allowedStatuses = new Set(['confirmed', 'needs-verification', 'pending-evidence']);
+  const allowedConfidentiality = new Set(['case-only-secret', 'case-private', 'normal']);
+
+  return value
+    .slice(0, 200)
+    .map((item, index) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+      const raw = item as Record<string, unknown>;
+      const confidentiality = allowedConfidentiality.has(String(raw.confidentiality || ''))
+        ? String(raw.confidentiality)
+        : 'case-private';
+      const isCaseOnlySecret = confidentiality === 'case-only-secret';
+      return {
+        id: String(raw.id || `knowledge-${index + 1}`).slice(0, 180),
+        kind: allowedKinds.has(String(raw.kind || '')) ? String(raw.kind) : 'confirmed-fact',
+        title: String(raw.title || '').slice(0, 500),
+        detail: String(raw.detail || '').slice(0, 12_000),
+        status: allowedStatuses.has(String(raw.status || '')) ? String(raw.status) : 'needs-verification',
+        confidentiality,
+        allowedCaseOnly: isCaseOnlySecret ? true : Boolean(raw.allowedCaseOnly),
+        excludeFromCrossCaseComparison: isCaseOnlySecret ? true : Boolean(raw.excludeFromCrossCaseComparison),
+        excludeFromLegalCorpus: isCaseOnlySecret ? true : Boolean(raw.excludeFromLegalCorpus),
+        sourceLabel: String(raw.sourceLabel || '').slice(0, 500),
+        sourceDate: String(raw.sourceDate || '').slice(0, 120),
+        createdAt: Number.isFinite(Number(raw.createdAt)) ? Number(raw.createdAt) : Date.now(),
+      };
+    })
+    .filter((item) => item !== null) as Array<Record<string, unknown>>;
+}
+
+function stripCrossCaseKnowledge(record: Record<string, unknown>): Record<string, unknown> {
+  if (!Array.isArray(record.caseKnowledge)) return record;
+  return {
+    ...record,
+    caseKnowledge: record.caseKnowledge.filter((item) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+      const note = item as Record<string, unknown>;
+      return note.confidentiality !== 'case-only-secret'
+        && note.excludeFromCrossCaseComparison !== true;
+    }),
+  };
+}
+
 function personIndexKey(ownerId: string, nationalId: string) {
   return `${redisPrefix()}:cases:person:${digest(ownerId)}:${digest(nationalId)}`;
 }
@@ -126,6 +172,16 @@ function dossierScore(record: Record<string, unknown>, existing: Record<string, 
   return score;
 }
 
+function hasExplicitDossierLinkEvidence(
+  record: Record<string, unknown>,
+  existing: Record<string, unknown>,
+): boolean {
+  if (intersects(collectCaseNumbers(record), collectCaseNumbers(existing))) return true;
+  if (intersects(collectJudgmentNumbers(record), collectJudgmentNumbers(existing))) return true;
+  const root = normalizeToken(record.rootCaseNumber);
+  return Boolean(root && collectCaseNumbers(existing).has(root));
+}
+
 async function existingPersonCases(ownerId: string, nationalId: string): Promise<StoredCase[]> {
   if (!nationalId) return [];
   let members = await redisCommand(['SMEMBERS', personIndexKey(ownerId, nationalId)]);
@@ -169,7 +225,7 @@ async function attachDossierMetadata(ownerId: string, record: Record<string, unk
     ? String(best.item.record.dossierId)
     : '';
 
-  if (best && best.score >= 80 && existingDossier) {
+  if (best && best.score >= 80 && existingDossier && hasExplicitDossierLinkEvidence(record, best.item.record)) {
     return {
       ...record,
       identityFingerprint,
@@ -230,7 +286,9 @@ function sanitizeRecord(input: unknown): Record<string, unknown> {
   if (!id) throw new Error('INVALID_CASE_ID');
   const raw = JSON.stringify(record);
   if (raw.length > 350_000) throw new Error('CASE_TOO_LARGE');
-  return JSON.parse(raw) as Record<string, unknown>;
+  const clean = JSON.parse(raw) as Record<string, unknown>;
+  if ('caseKnowledge' in clean) clean.caseKnowledge = sanitizeCaseKnowledge(clean.caseKnowledge);
+  return clean;
 }
 
 async function loadMany(keys: string[]): Promise<StoredCase[]> {
@@ -305,7 +363,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       stored.sort((a, b) => Number(b.record.updatedAt || b.savedAt) - Number(a.record.updatedAt || a.savedAt));
       return res.status(200).json({
         records: stored.map((item) => wantsAll
-          ? { ...item.record, storageOwnerId: item.ownerId }
+          ? { ...stripCrossCaseKnowledge(item.record), storageOwnerId: item.ownerId }
           : item.record),
         meta: { scope: wantsAll ? 'all' : 'user', count: stored.length, truncated: keys.length > limitedKeys.length },
       });

@@ -276,44 +276,74 @@ export function LegalReviewEditor({
     };
   }, [content]);
 
-  // Render Highlighted HTML preview
-  const highlightedHtml = useMemo(() => {
-    if (!content) return '';
-    // Escape HTML first
-    let text = content
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+  // Render highlighted preview as React nodes. User content is never converted into raw HTML.
+  const highlightedSegments = useMemo(() => {
+    type Segment = {
+      start: number;
+      end: number;
+      text: string;
+      className: string;
+      title: string;
+    };
 
-    // Highlight Dates
-    text = text.replace(
-      dateRegex,
-      (match) =>
-        `<mark class="bg-amber-300 text-neutral-950 font-semibold px-1 py-0.5 rounded shadow-sm" title="تاريخ يتطلب التدقيق">${match}</mark>`
-    );
+    const candidates: Segment[] = [];
+    const patterns = [
+      {
+        regex: new RegExp(dateRegex.source, 'g'),
+        className: 'bg-amber-300 text-neutral-950 font-semibold px-1 py-0.5 rounded shadow-sm',
+        title: 'تاريخ يتطلب التدقيق',
+      },
+      {
+        regex: new RegExp(idRegex.source, 'g'),
+        className: 'bg-amber-400 text-neutral-950 font-bold px-1 py-0.5 rounded font-mono shadow-sm',
+        title: 'رقم هوية وطنية',
+      },
+      {
+        regex: new RegExp(amountRegex.source, 'g'),
+        className: 'bg-amber-200 text-neutral-950 font-bold px-1 py-0.5 rounded shadow-sm',
+        title: 'مبلغ مالي أو نسبة',
+      },
+      {
+        regex: new RegExp(deedRegex.source, 'g'),
+        className: 'bg-amber-300 text-neutral-950 font-bold px-1 py-0.5 rounded shadow-sm',
+        title: 'رقم صك / قرار / مرسوم',
+      },
+    ];
 
-    // Highlight IDs
-    text = text.replace(
-      idRegex,
-      (match) =>
-        `<mark class="bg-amber-400 text-neutral-950 font-bold px-1 py-0.5 rounded font-mono shadow-sm" title="رقم هوية وطنية">${match}</mark>`
-    );
+    for (const pattern of patterns) {
+      for (const match of content.matchAll(pattern.regex)) {
+        if (typeof match.index !== 'number' || !match[0]) continue;
+        candidates.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          text: match[0],
+          className: pattern.className,
+          title: pattern.title,
+        });
+      }
+    }
 
-    // Highlight Amounts
-    text = text.replace(
-      amountRegex,
-      (match) =>
-        `<mark class="bg-amber-200 text-neutral-950 font-bold px-1 py-0.5 rounded shadow-sm" title="مبلغ مالي أو نسبة">${match}</mark>`
-    );
+    candidates.sort((a, b) => a.start - b.start || b.end - a.end);
+    const accepted: Segment[] = [];
+    let occupiedUntil = -1;
+    for (const candidate of candidates) {
+      if (candidate.start < occupiedUntil) continue;
+      accepted.push(candidate);
+      occupiedUntil = candidate.end;
+    }
 
-    // Highlight Deeds and Decrees
-    text = text.replace(
-      deedRegex,
-      (match) =>
-        `<mark class="bg-amber-300 text-neutral-950 font-bold px-1 py-0.5 rounded shadow-sm" title="رقم صك / قرار / مرسوم">${match}</mark>`
-    );
-
-    return text;
+    const segments: Array<
+      | { kind: 'text'; text: string }
+      | { kind: 'mark'; text: string; className: string; title: string }
+    > = [];
+    let cursor = 0;
+    for (const item of accepted) {
+      if (item.start > cursor) segments.push({ kind: 'text', text: content.slice(cursor, item.start) });
+      segments.push({ kind: 'mark', text: item.text, className: item.className, title: item.title });
+      cursor = item.end;
+    }
+    if (cursor < content.length) segments.push({ kind: 'text', text: content.slice(cursor) });
+    return segments;
   }, [content]);
 
   // Official-source-only legal references. No hardcoded legal quotation is inserted from the UI.
@@ -387,9 +417,17 @@ export function LegalReviewEditor({
 
   const handleExportWord = () => {
     if (!isAllApproved) return;
-    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${documentTitle}</title><style>body { font-family: 'Traditional Arabic', 'Arial', sans-serif; font-size: 16pt; direction: rtl; text-align: right; line-height: 1.8; }</style></head><body dir='rtl'>`;
+    const escapeHtml = (value: string) => value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    const safeTitle = escapeHtml(documentTitle);
+    const safeContent = escapeHtml(content);
+    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${safeTitle}</title><style>body { font-family: 'Traditional Arabic', 'Arial', sans-serif; font-size: 16pt; direction: rtl; text-align: right; line-height: 1.8; }</style></head><body dir='rtl'>`;
     const footer = '</body></html>';
-    const sourceHTML = header + `<div style="white-space: pre-wrap;">${content}</div>` + footer;
+    const sourceHTML = header + `<div style="white-space: pre-wrap;">${safeContent}</div>` + footer;
 
     const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
     const fileDownload = document.createElement('a');
@@ -781,10 +819,17 @@ export function LegalReviewEditor({
                 />
               </div>
             ) : (
-              <div
-                className="w-full h-[470px] overflow-y-auto p-4 rounded-2xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs sm:text-sm font-sans leading-relaxed custom-scrollbar whitespace-pre-wrap selection:bg-amber-500 selection:text-neutral-950"
-                dangerouslySetInnerHTML={{ __html: highlightedHtml }}
-              />
+              <div className="w-full h-[470px] overflow-y-auto p-4 rounded-2xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs sm:text-sm font-sans leading-relaxed custom-scrollbar whitespace-pre-wrap selection:bg-amber-500 selection:text-neutral-950">
+                {highlightedSegments.map((segment, index) =>
+                  segment.kind === 'mark' ? (
+                    <mark key={index} className={segment.className} title={segment.title}>
+                      {segment.text}
+                    </mark>
+                  ) : (
+                    <React.Fragment key={index}>{segment.text}</React.Fragment>
+                  )
+                )}
+              </div>
             )}
           </div>
 
