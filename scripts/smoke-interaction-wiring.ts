@@ -109,8 +109,8 @@ assert(welcome.includes('وش تبي QADA ينجز لك؟') && welcome.includes(
   'Simple workspace must use the calm mobile-first light interface');
 assert(login.includes('صُممت الواجهة للجوال أولاً') && login.includes('text-base') && login.includes('min-h-12'),
   'Login must remain mobile-first with touch-sized controls and readable inputs');
-assert(app.includes("simpleUserMode = session.role === 'user' && interfaceMode === 'simple'"),
-  'Simple user mode must have a dedicated minimal application shell');
+assert(app.includes("const userMode = session.role === 'user'") && app.includes("const simpleUserMode = userMode && interfaceMode === 'simple'"),
+  'User shell must preserve Simple/Professional modes under the shared non-admin theme');
 assert(app.includes("const userMode = session.role === 'user'") && app.includes("'user-shell bg-[#f7f8fa] text-slate-950'"),
   'All non-admin user interfaces must use the shared light shell');
 assert(app.includes("session.role === 'admin' && <SystemAgentBar />"),
