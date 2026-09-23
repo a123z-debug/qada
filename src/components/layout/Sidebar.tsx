@@ -152,6 +152,7 @@ export function Sidebar({
   onOpenAccountSecurity,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
+  const isAdmin = userSession?.role === 'admin';
 
   useEffect(() => {
     if (activeCourt) {
@@ -184,11 +185,13 @@ export function Sidebar({
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className="text-sm font-bold text-white tracking-tight">أصول القضاء</h1>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
-                  OS v3.0
-                </span>
+                {isAdmin && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+                    OS v3.0
+                  </span>
+                )}
               </div>
-              <p className="text-[11px] text-slate-400">منصة التدقيق والتقاضي الذكي</p>
+              <p className="text-[11px] text-slate-400">{isAdmin ? 'منصة التدقيق والتقاضي الذكي' : 'مساحة العمل القانونية'}</p>
             </div>
           </div>
 
@@ -262,7 +265,7 @@ export function Sidebar({
         >
           <span className="flex items-center gap-2.5">
             <Home className="w-4 h-4" />
-            <span>مركز القيادة الرئيسي</span>
+            <span>{isAdmin ? 'مركز القيادة الرئيسي' : 'الرئيسية'}</span>
           </span>
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/30 font-mono text-amber-300">الرئيسية</span>
         </button>
@@ -274,7 +277,7 @@ export function Sidebar({
         {/* قسم أدوات التقاضي والاختصاصات */}
         <div className="space-y-1.5">
           <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-amber-400/90 tracking-wide">
-            <span className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5" /> أدوات التقاضي والمسارات</span>
+            <span className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5" /> {isAdmin ? 'أدوات التقاضي والمسارات' : 'المحاكم والمسارات'}</span>
           </div>
 
           {COURT_CATEGORIES.map((cat) => {
@@ -363,7 +366,7 @@ export function Sidebar({
         {/* قسم المعرفة والبحث النظامي */}
         <div className="pt-2 border-t border-slate-800/80 space-y-1">
           <div className="px-2 py-1 text-[11px] font-bold text-slate-400 tracking-wide flex items-center gap-1.5">
-            <Library className="w-3.5 h-3.5 text-amber-400" /> المعرفة والأسانيد
+            <Library className="w-3.5 h-3.5 text-amber-400" /> {isAdmin ? 'المعرفة والأسانيد' : 'المراجع'}
           </div>
           
           <button 
@@ -403,7 +406,7 @@ export function Sidebar({
             className="min-h-11 w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
           >
             <Bot className="w-4 h-4 text-amber-400" />
-            <span>المستشار الذكي (المدير)</span>
+            <span>{isAdmin ? 'المستشار الذكي (المدير)' : 'المستشار الذكي'}</span>
           </button>
 
           <button 
@@ -492,9 +495,9 @@ export function Sidebar({
       <div className="p-3 border-t border-slate-800/80 bg-slate-900/80 text-[11px] text-slate-400 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>حماية وعزل قضائي</span>
+          <span>{isAdmin ? 'حماية وعزل قضائي' : 'جلسة محمية'}</span>
         </div>
-        <span className="font-mono text-[10px] text-amber-400/80">SECURE OS</span>
+        {isAdmin && <span className="font-mono text-[10px] text-amber-400/80">SECURE OS</span>}
       </div>
     </div>
   );
@@ -502,7 +505,7 @@ export function Sidebar({
   return (
     <>
       {/* القائمة الثابتة على الشاشات الكبيرة */}
-      <aside className="hidden lg:block w-full lg:w-1/4 h-full shrink-0 z-20">
+      <aside className={`hidden lg:block h-full shrink-0 z-20 ${isAdmin ? 'w-full lg:w-1/4' : 'w-[286px]'}`}>
         {sidebarContent}
       </aside>
 
@@ -510,7 +513,7 @@ export function Sidebar({
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+            className={`fixed inset-0 backdrop-blur-sm transition-opacity ${isAdmin ? 'bg-black/80' : 'bg-slate-950/25'}`}
             onClick={onCloseMobile}
           />
           <div className="relative w-80 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-right duration-200">

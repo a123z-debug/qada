@@ -69,6 +69,7 @@ export function FloatingChatBot({
   externalPrefill = '',
   externalAttachments = [],
 }: FloatingChatBotProps) {
+  const userFacing = userSession?.role !== 'admin';
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([
@@ -254,9 +255,11 @@ export function FloatingChatBot({
               <div className="truncate">
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-xs font-bold text-neutral-100 truncate">المستشار الذكي</h4>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
-                    عائم
-                  </span>
+                  {!userFacing && (
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
+                      عائم
+                    </span>
+                  )}
                 </div>
                 <p className="text-[10px] text-neutral-400 truncate max-w-[190px]">
                   {getCourtLabel()}

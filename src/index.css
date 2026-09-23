@@ -87,10 +87,12 @@ a:focus-visible {
 }
 
 /* ========================================================
-   المنصة الداخلية: توحيد الهوية البصرية على كحلي/سماوي/ذهبي
+   الهوية الداخلية
+   - المستخدم/المتقدم: واجهة بسيطة فاتحة موحدة
+   - الإدارة: تبقى بالهوية التقنية الداكنة
    ======================================================== */
-.app-shell,
-.login-shell {
+
+.admin-shell {
   background:
     radial-gradient(circle at 75% 0%, rgba(23, 101, 196, 0.14), transparent 34%),
     radial-gradient(circle at 10% 100%, rgba(124, 58, 237, 0.08), transparent 34%),
@@ -98,8 +100,7 @@ a:focus-visible {
   color: var(--app-text) !important;
 }
 
-.app-shell::before,
-.login-shell::before {
+.admin-shell::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -113,103 +114,276 @@ a:focus-visible {
   z-index: 0;
 }
 
-.app-shell [class~="bg-slate-950"],
-.login-shell [class~="bg-slate-950"],
-.app-shell [class~="bg-neutral-950"],
-.login-shell [class~="bg-neutral-950"] {
+.admin-shell [class~="bg-slate-950"],
+.admin-shell [class~="bg-neutral-950"] {
   background-color: #020b18 !important;
 }
 
-.app-shell [class~="bg-slate-900"],
-.login-shell [class~="bg-slate-900"],
-.app-shell [class~="bg-neutral-900"],
-.login-shell [class~="bg-neutral-900"] {
+.admin-shell [class~="bg-slate-900"],
+.admin-shell [class~="bg-neutral-900"] {
   background-color: #07182d !important;
 }
 
-.app-shell [class~="bg-slate-800"],
-.login-shell [class~="bg-slate-800"],
-.app-shell [class~="bg-neutral-800"],
-.login-shell [class~="bg-neutral-800"] {
+.admin-shell [class~="bg-slate-800"],
+.admin-shell [class~="bg-neutral-800"] {
   background-color: #0b223d !important;
 }
 
-.app-shell [class*="bg-slate-950/"],
-.app-shell [class*="bg-slate-900/"],
-.login-shell [class*="bg-slate-950/"],
-.login-shell [class*="bg-slate-900/"],
-.app-shell [class*="bg-neutral-950/"],
-.app-shell [class*="bg-neutral-900/"],
-.login-shell [class*="bg-neutral-950/"],
-.login-shell [class*="bg-neutral-900/"] {
+.admin-shell [class*="bg-slate-950/"],
+.admin-shell [class*="bg-slate-900/"],
+.admin-shell [class*="bg-neutral-950/"],
+.admin-shell [class*="bg-neutral-900/"] {
   background-color: rgba(4, 17, 38, 0.78) !important;
   backdrop-filter: blur(16px);
 }
 
-.app-shell [class~="border-slate-800"],
-.app-shell [class*="border-slate-800/"],
-.app-shell [class~="border-slate-700"],
-.login-shell [class~="border-slate-800"],
-.login-shell [class*="border-slate-800/"],
-.login-shell [class~="border-slate-700"],
-.app-shell [class~="border-neutral-800"],
-.app-shell [class*="border-neutral-800/"],
-.app-shell [class~="border-neutral-700"],
-.login-shell [class~="border-neutral-800"],
-.login-shell [class*="border-neutral-800/"],
-.login-shell [class~="border-neutral-700"] {
+.admin-shell [class~="border-slate-800"],
+.admin-shell [class*="border-slate-800/"],
+.admin-shell [class~="border-slate-700"],
+.admin-shell [class~="border-neutral-800"],
+.admin-shell [class*="border-neutral-800/"],
+.admin-shell [class~="border-neutral-700"] {
   border-color: var(--app-border) !important;
 }
 
-.app-shell [class~="text-slate-100"],
-.app-shell [class~="text-slate-200"],
-.login-shell [class~="text-slate-100"],
-.login-shell [class~="text-slate-200"],
-.app-shell [class~="text-neutral-100"],
-.app-shell [class~="text-neutral-200"],
-.login-shell [class~="text-neutral-100"],
-.login-shell [class~="text-neutral-200"] {
+.admin-shell [class~="text-slate-100"],
+.admin-shell [class~="text-slate-200"],
+.admin-shell [class~="text-neutral-100"],
+.admin-shell [class~="text-neutral-200"] {
   color: var(--app-text) !important;
 }
 
-.app-shell [class~="text-slate-300"],
-.app-shell [class~="text-slate-400"],
-.login-shell [class~="text-slate-300"],
-.login-shell [class~="text-slate-400"],
-.app-shell [class~="text-neutral-300"],
-.app-shell [class~="text-neutral-400"],
-.login-shell [class~="text-neutral-300"],
-.login-shell [class~="text-neutral-400"] {
+.admin-shell [class~="text-slate-300"],
+.admin-shell [class~="text-slate-400"],
+.admin-shell [class~="text-neutral-300"],
+.admin-shell [class~="text-neutral-400"] {
   color: var(--app-muted) !important;
 }
 
-.app-shell [class~="text-amber-400"],
-.app-shell [class~="text-amber-300"],
-.login-shell [class~="text-amber-400"],
-.login-shell [class~="text-amber-300"] {
+.admin-shell [class~="text-amber-400"],
+.admin-shell [class~="text-amber-300"] {
   color: var(--app-gold) !important;
 }
 
-.app-shell [class~="bg-amber-500"],
-.login-shell [class~="bg-amber-500"] {
+.admin-shell [class~="bg-amber-500"] {
   background-color: var(--app-gold) !important;
 }
 
-.app-shell [class*="border-amber-500/"],
-.login-shell [class*="border-amber-500/"] {
+.admin-shell [class*="border-amber-500/"] {
   border-color: rgba(247, 201, 103, 0.36) !important;
 }
 
-.app-shell [class*="bg-amber-500/"],
-.login-shell [class*="bg-amber-500/"] {
+.admin-shell [class*="bg-amber-500/"] {
   background-color: rgba(247, 201, 103, 0.11) !important;
 }
 
-.app-sidebar {
+.admin-shell .app-sidebar {
   background:
     radial-gradient(circle at 50% 0%, rgba(34, 211, 238, .08), transparent 30%),
     linear-gradient(180deg, rgba(3, 15, 32, .98), rgba(2, 8, 22, .98)) !important;
   box-shadow: -20px 0 60px rgba(0, 0, 0, .28), inset -1px 0 rgba(34, 211, 238, .08);
+}
+
+/* واجهات المستخدم والمتقدم */
+.user-shell {
+  color-scheme: light;
+  background: #f7f8fa !important;
+  color: #0f172a !important;
+}
+
+.user-shell::before {
+  display: none !important;
+}
+
+.user-shell .app-sidebar {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: -12px 0 32px rgba(15, 23, 42, .05) !important;
+}
+
+.user-shell [class~="bg-slate-950"],
+.user-shell [class~="bg-neutral-950"],
+.user-shell [class~="bg-black"] {
+  background-color: #ffffff !important;
+}
+
+.user-shell [class~="bg-slate-900"],
+.user-shell [class~="bg-neutral-900"] {
+  background-color: #ffffff !important;
+}
+
+.user-shell [class~="bg-slate-800"],
+.user-shell [class~="bg-neutral-800"] {
+  background-color: #f1f5f9 !important;
+}
+
+.user-shell [class~="bg-slate-700"],
+.user-shell [class~="bg-neutral-700"] {
+  background-color: #e2e8f0 !important;
+}
+
+.user-shell [class*="bg-slate-950/"],
+.user-shell [class*="bg-slate-900/"],
+.user-shell [class*="bg-slate-800/"],
+.user-shell [class*="bg-neutral-950/"],
+.user-shell [class*="bg-neutral-900/"],
+.user-shell [class*="bg-neutral-800/"] {
+  background-color: rgba(255, 255, 255, .94) !important;
+  backdrop-filter: blur(14px);
+}
+
+.user-shell [class*="bg-black/"] {
+  background-color: rgba(15, 23, 42, .28) !important;
+}
+
+.user-shell [class*="bg-gradient-to-"] {
+  background-image: none !important;
+  background-color: #ffffff !important;
+}
+
+.user-shell [class*="from-amber-"],
+.user-shell [class*="from-cyan-"],
+.user-shell [class*="from-violet-"],
+.user-shell [class*="from-blue-"] {
+  background-image: none !important;
+}
+
+.user-shell [class~="text-white"],
+.user-shell [class~="text-slate-50"],
+.user-shell [class~="text-slate-100"],
+.user-shell [class~="text-slate-200"],
+.user-shell [class~="text-neutral-50"],
+.user-shell [class~="text-neutral-100"],
+.user-shell [class~="text-neutral-200"] {
+  color: #0f172a !important;
+}
+
+.user-shell [class~="text-slate-300"],
+.user-shell [class~="text-slate-400"],
+.user-shell [class~="text-neutral-300"],
+.user-shell [class~="text-neutral-400"],
+.user-shell [class~="text-neutral-500"] {
+  color: #64748b !important;
+}
+
+.user-shell [class~="text-slate-500"],
+.user-shell [class~="text-slate-600"] {
+  color: #64748b !important;
+}
+
+.user-shell [class*="text-amber-"],
+.user-shell [class*="text-cyan-"],
+.user-shell [class*="text-violet-"],
+.user-shell [class*="text-fuchsia-"],
+.user-shell [class*="text-blue-"] {
+  color: #2563eb !important;
+}
+
+.user-shell [class~="text-transparent"] {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background-image: none !important;
+}
+
+.user-shell [class~="border-slate-800"],
+.user-shell [class*="border-slate-800/"],
+.user-shell [class~="border-slate-700"],
+.user-shell [class*="border-slate-700/"],
+.user-shell [class~="border-neutral-800"],
+.user-shell [class*="border-neutral-800/"],
+.user-shell [class~="border-neutral-700"],
+.user-shell [class*="border-neutral-700/"],
+.user-shell [class~="border-white/10"] {
+  border-color: #e2e8f0 !important;
+}
+
+.user-shell [class*="border-amber-"],
+.user-shell [class*="border-cyan-"],
+.user-shell [class*="border-violet-"],
+.user-shell [class*="border-fuchsia-"],
+.user-shell [class*="border-blue-"] {
+  border-color: rgba(37, 99, 235, .18) !important;
+}
+
+.user-shell [class*="bg-amber-500/"],
+.user-shell [class*="bg-amber-400/"],
+.user-shell [class*="bg-cyan-500/"],
+.user-shell [class*="bg-cyan-400/"],
+.user-shell [class*="bg-violet-500/"],
+.user-shell [class*="bg-violet-400/"],
+.user-shell [class*="bg-fuchsia-500/"],
+.user-shell [class*="bg-blue-500/"] {
+  background-color: rgba(37, 99, 235, .07) !important;
+}
+
+.user-shell [class~="bg-amber-500"],
+.user-shell [class~="bg-amber-400"],
+.user-shell [class~="bg-cyan-500"],
+.user-shell [class~="bg-cyan-400"],
+.user-shell [class~="bg-violet-500"],
+.user-shell [class~="bg-violet-400"],
+.user-shell [class~="bg-blue-500"],
+.user-shell [class~="bg-blue-600"] {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+.user-shell button[class*="from-amber-"],
+.user-shell button[class*="from-cyan-"],
+.user-shell button[class*="from-violet-"],
+.user-shell button[class*="from-blue-"] {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-color: #0f172a !important;
+}
+
+.user-shell button[class*="from-amber-"] *,
+.user-shell button[class*="from-cyan-"] *,
+.user-shell button[class*="from-violet-"] *,
+.user-shell button[class*="from-blue-"] * {
+  color: #ffffff !important;
+}
+
+.user-shell input,
+.user-shell textarea,
+.user-shell select {
+  color-scheme: light;
+}
+
+.user-shell input[class*="bg-neutral-"],
+.user-shell textarea[class*="bg-neutral-"],
+.user-shell select[class*="bg-neutral-"],
+.user-shell input[class*="bg-slate-"],
+.user-shell textarea[class*="bg-slate-"],
+.user-shell select[class*="bg-slate-"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #dbe2ea !important;
+}
+
+.user-shell [class~="shadow-2xl"],
+.user-shell [class~="shadow-xl"],
+.user-shell [class~="shadow-lg"],
+.user-shell [class*="shadow-["] {
+  box-shadow: 0 10px 32px rgba(15, 23, 42, .08) !important;
+}
+
+.user-shell .custom-scrollbar {
+  scrollbar-color: rgba(100, 116, 139, .28) transparent;
+}
+
+.user-shell .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, .24);
+  background-clip: padding-box;
+}
+
+.user-shell button:focus-visible,
+.user-shell input:focus-visible,
+.user-shell textarea:focus-visible,
+.user-shell select:focus-visible,
+.user-shell a:focus-visible {
+  outline-color: rgba(37, 99, 235, .55);
 }
 
 /* ========================================================

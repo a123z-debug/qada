@@ -111,6 +111,12 @@ assert(login.includes('صُممت الواجهة للجوال أولاً') && lo
   'Login must remain mobile-first with touch-sized controls and readable inputs');
 assert(app.includes("simpleUserMode = session.role === 'user' && interfaceMode === 'simple'"),
   'Simple user mode must have a dedicated minimal application shell');
+assert(app.includes("const userMode = session.role === 'user'") && app.includes("'user-shell bg-[#f7f8fa] text-slate-950'"),
+  'All non-admin user interfaces must use the shared light shell');
+assert(app.includes("session.role === 'admin' && <SystemAgentBar />"),
+  'Technical system status bar must remain admin-only');
+assert(sidebar.includes("isAdmin ? 'مركز القيادة الرئيسي' : 'الرئيسية'") && sidebar.includes("isAdmin ? 'حماية وعزل قضائي' : 'جلسة محمية'"),
+  'Professional user navigation must use simplified labels while preserving admin wording');
 assert(app.includes("handleInterfaceModeChange('professional')") && app.includes('احترافي'),
   'Simple mobile dock must offer a direct professional-mode handoff');
 assert(welcome.includes('QADA PROFESSIONAL'), 'Professional interface label missing');

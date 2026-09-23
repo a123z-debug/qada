@@ -559,14 +559,17 @@ export default function App() {
     );
   }
 
-  const simpleUserMode = session.role === 'user' && interfaceMode === 'simple';
+  const userMode = session.role === 'user';
+  const simpleUserMode = userMode && interfaceMode === 'simple';
 
   // 3. مساحة العمل الأساسية المشفرة
   return (
     <Suspense fallback={<DeferredSurfaceFallback />}>
       <div
         className={`app-shell flex h-[100dvh] overflow-hidden font-sans ${
-          simpleUserMode ? 'bg-[#f7f8fa] text-slate-950' : 'bg-slate-950 text-slate-100'
+          userMode
+            ? 'user-shell bg-[#f7f8fa] text-slate-950'
+            : 'admin-shell bg-slate-950 text-slate-100'
         }`}
         dir="rtl"
       >
@@ -638,24 +641,36 @@ export default function App() {
       <div className={`w-full flex-1 flex flex-col h-full overflow-hidden relative z-10 ${simpleUserMode ? '' : 'lg:w-3/4'}`}>
         
         {/* شريط المدير الذكي المركزي */}
-        {!simpleUserMode && <SystemAgentBar />}
+        {session.role === 'admin' && <SystemAgentBar />}
 
         {/* Mobile Header */}
         <header
           className={`lg:hidden flex items-center justify-between p-3 shrink-0 ${
-            simpleUserMode
+            userMode
               ? 'border-b border-slate-200 bg-white/95 text-slate-950 backdrop-blur-xl'
               : 'bg-slate-900/80 backdrop-blur-md border-b border-slate-800'
           }`}
         >
-          {simpleUserMode ? (
+          {userMode ? (
             <div className="flex items-center gap-2.5">
+              {!simpleUserMode && (
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600"
+                  aria-label="فتح الأدوات"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+              )}
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
                 <Scale className="h-4.5 w-4.5" strokeWidth={1.8} />
               </span>
               <div>
                 <div className="text-sm font-black">أصول القضاء</div>
-                <div className="text-[9px] font-bold text-slate-400">QADA</div>
+                <div className="text-[9px] font-bold text-slate-400">
+                  {simpleUserMode ? 'QADA' : 'QADA Professional'}
+                </div>
               </div>
             </div>
           ) : (
@@ -673,7 +688,7 @@ export default function App() {
           <button
             onClick={handleLogout}
             className={`min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl transition-colors ${
-              simpleUserMode
+              userMode
                 ? 'text-slate-400 hover:bg-slate-100 hover:text-rose-600'
                 : 'text-slate-400 hover:text-rose-400'
             }`}
@@ -685,7 +700,7 @@ export default function App() {
 
         {/* مساحة العمل */}
         <main className={`flex-1 overflow-y-auto custom-scrollbar ${
-          simpleUserMode
+          userMode
             ? 'bg-[#f7f8fa] p-3 pb-24 sm:p-5 sm:pb-6 lg:p-8'
             : 'p-3 sm:p-6 lg:p-8 pb-24 sm:pb-6 lg:pb-8'
         }`}>
@@ -695,7 +710,9 @@ export default function App() {
             </div>
           )}
           {activeCourt && (
-            <div className="sticky top-0 z-20 mb-4 flex justify-end bg-slate-950/80 py-2 backdrop-blur-md">
+            <div className={`sticky top-0 z-20 mb-4 flex justify-end py-2 backdrop-blur-md ${
+              userMode ? 'bg-[#f7f8fa]/90' : 'bg-slate-950/80'
+            }`}>
               <button
                 type="button"
                 onClick={() => {
@@ -831,7 +848,7 @@ export default function App() {
         </main>
       </div>
 
-      {simpleUserMode ? (
+      {userMode ? (
         <nav
           className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 px-2 pt-1.5 shadow-[0_-8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl"
           aria-label="التنقل السريع"
@@ -841,17 +858,29 @@ export default function App() {
             <button
               type="button"
               onClick={() => { setActiveCourt(null); setActiveService(null); }}
-              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl bg-slate-100 text-[10px] font-black text-slate-950"
+              className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-black ${
+                activeCourt === null ? 'bg-slate-100 text-slate-950' : 'text-slate-500'
+              }`}
             >
               <Home className="h-5 w-5" strokeWidth={1.8} /><span>الرئيسية</span>
             </button>
-            <button
-              type="button"
-              onClick={() => handleInterfaceModeChange('professional')}
-              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
-            >
-              <Scale className="h-5 w-5" strokeWidth={1.8} /><span>احترافي</span>
-            </button>
+            {simpleUserMode ? (
+              <button
+                type="button"
+                onClick={() => handleInterfaceModeChange('professional')}
+                className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+              >
+                <Scale className="h-5 w-5" strokeWidth={1.8} /><span>احترافي</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+              >
+                <ScanSearch className="h-5 w-5" strokeWidth={1.8} /><span>الأدوات</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setIsDossierOpen(true)}
