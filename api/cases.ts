@@ -99,7 +99,7 @@ function sanitizeCaseKnowledge(value: unknown): Array<Record<string, unknown>> {
         createdAt: Number.isFinite(Number(raw.createdAt)) ? Number(raw.createdAt) : Date.now(),
       };
     })
-    .filter((item): item is Record<string, unknown> => Boolean(item));
+    .filter((item) => item !== null) as Array<Record<string, unknown>>;
 }
 
 function stripCrossCaseKnowledge(record: Record<string, unknown>): Record<string, unknown> {
