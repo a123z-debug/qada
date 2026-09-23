@@ -354,6 +354,7 @@ export default function App() {
   const [showLandingPage, setShowLandingPage] = useState(true);
   const [session, setSession] = useState<UserSession | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
+  const [interfaceMode, setInterfaceMode] = useState<'simple' | 'professional'>('simple');
   const [activeCourt, setActiveCourt] = useState<CourtJurisdiction | null>(null);
   const [activeService, setActiveService] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -444,7 +445,10 @@ export default function App() {
         return payload?.session as UserSession | undefined;
       })
       .then((restoredSession) => {
-        if (!cancelled && restoredSession) setSession(restoredSession);
+        if (!cancelled && restoredSession) {
+          setSession(restoredSession);
+          setInterfaceMode(restoredSession.workspaceMode === 'professional' || restoredSession.role === 'admin' ? 'professional' : 'simple');
+        }
       })
       .catch(() => {
         // No active session; the login screen will be shown when the user enters the platform.
@@ -517,6 +521,7 @@ export default function App() {
 
   const handleLoginSuccess = (userSession: UserSession) => {
     setSession(userSession);
+    setInterfaceMode(userSession.workspaceMode === 'professional' || userSession.role === 'admin' ? 'professional' : 'simple');
     setSessionChecked(true);
     setActiveCourt(null);
     setActiveService(null);
@@ -526,10 +531,18 @@ export default function App() {
     setIsAdminMapOpen(userSession.workspaceMode === 'admin');
   };
 
+  const handleInterfaceModeChange = (mode: 'simple' | 'professional') => {
+    setInterfaceMode(mode);
+    setSession((current) => current && current.role === 'user'
+      ? { ...current, workspaceMode: mode }
+      : current);
+  };
+
   const handleLogout = () => {
     const clearLocalSession = () => {
       setSession(null);
       setSessionChecked(true);
+      setInterfaceMode('simple');
       setShowLandingPage(true);
       setActiveCourt(null);
       setActiveService(null);
@@ -826,7 +839,8 @@ export default function App() {
               userName={session.name}
               message="مرحباً بك في مساحة القضية الرقمية."
               isAdmin={session.role === 'admin'}
-              defaultMode={session.workspaceMode === 'professional' ? 'professional' : 'simple'}
+              defaultMode={session.role === 'admin' ? 'professional' : interfaceMode}
+              onModeChange={handleInterfaceModeChange}
               onOpenAdminOverview={() => {
                 setActiveCourt(null);
                 setActiveService(null);
@@ -913,6 +927,7 @@ export default function App() {
         activeCourt={activeCourt}
         activeService={activeService}
         userSession={session}
+        responseMode={session.role === 'admin' ? 'professional' : interfaceMode}
         openSignal={assistantOpenSignal}
         externalPrefill={assistantPrefill}
         externalAttachments={assistantAttachments}
