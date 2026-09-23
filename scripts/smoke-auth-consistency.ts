@@ -68,8 +68,10 @@ assert(
     && loginScreen.includes("credentials: 'include'")
     && loginScreen.includes("mode: 'simple'")
     && loginScreen.includes("mode: 'professional'")
-    && loginScreen.includes("mode: 'admin'"),
-  'Simple and Professional access must be requested from the server',
+    && !loginScreen.includes("mode: 'admin',\n      title: 'الإدارة'")
+    && loginScreen.includes('setInterfaceMenuOpen')
+    && loginScreen.includes("setAdminOpen(true)"),
+  'Simple and Professional must use server access while Admin stays hidden behind the interface chooser',
 );
 assert(
   !sessionApi.includes("cookies(header)[TEST_MODE_COOKIE]")
