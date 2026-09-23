@@ -17,8 +17,8 @@ export function detectHujjaDraftingIntent(text: string): HujjaDraftingIntent {
   const value = normalize(text);
   if (!value) return 'none';
   if (/(?:لائحة|صحيفة)\s+دعوى|(?:اكتب|صغ|جهز|جهّز|اعد|أعد).{0,24}دعوى/i.test(value)) return 'claim';
+  if (/(?:طعن|اعتراض).{0,16}(?:بال)?نقض|صحيفة\s+نقض|لائحة\s+نقض|المحكمة\s+(?:الإدارية\s+)?العليا/i.test(value)) return 'cassation';
   if (/(?:لائحة\s+)?(?:اعتراض|استئناف)|اعترض\s+على\s+(?:حكم|قرار)|أعترض\s+على\s+(?:حكم|قرار)/i.test(value)) return 'appeal';
-  if (/(?:طعن\s+بالنقض|صحيفة\s+نقض|لائحة\s+نقض)/i.test(value)) return 'cassation';
   if (/(?:التماس\s+إعادة\s+النظر|التماس\s+اعادة\s+النظر)/i.test(value)) return 'petition';
   if (/(?:رد\s+على\s+مذكرة|مذكرة\s+رد|جواب\s+على\s+مذكرة)/i.test(value)) return 'reply';
   if (/(?:اكتب|صغ|جهز|جهّز|اعد|أعد|راجع).{0,28}(?:مذكرة|لائحة)|(?:مذكرة\s+(?:جوابية|دفاع|دفوع|ختامية))/i.test(value)) return 'memo';
