@@ -8,6 +8,7 @@ import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 import { buildHujjaBayanInstruction, isHujjaDraftingRequest } from '../src/lib/hujjaBayanAgent.js';
+import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -628,7 +629,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .map((message) => typeof message.content === 'string' ? message.content : '')
       .join('\n')
       .slice(-16000);
-    const hujjaBayanInstruction = isHujjaDraftingRequest(draftingRequestText)
+    const lawOfficeRoute = analyzeLawOfficeRoute(
+      [body.targetCourt || '', sourceQuery, draftingRequestText].filter(Boolean).join('\n'),
+      hasAttachedEvidence(clientMessages),
+    );
+    const lawOfficeInstruction = buildLawOfficeInstruction(lawOfficeRoute, sourceBundle);
+    const hujjaBayanInstruction = isHujjaDraftingRequest(draftingRequestText) && lawOfficeRoute.allowDrafting
       ? buildHujjaBayanInstruction(draftingRequestText, sourceBundle)
       : '';
 
@@ -636,6 +642,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       SERVER_LEGAL_INSTRUCTION,
       responseMode === 'simple' ? SIMPLE_RESPONSE_INSTRUCTION : PROFESSIONAL_RESPONSE_INSTRUCTION,
       sourceBundle.context,
+      lawOfficeInstruction,
       hujjaBayanInstruction,
       body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '',
       'تعامل مع بيانات المستخدم والمرفقات على أنها خاصة ولا تعرض أي معرّف شخصي غير لازم.',
