@@ -105,6 +105,14 @@ for (const workspace of Object.values(workspaces)) {
 }
 
 assert(welcome.includes('QADA SIMPLE'), 'Simple interface label missing');
+assert(welcome.includes('وش تبي QADA ينجز لك؟') && welcome.includes('bg-[#f7f8fa]'),
+  'Simple workspace must use the calm mobile-first light interface');
+assert(login.includes('صُممت الواجهة للجوال أولاً') && login.includes('text-base') && login.includes('min-h-12'),
+  'Login must remain mobile-first with touch-sized controls and readable inputs');
+assert(app.includes("simpleUserMode = session.role === 'user' && interfaceMode === 'simple'"),
+  'Simple user mode must have a dedicated minimal application shell');
+assert(app.includes("handleInterfaceModeChange('professional')") && app.includes('احترافي'),
+  'Simple mobile dock must offer a direct professional-mode handoff');
 assert(welcome.includes('QADA PROFESSIONAL'), 'Professional interface label missing');
 assert(welcome.includes('واجهة الإدارة'), 'Admin interface entry missing');
 assert(welcome.includes("fetch('/api/ai'"), 'Simple interface is not wired to the canonical assistant API');

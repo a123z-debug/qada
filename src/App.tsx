@@ -115,231 +115,138 @@ function SystemAgentBar() {
 // 3. مكون الصفحة الترحيبية (Landing Page - OS Style)
 // ==========================================
 function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => void }) {
-  const featureCards = [
-    {
-      icon: ScanSearch,
-      title: 'فحص الدعوى',
-      description: 'تحليل بنية الدعوى وربط الوقائع والطلبات واكتشاف مواضع القوة والقصور قبل الإيداع.',
-      tone: 'cyan',
-      action: { kind: 'dashboard' } as LaunchIntent,
-    },
-    {
-      icon: FileText,
-      title: 'محرر اللوائح',
-      description: 'صياغة ومراجعة اللوائح والمذكرات في مساحة عمل واحدة مع تدقيق متدرج وواضح.',
-      tone: 'violet',
-      action: { kind: 'service', court: 'administrative', service: 'administrative_claim' } as LaunchIntent,
-    },
-    {
-      icon: Scale,
-      title: 'فحص النقض والاستئناف',
-      description: 'مراجعة أسباب الاعتراض وربطها بالحكم والطلبات والأسانيد النظامية ذات الصلة.',
-      tone: 'blue',
-      action: { kind: 'service', court: 'administrative', service: 'administrative_appeal' } as LaunchIntent,
-    },
-    {
-      icon: BookOpenCheck,
-      title: 'المراجع والأسانيد',
-      description: 'الوصول إلى الأنظمة واللوائح والمراجع المنظمة داخل قاعدة المعرفة القانونية للمنصة.',
-      tone: 'gold',
-      action: { kind: 'repository' } as LaunchIntent,
-    },
-    {
-      icon: Bot,
-      title: 'المستشار القضائي',
-      description: 'مسار حواري يساعدك على ترتيب القضية، واستكمال البيانات الناقصة، والوصول إلى الخطوة التالية.',
-      tone: 'cyan',
-      action: { kind: 'assistant' } as LaunchIntent,
-    },
-  ] as const;
-
-
-  const trustChips: Array<{ label: string; icon: React.ElementType }> = [
-    { label: 'مراجع منظمة', icon: Library },
-    { label: 'فحص متعدد المراحل', icon: FileCheck },
-    { label: 'مساحة قضية موحدة', icon: Workflow },
-    { label: 'خصوصية أعلى', icon: LockKeyhole },
-  ];
-  const steps = [
-    { icon: UploadCloud, number: '01', title: 'ارفع المذكرة', text: 'أدخل نص الدعوى أو أرفق المستندات المراد فحصها.' },
-    { icon: Workflow, number: '02', title: 'حلّل واربط', text: 'تُنظم الوقائع والطلبات والمرفقات وتُربط بالأسانيد ذات الصلة.' },
-    { icon: FileCheck, number: '03', title: 'راجع النتيجة', text: 'استعرض الملاحظات والتوصيات والتعديلات قبل اعتماد المستند.' },
+  const quickActions = [
+    { icon: Bot, title: 'اسأل المستشار', text: 'اكتب مشكلتك بطريقتك وخذ التوجه العملي مباشرة.', action: { kind: 'assistant' } as LaunchIntent },
+    { icon: FileText, title: 'اكتب مذكرة', text: 'دعوى أو اعتراض أو رد، من الوقائع إلى المسودة.', action: { kind: 'service', court: 'administrative', service: 'administrative_claim' } as LaunchIntent },
+    { icon: FileCheck, title: 'راجع حكماً', text: 'افهم الحكم وأسباب الاعتراض والنقاط التي تحتاج عملاً.', action: { kind: 'dossier' } as LaunchIntent },
+    { icon: Library, title: 'افتح المراجع', text: 'ارجع للأنظمة والمراجع عندما تحتاجها، بدون زحمة.', action: { kind: 'repository' } as LaunchIntent },
   ];
 
   return (
-    <div id="home" className="landing-shell min-h-screen text-white font-sans selection:bg-cyan-400/30 selection:text-white" dir="rtl">
-      <div className="landing-grid" aria-hidden="true" />
-      <div className="landing-orb landing-orb-one" aria-hidden="true" />
-      <div className="landing-orb landing-orb-two" aria-hidden="true" />
-
-      <header className="landing-header">
-        <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between gap-5">
-          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-3 shrink-0 group" aria-label="العودة للرئيسية">
-            <span className="brand-mark"><Scale className="w-6 h-6" /></span>
-            <span className="text-right leading-tight">
-              <span className="block font-black text-lg sm:text-xl tracking-tight text-white">أصول القضاء</span>
-              <span className="block text-[10px] sm:text-[11px] font-bold text-[#f7c967] mt-0.5">منصة التدقيق والتقاضي الذكي</span>
+    <div id="home" className="min-h-[100dvh] bg-[#f7f8fa] text-slate-950" dir="rtl">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex items-center gap-2.5"
+            aria-label="الرئيسية"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
+              <Scale className="h-5 w-5" strokeWidth={1.8} />
+            </span>
+            <span className="text-right">
+              <span className="block text-sm font-black leading-4">أصول القضاء</span>
+              <span className="block text-[9px] font-bold text-slate-400">QADA</span>
             </span>
           </button>
 
-          <nav className="hidden lg:flex items-center gap-1 rounded-2xl border border-cyan-400/10 bg-[#041126]/70 p-1.5 backdrop-blur-xl">
-            <a href="#home" className="landing-nav-link landing-nav-link-active">الرئيسية</a>
-            <a href="#knowledge" className="landing-nav-link">مركز المعرفة</a>
-            <a href="#about" className="landing-nav-link">عن المنصة</a>
-            <a href="#contact" className="landing-nav-link">تواصل معنا</a>
-          </nav>
-
-          <button onClick={() => onEnterApp({ kind: 'dashboard' })} className="landing-login-btn group">
-            <span>ابدأ فحص قضيتك</span>
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <button
+            type="button"
+            onClick={() => onEnterApp({ kind: 'dashboard' })}
+            className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-black text-white transition hover:bg-slate-800"
+          >
+            دخول
+            <ArrowLeft className="h-4 w-4" />
           </button>
         </div>
       </header>
 
-      <main className="relative z-10">
-        <section className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 lg:pt-20 pb-10 lg:pb-16">
-          <div className="grid lg:grid-cols-[0.92fr_1.08fr] gap-10 lg:gap-14 items-center">
-            <div className="order-2 lg:order-1 text-center lg:text-right">
-              <div className="landing-eyebrow mx-auto lg:mx-0">
-                <Sparkles className="w-4 h-4" />
-                <span>منصة متكاملة لفهم القضية ومراجعة مستنداتها</span>
-              </div>
+      <main>
+        <section className="mx-auto max-w-5xl px-4 pb-10 pt-14 text-center sm:px-6 sm:pb-14 sm:pt-20">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm">
+            <Sparkles className="h-5 w-5" strokeWidth={1.8} />
+          </div>
 
-              <h1 className="landing-title mt-6">
-                <span className="block">ابنِ لائحتك بثقة</span>
-                <span className="block">واكشف مواضع <span className="landing-gold">القوة والقصور</span></span>
-                <span className="block landing-blue">برؤية قانونية أدق</span>
-              </h1>
+          <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-[1.15] tracking-tight text-slate-950 sm:text-6xl">
+            اكتب المشكلة.
+            <span className="block text-slate-500">وخلك على النتيجة.</span>
+          </h1>
 
-              <p className="mt-6 text-[15px] sm:text-lg leading-8 text-slate-300 max-w-2xl mx-auto lg:mx-0">
-                أصول القضاء مساحة عمل قضائية تجمع فحص الدعوى، ومراجعة اللوائح والمرفقات، وتحليل الأحكام، وربط عناصر القضية بالأسانيد والمراجع ذات الصلة؛ لتكون الصورة أوضح قبل كل خطوة.
-              </p>
+          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base">
+            QADA يرتب لك الطريق: يفهم المطلوب، يجمع الناقص، يراجع المستندات، ثم يساعدك في الدعوى أو الاعتراض أو المذكرة.
+          </p>
 
-              <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3">
-                <button onClick={() => onEnterApp({ kind: 'dashboard' })} className="landing-primary-btn group">
-                  <span>ارفع مذكرتك وابدأ الفحص</span>
-                  <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-                </button>
-                <a href="#knowledge" className="landing-secondary-btn">
-                  <BookOpenCheck className="w-5 h-5" />
-                  <span>استكشف أدوات المنصة</span>
-                </a>
-              </div>
-
-              <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-3xl mx-auto lg:mx-0">
-                {trustChips.map(({ label, icon: Icon }) => (
-                  <div key={label} className="landing-trust-chip">
-                    <Icon className="w-4 h-4 text-cyan-300" />
-                    <span>{label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="order-1 lg:order-2 relative min-h-[430px] sm:min-h-[520px] lg:min-h-[600px]">
-              <div className="hero-stage">
-                <div className="hero-city" aria-hidden="true">
-                  <span className="tower tower-1" />
-                  <span className="tower tower-2" />
-                  <span className="tower tower-3" />
-                  <span className="tower tower-4" />
-                  <span className="tower tower-5" />
-                  <span className="tower tower-6" />
-                </div>
-                <div className="hero-ring hero-ring-a" aria-hidden="true" />
-                <div className="hero-ring hero-ring-b" aria-hidden="true" />
-                <div className="justice-pedestal">
-                  <div className="justice-halo" />
-                  <Scale className="justice-scale" strokeWidth={1.35} />
-                  <div className="pedestal-base" />
-                </div>
-
-                <div className="floating-panel panel-analysis">
-                  <div className="floating-panel-title"><ScanSearch className="w-4 h-4" /> تحليل نظامي</div>
-                  <div className="panel-line"><span>ترابط الوقائع والطلبات</span><span className="status-dot" /></div>
-                  <div className="panel-line"><span>مراجعة الأسانيد</span><span className="status-dot" /></div>
-                  <div className="panel-line"><span>كشف مواضع القصور</span><span className="status-dot" /></div>
-                </div>
-
-                <div className="floating-panel panel-sources">
-                  <div className="floating-panel-title"><Library className="w-4 h-4" /> مراجع نظامية</div>
-                  <div className="source-pill">الأنظمة واللوائح</div>
-                  <div className="source-pill">المبادئ القضائية</div>
-                  <div className="source-pill">الأحكام والمراجع</div>
-                </div>
-
-                <div className="document-card">
-                  <div className="document-card-head"><FileText className="w-5 h-5" /> مذكرة قضائية</div>
-                  <div className="doc-line w-4/5" /><div className="doc-line w-full" /><div className="doc-line w-11/12" /><div className="doc-line w-3/4" />
-                  <div className="document-state"><FileCheck className="w-4 h-4" /> جاهزة للمراجعة</div>
-                </div>
-
-                <div className="scene-quote">
-                  <span className="text-[#f7c967]">نحو عدالة</span>
-                  <strong>أكثر دقة وفعالية</strong>
-                </div>
-              </div>
-            </div>
+          <div className="mx-auto mt-7 flex max-w-md flex-col gap-2.5 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => onEnterApp({ kind: 'dashboard' })}
+              className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.99]"
+            >
+              ابدأ الآن
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => onEnterApp({ kind: 'assistant' })}
+              className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 text-sm font-black text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
+            >
+              <Bot className="h-4 w-4" />
+              المستشار
+            </button>
           </div>
         </section>
 
-        <section id="knowledge" className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 pb-14 lg:pb-20">
-          <div className="section-heading">
-            <div>
-              <span className="section-kicker">مسارات العمل</span>
-              <h2>كل ما تحتاجه في القضية ضمن مسار واحد</h2>
-            </div>
-            <p>من قراءة المستند إلى مراجعة الأسانيد ثم بناء المذكرة والتقرير النهائي.</p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3.5 mt-7">
-            {featureCards.map(({ icon: Icon, title, description, tone, action }) => (
-              <button key={title} onClick={() => onEnterApp(action)} className={`feature-card feature-${tone} group text-right`}>
-                <span className="feature-icon"><Icon className="w-6 h-6" /></span>
-                <h3>{title}</h3>
-                <p>{description}</p>
-                <span className="feature-link">فتح الأداة <ChevronLeft className="w-4 h-4" /></span>
+        <section id="knowledge" className="mx-auto max-w-5xl px-4 pb-12 sm:px-6">
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+            {quickActions.map(({ icon: Icon, title, text: description, action }) => (
+              <button
+                key={title}
+                type="button"
+                onClick={() => onEnterApp(action)}
+                className="group rounded-2xl border border-slate-200 bg-white p-4 text-right shadow-[0_6px_24px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_30px_rgba(15,23,42,0.07)]"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition group-hover:bg-slate-950 group-hover:text-white">
+                  <Icon className="h-5 w-5" strokeWidth={1.8} />
+                </span>
+                <h2 className="mt-4 text-sm font-black text-slate-950">{title}</h2>
+                <p className="mt-1.5 text-xs leading-5 text-slate-500">{description}</p>
               </button>
             ))}
           </div>
         </section>
 
-        <section id="about" className="landing-process-wrap">
-          <div className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20 grid lg:grid-cols-[0.9fr_1.1fr] gap-10 items-center">
+        <section id="about" className="border-y border-slate-200 bg-white">
+          <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
-              <span className="section-kicker">كيف تعمل أصول القضاء؟</span>
-              <h2 className="mt-3 text-3xl sm:text-4xl font-black tracking-tight">من المستند إلى رؤية قانونية أعمق</h2>
-              <p className="mt-4 text-slate-400 leading-8 max-w-xl">
-                صُممت المنصة لتجعل مسار المراجعة واضحاً: تبدأ بالمستند، ثم تنظيم عناصر القضية، ثم مراجعة النتائج والمصادر قبل اتخاذ الخطوة التالية.
+              <span className="text-[11px] font-black text-slate-400">كيف يبدأ؟</span>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                ثلاث خطوات، بدون تعقيد.
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-slate-500">
+                اكتب مشكلتك، أرفق ما عندك إن وجد، ثم تابع الأسئلة الضرورية فقط حتى يصل QADA للمخرج المطلوب.
               </p>
-              <button onClick={() => onEnterApp({ kind: 'dashboard' })} className="landing-primary-btn mt-7 group">
-                <span>ابدأ من مساحة قضيتي</span>
-                <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-              </button>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-3.5">
-              {steps.map(({ icon: Icon, number, title, text }) => (
-                <div key={number} className="process-card">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="process-icon"><Icon className="w-5 h-5" /></span>
-                    <span className="process-number">{number}</span>
-                  </div>
-                  <h3>{title}</h3>
-                  <p>{text}</p>
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              {[
+                ['01', 'اكتب طلبك', 'تكلم بطريقتك الطبيعية.'],
+                ['02', 'أرفق ما عندك', 'حكم، تحويل، عقد أو صورة.'],
+                ['03', 'خذ التوجه', 'ثم تابع للتنفيذ أو الصياغة.'],
+              ].map(([number, title, text]) => (
+                <div key={number} className="rounded-2xl bg-[#f7f8fa] p-4">
+                  <div className="text-xs font-black text-slate-400">{number}</div>
+                  <div className="mt-5 text-sm font-black text-slate-950">{title}</div>
+                  <div className="mt-1 text-xs leading-5 text-slate-500">{text}</div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="contact" className="max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="landing-disclaimer">
-            <div className="flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-cyan-300 mt-0.5 shrink-0" />
-              <p>أصول القضاء أداة تقنية مساعدة للبحث والتحليل والتنظيم، ولا تُعد بديلاً عن الاستشارة القانونية المتخصصة أو التمثيل المهني. يجب التحقق من النصوص والمراجع والنتائج قبل الاعتماد عليها أو تقديمها للجهات القضائية.</p>
+        <section id="contact" className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-xs leading-6 text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+              <p>QADA أداة مساعدة للبحث والتحليل والصياغة، ويجب مراجعة النتائج قبل الاعتماد القضائي النهائي.</p>
             </div>
-            <button onClick={() => onEnterApp({ kind: 'dashboard' })} className="text-[#f7c967] font-bold hover:text-[#ffe5a0] transition-colors shrink-0">الدخول للمنصة</button>
+            <button
+              type="button"
+              onClick={() => onEnterApp({ kind: 'dashboard' })}
+              className="shrink-0 font-black text-slate-950"
+            >
+              الدخول للمنصة
+            </button>
           </div>
         </section>
       </main>
@@ -632,9 +539,9 @@ export default function App() {
 
   if (!session && !sessionChecked) {
     return (
-      <div className="min-h-[100dvh] bg-slate-950 text-slate-200 flex items-center justify-center" dir="rtl">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 px-6 py-4 text-sm font-bold">
-          جاري التحقق من الجلسة الآمنة...
+      <div className="min-h-[100dvh] bg-[#f7f8fa] text-slate-700 flex items-center justify-center" dir="rtl">
+        <div className="rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-bold shadow-sm">
+          جاري التحقق من الجلسة...
         </div>
       </div>
     );
@@ -652,16 +559,21 @@ export default function App() {
     );
   }
 
+  const simpleUserMode = session.role === 'user' && interfaceMode === 'simple';
+
   // 3. مساحة العمل الأساسية المشفرة
   return (
     <Suspense fallback={<DeferredSurfaceFallback />}>
       <div
-        className="app-shell flex h-[100dvh] bg-slate-950 text-slate-100 overflow-hidden font-sans"
+        className={`app-shell flex h-[100dvh] overflow-hidden font-sans ${
+          simpleUserMode ? 'bg-[#f7f8fa] text-slate-950' : 'bg-slate-950 text-slate-100'
+        }`}
         dir="rtl"
       >
       {/* طبقة الأمان (العلامة المائية) */}
       <SecurityWatermark user={session} />
 
+      {!simpleUserMode && (
       <Sidebar
         activeCourt={activeCourt}
         activeService={activeService}
@@ -721,30 +633,62 @@ export default function App() {
         } : undefined}
         onOpenAccountSecurity={session.loginMethod === 'test_open' ? undefined : () => setIsAccountSecurityOpen(true)}
       />
+      )}
 
-      <div className="w-full lg:w-3/4 flex-1 flex flex-col h-full overflow-hidden relative z-10">
+      <div className={`w-full flex-1 flex flex-col h-full overflow-hidden relative z-10 ${simpleUserMode ? '' : 'lg:w-3/4'}`}>
         
         {/* شريط المدير الذكي المركزي */}
-        <SystemAgentBar />
+        {!simpleUserMode && <SystemAgentBar />}
 
         {/* Mobile Header */}
-        <header className="lg:hidden flex items-center justify-between p-3.5 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors">
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <Scale className="w-5 h-5 text-amber-400" />
-              <span className="font-bold text-sm text-white">أصول القضاء</span>
+        <header
+          className={`lg:hidden flex items-center justify-between p-3 shrink-0 ${
+            simpleUserMode
+              ? 'border-b border-slate-200 bg-white/95 text-slate-950 backdrop-blur-xl'
+              : 'bg-slate-900/80 backdrop-blur-md border-b border-slate-800'
+          }`}
+        >
+          {simpleUserMode ? (
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
+                <Scale className="h-4.5 w-4.5" strokeWidth={1.8} />
+              </span>
+              <div>
+                <div className="text-sm font-black">أصول القضاء</div>
+                <div className="text-[9px] font-bold text-slate-400">QADA</div>
+              </div>
             </div>
-          </div>
-          <button onClick={handleLogout} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 transition-colors">
+          ) : (
+            <div className="flex items-center gap-2">
+              <button onClick={() => setIsMobileMenuOpen(true)} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors">
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                <Scale className="w-5 h-5 text-amber-400" />
+                <span className="font-bold text-sm text-white">أصول القضاء</span>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={handleLogout}
+            className={`min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl transition-colors ${
+              simpleUserMode
+                ? 'text-slate-400 hover:bg-slate-100 hover:text-rose-600'
+                : 'text-slate-400 hover:text-rose-400'
+            }`}
+            title="تسجيل الخروج"
+          >
             <LogOut className="w-4 h-4" />
           </button>
         </header>
 
         {/* مساحة العمل */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6 lg:p-8 pb-24 sm:pb-6 lg:pb-8 custom-scrollbar">
+        <main className={`flex-1 overflow-y-auto custom-scrollbar ${
+          simpleUserMode
+            ? 'bg-[#f7f8fa] p-3 pb-24 sm:p-5 sm:pb-6 lg:p-8'
+            : 'p-3 sm:p-6 lg:p-8 pb-24 sm:pb-6 lg:pb-8'
+        }`}>
           {caseStoreError && (
             <div className="mb-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-200">
               تعذر الوصول إلى مخزن القضايا: {caseStoreError}
@@ -887,32 +831,79 @@ export default function App() {
         </main>
       </div>
 
-      <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-cyan-400/15 bg-[#031023]/94 backdrop-blur-2xl shadow-[0_-14px_40px_rgba(0,0,0,0.35)]"
-        aria-label="التنقل السريع"
-        style={{ paddingBottom: 'max(0.45rem, env(safe-area-inset-bottom))' }}
-      >
-        <div className="grid grid-cols-5 gap-1 px-2 pt-2">
-          <button
-            type="button"
-            onClick={() => { setIsAdminMapOpen(false); setIsAdminAnalysisOpen(false); setIsAdminUsersOpen(false); setIsAdminAuditOpen(false); setActiveCourt(null); setActiveService(null); }}
-            className={`mobile-dock-btn ${activeCourt === null ? 'mobile-dock-btn-active' : ''}`}
-          >
-            <Home className="w-5 h-5" /><span>الرئيسية</span>
-          </button>
-          <button type="button" onClick={() => setIsMobileMenuOpen(true)} className="mobile-dock-btn">
-            <ScanSearch className="w-5 h-5" /><span>الأدوات</span>
-          </button>
-          <button type="button" onClick={() => setIsDossierOpen(true)} className="mobile-dock-btn">
-            <FolderOpen className="w-5 h-5" /><span>قضيتي</span>
-          </button>
-          <button type="button" onClick={() => setIsReferencesOpen(true)} className="mobile-dock-btn">\n            <Library className="w-5 h-5" /><span>المراجع</span>
-          </button>
-          <button type="button" onClick={() => requestAssistant('')} className="mobile-dock-btn">
-            <Bot className="w-5 h-5" /><span>المستشار</span>
-          </button>
-        </div>
-      </nav>
+      {simpleUserMode ? (
+        <nav
+          className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 px-2 pt-1.5 shadow-[0_-8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl"
+          aria-label="التنقل السريع"
+          style={{ paddingBottom: 'max(0.4rem, env(safe-area-inset-bottom))' }}
+        >
+          <div className="grid grid-cols-5 gap-1">
+            <button
+              type="button"
+              onClick={() => { setActiveCourt(null); setActiveService(null); }}
+              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl bg-slate-100 text-[10px] font-black text-slate-950"
+            >
+              <Home className="h-5 w-5" strokeWidth={1.8} /><span>الرئيسية</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleInterfaceModeChange('professional')}
+              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+            >
+              <Scale className="h-5 w-5" strokeWidth={1.8} /><span>احترافي</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDossierOpen(true)}
+              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+            >
+              <FolderOpen className="h-5 w-5" strokeWidth={1.8} /><span>قضيتي</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsReferencesOpen(true)}
+              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+            >
+              <Library className="h-5 w-5" strokeWidth={1.8} /><span>المراجع</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => requestAssistant('')}
+              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+            >
+              <Bot className="h-5 w-5" strokeWidth={1.8} /><span>المستشار</span>
+            </button>
+          </div>
+        </nav>
+      ) : (
+        <nav
+          className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-cyan-400/15 bg-[#031023]/94 backdrop-blur-2xl shadow-[0_-14px_40px_rgba(0,0,0,0.35)]"
+          aria-label="التنقل السريع"
+          style={{ paddingBottom: 'max(0.45rem, env(safe-area-inset-bottom))' }}
+        >
+          <div className="grid grid-cols-5 gap-1 px-2 pt-2">
+            <button
+              type="button"
+              onClick={() => { setIsAdminMapOpen(false); setIsAdminAnalysisOpen(false); setIsAdminUsersOpen(false); setIsAdminAuditOpen(false); setActiveCourt(null); setActiveService(null); }}
+              className={`mobile-dock-btn ${activeCourt === null ? 'mobile-dock-btn-active' : ''}`}
+            >
+              <Home className="w-5 h-5" /><span>الرئيسية</span>
+            </button>
+            <button type="button" onClick={() => setIsMobileMenuOpen(true)} className="mobile-dock-btn">
+              <ScanSearch className="w-5 h-5" /><span>الأدوات</span>
+            </button>
+            <button type="button" onClick={() => setIsDossierOpen(true)} className="mobile-dock-btn">
+              <FolderOpen className="w-5 h-5" /><span>قضيتي</span>
+            </button>
+            <button type="button" onClick={() => setIsReferencesOpen(true)} className="mobile-dock-btn">
+              <Library className="w-5 h-5" /><span>المراجع</span>
+            </button>
+            <button type="button" onClick={() => requestAssistant('')} className="mobile-dock-btn">
+              <Bot className="w-5 h-5" /><span>المستشار</span>
+            </button>
+          </div>
+        </nav>
+      )}
 
       {session.loginMethod !== 'test_open' && (
         <AccountSecurityModal

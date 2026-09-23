@@ -146,12 +146,12 @@ export function WelcomeScreen({
   };
 
   const simpleActions = [
-    { title: 'حلّل قضيتي', text: 'حلل قضيتي من البداية إلى النهاية، واسألني فقط عن البيانات الناقصة، ثم رتب الوقائع والطلبات والمستندات والمراجع والخطوة التالية.' },
-    { title: 'اكتب لائحة دعوى', text: 'أريد إعداد لائحة دعوى كاملة. اجمع مني البيانات الناقصة خطوة بخطوة، وحدد الاختصاص والطلبات والمستندات، ولا تضف سنداً نظامياً إلا بعد التحقق من مصدره الرسمي.' },
-    { title: 'اعتراض أو استئناف', text: 'أريد مراجعة حكم أو قرار وإعداد مسار اعتراض أو استئناف. ابدأ بفهم القرار والمواعيد والمستندات، ثم ابنِ مسودة قابلة للمراجعة مع المراجع المتحققة.' },
-    { title: 'راجع قراراً إدارياً', text: 'أريد مراجعة قرار إداري ومعرفة المسار النظامي المناسب. اجمع الوقائع والتواريخ والجهة والطلبات، ثم وضح الخيارات والإجراءات والمراجع الرسمية ذات الصلة.' },
-    { title: 'راجع مستنداتي', text: 'أريد فحص مستنداتي كملف قضية واحد: صنفها، استخرج النواقص والتعارضات، اربطها بالوقائع، ثم اقترح ما يلزم استكماله قبل إعداد المخرج النهائي.' },
-    { title: 'ابحث عن حقي النظامي', text: 'اشرح مشكلتي أولاً ثم حدد المسائل النظامية المحتملة، وابحث في المراجع الرسمية المتاحة، وميز بوضوح بين النص المتحقق وما يحتاج مراجعة.' },
+    { title: 'حلّل قضيتي', description: 'ابدأ من المشكلة كما هي وسأرتب لك الطريق.', icon: Sparkles, text: 'حلل قضيتي من البداية إلى النهاية، واسألني فقط عن البيانات الناقصة، ثم رتب الوقائع والطلبات والمستندات والمراجع والخطوة التالية.' },
+    { title: 'اكتب لائحة دعوى', description: 'حوّل الوقائع إلى دعوى واضحة قابلة للمراجعة.', icon: FileText, text: 'أريد إعداد لائحة دعوى كاملة. اجمع مني البيانات الناقصة خطوة بخطوة، وحدد الاختصاص والطلبات والمستندات، ولا تضف سنداً نظامياً إلا بعد التحقق من مصدره الرسمي.' },
+    { title: 'اعتراض أو استئناف', description: 'راجع الحكم وابنِ أسباب الاعتراض والطلبات.', icon: Gavel, text: 'أريد مراجعة حكم أو قرار وإعداد مسار اعتراض أو استئناف. ابدأ بفهم القرار والمواعيد والمستندات، ثم ابنِ مسودة قابلة للمراجعة مع المراجع المتحققة.' },
+    { title: 'راجع قراراً إدارياً', description: 'اعرف المسار الصحيح وما يلزمك قبل التقديم.', icon: ShieldCheck, text: 'أريد مراجعة قرار إداري ومعرفة المسار النظامي المناسب. اجمع الوقائع والتواريخ والجهة والطلبات، ثم وضح الخيارات والإجراءات والمراجع الرسمية ذات الصلة.' },
+    { title: 'راجع مستنداتي', description: 'رتّب المستندات واكشف النقص والتعارض.', icon: FolderOpen, text: 'أريد فحص مستنداتي كملف قضية واحد: صنفها، استخرج النواقص والتعارضات، اربطها بالوقائع، ثم اقترح ما يلزم استكماله قبل إعداد المخرج النهائي.' },
+    { title: 'ابحث عن حقي', description: 'افهم حقك أولاً ثم انتقل للمراجع عند الحاجة.', icon: Search, text: 'اشرح مشكلتي أولاً ثم حدد المسائل النظامية المحتملة، وابحث في المراجع الرسمية المتاحة، وميز بوضوح بين النص المتحقق وما يحتاج مراجعة.' },
   ];
 
   const openSimpleTask = async (request: string) => {
@@ -229,136 +229,165 @@ export function WelcomeScreen({
 
   if (interfaceMode === 'simple') {
     return (
-      <div className="max-w-5xl mx-auto space-y-6 py-4 px-2 sm:px-6" dir="rtl">
-        <div className="flex flex-col gap-3 rounded-2xl border border-cyan-400/20 bg-slate-900/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto w-full max-w-4xl space-y-5 px-1 py-2 sm:px-4 sm:py-4" dir="rtl">
+        <div className="flex items-center justify-between gap-3 px-1">
           <div>
-            <div className="text-[11px] font-black text-cyan-300">QADA SIMPLE</div>
-            <p className="mt-1 text-xs text-slate-400">واجهة إنجاز مبسطة؛ صف ما تريد وسيتولى QADA ترتيب المسار معك حتى المخرج النهائي.</p>
+            <div className="sr-only">QADA SIMPLE</div>
+            <h2 className="text-sm font-black text-slate-950">مساحتك</h2>
+            <p className="mt-0.5 text-[11px] text-slate-500">نفس القضية، بدون التفاصيل التقنية.</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => changeInterfaceMode('professional')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => changeInterfaceMode('professional')}
+              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
+            >
               الواجهة الاحترافية
             </button>
             {isAdmin && onOpenAdminOverview && (
-              <button type="button" onClick={onOpenAdminOverview} className="min-h-10 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 text-xs font-black text-violet-200 hover:bg-violet-500/20">
+              <button
+                type="button"
+                onClick={onOpenAdminOverview}
+                className="min-h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-black text-slate-700 shadow-sm"
+              >
                 واجهة الإدارة
               </button>
             )}
           </div>
         </div>
 
-        <section className="relative overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-br from-slate-900 via-[#07172d] to-slate-950 p-6 sm:p-10 shadow-2xl">
-          <div className="absolute -top-24 -left-20 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
-          <div className="relative">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-black text-cyan-200">
-              <Sparkles className="h-4 w-4" />
-              مسار واحد من الطلب إلى النتيجة
+        <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_12px_45px_rgba(15,23,42,0.06)] sm:p-7">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
+              <Sparkles className="h-5 w-5" strokeWidth={1.8} />
             </div>
-            <h1 className="mt-5 text-3xl font-black leading-tight text-white sm:text-5xl">ما الذي تريد من QADA أن ينجزه لك؟</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
-              لا تحتاج لمعرفة اسم المحكمة أو المادة أو الأداة. اكتب مشكلتك أو النتيجة التي تريدها، وسيبدأ QADA بجمع الناقص ثم ينتقل إلى التحليل والمراجع والصياغة والمراجعة.
-            </p>
+            <div>
+              <h1 className="text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
+                وش تبي QADA ينجز لك؟
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-[15px]">
+                اكتب المشكلة بطريقتك. QADA يحدد التوجه، يسأل فقط عن الناقص، ثم يبدأ التنفيذ.
+              </p>
+            </div>
+          </div>
 
-            {simpleMessages.length > 0 && (
-              <div className="mt-7 max-h-[48vh] space-y-3 overflow-y-auto rounded-2xl border border-slate-800 bg-slate-950/60 p-3 sm:p-4 custom-scrollbar">
-                {simpleMessages.map((message) => (
-                  <div key={message.id} className={message.role === 'user' ? 'mr-auto max-w-[92%] rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-3' : 'ml-auto max-w-[96%] rounded-2xl border border-slate-800 bg-slate-900 p-3'}>
-                    <div className="mb-1 text-[10px] font-black text-slate-500">{message.role === 'user' ? 'أنت' : 'QADA'}</div>
-                    <div className="whitespace-pre-wrap text-sm leading-7 text-slate-200">
-                      {message.content || <span className="text-slate-500">جاري إكمال المهمة...</span>}
-                    </div>
+          {simpleMessages.length > 0 && (
+            <div className="mt-5 max-h-[48dvh] space-y-3 overflow-y-auto rounded-2xl bg-[#f7f8fa] p-3 custom-scrollbar sm:p-4">
+              {simpleMessages.map((message) => (
+                <div
+                  key={message.id}
+                  className={
+                    message.role === 'user'
+                      ? 'mr-auto max-w-[92%] rounded-2xl rounded-tr-md border border-blue-100 bg-blue-50 p-3'
+                      : 'ml-auto max-w-[96%] rounded-2xl rounded-tl-md border border-slate-200 bg-white p-3'
+                  }
+                >
+                  <div className="mb-1 text-[10px] font-black text-slate-400">
+                    {message.role === 'user' ? 'أنت' : 'QADA'}
                   </div>
+                  <div className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                    {message.content || <span className="text-slate-400">جاري إكمال المهمة...</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-[#fafbfc] p-2.5 sm:p-3">
+            <textarea
+              value={simpleRequest}
+              onChange={(event) => setSimpleRequest(event.target.value)}
+              placeholder={
+                simpleMessages.length
+                  ? 'أضف المعلومة المطلوبة أو أكمل كلامك...'
+                  : 'مثال: سلفت شخص مبلغ وعندي تحويل بنكي ورفض يسدد...'
+              }
+              className="min-h-28 w-full resize-y rounded-xl border-0 bg-transparent px-2 py-2 text-base leading-7 text-slate-950 outline-none placeholder:text-slate-400 sm:min-h-32"
+            />
+
+            {simpleAttachments.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2 px-1">
+                {simpleAttachments.map((attachment) => (
+                  <button
+                    key={attachment.id}
+                    type="button"
+                    onClick={() => setSimpleAttachments((current) => current.filter((item) => item.id !== attachment.id))}
+                    className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600 shadow-sm hover:border-rose-200 hover:text-rose-600"
+                    title="إزالة المرفق"
+                  >
+                    {attachment.name}
+                  </button>
                 ))}
               </div>
             )}
 
-            <div className="mt-7 rounded-2xl border border-slate-700 bg-slate-950/80 p-3 sm:p-4">
-              <textarea
-                value={simpleRequest}
-                onChange={(event) => setSimpleRequest(event.target.value)}
-                placeholder={simpleMessages.length ? 'أجب عن السؤال أو أضف أي معلومة لازمة لإكمال المهمة...' : 'مثال: صدر بحقي قرار من جهة حكومية وأريد أعرف كيف أعترض عليه وأجهز الطلب كامل...'}
-                className="min-h-32 w-full resize-y rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm leading-7 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400/50"
-              />
-
-              {simpleAttachments.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {simpleAttachments.map((attachment) => (
-                    <button
-                      key={attachment.id}
-                      type="button"
-                      onClick={() => setSimpleAttachments((current) => current.filter((item) => item.id !== attachment.id))}
-                      className="rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-2.5 py-1.5 text-[10px] font-bold text-cyan-200 hover:border-rose-400/30 hover:text-rose-200"
-                      title="إزالة المرفق"
-                    >
-                      {attachment.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {simpleError && (
-                <div className="mt-3 rounded-xl border border-rose-400/20 bg-rose-400/5 px-3 py-2 text-xs font-bold text-rose-200">
-                  {simpleError}
-                </div>
-              )}
-
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 text-xs font-bold text-slate-300 hover:border-cyan-400/35">
-                    <FileText className="h-4 w-4" />
-                    <span>إرفاق PDF أو صورة</span>
-                    <input
-                      type="file"
-                      multiple
-                      accept="application/pdf,image/*"
-                      className="hidden"
-                      onChange={(event) => {
-                        void addSimpleAttachments(event.target.files);
-                        event.currentTarget.value = '';
-                      }}
-                    />
-                  </label>
-                  <p className="text-[10px] leading-5 text-slate-500">حتى 6 مرفقات، وبحد 2.5MB لكل ملف. يبقى المرفق مرتبطاً بمتابعة المهمة حتى تزيله؛ لا يُحفظ ملفه الخام داخل سجل المحادثة الدائم.</p>
-                </div>
-                <button
-                  type="button"
-                  disabled={!simpleRequest.trim() || simpleBusy}
-                  onClick={() => void openSimpleTask(simpleRequest)}
-                  className="min-h-11 shrink-0 rounded-xl bg-cyan-400 px-5 text-sm font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {simpleBusy ? 'جاري الإنجاز...' : simpleMessages.length ? 'متابعة المهمة' : 'ابدأ إنجاز المهمة'}
-                </button>
+            {simpleError && (
+              <div className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold leading-5 text-rose-700">
+                {simpleError}
               </div>
+            )}
+
+            <div className="mt-2 flex flex-col gap-2 border-t border-slate-200 pt-2 sm:flex-row sm:items-center sm:justify-between">
+              <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 text-xs font-bold text-slate-600 transition hover:bg-white hover:text-slate-950">
+                <FileText className="h-4 w-4" />
+                <span>إرفاق ملف أو صورة</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="application/pdf,image/*"
+                  className="hidden"
+                  onChange={(event) => {
+                    void addSimpleAttachments(event.target.files);
+                    event.currentTarget.value = '';
+                  }}
+                />
+              </label>
+
+              <button
+                type="button"
+                disabled={!simpleRequest.trim() || simpleBusy}
+                onClick={() => void openSimpleTask(simpleRequest)}
+                className="min-h-12 shrink-0 rounded-2xl bg-slate-950 px-6 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-40"
+              >
+                {simpleBusy ? 'جاري الإنجاز...' : simpleMessages.length ? 'متابعة' : 'ابدأ الآن'}
+              </button>
             </div>
           </div>
         </section>
 
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-black text-white">أو اختر ما تريد مباشرة</h2>
-            <span className="text-[10px] font-bold text-slate-500">يمكن تغيير المسار أثناء المحادثة</span>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {simpleActions.map((action) => (
-              <button
-                key={action.title}
-                type="button"
-                onClick={() => openSimpleTask(action.text)}
-                className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-right transition hover:border-cyan-400/35 hover:bg-slate-900"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-black text-white group-hover:text-cyan-200">{action.title}</span>
-                  <ArrowLeft className="h-4 w-4 text-slate-600 group-hover:text-cyan-300" />
-                </div>
-                <p className="mt-2 line-clamp-3 text-xs leading-6 text-slate-500">{action.text}</p>
-              </button>
-            ))}
-          </div>
-        </section>
+        {simpleMessages.length === 0 && (
+          <section>
+            <div className="mb-3 flex items-center justify-between gap-3 px-1">
+              <h2 className="text-sm font-black text-slate-950">ابدأ مباشرة</h2>
+              <span className="text-[10px] font-bold text-slate-400">اختر أو اكتب بطريقتك</span>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+              {simpleActions.map((action) => {
+                const ActionIcon = action.icon;
+                return (
+                  <button
+                    key={action.title}
+                    type="button"
+                    onClick={() => void openSimpleTask(action.text)}
+                    className="group flex min-h-[104px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-right shadow-[0_6px_24px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_30px_rgba(15,23,42,0.07)]"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition group-hover:bg-slate-950 group-hover:text-white">
+                      <ActionIcon className="h-5 w-5" strokeWidth={1.8} />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-black text-slate-950">{action.title}</span>
+                      <span className="mt-1 block text-xs leading-5 text-slate-500">{action.description}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-        <div className="rounded-2xl border border-amber-400/15 bg-amber-400/5 p-4 text-xs leading-6 text-slate-400">
-          <span className="font-black text-amber-200">طريقة العمل:</span> الواجهة البسيطة تخفي التفاصيل التقنية فقط؛ نفس ملف القضية والمراجع ومحرك التحليل يُستخدم عند الانتقال إلى Professional، بينما أدوات الإدارة لا تظهر إلا لحساب الإدارة.
-        </div>
+        <p className="px-1 text-center text-[10px] leading-5 text-slate-400">
+          التحقق والمراجع تعمل في الخلفية، وتظهر لك فقط عندما تحتاجها.
+        </p>
       </div>
     );
   }

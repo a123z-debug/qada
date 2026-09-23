@@ -5,8 +5,8 @@ import {
   KeyRound,
   LogIn,
   Mail,
+  Scale,
   ShieldCheck,
-  Sparkles,
   UserPlus,
   UserRound,
 } from 'lucide-react';
@@ -155,83 +155,53 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[#020817] text-white flex items-center justify-center p-4 sm:p-6" dir="rtl">
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-violet-500/10 blur-3xl" />
-      </div>
-
-      <div className="relative w-full max-w-xl">
+    <div
+      className="min-h-[100dvh] bg-[#f7f8fa] px-4 py-[max(1rem,env(safe-area-inset-top))] text-slate-950 sm:px-6"
+      dir="rtl"
+    >
+      <div className="mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-[440px] flex-col justify-center">
         <button
           type="button"
           onClick={onBack}
-          className="mb-4 inline-flex min-h-10 items-center gap-2 text-sm font-bold text-slate-400 transition-colors hover:text-white"
+          className="mb-4 inline-flex min-h-11 w-fit items-center gap-2 rounded-xl px-2 text-sm font-bold text-slate-500 transition hover:bg-white hover:text-slate-900"
         >
           <ArrowRight className="h-4 w-4" />
-          العودة للرئيسية
+          الرئيسية
         </button>
 
-        <div className="overflow-visible rounded-3xl border border-cyan-400/15 bg-slate-950/95 shadow-2xl backdrop-blur-xl">
-          <div className="border-b border-white/5 px-6 py-7 text-center sm:px-8">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10">
-              <Sparkles className="h-6 w-6 text-cyan-300" />
+        <div className="overflow-visible rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+          <div className="px-5 pb-5 pt-7 text-center sm:px-7 sm:pt-8">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
+              <Scale className="h-6 w-6" strokeWidth={1.8} />
             </div>
-
-            <div className="relative mx-auto w-fit">
-              <button
-                type="button"
-                onClick={() => setInterfaceMenuOpen((open) => !open)}
-                className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-2xl font-black transition hover:bg-white/[0.03] sm:text-3xl"
-                aria-expanded={interfaceMenuOpen}
-                aria-haspopup="menu"
-              >
-                <span>اختر واجهة QADA</span>
-                <ChevronDown
-                  className={`h-4 w-4 text-slate-700 transition-transform group-hover:text-slate-500 ${interfaceMenuOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-
-              {interfaceMenuOpen && (
-                <div
-                  role="menu"
-                  className="absolute left-1/2 top-full z-30 mt-2 w-56 -translate-x-1/2 overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-1.5 text-right shadow-2xl"
-                >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setInterfaceMenuOpen(false);
-                      setAdminOpen(true);
-                      setError('');
-                    }}
-                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[11px] font-bold text-slate-600 transition hover:bg-amber-400/10 hover:text-amber-200"
-                  >
-                    <span>إدارة QADA</span>
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-slate-400">
-              حساب واحد ومساحة عمل واحدة. بعد الدخول يمكنك التبديل فوراً بين الواجهة البسيطة والمتقدمة دون فقد القضية أو المحادثة.
+            <h1 className="text-2xl font-black tracking-tight text-slate-950">أصول القضاء</h1>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
+              ادخل إلى مساحتك واكتب مشكلتك مباشرة. لا تحتاج لاختيار محكمة أو مادة قبل البدء.
             </p>
           </div>
 
           {!adminOpen && (
-            <div className="p-5 sm:p-7">
-              <div className="mb-5 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-slate-900/70 p-1.5">
+            <div className="px-5 pb-6 sm:px-7 sm:pb-7">
+              <div className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1">
                 <button
                   type="button"
                   onClick={() => changeAuthMode('login')}
-                  className={`min-h-10 rounded-xl px-3 text-xs font-black transition ${authMode === 'login' ? 'bg-cyan-400 text-slate-950' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                  className={`min-h-11 rounded-xl px-3 text-sm font-black transition ${
+                    authMode === 'login'
+                      ? 'bg-white text-slate-950 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
                 >
                   تسجيل الدخول
                 </button>
                 <button
                   type="button"
                   onClick={() => changeAuthMode('register')}
-                  className={`min-h-10 rounded-xl px-3 text-xs font-black transition ${authMode === 'register' ? 'bg-violet-400 text-slate-950' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+                  className={`min-h-11 rounded-xl px-3 text-sm font-black transition ${
+                    authMode === 'register'
+                      ? 'bg-white text-slate-950 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
                 >
                   إنشاء مستخدم جديد
                 </button>
@@ -239,55 +209,57 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
 
               <form onSubmit={submitUser} className="space-y-4">
                 {authMode === 'register' && (
-                  <label className="grid gap-1.5 text-xs font-bold text-slate-300">
+                  <label className="grid gap-1.5 text-xs font-bold text-slate-700">
                     الاسم
                     <div className="relative">
-                      <UserRound className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
+                      <UserRound className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
                         value={name}
                         onChange={(event) => setName(event.target.value)}
                         autoComplete="name"
-                        className="h-12 w-full rounded-xl border border-white/10 bg-slate-950/80 pr-10 pl-3 text-sm text-white outline-none transition focus:border-violet-300/50"
+                        className="h-12 w-full rounded-2xl border border-slate-200 bg-[#fafbfc] pr-11 pl-4 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
                         placeholder="الاسم الكامل"
                       />
                     </div>
                   </label>
                 )}
 
-                <label className="grid gap-1.5 text-xs font-bold text-slate-300">
+                <label className="grid gap-1.5 text-xs font-bold text-slate-700">
                   البريد الإلكتروني
                   <div className="relative">
-                    <Mail className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
+                    <Mail className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
                       autoComplete="email"
+                      autoCapitalize="none"
+                      inputMode="email"
                       dir="ltr"
-                      className="h-12 w-full rounded-xl border border-white/10 bg-slate-950/80 pr-10 pl-3 text-left text-sm text-white outline-none transition focus:border-cyan-300/50"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-[#fafbfc] pr-11 pl-4 text-left text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
                       placeholder="name@example.com"
                     />
                   </div>
                 </label>
 
-                <label className="grid gap-1.5 text-xs font-bold text-slate-300">
+                <label className="grid gap-1.5 text-xs font-bold text-slate-700">
                   كلمة المرور
                   <div className="relative">
-                    <KeyRound className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
+                    <KeyRound className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       autoComplete={authMode === 'register' ? 'new-password' : 'current-password'}
                       dir="ltr"
-                      className="h-12 w-full rounded-xl border border-white/10 bg-slate-950/80 pr-10 pl-3 text-left text-sm text-white outline-none transition focus:border-cyan-300/50"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-[#fafbfc] pr-11 pl-4 text-left text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
                       placeholder="••••••••••••"
                     />
                   </div>
                 </label>
 
                 {authMode === 'register' && (
-                  <label className="grid gap-1.5 text-xs font-bold text-slate-300">
+                  <label className="grid gap-1.5 text-xs font-bold text-slate-700">
                     تأكيد كلمة المرور
                     <input
                       type="password"
@@ -295,7 +267,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                       onChange={(event) => setPasswordConfirm(event.target.value)}
                       autoComplete="new-password"
                       dir="ltr"
-                      className="h-12 w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 text-left text-sm text-white outline-none transition focus:border-violet-300/50"
+                      className="h-12 w-full rounded-2xl border border-slate-200 bg-[#fafbfc] px-4 text-left text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-400 focus:bg-white"
                       placeholder="••••••••••••"
                     />
                   </label>
@@ -303,52 +275,88 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
 
                 {authMode === 'register' && (
                   <p className="text-[11px] leading-5 text-slate-500">
-                    كلمة المرور لا تقل عن 10 أحرف. بيانات الحساب تُحفظ في مخزن الخادم ولا تُخزن كلمة المرور كنص صريح.
+                    كلمة المرور لا تقل عن 10 أحرف.
                   </p>
                 )}
 
                 <button
                   type="submit"
                   disabled={Boolean(busyMode)}
-                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 text-sm font-black text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {authMode === 'register' ? <UserPlus className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
                   {busyMode === 'user'
-                    ? 'جاري التحقق...'
+                    ? 'جاري الدخول...'
                     : authMode === 'register'
-                      ? 'إنشاء الحساب والدخول'
+                      ? 'إنشاء الحساب'
                       : 'دخول إلى QADA'}
                 </button>
               </form>
+
+              <div className="relative mt-5 border-t border-slate-100 pt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => setInterfaceMenuOpen((open) => !open)}
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-xl px-3 text-xs font-bold text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+                  aria-expanded={interfaceMenuOpen}
+                  aria-haspopup="menu"
+                >
+                  خيارات أخرى
+                  <ChevronDown className={`h-3.5 w-3.5 transition ${
+                    interfaceMenuOpen ? 'rotate-180' : ''
+                  }`} />
+                </button>
+
+                {interfaceMenuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute bottom-14 left-1/2 z-30 w-52 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-1.5 text-right shadow-xl"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setInterfaceMenuOpen(false);
+                        setAdminOpen(true);
+                        setError('');
+                      }}
+                      className="flex min-h-10 w-full items-center justify-between rounded-xl px-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
+                    >
+                      <span>إدارة QADA</span>
+                      <ShieldCheck className="h-4 w-4 text-slate-400" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {adminOpen && (
-            <form onSubmit={submitAdmin} className="m-5 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5 sm:m-7">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10">
-                  <ShieldCheck className="h-5 w-5 text-amber-200" />
+            <form onSubmit={submitAdmin} className="border-t border-slate-100 px-5 pb-6 pt-5 sm:px-7 sm:pb-7">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                  <ShieldCheck className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-black text-white">دخول إدارة QADA</h2>
-                  <p className="mt-1 text-[11px] text-slate-400">هذه الواجهة لا تظهر في الدخول العادي.</p>
+                  <h2 className="text-sm font-black text-slate-950">دخول إدارة QADA</h2>
+                  <p className="mt-0.5 text-[11px] text-slate-500">للمشرفين فقط.</p>
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <label className="grid gap-1.5 text-xs font-bold text-slate-300">
+              <div className="space-y-4">
+                <label className="grid gap-1.5 text-xs font-bold text-slate-700">
                   رمز الدخول
                   <input
                     value={adminCode}
                     onChange={(event) => setAdminCode(event.target.value)}
                     autoComplete="username"
                     dir="ltr"
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3 text-sm text-white outline-none transition focus:border-amber-300/50"
+                    className="h-12 rounded-2xl border border-slate-200 bg-[#fafbfc] px-4 text-base text-slate-950 outline-none focus:border-slate-400 focus:bg-white"
                     placeholder="Admin code"
                   />
                 </label>
 
-                <label className="grid gap-1.5 text-xs font-bold text-slate-300">
+                <label className="grid gap-1.5 text-xs font-bold text-slate-700">
                   كلمة المرور
                   <input
                     type="password"
@@ -356,13 +364,13 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                     onChange={(event) => setAdminPassword(event.target.value)}
                     autoComplete="current-password"
                     dir="ltr"
-                    className="h-11 rounded-xl border border-white/10 bg-slate-950/80 px-3 text-sm text-white outline-none transition focus:border-amber-300/50"
+                    className="h-12 rounded-2xl border border-slate-200 bg-[#fafbfc] px-4 text-base text-slate-950 outline-none focus:border-slate-400 focus:bg-white"
                     placeholder="••••••••••••"
                   />
                 </label>
               </div>
 
-              <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <div className="mt-5 grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   disabled={Boolean(busyMode)}
@@ -371,27 +379,31 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                     setAdminPassword('');
                     setError('');
                   }}
-                  className="min-h-10 rounded-xl border border-white/10 px-4 text-xs font-black text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+                  className="min-h-12 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
                 >
                   رجوع
                 </button>
                 <button
                   type="submit"
                   disabled={Boolean(busyMode)}
-                  className="min-h-10 rounded-xl border border-amber-300/20 bg-amber-400 px-5 text-xs font-black text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="min-h-12 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {busyMode === 'admin' ? 'جاري التحقق...' : 'دخول الإدارة'}
+                  {busyMode === 'admin' ? 'جاري الدخول...' : 'دخول الإدارة'}
                 </button>
               </div>
             </form>
           )}
 
           {error && (
-            <div className="mx-5 mb-5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold leading-6 text-rose-200 sm:mx-7 sm:mb-7">
+            <div className="mx-5 mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold leading-6 text-rose-700 sm:mx-7 sm:mb-7">
               {error}
             </div>
           )}
         </div>
+
+        <p className="mt-4 text-center text-[11px] leading-5 text-slate-400">
+          صُممت الواجهة للجوال أولاً؛ كل إجراء أساسي يمكن الوصول إليه بإبهام واحد.
+        </p>
       </div>
     </div>
   );
