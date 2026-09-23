@@ -168,7 +168,7 @@ export function FloatingChatBot({
             { role: 'user', content: userText, attachments: pendingAttachments },
           ],
           targetCourt: getCourtLabel(),
-          responseMode: userSession?.workspaceMode === 'professional' || userSession?.workspaceMode === 'admin' ? 'professional' : 'simple',
+          responseMode: 'simple',
           powerMode: true,
         }),
       });
@@ -223,7 +223,7 @@ export function FloatingChatBot({
       {
         id: 'welcome-reset',
         role: 'assistant',
-        content: `تم تهيئة جلسة الاستشارة القضائية للبؤرة: ${getCourtLabel()}. تفضل بطرح أي استفسار أو طلب صيغة دفع.`,
+        content: `جاهز. اكتب المشكلة أو المخرج الذي تريده، وسأحدد لك التوجه وأبدأ بالتنفيذ مباشرة.`,
         timestamp: Date.now(),
       },
     ]);
@@ -367,7 +367,7 @@ export function FloatingChatBot({
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="اكتب استفسارك النظامي هنا... (تُحجب المعرّفات المباشرة من النص تلقائياً)"
+                    placeholder="اكتب مشكلتك أو ما تريد إنجازه: دعوى، اعتراض، مذكرة، رد، مطالبة..."
                     disabled={isSending}
                     className="flex-1 px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs focus:border-amber-500 outline-none placeholder:text-neutral-500 disabled:opacity-50"
                   />

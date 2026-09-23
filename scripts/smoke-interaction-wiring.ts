@@ -119,11 +119,14 @@ assert(floatingChat.includes("cache: 'no-store'"), 'Floating assistant requests 
 assert(welcome.includes('simpleAssistantHttpError'), 'Simple mode must expose actionable HTTP errors');
 assert(welcome.includes("credentials: 'same-origin'"), 'Simple mode must explicitly send the QADA session cookie');
 assert(welcome.includes("responseMode: 'simple'"), 'Simple interface must request concise response mode');
-assert(floatingChat.includes("workspaceMode === 'professional'") && floatingChat.includes("'professional' : 'simple'"),
-  'Floating assistant must follow the selected Simple/Professional response mode');
+assert(floatingChat.includes("responseMode: 'simple'"),
+  'Floating assistant must always use the action-first Simple response contract');
 assert(chatApi.includes('SIMPLE_RESPONSE_INSTRUCTION'), 'Chat API missing dedicated Simple response contract');
 assert(chatApi.includes('detectSimpleIntent'), 'Simple assistant must classify the practical user intent before answering');
 assert(chatApi.includes('buildSimpleActionDirective'), 'Simple assistant must inject an action-first directive');
+assert(chatApi.includes('simpleReplyLooksLikeLecture'), 'Simple assistant must detect professional-format lecture regressions');
+assert(chatApi.includes('enforceSimpleActionFirst'), 'Simple assistant must replace unsolicited lecture responses with action-first guidance');
+assert(chatApi.includes('simpleUserExplicitlyRequestsDetail'), 'Simple assistant must preserve detailed legal analysis when the user explicitly requests it');
 assert(chatApi.includes('النية العملية المستنتجة: مطالبة مالية / استرداد مبلغ.'), 'Money-claim routing directive missing');
 assert(chatApi.includes('النية العملية المستنتجة: إعداد لائحة اعتراض/استئناف.'), 'Appeal drafting routing directive missing');
 assert(chatApi.includes('لا تشرح منصة QADA'), 'Simple assistant must not explain the platform unless asked');

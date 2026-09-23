@@ -211,6 +211,39 @@ function buildSimpleActionDirective(messages: IncomingMessage[]): string {
   return `توجيه تنفيذي خاص بهذه المحادثة:\n${directives[intent]}`;
 }
 
+function simpleUserExplicitlyRequestsDetail(messages: IncomingMessage[]): boolean {
+  const text = messages
+    .filter((message) => message.role !== 'assistant' && message.role !== 'model')
+    .map((message) => typeof message.content === 'string' ? message.content : '')
+    .join(' ');
+  return /(?:اذكر|اعطني|أعطني|ابي|أبي|ابغى|أبغى|اريد|أريد).{0,30}(?:المواد|المراجع|الأسانيد|السند|النظام|تحليل\s+(?:قانوني|نظامي)|شرح\s+(?:قانوني|نظامي)|تفصيل)|(?:حلل|حلّل).{0,20}(?:قانونياً|قانونيا|نظامياً|نظاميا|بالتفصيل)|(?:ما\s+هي|وش).{0,20}(?:المواد|الأنظمة|الأسانيد)/i.test(text);
+}
+
+function simpleReplyLooksLikeLecture(reply: string): boolean {
+  const markers = [
+    /أهلاً بك في منصة أصول القضاء/i,
+    /بصفتي مستشار(?:اً|ا) قانوني/i,
+    /أولاً:\s*الوقائع/i,
+    /ثانياً:\s*المسألة النظامية/i,
+    /السند المتحقق/i,
+    /Verified Legal Basis/i,
+    /المواد النظامية المتحققة ذات الصلة/i,
+    /حالة التحقق:/i,
+    /###\s*(?:أولاً|ثانياً|ثالثاً|رابعاً|خامساً|سادساً)/i,
+  ];
+  return markers.some((pattern) => pattern.test(reply));
+}
+
+function enforceSimpleActionFirst(
+  reply: string,
+  messages: IncomingMessage[],
+  targetCourt?: string,
+): string {
+  if (simpleUserExplicitlyRequestsDetail(messages)) return reply;
+  if (!simpleReplyLooksLikeLecture(reply)) return reply;
+  return buildSafeFallbackReply(messages, targetCourt, 'simple');
+}
+
 function trustedUserMessages(messages: IncomingMessage[]): IncomingMessage[] {
   return messages
     .slice(-10)
@@ -504,6 +537,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       providerMode = 'fallback';
       console.error('All AI providers unavailable, using safe fallback:', lastError instanceof Error ? lastError.message : lastError);
       reply = buildSafeFallbackReply(incomingMessages, body.targetCourt, responseMode);
+    }
+
+    if (responseMode === 'simple') {
+      reply = enforceSimpleActionFirst(reply, clientMessages, body.targetCourt);
     }
 
     const citationGuard = guardIntroducedLegalCitations(sourceQuery, reply, sourceBundle.context);
