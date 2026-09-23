@@ -52,6 +52,7 @@ interface WelcomeScreenProps {
   message?: string;
   isAdmin?: boolean;
   defaultMode?: 'simple' | 'professional';
+  onModeChange?: (mode: 'simple' | 'professional') => void;
   onOpenAdminOverview?: () => void;
 }
 
@@ -62,6 +63,7 @@ export function WelcomeScreen({
   message = 'الرجاء اختيار الاختصاص القضائي للبدء',
   isAdmin = false,
   defaultMode,
+  onModeChange,
   onOpenAdminOverview,
 }: WelcomeScreenProps) {
   const [interfaceMode, setInterfaceMode] = useState<'simple' | 'professional'>(defaultMode || (isAdmin ? 'professional' : 'simple'));
@@ -69,6 +71,11 @@ export function WelcomeScreen({
   useEffect(() => {
     if (defaultMode) setInterfaceMode(defaultMode);
   }, [defaultMode]);
+
+  const changeInterfaceMode = (mode: 'simple' | 'professional') => {
+    setInterfaceMode(mode);
+    onModeChange?.(mode);
+  };
   const [simpleRequest, setSimpleRequest] = useState('');
   const [simpleMessages, setSimpleMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([]);
   const [simpleBusy, setSimpleBusy] = useState(false);
@@ -229,7 +236,7 @@ export function WelcomeScreen({
             <p className="mt-1 text-xs text-slate-400">واجهة إنجاز مبسطة؛ صف ما تريد وسيتولى QADA ترتيب المسار معك حتى المخرج النهائي.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setInterfaceMode('professional')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
+            <button type="button" onClick={() => changeInterfaceMode('professional')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
               الواجهة الاحترافية
             </button>
             {isAdmin && onOpenAdminOverview && (
@@ -364,7 +371,7 @@ export function WelcomeScreen({
           <p className="mt-1 text-xs text-slate-400">تحكم كامل في الاختصاصات والأدوات والمراجع ومسارات المراجعة.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setInterfaceMode('simple')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
+          <button type="button" onClick={() => changeInterfaceMode('simple')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
             الواجهة البسيطة
           </button>
           {isAdmin && onOpenAdminOverview && (
@@ -383,7 +390,7 @@ export function WelcomeScreen({
               <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-400">{sharedTask.content}</p>
               <p className="mt-1 text-[10px] text-slate-600">محفوظ في مخزن QADA المشفر لحسابك، ويمكنك الرجوع إلى Simple ومتابعة نفس السياق.</p>
             </div>
-            <button type="button" onClick={() => setInterfaceMode('simple')} className="min-h-10 shrink-0 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 text-xs font-black text-cyan-200 hover:bg-cyan-400/15">
+            <button type="button" onClick={() => changeInterfaceMode('simple')} className="min-h-10 shrink-0 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 text-xs font-black text-cyan-200 hover:bg-cyan-400/15">
               متابعة الملف في Simple
             </button>
           </div>
