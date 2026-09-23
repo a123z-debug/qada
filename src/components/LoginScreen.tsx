@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, KeyRound, LockKeyhole, Scale, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
+import { ArrowRight, ChevronDown, KeyRound, Scale, ShieldCheck, Sparkles, UserRound } from 'lucide-react';
 import type { UserSession } from '../types';
 
 interface LoginScreenProps {
@@ -13,6 +13,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
   const [busyMode, setBusyMode] = useState<WorkspaceMode | null>(null);
   const [error, setError] = useState('');
   const [adminOpen, setAdminOpen] = useState(false);
+  const [interfaceMenuOpen, setInterfaceMenuOpen] = useState(false);
   const [adminCode, setAdminCode] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
 
@@ -129,14 +130,6 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
       tone: 'border-violet-400/25 bg-violet-400/8 hover:border-violet-300/55',
       badge: 'QADA Professional',
     },
-    {
-      mode: 'admin',
-      title: 'الإدارة',
-      description: 'لوحة إدارة المنصة والوكلاء والمستخدمين والسجلات والمصادر ومراقبة التشغيل.',
-      icon: ShieldCheck,
-      tone: 'border-amber-400/25 bg-amber-400/8 hover:border-amber-300/55',
-      badge: 'QADA Admin',
-    },
   ];
 
   return (
@@ -161,17 +154,73 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-400/10">
               <Sparkles className="h-6 w-6 text-cyan-300" />
             </div>
-            <h1 className="text-2xl font-black sm:text-3xl">اختر واجهة QADA</h1>
-            <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-slate-400">
-              الواجهتان Simple وProfessional متاحتان مباشرة، بينما لوحة الإدارة محمية برمز دخول وكلمة مرور.
-            </p>
-            <div className="mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-[11px] font-black text-amber-200">
-              <LockKeyhole className="h-3.5 w-3.5" />
-              QADA Admin محمية
+            <div className="relative mx-auto w-fit">
+              <button
+                type="button"
+                onClick={() => setInterfaceMenuOpen((open) => !open)}
+                className="group inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-2xl font-black transition hover:bg-white/[0.03] sm:text-3xl"
+                aria-expanded={interfaceMenuOpen}
+                aria-haspopup="menu"
+              >
+                <span>اختر واجهة QADA</span>
+                <ChevronDown
+                  className={`h-4 w-4 text-slate-600 transition-transform group-hover:text-slate-400 ${interfaceMenuOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {interfaceMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute left-1/2 top-full z-30 mt-2 w-64 -translate-x-1/2 overflow-hidden rounded-2xl border border-white/10 bg-slate-950/98 p-1.5 text-right shadow-2xl backdrop-blur-xl"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setInterfaceMenuOpen(false);
+                      void openWorkspace('simple');
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-slate-300 transition hover:bg-cyan-400/10 hover:text-cyan-200"
+                  >
+                    <span>QADA Simple</span>
+                    <UserRound className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setInterfaceMenuOpen(false);
+                      void openWorkspace('professional');
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-bold text-slate-300 transition hover:bg-violet-400/10 hover:text-violet-200"
+                  >
+                    <span>QADA Professional</span>
+                    <Scale className="h-4 w-4" />
+                  </button>
+                  <div className="my-1 border-t border-white/5" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setInterfaceMenuOpen(false);
+                      setAdminOpen(true);
+                      setError('');
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-[11px] font-bold text-slate-600 transition hover:bg-amber-400/10 hover:text-amber-200"
+                  >
+                    <span>إدارة QADA</span>
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
+
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-slate-400">
+              اختر الواجهة المناسبة لطريقة استخدامك.
+            </p>
           </div>
 
-          <div className="grid gap-4 p-5 sm:p-7 md:grid-cols-3">
+          <div className="mx-auto grid max-w-2xl gap-4 p-5 sm:p-7 md:grid-cols-2">
             {options.map(({ mode, title, description, icon: Icon, tone, badge }) => (
               <button
                 key={mode}
@@ -191,11 +240,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                 <h2 className="mt-5 text-lg font-black text-white">{title}</h2>
                 <p className="mt-2 text-xs leading-6 text-slate-400">{description}</p>
                 <div className="mt-5 text-xs font-black text-cyan-200">
-                  {busyMode === mode
-                    ? 'جاري التحقق...'
-                    : mode === 'admin'
-                      ? 'دخول محمي ←'
-                      : 'فتح مباشرة ←'}
+                  {busyMode === mode ? 'جاري التحقق...' : 'فتح مباشرة ←'}
                 </div>
               </button>
             ))}
