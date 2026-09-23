@@ -63,15 +63,15 @@ assert(
   'browser-bound account proofs must not return',
 );
 assert(
-  loginScreen.includes("qada_test_mode=; Path=/; Max-Age=0")
-    && loginScreen.includes("action: 'test-access'")
+  loginScreen.includes("action: authMode === 'register' ? 'register' : 'user-login'")
     && loginScreen.includes("credentials: 'include'")
-    && loginScreen.includes("mode: 'simple'")
-    && loginScreen.includes("mode: 'professional'")
-    && !loginScreen.includes("mode: 'admin',\n      title: 'الإدارة'")
+    && loginScreen.includes('إنشاء مستخدم جديد')
+    && loginScreen.includes('البريد الإلكتروني')
+    && loginScreen.includes('كلمة المرور')
+    && !loginScreen.includes("action: 'test-access'")
     && loginScreen.includes('setInterfaceMenuOpen')
     && loginScreen.includes("setAdminOpen(true)"),
-  'Simple and Professional must use server access while Admin stays hidden behind the interface chooser',
+  'User access must use email/password registration or login while Admin stays hidden behind the interface chooser',
 );
 assert(
   !sessionApi.includes("cookies(header)[TEST_MODE_COOKIE]")
@@ -108,7 +108,7 @@ console.log(JSON.stringify({
   activeCookie: 'qada_session_v6',
   persistentAccounts: true,
   adminCredentialVersion: 'v7',
-  temporaryOpenTestAccess: 'server-minted-simple-professional-only',
+  userAccess: 'email-password-register-login',
   isolatedAuthSecret: true,
   checkedApiFiles: apiFiles.length,
 }, null, 2));
