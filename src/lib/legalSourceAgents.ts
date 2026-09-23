@@ -191,6 +191,7 @@ function selectDetailedSystems(query: string): OfficialReferenceSystem[] {
 
   return scored
     .filter((item) => item.score > 0)
+    .filter((item) => sourceRelevantToQuery(item.system.name, query))
     .sort((a, b) => b.score - a.score)
     .slice(0, 6)
     .map((item) => item.system);
@@ -535,7 +536,9 @@ function buildOfficialSourcePacket(query: string): LegalSourcePacket {
 }
 
 function buildAmendmentPacket(query: string): LegalSourcePacket {
-  const amendments = retrieveOfficialJudicialAmendments(query, 12);
+  const amendments = retrieveOfficialJudicialAmendments(query, 16)
+    .filter((amendment) => sourceRelevantToQuery(`${amendment.systemName} ${amendment.affectedProvision}`, query))
+    .slice(0, 12);
   const blockers = amendments.length
     ? []
     : ['لا توجد تعديلات رسمية مفهرسة ذات صلة كافية في الاسترجاع الحالي؛ لا يعني ذلك عدم وجود تعديل خارج الفهرس.'];
