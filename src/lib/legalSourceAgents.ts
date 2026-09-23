@@ -93,6 +93,23 @@ function containsAny(value: string, terms: string[]): boolean {
   return terms.some((term) => normalized.includes(normalizeArabic(term)));
 }
 
+function sourceRelevantToQuery(sourceLabel: string, query: string): boolean {
+  const q = normalizeArabic(query);
+  const label = normalizeArabic(sourceLabel);
+
+  const criminalQuery = containsAny(q, ['جزائي', 'جريمه', 'جنايه', 'نيابه', 'متهم', 'قبض', 'تفتيش', 'توقيف', 'تحقيق جنائي', 'عقوبه']);
+  const administrativeQuery = containsAny(q, ['ديوان المظالم', 'اداري', 'وزاره', 'جهه اداريه', 'عسكري', 'خدمه الافراد', 'وظيفي', 'ترقيه', 'بدل', 'علاوه', 'مكافاه']);
+  const civilMoneyQuery = containsAny(q, ['سلف', 'قرض', 'دين', 'تحويل بنكي', 'مطالبه ماليه', 'عقد', 'حقوقي', 'المحكمه العامه']);
+
+  const criminalSource = containsAny(label, ['النيابه العامه', 'الاجراءات الجزائيه', 'جزائي']);
+  const administrativeSource = containsAny(label, ['ديوان المظالم', 'المرافعات امام ديوان', 'التنفيذ امام ديوان', 'خدمه الافراد']);
+
+  if (!criminalQuery && criminalSource) return false;
+  if (civilMoneyQuery && !administrativeQuery && administrativeSource) return false;
+  if (criminalQuery && !administrativeQuery && administrativeSource) return false;
+  return true;
+}
+
 function articleNumbers(query: string): string[] {
   const values = new Set<string>();
   const patterns = [
@@ -451,8 +468,12 @@ function buildExactTextPacket(query: string): LegalSourcePacket {
 }
 
 function buildOfficialSourcePacket(query: string): LegalSourcePacket {
-  const refs = retrieveOfficialLegalReferences(query, 10);
-  const regs = retrieveOfficialJudicialRegulations(query, 8);
+  const refs = retrieveOfficialLegalReferences(query, 12)
+    .filter((ref) => sourceRelevantToQuery(`${ref.name} ${ref.category}`, query))
+    .slice(0, 10);
+  const regs = retrieveOfficialJudicialRegulations(query, 10)
+    .filter((reg) => sourceRelevantToQuery(`${reg.parentSystem} ${reg.regulationName} ${reg.category}`, query))
+    .slice(0, 8);
   const requested = articleNumbers(query);
 
   const references = [
