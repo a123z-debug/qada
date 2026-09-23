@@ -25,6 +25,8 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
   const [busyMode, setBusyMode] = useState<BusyMode>(null);
   const [error, setError] = useState('');
   const [adminOpen, setAdminOpen] = useState(false);
+  const [adminReady, setAdminReady] = useState<boolean | null>(null);
+  const [checkingAdmin, setCheckingAdmin] = useState(false);
   const [interfaceMenuOpen, setInterfaceMenuOpen] = useState(false);
 
   const [name, setName] = useState('');
@@ -99,6 +101,39 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
     }
   }
 
+  async function checkAdminReady(): Promise<boolean> {
+    setCheckingAdmin(true);
+    try {
+      const response = await fetch('/api/session?health=1', {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      const payload = await response.json().catch(() => ({}));
+      const ready = Boolean(response.ok && payload?.adminReady === true);
+      setAdminReady(ready);
+      if (!ready) {
+        setError('دخول الإدارة غير جاهز حالياً على الخادم. أعد المحاولة بعد تحديث الصفحة.');
+      }
+      return ready;
+    } catch {
+      setAdminReady(false);
+      setError('تعذر التحقق من خدمة دخول الإدارة. تحقق من الاتصال ثم أعد المحاولة.');
+      return false;
+    } finally {
+      setCheckingAdmin(false);
+    }
+  }
+
+  async function openAdminLogin() {
+    if (busyMode || checkingAdmin) return;
+    setInterfaceMenuOpen(false);
+    setError('');
+    const ready = await checkAdminReady();
+    if (ready) setAdminOpen(true);
+  }
+
   async function submitAdmin(event: React.FormEvent) {
     event.preventDefault();
     if (busyMode) return;
@@ -113,6 +148,9 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
     setError('');
 
     try {
+      const ready = await checkAdminReady();
+      if (!ready) return;
+
       document.cookie = 'qada_test_mode=; Path=/; Max-Age=0; SameSite=Lax; Secure';
 
       const response = await fetch('/api/session', {
@@ -315,11 +353,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                     <button
                       type="button"
                       role="menuitem"
-                      onClick={() => {
-                        setInterfaceMenuOpen(false);
-                        setAdminOpen(true);
-                        setError('');
-                      }}
+                      onClick={() => void openAdminLogin()}
                       className="flex min-h-10 w-full items-center justify-between rounded-xl px-3 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"
                     >
                       <span>إدارة QADA</span>
@@ -339,7 +373,13 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-slate-950">دخول إدارة QADA</h2>
-                  <p className="mt-0.5 text-[11px] text-slate-500">للمشرفين فقط.</p>
+                  <p className="mt-0.5 text-[11px] text-slate-500">
+                    {checkingAdmin
+                      ? 'جاري فحص خدمة الإدارة...'
+                      : adminReady
+                        ? 'خدمة الإدارة جاهزة.'
+                        : 'للمشرفين فقط.'}
+                  </p>
                 </div>
               </div>
 
@@ -385,10 +425,14 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                 </button>
                 <button
                   type="submit"
-                  disabled={Boolean(busyMode)}
+                  disabled={Boolean(busyMode) || checkingAdmin || adminReady === false}
                   className="min-h-12 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {busyMode === 'admin' ? 'جاري الدخول...' : 'دخول الإدارة'}
+                  {busyMode === 'admin'
+                    ? 'جاري الدخول...'
+                    : checkingAdmin
+                      ? 'جاري الفحص...'
+                      : 'دخول الإدارة'}
                 </button>
               </div>
             </form>

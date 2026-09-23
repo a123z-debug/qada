@@ -118,3 +118,8 @@ console.log(JSON.stringify({
   isolatedAuthSecret: true,
   checkedApiFiles: apiFiles.length,
 }, null, 2));
+
+assert(
+  sessionApi.includes('[QADA_ADMIN_LOGIN]') && sessionApi.includes("outcome: 'rejected'"),
+  'admin login must emit non-secret outcome diagnostics',
+);

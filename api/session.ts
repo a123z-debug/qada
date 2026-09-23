@@ -688,6 +688,10 @@ export default async function handler(req: any, res: any) {
         String(body.adminCode || ''),
         String(body.password || ''),
       );
+      console.info('[QADA_ADMIN_LOGIN]', JSON.stringify({
+        outcome: 'success',
+        credentialRevision: adminCredentialRevision(),
+      }));
     } else {
       return res.status(400).json({ error: 'عملية المصادقة غير معروفة.' });
     }
@@ -711,6 +715,14 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json({ session: clientSession(session) });
   } catch (error) {
     const mapped = authError(error);
+    const action = String((req.body ?? {})?.action || '');
+    if (action === 'admin-login') {
+      console.warn('[QADA_ADMIN_LOGIN]', JSON.stringify({
+        outcome: 'rejected',
+        code: mapped.code,
+        status: mapped.status,
+      }));
+    }
     if (mapped.code === 'ADMIN_CREDENTIAL_MISSING') {
       const diagnostic = adminCredentialDiagnostic();
       console.error('[QADA_ADMIN_AUTH_CONFIG_INVALID]', JSON.stringify({
