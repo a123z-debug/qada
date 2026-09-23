@@ -122,6 +122,12 @@ assert(welcome.includes("responseMode: 'simple'"), 'Simple interface must reques
 assert(floatingChat.includes("workspaceMode === 'professional'") && floatingChat.includes("'professional' : 'simple'"),
   'Floating assistant must follow the selected Simple/Professional response mode');
 assert(chatApi.includes('SIMPLE_RESPONSE_INSTRUCTION'), 'Chat API missing dedicated Simple response contract');
+assert(chatApi.includes('detectSimpleIntent'), 'Simple assistant must classify the practical user intent before answering');
+assert(chatApi.includes('buildSimpleActionDirective'), 'Simple assistant must inject an action-first directive');
+assert(chatApi.includes('النية العملية المستنتجة: مطالبة مالية / استرداد مبلغ.'), 'Money-claim routing directive missing');
+assert(chatApi.includes('النية العملية المستنتجة: إعداد لائحة اعتراض/استئناف.'), 'Appeal drafting routing directive missing');
+assert(chatApi.includes('لا تشرح منصة QADA'), 'Simple assistant must not explain the platform unless asked');
+assert(chatApi.includes('الرد المثالي في Simple: توجّه واضح → خطوة تالية → سؤالان أو أقل عند الحاجة.'), 'Simple action-first response contract missing');
 assert(chatApi.includes("responseMode === 'professional' && verifiedArticleList.length > 0"),
   'Simple mode must not auto-append the verified legal article list');
 assert(login.includes("mode: 'simple'"), 'Simple portal missing');
