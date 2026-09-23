@@ -79,7 +79,10 @@ function normalizeEmail(value: string) {
 }
 
 function isProductionRuntime() {
-  return process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+  return process.env.NODE_ENV === 'production'
+    || process.env.VERCEL === '1'
+    || process.env.RAILWAY_ENVIRONMENT === 'production'
+    || process.env.RAILWAY_ENVIRONMENT_NAME === 'production';
 }
 
 function rootSecret() {
