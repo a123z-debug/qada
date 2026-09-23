@@ -39,6 +39,12 @@ assert(
   'production admin login must require the versioned v7 environment credential and invalidate stale admin sessions',
 );
 assert(
+  sessionApi.includes('normalizeAdminCredentialHash')
+    && sessionApi.includes("replace(/^sha-?256")
+    && sessionApi.includes('missing-or-invalid'),
+  'admin credential parser must safely normalize quoted/prefixed SHA-256 hashes and expose non-secret readiness diagnostics',
+);
+assert(
   sessionApi.includes("redisCommand(['SET', key, encoded, 'NX'])"),
   'user registration must persist through the server account store',
 );

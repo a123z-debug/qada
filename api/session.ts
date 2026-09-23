@@ -91,12 +91,36 @@ function rootSecret() {
   return createHash('sha256').update(`qada-session-v6:${explicit}`).digest();
 }
 
+function normalizeAdminCredentialHash(value: string | undefined): string {
+  let normalized = String(value || '').trim();
+
+  const quoteWrapped =
+    (normalized.startsWith('"') && normalized.endsWith('"'))
+    || (normalized.startsWith("'") && normalized.endsWith("'"));
+  if (quoteWrapped && normalized.length >= 2) {
+    normalized = normalized.slice(1, -1).trim();
+  }
+
+  normalized = normalized.replace(/^sha-?256\s*[:=]\s*/i, '').replace(/\s+/g, '').toLowerCase();
+  return /^[a-f0-9]{64}$/.test(normalized) ? normalized : '';
+}
+
 function adminCredentialConfig() {
-  const configured = process.env.QADA_ADMIN_CREDENTIAL_HASH_V7?.trim().toLowerCase() || '';
-  if (/^[a-f0-9]{64}$/i.test(configured)) {
+  const configured = normalizeAdminCredentialHash(process.env.QADA_ADMIN_CREDENTIAL_HASH_V7);
+  if (configured) {
     return { hash: configured, source: 'environment' as const };
   }
   throw new Error('ADMIN_CREDENTIAL_MISSING');
+}
+
+function adminCredentialDiagnostic() {
+  const raw = String(process.env.QADA_ADMIN_CREDENTIAL_HASH_V7 || '');
+  const normalized = normalizeAdminCredentialHash(raw);
+  return {
+    present: Boolean(raw.trim()),
+    accepted: Boolean(normalized),
+    rawLength: raw.length,
+  };
 }
 
 function adminCredentialHash() {
@@ -476,6 +500,13 @@ export default async function handler(req: any, res: any) {
       const adminReady = authConfigured && adminConfigured;
       const userReady = authConfigured;
       const ready = adminReady && userReady;
+      const adminDiagnostic = adminCredentialDiagnostic();
+      console.info('[QADA_AUTH_CONFIG]', JSON.stringify({
+        adminCredentialPresent: adminDiagnostic.present,
+        adminCredentialAccepted: adminDiagnostic.accepted,
+        adminCredentialRawLength: adminDiagnostic.rawLength,
+        authConfigured,
+      }));
       return res.status(ready ? 200 : 503).json({
         ok: ready,
         authConfigured,
@@ -483,7 +514,7 @@ export default async function handler(req: any, res: any) {
         adminConfigured,
         adminReady,
         userReady,
-        adminCredentialSource: adminCredentialConfig().source,
+        adminCredentialSource: adminConfigured ? 'environment' : 'missing-or-invalid',
         accountStore: storeConfigured ? 'redis' : (isProductionRuntime() ? 'missing' : 'memory-dev'),
         sessionCookie: SESSION_COOKIE,
       });
@@ -671,6 +702,14 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json({ session: clientSession(session) });
   } catch (error) {
     const mapped = authError(error);
+    if (mapped.code === 'ADMIN_CREDENTIAL_MISSING') {
+      const diagnostic = adminCredentialDiagnostic();
+      console.error('[QADA_ADMIN_AUTH_CONFIG_INVALID]', JSON.stringify({
+        present: diagnostic.present,
+        accepted: diagnostic.accepted,
+        rawLength: diagnostic.rawLength,
+      }));
+    }
     return res.status(mapped.status).json({ error: mapped.error, code: mapped.code });
   }
 }
