@@ -10,7 +10,7 @@ const requiredIds = [
   'auth','search','laws','judgments','references','cases','advisor','settings',
   'document-reader','case-router','src-bog','src-personnel','src-royal','src-precedents',
   'qada-core','facts','jurisdiction','characterization','evidence','reasoning','procedure',
-  'official-source','exact-text','amendments','conflicts','final-review','drafting','final-output',
+  'official-source','exact-text','amendments','conflicts','final-review','drafting','hujja-bayan','final-output',
   'editor-tool','execution-tool','evaluation-tool','agents-tool',
   'admin-entry','judgment-audit','memo-audit','legislative-flaws','judicial-flaws',
   'procedural-flaws','evidence-flaws','reasoning-flaws','rebuttal-review','admin-final'
@@ -32,6 +32,8 @@ for (const label of [
   assert(map.includes(label), 'Blueprint section missing: ' + label);
 }
 
+assert(map.includes('صاحب حُجّة وبيان') && map.includes("from: 'drafting', to: 'hujja-bayan'") && map.includes("from: 'hujja-bayan', to: 'final-output'"),
+  'Hujja wa Bayan drafting stage is not wired into the blueprint');
 assert(map.includes('Editor') && map.includes('Execution') && map.includes('Evaluation') && map.includes('Agents'),
   'Operations tool row is incomplete');
 assert(map.includes('runtimeById') && map.includes('sourcePacketById'),

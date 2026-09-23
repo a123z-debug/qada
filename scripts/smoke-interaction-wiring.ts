@@ -12,6 +12,7 @@ const map = fs.readFileSync('src/components/admin/AdminAgentMap.tsx', 'utf8');
 const welcome = fs.readFileSync('src/components/workspaces/WelcomeScreen.tsx', 'utf8');
 const login = fs.readFileSync('src/components/LoginScreen.tsx', 'utf8');
 const chatApi = fs.readFileSync('api/chat.ts', 'utf8');
+const hujjaAgent = fs.readFileSync('src/lib/hujjaBayanAgent.ts', 'utf8');
 
 const workspaces: Record<string, string> = {
   administrative: fs.readFileSync('src/components/workspaces/AdministrativeWorkspace.tsx', 'utf8'),
@@ -122,6 +123,12 @@ assert(welcome.includes("responseMode: 'simple'"), 'Simple interface must reques
 assert(floatingChat.includes("responseMode: 'simple'"),
   'Floating assistant must always use the action-first Simple response contract');
 assert(chatApi.includes('SIMPLE_RESPONSE_INSTRUCTION'), 'Chat API missing dedicated Simple response contract');
+assert(chatApi.includes('buildHujjaBayanInstruction') && chatApi.includes('isHujjaDraftingRequest'),
+  'Chat API must route drafting tasks through Hujja wa Bayan');
+assert(hujjaAgent.includes('المرحلة الأولى — الاستقراء قبل الكتابة') && hujjaAgent.includes('المرحلة الثانية — الصياغة'),
+  'Hujja wa Bayan must enforce the two-step drafting workflow');
+assert(hujjaAgent.includes('لا تدّع أنك درست أحكاماً مشابهة') && hujjaAgent.includes('لا تخترع واقعة أو مادة أو حكماً أو مبدأ قضائياً'),
+  'Hujja wa Bayan must not invent precedent or legal authority');
 assert(chatApi.includes('detectSimpleIntent'), 'Simple assistant must classify the practical user intent before answering');
 assert(chatApi.includes('buildSimpleActionDirective'), 'Simple assistant must inject an action-first directive');
 assert(chatApi.includes('simpleReplyLooksLikeLecture'), 'Simple assistant must detect professional-format lecture regressions');

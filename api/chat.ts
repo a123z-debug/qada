@@ -7,6 +7,7 @@ import { enforceRateLimit } from './_rateLimit.js';
 import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
+import { buildHujjaBayanInstruction, isHujjaDraftingRequest } from '../src/lib/hujjaBayanAgent.js';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -470,10 +471,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const sourceBundle = runLegalSourceAgents(
       [body.targetCourt || '', sourceQuery].filter(Boolean).join('\n')
     );
+    const draftingRequestText = clientMessages
+      .filter((message) => message.role !== 'assistant' && message.role !== 'model')
+      .map((message) => typeof message.content === 'string' ? message.content : '')
+      .join('\n')
+      .slice(-16000);
+    const hujjaBayanInstruction = isHujjaDraftingRequest(draftingRequestText)
+      ? buildHujjaBayanInstruction(draftingRequestText, sourceBundle)
+      : '';
+
     const contextInstruction = [
       SERVER_LEGAL_INSTRUCTION,
       responseMode === 'simple' ? SIMPLE_RESPONSE_INSTRUCTION : PROFESSIONAL_RESPONSE_INSTRUCTION,
       sourceBundle.context,
+      hujjaBayanInstruction,
       body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '',
       'تعامل مع بيانات المستخدم والمرفقات على أنها خاصة ولا تعرض أي معرّف شخصي غير لازم.',
       'لا تستخدم رقماً نظامياً جديداً خارج ما ورد في كلام المستخدم أو حزمة المصادر الرسمية. إذا كانت حزمة المصدر تحمل warning أو blocker فاذكر ذلك ولا تحوله إلى نتيجة قطعية.',
