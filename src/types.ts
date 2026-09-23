@@ -139,6 +139,10 @@ export interface CaseKnowledgeNote {
   title: string;
   detail: string;
   status: 'confirmed' | 'needs-verification' | 'pending-evidence';
+  confidentiality?: 'case-only-secret' | 'case-private' | 'normal';
+  allowedCaseOnly?: boolean;
+  excludeFromCrossCaseComparison?: boolean;
+  excludeFromLegalCorpus?: boolean;
   sourceLabel?: string;
   sourceDate?: string;
   createdAt: number;
