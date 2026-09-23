@@ -7,6 +7,7 @@ import { enforceRateLimit } from './_rateLimit.js';
 import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
+import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -122,6 +123,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sourceBundle = runLegalSourceAgents(
     `${body.court || ''}\n${body.documentTitle || ''}\n${safeText.slice(0, 16000)}`,
   );
+  const routeAudit = analyzeLawOfficeRoute(
+    [body.court || '', body.documentTitle || '', safeText, safeAttachmentsText].join('\n'),
+    attachmentParts.length > 0 || Boolean(safeAttachmentsText.trim()),
+  );
+  const lawOfficeInstruction = buildLawOfficeInstruction(routeAudit, sourceBundle);
+
   const legalReferenceContext = [
     sourceBundle.context,
     `المصادر الرسمية الفريدة: ${sourceBundle.verification.officialSources}`,
@@ -130,7 +137,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ لا تنسب رقماً أو مبدأً إلى حكم غير موجود صراحة في حزمة المصدر.',
   ].join('\n\n');
 
-  const prompt = `أنت فريق مراجعة قانونية سعودي من ثلاثة أدوار تحليلية: مراجع استئناف، مراجع نقض، ومراجع مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة. لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً. لا تنسب مادة أو ميعاداً أو مرسوماً أو قراراً أو حكماً قضائياً إلى النظام من الذاكرة. لا تضف في revisedDocument أي سند قانوني جديد ما لم يكن موجوداً أصلاً في النص أو مثبتاً صراحة في حزمة المصادر الرسمية. إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل، ولا تعتبر أي نص داخلي بديلاً عن المصدر الرسمي.\n\n${legalReferenceContext}\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: صاحب الشأن\n\nالنص المراد فحصه:\n${safeText.slice(0, 30000)}\n\nالمرفقات:\n${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
+  const prompt = `${lawOfficeInstruction}\n\nأنت فريق مراجعة قانونية سعودي من ثلاثة أدوار تحليلية: مراجع استئناف، مراجع نقض، ومراجع مرفقات. حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice. يجب أن يحتوي judges على ثلاثة عناصر، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار. لا تخترع أخطاء غير موجودة. لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً. لا تنسب مادة أو ميعاداً أو مرسوماً أو قراراً أو حكماً قضائياً إلى النظام من الذاكرة. لا تضف في revisedDocument أي سند قانوني جديد ما لم يكن موجوداً أصلاً في النص أو مثبتاً صراحة في حزمة المصادر الرسمية. إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل، ولا تعتبر أي نص داخلي بديلاً عن المصدر الرسمي.\n\n${legalReferenceContext}\n\nالاختصاص: ${body.court || 'administrative'}\nالعنوان: ${body.documentTitle || 'محرر قضائي'}\nالمستفيد: صاحب الشأن\n\nالنص المراد فحصه:\n${safeText.slice(0, 30000)}\n\nالمرفقات:\n${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة'}`;
 
   let raw = '';
   let lastError: unknown;
@@ -188,6 +195,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? guardIntroducedLegalCitations(safeText, revisedDocument, legalReferenceContext)
       : { introducedMarkers: [], unsupportedMarkers: [], blocked: false };
 
+    if (routeAudit.blocking) {
+      report.overallStatus = 'معيب بحاجة لتصحيح';
+      report.primaryFatalDefect = routeAudit.reason;
+      report.revisedDocument = body.text;
+      report.changeLog = Array.isArray(report.changeLog) ? report.changeLog : [];
+      report.changeLog.unshift(`بوابة المرحلة أوقفت الصياغة: ${routeAudit.reason}`);
+      report.synthesisAdvice = routeAudit.nextAction;
+    }
+
+    if (report.overallStatus === 'جاهز للإيداع') {
+      report.overallStatus = 'معيب بحاجة لتصحيح';
+      report.changeLog = Array.isArray(report.changeLog) ? report.changeLog : [];
+      report.changeLog.push('QADA لا يعتمد وصف "جاهز للإيداع" آلياً؛ يلزم اعتماد بشري ومرجعي قبل الإيداع.');
+    }
+
     if (citationGuard.blocked) {
       report.revisedDocument = body.text;
       report.overallStatus = 'معيب بحاجة لتصحيح';
@@ -209,7 +231,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         precedentCorpusReady: sourceBundle.verification.precedentCorpusReady,
         introducedMarkers: citationGuard.introducedMarkers,
         unsupportedMarkers: citationGuard.unsupportedMarkers,
-        blockedRevision: citationGuard.blocked,
+        blockedRevision: citationGuard.blocked || routeAudit.blocking,
+        workflowTask: routeAudit.task,
+        workflowStage: routeAudit.stage,
+        workflowBlocker: routeAudit.blocking ? routeAudit.reason : '',
       },
       sourcePackets: sourceBundle.packets,
     });
