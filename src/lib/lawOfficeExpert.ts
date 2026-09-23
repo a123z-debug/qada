@@ -48,9 +48,21 @@ export function detectLawOfficeTask(text: string): LawOfficeTask {
 
 export function detectCourtStage(text: string): CourtStage {
   const value = normalize(text);
-  if (/المحكمه\s+الاداريه\s+العليا|المحكمه\s+العليا|حكم\s+العليا/.test(value)) return 'supreme';
-  if (/محكمه\s+الاستئناف|حكم\s+الاستئناف|الدائره.{0,24}الاستئناف|المستانف|تأييد\s+الحكم|تاييد\s+الحكم/.test(value)) return 'appeal';
-  if (/المحكمه\s+الاداريه|المحكمه\s+العامه|المحكمه\s+الجزائيه|حكم\s+ابتدائي|الدائره.{0,30}المحكمه/.test(value)) return 'first-instance';
+
+  // Determine the stage from the judgment being reviewed, not from the destination
+  // court named in the requested remedy (e.g. "أمام المحكمة الإدارية العليا").
+  if (
+    /حكم.{0,40}(?:المحكمه\s+الاداريه\s+العليا|المحكمه\s+العليا)|صادر.{0,24}(?:المحكمه\s+الاداريه\s+العليا|المحكمه\s+العليا)/.test(value)
+  ) return 'supreme';
+
+  if (
+    /حكم.{0,50}محكمه\s+الاستئناف|محكمه\s+الاستئناف.{0,50}حكم|حكم\s+الاستئناف|حكم\s+في\s+الاستئناف|تأييد\s+الحكم|تاييد\s+الحكم|طلب\s+الاستئناف.{0,40}الحكم/.test(value)
+  ) return 'appeal';
+
+  if (
+    /حكم\s+ابتدائي|الحكم\s+محل\s+الاستئناف.{0,80}المحكمه|الحكم\s+الصادر.{0,60}(?:المحكمه\s+الاداريه|المحكمه\s+العامه|المحكمه\s+الجزائيه)/.test(value)
+  ) return 'first-instance';
+
   return 'unknown';
 }
 
