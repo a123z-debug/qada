@@ -19,6 +19,10 @@ import auditLogHandler from './api/audit-log';
 dotenv.config();
 
 const PORT = Number(process.env.PORT || 3000);
+const IS_PRODUCTION = process.env.NODE_ENV === 'production'
+  || process.env.VERCEL === '1'
+  || process.env.RAILWAY_ENVIRONMENT === 'production'
+  || process.env.RAILWAY_ENVIRONMENT_NAME === 'production';
 
 async function startServer() {
   const app = express();
@@ -53,7 +57,7 @@ async function startServer() {
     res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
     res.setHeader('X-DNS-Prefetch-Control', 'off');
     res.setHeader('Origin-Agent-Cluster', '?1');
-    if (process.env.NODE_ENV === 'production') {
+    if (IS_PRODUCTION) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
     next();

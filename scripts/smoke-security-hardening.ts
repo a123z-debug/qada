@@ -26,6 +26,8 @@ for (const header of [
   assert(server.includes(header), 'server missing security header: ' + header);
 }
 assert(server.includes("object-src 'none'") && server.includes("frame-ancestors 'none'"), 'CSP baseline is incomplete');
+assert(server.includes("process.env.RAILWAY_ENVIRONMENT === 'production'"), 'Railway must be recognized as production for HSTS');
+assert(session.includes("process.env.RAILWAY_ENVIRONMENT === 'production'"), 'Railway must be recognized as production for auth/test-mode gating');
 
 assert(!editor.includes('dangerouslySetInnerHTML'), 'raw HTML rendering returned to LegalReviewEditor');
 assert(editor.includes('highlightedSegments'), 'safe highlighted React rendering is missing');

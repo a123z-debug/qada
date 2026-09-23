@@ -54,8 +54,10 @@ assert(
   'floating assistant must retain evidence across follow-up questions',
 );
 assert(
-  login.includes("action: 'test-access'") && !login.includes("id: 'test-user'"),
-  'browser must not manufacture a shared test-user identity',
+  login.includes("action: authMode === 'register' ? 'register' : 'user-login'")
+    && !login.includes("action: 'test-access'")
+    && !login.includes("id: 'test-user'"),
+  'browser must use persistent server accounts and must not manufacture a shared test identity',
 );
 assert(
   !session.includes("cookies(header)[TEST_MODE_COOKIE]"),
@@ -111,5 +113,5 @@ console.log(JSON.stringify({
   historicalAmendmentM37: 'needs-correction',
   semanticRetrieval: Array.from(articleKeys).filter((key) => /ديوان المظالم|خدمة الأفراد/.test(key)),
   attachmentContinuity: true,
-  isolatedDirectSessions: true,
+  persistentEmailPasswordSessions: true,
 }, null, 2));

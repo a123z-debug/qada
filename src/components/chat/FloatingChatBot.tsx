@@ -23,6 +23,7 @@ interface FloatingChatBotProps {
   activeCourt: CourtJurisdiction | null;
   activeService: string | null;
   userSession?: UserSession | null;
+  responseMode?: 'simple' | 'professional';
   position?: 'bottom-left' | 'bottom-right';
   openSignal?: number;
   externalPrefill?: string;
@@ -62,6 +63,7 @@ export function FloatingChatBot({
   activeCourt,
   activeService,
   userSession,
+  responseMode = 'simple',
   position = 'bottom-left',
   openSignal = 0,
   externalPrefill = '',
@@ -168,7 +170,7 @@ export function FloatingChatBot({
             { role: 'user', content: userText, attachments: pendingAttachments },
           ],
           targetCourt: getCourtLabel(),
-          responseMode: 'simple',
+          responseMode,
           powerMode: true,
         }),
       });

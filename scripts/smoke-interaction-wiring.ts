@@ -120,8 +120,8 @@ assert(floatingChat.includes("cache: 'no-store'"), 'Floating assistant requests 
 assert(welcome.includes('simpleAssistantHttpError'), 'Simple mode must expose actionable HTTP errors');
 assert(welcome.includes("credentials: 'same-origin'"), 'Simple mode must explicitly send the QADA session cookie');
 assert(welcome.includes("responseMode: 'simple'"), 'Simple interface must request concise response mode');
-assert(floatingChat.includes("responseMode: 'simple'"),
-  'Floating assistant must always use the action-first Simple response contract');
+assert(floatingChat.includes("responseMode?: 'simple' | 'professional'") && floatingChat.includes('responseMode,'),
+  'Floating assistant must follow the unified Simple/Professional workspace mode');
 assert(chatApi.includes('SIMPLE_RESPONSE_INSTRUCTION'), 'Chat API missing dedicated Simple response contract');
 assert(chatApi.includes('buildHujjaBayanInstruction') && chatApi.includes('isHujjaDraftingRequest'),
   'Chat API must route drafting tasks through Hujja wa Bayan');
@@ -148,12 +148,17 @@ assert(chatApi.includes('لا تشرح منصة QADA'), 'Simple assistant must n
 assert(chatApi.includes('الرد المثالي في Simple: توجّه واضح → خطوة تالية → سؤالان أو أقل عند الحاجة.'), 'Simple action-first response contract missing');
 assert(chatApi.includes("responseMode === 'professional' && verifiedArticleList.length > 0"),
   'Simple mode must not auto-append the verified legal article list');
-assert(login.includes("mode: 'simple'"), 'Simple portal missing');
-assert(login.includes("mode: 'professional'"), 'Professional portal missing');
+assert(login.includes("action: authMode === 'register' ? 'register' : 'user-login'"), 'Email/password user access missing');
+assert(login.includes('إنشاء مستخدم جديد'), 'New user registration UI missing');
 assert(!login.includes("mode: 'admin',\n      title: 'الإدارة'"), 'Admin must not be exposed as a primary portal card');
 assert(login.includes('setInterfaceMenuOpen') && login.includes('setAdminOpen(true)'),
   'Admin access must remain available only from the QADA interface chooser');
-assert(app.includes("defaultMode={session.workspaceMode === 'professional' ? 'professional' : 'simple'}"), 'Selected portal is not routed to its workspace');
+assert(welcome.includes('changeInterfaceMode') && welcome.includes("onModeChange?: (mode: 'simple' | 'professional') => void"),
+  'Simple and Professional must be two modes of the same workspace');
+assert(app.includes('handleInterfaceModeChange') && app.includes('onModeChange={handleInterfaceModeChange}'),
+  'Unified workspace mode switch is not wired through the application');
+assert(app.includes("responseMode={session.role === 'admin' ? 'professional' : interfaceMode}"),
+  'Assistant response mode is not synchronized with the unified workspace switch');
 assert(app.includes("setIsAdminMapOpen(userSession.workspaceMode === 'admin')"), 'Admin portal does not open the admin workspace directly');
 
 console.log(JSON.stringify({
@@ -163,5 +168,5 @@ console.log(JSON.stringify({
   operationalAgentNodes: requiredAgentNodes.length,
   workspaceFamilies: Object.keys(workspaces).length,
   inertButtons: inertButtons.length,
-  interfaceModes: ['simple', 'professional', 'admin-hidden-in-chooser'],
+  interfaceModes: ['unified-user-workspace:simple↔professional', 'admin-hidden-in-chooser'],
 }, null, 2));
