@@ -19,6 +19,22 @@ import auditLogHandler from './api/audit-log';
 dotenv.config();
 
 const PORT = Number(process.env.PORT || 3000);
+
+function adminCredentialBootStatus() {
+  let value = String(process.env.QADA_ADMIN_CREDENTIAL_HASH_V7 || '').trim();
+  const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"));
+  if (quoted && value.length >= 2) value = value.slice(1, -1).trim();
+  value = value.replace(/^sha-?256\s*[:=]\s*/i, '').replace(/\s+/g, '').toLowerCase();
+  return {
+    present: Boolean(String(process.env.QADA_ADMIN_CREDENTIAL_HASH_V7 || '').trim()),
+    accepted: /^[a-f0-9]{64}$/.test(value),
+    rawLength: String(process.env.QADA_ADMIN_CREDENTIAL_HASH_V7 || '').length,
+  };
+}
+
+if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT_NAME === 'production') {
+  console.info('[QADA_AUTH_BOOT_SERVER]', JSON.stringify(adminCredentialBootStatus()));
+}
 const IS_PRODUCTION = process.env.NODE_ENV === 'production'
   || process.env.VERCEL === '1'
   || process.env.RAILWAY_ENVIRONMENT === 'production'
