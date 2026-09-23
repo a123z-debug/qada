@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents';
+import { analyzeLawOfficeRoute, detectLawOfficeTask } from '../src/lib/lawOfficeExpert';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -100,6 +101,43 @@ for (const key of [
 assert(
   turkiBundle.verification.blockers.some((item) => item.includes('م/37') || item.includes('م 37')),
   'Turki query must keep M/37 historical-amendment claim behind an explicit verification blocker',
+);
+
+
+const anonymizedAppellateJudgment = `
+حكم صادر من محكمة الاستئناف الإدارية في طلب استئناف على حكم المحكمة الإدارية.
+قضى الحكم بتأييد الحكم الابتدائي في مطالبة فرد عسكري بمكافأة الحاسب الآلي.
+أسباب الحكم تناولت شروط الاستحقاق، المسمى الوظيفي، الجمع بين المزايا، وطلب الاستمرار مستقبلاً.
+`;
+
+const wrongSecondAppeal = analyzeLawOfficeRoute(
+  `أريد لائحة استئناف على هذا الحكم\n${anonymizedAppellateJudgment}`,
+  true,
+);
+assert(
+  wrongSecondAppeal.blocking && !wrongSecondAppeal.allowDrafting && wrongSecondAppeal.stage === 'appeal',
+  'law-office gate must block a second appeal when the supplied judgment is already appellate',
+);
+
+const cassationRoute = analyzeLawOfficeRoute(
+  `أريد لائحة طعن بالنقض أمام المحكمة الإدارية العليا\n${anonymizedAppellateJudgment}`,
+  true,
+);
+assert(
+  cassationRoute.task === 'cassation' && cassationRoute.stage === 'appeal' && cassationRoute.allowDrafting,
+  'appellate administrative judgment must route to cassation drafting rather than another appeal',
+);
+
+assert(
+  detectLawOfficeTask('أريد اعتراضاً بطلب النقض على حكم الاستئناف') === 'cassation',
+  'cassation wording must take precedence over generic appeal wording',
+);
+
+const moneyClaimBundle = runLegalSourceAgents('سلفت شخص مبلغاً بتحويل بنكي ورفض السداد وأريد مطالبة مالية أمام المحكمة العامة');
+const moneyClaimReferenceNames = moneyClaimBundle.packets.flatMap((packet) => packet.references.map((ref) => ref.name));
+assert(
+  moneyClaimReferenceNames.every((name) => !/النيابة العامة|الاجراءات الجزائية|الإجراءات الجزائية/.test(name)),
+  'civil money claim must not surface prosecution/criminal-procedure references without a criminal issue',
 );
 
 console.log(JSON.stringify({
