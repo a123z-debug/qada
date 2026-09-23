@@ -123,6 +123,15 @@ function adminCredentialDiagnostic() {
   };
 }
 
+if (isProductionRuntime()) {
+  const adminDiagnostic = adminCredentialDiagnostic();
+  console.info('[QADA_AUTH_BOOT]', JSON.stringify({
+    adminCredentialPresent: adminDiagnostic.present,
+    adminCredentialAccepted: adminDiagnostic.accepted,
+    adminCredentialRawLength: adminDiagnostic.rawLength,
+  }));
+}
+
 function adminCredentialHash() {
   return adminCredentialConfig().hash;
 }
