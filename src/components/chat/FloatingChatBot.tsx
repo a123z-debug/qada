@@ -321,7 +321,10 @@ export function FloatingChatBot({
                       >
                         <div className="whitespace-pre-wrap selection:bg-amber-500 selection:text-neutral-950">
                           {m.content || (
-                            <span className="text-neutral-400 italic">جاري التفكير القانوني...</span>
+                            <span className="text-neutral-400 italic">جاري تجهيز الصياغة...</span>
+                          )}
+                          {!isUser && isSending && m.id === messages[messages.length - 1]?.id && (
+                            <span className="mr-1 inline-block animate-pulse text-amber-400">▎</span>
                           )}
                         </div>
 

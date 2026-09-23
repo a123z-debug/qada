@@ -125,6 +125,14 @@ assert(floatingChat.includes("responseMode: 'simple'"),
 assert(chatApi.includes('SIMPLE_RESPONSE_INSTRUCTION'), 'Chat API missing dedicated Simple response contract');
 assert(chatApi.includes('buildHujjaBayanInstruction') && chatApi.includes('isHujjaDraftingRequest'),
   'Chat API must route drafting tasks through Hujja wa Bayan');
+assert(chatApi.includes('generateContentStream'), 'Hujja wa Bayan must use native Gemini streaming');
+assert(chatApi.includes('streamHujjaViaGemini'), 'Hujja wa Bayan streaming helper missing');
+assert(chatApi.includes("X-QADA-Agent', 'hujja-bayan'") && chatApi.includes("X-Accel-Buffering', 'no'"),
+  'Hujja wa Bayan SSE headers must identify the agent and disable proxy buffering');
+assert(chatApi.includes('protectStreamingSegment') && chatApi.includes('guardIntroducedLegalCitations'),
+  'Hujja wa Bayan streaming must guard citations before emitting text');
+assert(floatingChat.includes('animate-pulse text-amber-400') && floatingChat.includes('▎'),
+  'Floating assistant must show a live typing cursor during streamed drafting');
 assert(hujjaAgent.includes('المرحلة الأولى — الاستقراء قبل الكتابة') && hujjaAgent.includes('المرحلة الثانية — الصياغة'),
   'Hujja wa Bayan must enforce the two-step drafting workflow');
 assert(hujjaAgent.includes('لا تدّع أنك درست أحكاماً مشابهة') && hujjaAgent.includes('لا تخترع واقعة أو مادة أو حكماً أو مبدأ قضائياً'),

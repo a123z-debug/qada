@@ -428,6 +428,158 @@ async function extractAttachmentReferenceHints(messages: IncomingMessage[]): Pro
   return '';
 }
 
+
+function protectStreamingSegment(
+  segment: string,
+  sourceQuery: string,
+  sourceContext: string,
+): string {
+  let safe = redactDirectIdentifiers(segment).text;
+  const citationGuard = guardIntroducedLegalCitations(sourceQuery, safe, sourceContext);
+  for (const marker of citationGuard.unsupportedMarkers) {
+    safe = safe.split(marker).join(`${marker} [غير متحقق من حزمة المصادر الرسمية]`);
+  }
+  return safe;
+}
+
+function takeStreamingFlush(buffer: string, force = false): { send: string; rest: string } {
+  if (!buffer) return { send: '', rest: '' };
+
+  if (!force) {
+    const paragraphBoundary = buffer.lastIndexOf('\n\n');
+    if (paragraphBoundary >= 80) {
+      const end = paragraphBoundary + 2;
+      return { send: buffer.slice(0, end), rest: buffer.slice(end) };
+    }
+
+    if (buffer.length < 220) return { send: '', rest: buffer };
+
+    const windowStart = Math.max(80, buffer.length - 220);
+    const tail = buffer.slice(windowStart);
+    const matches = Array.from(tail.matchAll(/[.!؟؛:]\s+/g));
+    const last = matches[matches.length - 1];
+    if (last && typeof last.index === 'number') {
+      const end = windowStart + last.index + last[0].length;
+      return { send: buffer.slice(0, end), rest: buffer.slice(end) };
+    }
+
+    if (buffer.length < 520) return { send: '', rest: buffer };
+  }
+
+  return { send: buffer, rest: '' };
+}
+
+function writeSseDelta(res: VercelResponse, text: string) {
+  if (!text) return;
+  res.write(`data: ${JSON.stringify({ text })}\n\n`);
+}
+
+async function streamHujjaViaGemini(args: {
+  res: VercelResponse;
+  contents: any[];
+  contextInstruction: string;
+  sourceQuery: string;
+  sourceContext: string;
+}): Promise<{ handled: boolean; provider?: string; lastError?: unknown }> {
+  const { res, contents, contextInstruction, sourceQuery, sourceContext } = args;
+  const clients = getGeminiClients();
+  if (!clients.length) return { handled: false };
+
+  let lastError: unknown;
+  let attempts = 0;
+
+  for (const model of USER_AI_MODELS) {
+    if (isModelCoolingDown(model)) continue;
+
+    for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
+      const ai = clients[clientIndex];
+      attempts += 1;
+      let emitted = false;
+      let pending = '';
+
+      try {
+        const stream: any = await withTimeout(
+          ai.models.generateContentStream({
+            model,
+            contents: contents as any,
+            config: { systemInstruction: contextInstruction, temperature: 0.18 },
+          }),
+          25_000,
+          'AI_HUJJA_STREAM_START_TIMEOUT',
+        );
+
+        res.setHeader('X-QADA-AI-Mode', 'stream');
+        res.setHeader('X-QADA-Agent', 'hujja-bayan');
+        res.setHeader('X-QADA-Stream', 'native');
+        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+
+        for await (const chunk of stream) {
+          const chunkText = typeof chunk?.text === 'string'
+            ? chunk.text
+            : chunk?.candidates?.[0]?.content?.parts?.map((part: any) => part?.text || '').join('') || '';
+
+          if (!chunkText) continue;
+          pending += chunkText;
+
+          while (true) {
+            const flushed = takeStreamingFlush(pending, false);
+            pending = flushed.rest;
+            if (!flushed.send) break;
+
+            const safe = protectStreamingSegment(flushed.send, sourceQuery, sourceContext);
+            if (!safe) continue;
+            writeSseDelta(res, safe);
+            emitted = true;
+          }
+        }
+
+        const finalFlush = takeStreamingFlush(pending, true);
+        const finalSafe = protectStreamingSegment(finalFlush.send, sourceQuery, sourceContext);
+        if (finalSafe) {
+          writeSseDelta(res, finalSafe);
+          emitted = true;
+        }
+
+        if (!emitted) {
+          lastError = new Error('AI_HUJJA_EMPTY_STREAM');
+          continue;
+        }
+
+        const provider = `key${clientIndex + 1}:${model}`;
+        console.info('QADA Hujja stream selected:', provider);
+        res.write('data: [DONE]\n\n');
+        res.end();
+        return { handled: true, provider };
+      } catch (error) {
+        lastError = error;
+
+        if (emitted) {
+          writeSseDelta(
+            res,
+            '\n\n[توقف البث قبل اكتمال المسودة. أعد الإرسال لاستكمال الصياغة من ملف القضية دون اعتماد الجزء غير المكتمل.]',
+          );
+          res.write('data: [DONE]\n\n');
+          res.end();
+          return { handled: true, lastError: error };
+        }
+
+        if (isQuotaError(error)) {
+          markModelQuotaError(model, error);
+          console.warn('QADA Hujja model quota exhausted, switching model:', model);
+          break;
+        }
+      }
+
+      if (attempts >= clients.length * USER_AI_MODELS.length) break;
+    }
+  }
+
+  return { handled: false, lastError };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ error: 'Method Not Allowed' }); }
@@ -495,6 +647,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'لا تطبع روابط المصادر الخام داخل الجواب إلا إذا طلب المستخدم الرابط أو المصدر صراحة؛ تبقى الروابط لأغراض التحقق داخل المنصة.',
       'النص الحرفي الكامل للمواد غير معتمد من المستودع؛ لا تضع اقتباساً حرفياً إلا إذا كان وارداً في نص المستخدم نفسه.',
     ].filter(Boolean).join('\n\n');
+
+    if (hujjaBayanInstruction) {
+      const streamed = await streamHujjaViaGemini({
+        res,
+        contents,
+        contextInstruction,
+        sourceQuery,
+        sourceContext: sourceBundle.context,
+      });
+      if (streamed.handled) return;
+      if (streamed.lastError) {
+        console.error('QADA Hujja native stream unavailable, falling back:', streamed.lastError instanceof Error ? streamed.lastError.message : streamed.lastError);
+      }
+    }
+
     let reply = '';
     let lastError: unknown;
 
