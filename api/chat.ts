@@ -494,6 +494,46 @@ function writeSseDelta(res: VercelResponse, text: string) {
   res.write(`data: ${JSON.stringify({ text })}\n\n`);
 }
 
+function startSimpleSseKeepAlive(res: VercelResponse): () => void {
+  if (!res.headersSent) {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader('X-QADA-Stream', 'keepalive');
+  }
+
+  const raw = res as VercelResponse & {
+    flushHeaders?: () => void;
+    on?: (event: string, listener: () => void) => void;
+    writableEnded?: boolean;
+    destroyed?: boolean;
+  };
+
+  raw.flushHeaders?.();
+  res.write(': qada-processing\n\n');
+
+  let stopped = false;
+  const timer = setInterval(() => {
+    if (stopped || raw.writableEnded || raw.destroyed) return;
+    try {
+      res.write(': qada-keepalive\n\n');
+    } catch {
+      // Socket cleanup below will stop future heartbeats.
+    }
+  }, 10_000);
+  (timer as ReturnType<typeof setInterval> & { unref?: () => void }).unref?.();
+
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    clearInterval(timer);
+  };
+
+  raw.on?.('close', stop);
+  return stop;
+}
+
 async function streamHujjaViaGemini(args: {
   res: VercelResponse;
   contents: any[];
@@ -528,13 +568,15 @@ async function streamHujjaViaGemini(args: {
           'AI_HUJJA_STREAM_START_TIMEOUT',
         );
 
-        res.setHeader('X-QADA-AI-Mode', 'stream');
-        res.setHeader('X-QADA-Agent', 'hujja-bayan');
-        res.setHeader('X-QADA-Stream', 'native');
-        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-transform');
-        res.setHeader('Connection', 'keep-alive');
-        res.setHeader('X-Accel-Buffering', 'no');
+        if (!res.headersSent) {
+          res.setHeader('X-QADA-AI-Mode', 'stream');
+          res.setHeader('X-QADA-Agent', 'hujja-bayan');
+          res.setHeader('X-QADA-Stream', 'native');
+          res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache, no-transform');
+          res.setHeader('Connection', 'keep-alive');
+          res.setHeader('X-Accel-Buffering', 'no');
+        }
 
         for await (const chunk of stream) {
           const chunkText = typeof chunk?.text === 'string'
@@ -632,6 +674,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const contents = toGeminiContents(incomingMessages);
   if (contents.length === 0) return res.status(400).json({ error: 'Invalid request payload.' });
 
+  const stopSimpleKeepAlive = responseMode === 'simple'
+    ? startSimpleSseKeepAlive(res)
+    : () => {};
+
   try {
     const retrievalQuery = clientMessages
       .filter((message) => message.role !== 'assistant' && message.role !== 'model')
@@ -682,7 +728,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         sourceQuery,
         sourceContext: sourceBundle.context,
       });
-      if (streamed.handled) return;
+      if (streamed.handled) {
+        stopSimpleKeepAlive();
+        return;
+      }
       if (streamed.lastError) {
         console.error('QADA Hujja native stream unavailable, falling back:', streamed.lastError instanceof Error ? streamed.lastError.message : streamed.lastError);
       }
@@ -800,18 +849,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Final privacy pass: never echo direct identifiers from prompts or attached documents.
     reply = redactDirectIdentifiers(reply).text;
 
-    res.setHeader('X-QADA-AI-Mode', providerMode);
-    res.setHeader('X-QADA-Response-Mode', responseMode);
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8'); res.setHeader('Cache-Control', 'no-cache, no-transform'); res.setHeader('Connection', 'keep-alive');
-    res.write(`data: ${JSON.stringify({ text: reply })}\n\n`); res.write('data: [DONE]\n\n'); return res.end();
+    if (!res.headersSent) {
+      res.setHeader('X-QADA-AI-Mode', providerMode);
+      res.setHeader('X-QADA-Response-Mode', responseMode);
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+    }
+    stopSimpleKeepAlive();
+    res.write(`data: ${JSON.stringify({ text: reply })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    return res.end();
   } catch (error: any) {
     console.error('AI analysis pipeline error:', error?.message || error);
     const fallbackReply = buildSafeFallbackReply(incomingMessages, body.targetCourt, responseMode);
-    res.setHeader('X-QADA-AI-Mode', 'fallback-error');
-    res.setHeader('X-QADA-Error-Class', 'ANALYSIS_PIPELINE_FALLBACK');
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
+    if (!res.headersSent) {
+      res.setHeader('X-QADA-AI-Mode', 'fallback-error');
+      res.setHeader('X-QADA-Error-Class', 'ANALYSIS_PIPELINE_FALLBACK');
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+    }
+    stopSimpleKeepAlive();
     res.write(`data: ${JSON.stringify({ text: fallbackReply })}\n\n`);
     res.write('data: [DONE]\n\n');
     return res.end();
