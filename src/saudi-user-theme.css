@@ -1,0 +1,40 @@
+.user-shell {
+  background:
+    radial-gradient(circle at 95% 0%, rgba(0,108,53,.055), transparent 24%),
+    linear-gradient(180deg, #f8fbf9 0%, #f4f8f5 100%) !important;
+}
+.user-shell .app-sidebar {
+  border-color: rgba(0,108,53,.10) !important;
+  box-shadow: -14px 0 36px rgba(0,61,32,.045) !important;
+}
+.user-shell [class*="text-amber-"],
+.user-shell [class*="text-cyan-"],
+.user-shell [class*="text-violet-"],
+.user-shell [class*="text-fuchsia-"],
+.user-shell [class*="text-blue-"] {
+  color: #006c35 !important;
+}
+.user-shell [class*="border-amber-"],
+.user-shell [class*="border-cyan-"],
+.user-shell [class*="border-violet-"],
+.user-shell [class*="border-fuchsia-"],
+.user-shell [class*="border-blue-"] {
+  border-color: rgba(0,108,53,.18) !important;
+}
+.user-shell [class*="bg-amber-500/"],
+.user-shell [class*="bg-cyan-500/"],
+.user-shell [class*="bg-violet-500/"],
+.user-shell [class*="bg-fuchsia-500/"],
+.user-shell [class*="bg-blue-500/"] {
+  background-color: rgba(0,108,53,.07) !important;
+}
+.user-shell button.bg-slate-950,
+.user-shell button.bg-slate-900 {
+  background: linear-gradient(135deg, #087540, #006c35 55%, #004d26) !important;
+  color: #fff !important;
+  border-color: rgba(0,77,38,.2) !important;
+}
+.user-shell button.bg-slate-950 *,
+.user-shell button.bg-slate-900 * {
+  color: #fff !important;
+}
