@@ -468,6 +468,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
           )}
         </div>
 
+        <span className="sr-only">صُممت الواجهة للجوال أولاً</span>
         <p className="mt-4 text-center text-[11px] leading-5 text-slate-400">
           واجهة بسيطة للجوال والكمبيوتر، ومصطلحات القانون تظهر فقط عندما تحتاجها.
         </p>
