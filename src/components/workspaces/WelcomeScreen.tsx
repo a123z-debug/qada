@@ -146,12 +146,12 @@ export function WelcomeScreen({
   };
 
   const simpleActions = [
-    { title: 'حلّل قضيتي', description: 'ابدأ من المشكلة كما هي وسأرتب لك الطريق.', icon: Sparkles, text: 'حلل قضيتي من البداية إلى النهاية، واسألني فقط عن البيانات الناقصة، ثم رتب الوقائع والطلبات والمستندات والمراجع والخطوة التالية.' },
-    { title: 'اكتب لائحة دعوى', description: 'حوّل الوقائع إلى دعوى واضحة قابلة للمراجعة.', icon: FileText, text: 'أريد إعداد لائحة دعوى كاملة. اجمع مني البيانات الناقصة خطوة بخطوة، وحدد الاختصاص والطلبات والمستندات، ولا تضف سنداً نظامياً إلا بعد التحقق من مصدره الرسمي.' },
-    { title: 'اعتراض أو استئناف', description: 'راجع الحكم وابنِ أسباب الاعتراض والطلبات.', icon: Gavel, text: 'أريد مراجعة حكم أو قرار وإعداد مسار اعتراض أو استئناف. ابدأ بفهم القرار والمواعيد والمستندات، ثم ابنِ مسودة قابلة للمراجعة مع المراجع المتحققة.' },
-    { title: 'راجع قراراً إدارياً', description: 'اعرف المسار الصحيح وما يلزمك قبل التقديم.', icon: ShieldCheck, text: 'أريد مراجعة قرار إداري ومعرفة المسار النظامي المناسب. اجمع الوقائع والتواريخ والجهة والطلبات، ثم وضح الخيارات والإجراءات والمراجع الرسمية ذات الصلة.' },
-    { title: 'راجع مستنداتي', description: 'رتّب المستندات واكشف النقص والتعارض.', icon: FolderOpen, text: 'أريد فحص مستنداتي كملف قضية واحد: صنفها، استخرج النواقص والتعارضات، اربطها بالوقائع، ثم اقترح ما يلزم استكماله قبل إعداد المخرج النهائي.' },
-    { title: 'ابحث عن حقي', description: 'افهم حقك أولاً ثم انتقل للمراجع عند الحاجة.', icon: Search, text: 'اشرح مشكلتي أولاً ثم حدد المسائل النظامية المحتملة، وابحث في المراجع الرسمية المتاحة، وميز بوضوح بين النص المتحقق وما يحتاج مراجعة.' },
+    { title: 'شخص ما سددني', description: 'دين، تحويل، سلفة أو مبلغ مستحق.', icon: Sparkles, text: 'لي مبلغ عند شخص أو جهة ولم يتم سداده. اسألني عن المبلغ، سبب الاستحقاق، الإثباتات، المواعيد، وما تم بيننا، ثم وضح لي الخيارات والخطوة التالية.' },
+    { title: 'أبغى أعترض على حكم', description: 'ارفع الحكم أو اشرح نتيجته وتاريخه.', icon: Gavel, text: 'عندي حكم وأبغى أعرف هل عندي طريق اعتراض وما الذي أحتاجه. ابدأ بالحكم وتاريخه وطلبات القضية والمستندات، ولا تفترض وجود سبب اعتراض قبل فحصه.' },
+    { title: 'عندي مشكلة مع جهة حكومية', description: 'قرار، خصم، رفض طلب أو إجراء إداري.', icon: ShieldCheck, text: 'عندي مشكلة مع جهة حكومية. اسألني عن القرار أو الإجراء وتاريخه والجهة وما الذي طلبته أو تظلمت منه، ثم حدد لي المسار المناسب بلغة واضحة.' },
+    { title: 'راجع عقد أو مستند', description: 'عقد، سند، تحويل، محضر أو خطاب.', icon: FolderOpen, text: 'أبغى تراجع مستنداتي وتقول لي وش تثبت، وش ينقصها، وهل بينها تعارض، وما المستندات التي أحتاجها قبل أي خطوة.' },
+    { title: 'ما أعرف وش حقي', description: 'احكِ المشكلة وسنبدأ من الصفر.', icon: Search, text: 'ما أعرف وش حقي أو وش الإجراء المناسب. خلني أشرح المشكلة من البداية، واسألني فقط عن الأشياء المهمة ثم وضح لي الخيارات بدون مصطلحات معقدة.' },
+    { title: 'أبغى دعوى أو مذكرة', description: 'نجمع منك المعلومات ثم نبدأ الصياغة.', icon: FileText, text: 'أبغى إعداد دعوى أو مذكرة. لا تبدأ الصياغة مباشرة؛ اجمع مني الوقائع والطلبات والمستندات الناقصة ثم ابدأ بمسودة واضحة قابلة للمراجعة.' },
   ];
 
   const openSimpleTask = async (request: string) => {
@@ -276,8 +276,8 @@ export function WelcomeScreen({
         <div className="flex items-center justify-between gap-3 px-1">
           <div>
             <div className="sr-only">QADA SIMPLE</div>
-            <h2 className="text-sm font-black text-slate-950">مساحتك</h2>
-            <p className="mt-0.5 text-[11px] text-slate-500">نفس القضية، بدون التفاصيل التقنية.</p>
+            <h2 className="text-sm font-black text-slate-950">قضيتي</h2>
+            <p className="mt-0.5 text-[11px] text-slate-500">كل شيء عن مشكلتك في مكان واحد.</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -306,12 +306,28 @@ export function WelcomeScreen({
             </div>
             <div>
               <h1 className="text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
-                وش تبي QADA ينجز لك؟
+                احكِ لنا وش صار معك.
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-[15px]">
-                اكتب المشكلة بطريقتك. QADA يحدد التوجه، يسأل فقط عن الناقص، ثم يبدأ التنفيذ.
+                ما تحتاج ترتب كلامك ولا تعرف اسم المحكمة أو النظام. اكتب القصة مثل ما تعرفها، وQADA يسألك فقط عن الأشياء الناقصة.
               </p>
             </div>
+          </div>
+
+          <div className="mt-5 grid gap-2 sm:grid-cols-3">
+            {[
+              ['1', 'احكِ المشكلة', 'اكتب اللي صار بطريقتك.'],
+              ['2', 'أرفق أوراقك', 'إن عندك حكم أو عقد أو صورة.'],
+              ['3', 'خذ خطوتك التالية', 'نوضح لك وش تحتاج تسوي بعدين.'],
+            ].map(([number, title, text]) => (
+              <div key={number} className="rounded-2xl border border-emerald-900/10 bg-emerald-50/45 px-3 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-800 text-[10px] font-black text-white">{number}</span>
+                  <span className="text-xs font-black text-slate-900">{title}</span>
+                </div>
+                <p className="mt-1.5 pr-8 text-[10px] leading-5 text-slate-500">{text}</p>
+              </div>
+            ))}
           </div>
 
           {simpleMessages.length > 0 && (
@@ -343,7 +359,7 @@ export function WelcomeScreen({
               placeholder={
                 simpleMessages.length
                   ? 'أضف المعلومة المطلوبة أو أكمل كلامك...'
-                  : 'مثال: سلفت شخص مبلغ وعندي تحويل بنكي ورفض يسدد...'
+                  : 'مثال: سلفت شخص 15 ألف ريال قبل سنة، عندي تحويل بنكي ورسائل، والحين يرفض يسدد...'
               }
               className="min-h-28 w-full resize-y rounded-xl border-0 bg-transparent px-2 py-2 text-base leading-7 text-slate-950 outline-none placeholder:text-slate-400 sm:min-h-32"
             />
@@ -392,7 +408,7 @@ export function WelcomeScreen({
                 onClick={() => void openSimpleTask(simpleRequest)}
                 className="qada-primary-action min-h-12 shrink-0 rounded-2xl bg-slate-950 px-6 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-40"
               >
-                {simpleBusy ? 'جاري الإنجاز...' : simpleMessages.length ? 'متابعة' : 'ابدأ الآن'}
+                {simpleBusy ? 'جاري فهم قضيتك...' : simpleMessages.length ? 'أكمل مع QADA' : 'حلّل مشكلتي'}
               </button>
             </div>
           </div>
@@ -401,8 +417,8 @@ export function WelcomeScreen({
         {simpleMessages.length === 0 && (
           <section>
             <div className="mb-3 flex items-center justify-between gap-3 px-1">
-              <h2 className="text-sm font-black text-slate-950">ابدأ مباشرة</h2>
-              <span className="text-[10px] font-bold text-slate-400">اختر أو اكتب بطريقتك</span>
+              <h2 className="text-sm font-black text-slate-950">أمثلة تساعدك تبدأ</h2>
+              <span className="text-[10px] font-bold text-slate-400">اختر الأقرب أو اكتب حالتك بنفسك</span>
             </div>
             <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {simpleActions.map((action) => {
@@ -429,7 +445,7 @@ export function WelcomeScreen({
         )}
 
         <p className="px-1 text-center text-[10px] leading-5 text-slate-400">
-          التحقق والمراجع تعمل في الخلفية، وتظهر لك فقط عندما تحتاجها.
+          QADA يرتب التحليل والمراجع في الخلفية. أنت تشوف فقط اللي يفيدك في قضيتك.
         </p>
       </div>
     );
@@ -440,7 +456,7 @@ export function WelcomeScreen({
       <div className="flex flex-col gap-3 rounded-2xl border border-amber-400/15 bg-slate-900/70 p-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-[11px] font-black text-amber-300">QADA PROFESSIONAL</div>
-          <p className="mt-1 text-xs text-slate-400">تحكم كامل في الاختصاصات والأدوات والمراجع ومسارات المراجعة.</p>
+          <p className="mt-1 text-xs text-slate-400">للشخص الذي يعرف نوع القضية ويريد اختيار المحكمة والخدمة والمراجع بنفسه.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => changeInterfaceMode('simple')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
@@ -477,15 +493,15 @@ export function WelcomeScreen({
           <div className="space-y-4 max-w-2xl text-right">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>منصة التدقيق والتقاضي الذكي — أصول القضاء</span>
+              <span>الوضع المتقدم — تحكم يدوي</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-              افحص قضيتك <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">قبل أن تقدمها</span>
+              اختر المسار بنفسك <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">وتابع التفاصيل</span>
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-              {userName ? `أهلاً بك، ${userName}. ` : ''}لا ترفع دعواك قبل أن تعرف نقاط قوتها وضعفها. افحص دعواك، دقّق لائحتك، راجع مستنداتك، واكتشف الثغرات الإجرائية والموضوعية بالاستناد إلى الأنظمة والمراجع القضائية.
+              {userName ? `أهلاً بك، ${userName}. ` : ''}هنا تقدر تختار نوع المحكمة والخدمة بنفسك، تراجع المستندات والمراجع، وتتنقل بين أدوات القضية بتفصيل أكبر.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -494,13 +510,13 @@ export function WelcomeScreen({
                 onClick={() => handleQuickLaunch('administrative', 'administrative_claim')}
                 className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:from-amber-400 hover:to-amber-500 transition-all text-sm flex items-center gap-2"
               >
-                <Scale className="w-4 h-4" /> ابدأ فحص قضيتك
+                <Scale className="w-4 h-4" /> اختر نوع القضية
               </button>
               <a
                 href="#tools-section"
                 className="px-6 py-3 bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-medium border border-slate-700 rounded-xl transition-all text-sm"
               >
-                استكشف أدوات المنصة
+                شوف كل الخيارات
               </a>
             </div>
           </div>
@@ -583,9 +599,9 @@ export function WelcomeScreen({
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Scale className="w-5 h-5 text-amber-400" />
-            <span>ماذا تريد أن تفعل؟ (اختر أداة التدقيق أو الاختصاص)</span>
+            <span>اختر نوع قضيتك أو الإجراء الذي تريده</span>
           </h2>
-          <span className="text-xs text-slate-400">منظومة متكاملة لمديري القضايا</span>
+          <span className="text-xs text-slate-400">وضع متقدم للمستخدم الخبير</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
