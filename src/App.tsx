@@ -123,7 +123,7 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
   ];
 
   return (
-    <div id="home" className="min-h-[100dvh] bg-[#f7f8fa] text-slate-950" dir="rtl">
+    <div id="home" className="qada-saudi-landing min-h-[100dvh] bg-[#f7f8fa] text-slate-950" dir="rtl">
       <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <button
@@ -132,7 +132,7 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
             className="flex items-center gap-2.5"
             aria-label="الرئيسية"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
+            <span className="qada-brand-emblem flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
               <Scale className="h-5 w-5" strokeWidth={1.8} />
             </span>
             <span className="text-right">
@@ -579,7 +579,7 @@ export default function App() {
       <div
         className={`app-shell flex h-[100dvh] overflow-hidden font-sans ${
           userMode
-            ? 'user-shell bg-[#f7f8fa] text-slate-950'
+            ? 'user-shell qada-saudi-user bg-[#f7f8fa] text-slate-950'
             : 'admin-shell bg-slate-950 text-slate-100'
         }`}
         dir="rtl"
@@ -658,7 +658,7 @@ export default function App() {
         <header
           className={`lg:hidden flex items-center justify-between p-3 shrink-0 ${
             userMode
-              ? 'border-b border-slate-200 bg-white/95 text-slate-950 backdrop-blur-xl'
+              ? 'qada-mobile-header border-b border-slate-200 bg-white/95 text-slate-950 backdrop-blur-xl'
               : 'bg-slate-900/80 backdrop-blur-md border-b border-slate-800'
           }`}
         >
