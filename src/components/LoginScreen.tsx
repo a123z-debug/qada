@@ -211,7 +211,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
 
   return (
     <div
-      className="min-h-[100dvh] bg-[#f7f8fa] px-4 py-[max(1rem,env(safe-area-inset-top))] text-slate-950 sm:px-6"
+      className="qada-login-shell min-h-[100dvh] bg-[#f7f8fa] px-4 py-[max(1rem,env(safe-area-inset-top))] text-slate-950 sm:px-6"
       dir="rtl"
     >
       <div className="mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-[440px] flex-col justify-center">
@@ -224,9 +224,9 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
           الرئيسية
         </button>
 
-        <div className="overflow-visible rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+        <div className="qada-login-card overflow-visible rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
           <div className="px-5 pb-5 pt-7 text-center sm:px-7 sm:pt-8">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
+            <div className="qada-brand-emblem mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
               <Scale className="h-6 w-6" strokeWidth={1.8} />
             </div>
             <h1 className="text-2xl font-black tracking-tight text-slate-950">أصول القضاء</h1>
@@ -337,7 +337,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                 <button
                   type="submit"
                   disabled={Boolean(busyMode)}
-                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="qada-primary-action inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {authMode === 'register' ? <UserPlus className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
                   {busyMode === 'user'

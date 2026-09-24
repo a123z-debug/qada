@@ -229,7 +229,24 @@ export function WelcomeScreen({
 
   if (interfaceMode === 'simple') {
     return (
-      <div className="mx-auto w-full max-w-4xl space-y-5 px-1 py-2 sm:px-4 sm:py-4" dir="rtl">
+      <div className="qada-simple-screen mx-auto w-full max-w-4xl space-y-5 px-1 py-2 sm:px-4 sm:py-4" dir="rtl">
+        <div className="qada-profile-card flex items-center justify-between gap-3 rounded-2xl border bg-white px-3.5 py-3 sm:px-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="qada-profile-avatar flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black text-white">
+              {(userName || 'مستخدم').trim().slice(0, 1)}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] font-black text-emerald-700">الملف الشخصي</div>
+              <div className="truncate text-sm font-black text-slate-950">{userName || 'مستخدم QADA'}</div>
+              <div className="text-[10px] font-bold text-slate-400">QADA Simple</div>
+            </div>
+          </div>
+          <div className="hidden items-center gap-1.5 rounded-full border border-emerald-900/10 bg-emerald-50 px-3 py-1.5 text-[10px] font-black text-emerald-800 sm:flex">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            جلسة محمية
+          </div>
+        </div>
+
         <div className="flex items-center justify-between gap-3 px-1">
           <div>
             <div className="sr-only">QADA SIMPLE</div>
@@ -256,7 +273,7 @@ export function WelcomeScreen({
           </div>
         </div>
 
-        <section className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_12px_45px_rgba(15,23,42,0.06)] sm:p-7">
+        <section className="qada-simple-hero rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_12px_45px_rgba(15,23,42,0.06)] sm:p-7">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
               <Sparkles className="h-5 w-5" strokeWidth={1.8} />
@@ -347,7 +364,7 @@ export function WelcomeScreen({
                 type="button"
                 disabled={!simpleRequest.trim() || simpleBusy}
                 onClick={() => void openSimpleTask(simpleRequest)}
-                className="min-h-12 shrink-0 rounded-2xl bg-slate-950 px-6 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-40"
+                className="qada-primary-action min-h-12 shrink-0 rounded-2xl bg-slate-950 px-6 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-40"
               >
                 {simpleBusy ? 'جاري الإنجاز...' : simpleMessages.length ? 'متابعة' : 'ابدأ الآن'}
               </button>

@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./saudi-theme.css";
+@import "./saudi-user-theme.css";
 
 :root {
   color-scheme: dark;
