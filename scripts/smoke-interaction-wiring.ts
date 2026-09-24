@@ -173,7 +173,11 @@ assert(app.includes('handleInterfaceModeChange') && app.includes('onModeChange={
   'Unified workspace mode switch is not wired through the application');
 assert(app.includes("responseMode={session.role === 'admin' ? 'professional' : interfaceMode}"),
   'Assistant response mode is not synchronized with the unified workspace switch');
-assert(app.includes("setIsAdminMapOpen(userSession.workspaceMode === 'admin')"), 'Admin portal does not open the admin workspace directly');
+assert(
+  app.includes("setShowLandingPage(false)")
+    && app.includes("setIsAdminMapOpen(userSession.role === 'admin' || userSession.workspaceMode === 'admin')"),
+  'Admin portal does not open the admin workspace directly',
+);
 
 console.log(JSON.stringify({
   ok: true,
