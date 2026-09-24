@@ -254,7 +254,7 @@ export function WelcomeScreen({
                   {userName || 'مستخدم QADA'}
                 </div>
                 <div className="qada-profile-meta mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold sm:text-[11px]">
-                  <span>QADA Simple</span>
+                  <span>الوضع المبسط</span>
                   <span className="opacity-40">•</span>
                   <span>مساحة شخصية</span>
                 </div>
@@ -285,7 +285,7 @@ export function WelcomeScreen({
               onClick={() => changeInterfaceMode('professional')}
               className="min-h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
             >
-              الواجهة الاحترافية
+              أدوات متقدمة
             </button>
             {isAdmin && onOpenAdminOverview && (
               <button
@@ -460,7 +460,7 @@ export function WelcomeScreen({
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => changeInterfaceMode('simple')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
-            الواجهة البسيطة
+            رجوع للوضع البسيط
           </button>
           {isAdmin && onOpenAdminOverview && (
             <button type="button" onClick={onOpenAdminOverview} className="min-h-10 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 text-xs font-black text-violet-200 hover:bg-violet-500/20">
