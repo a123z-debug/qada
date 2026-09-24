@@ -211,10 +211,15 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
 
   return (
     <div
-      className="qada-login-shell min-h-[100dvh] bg-[#f7f8fa] px-4 py-[max(1rem,env(safe-area-inset-top))] text-slate-950 sm:px-6"
+      className={`qada-login-shell ${adminOpen ? 'qada-admin-auth-shell' : 'qada-user-auth-shell'} min-h-[100dvh] bg-[#f7f8fa] px-4 py-[max(1rem,env(safe-area-inset-top))] text-slate-950 sm:px-6`}
       dir="rtl"
     >
-      <div className="mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-[440px] flex-col justify-center">
+      <div className="qada-login-architecture" aria-hidden="true">
+        <span className="qada-login-tower"><span /></span>
+        <span className="qada-login-wave qada-login-wave-a" />
+        <span className="qada-login-wave qada-login-wave-b" />
+      </div>
+      <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-2rem)] w-full max-w-[440px] flex-col justify-center">
         <button
           type="button"
           onClick={onBack}
@@ -224,7 +229,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
           الرئيسية
         </button>
 
-        <div className="qada-login-card overflow-visible rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
+        <div className={`qada-login-card ${adminOpen ? 'qada-admin-login-card' : 'qada-user-login-card'} overflow-visible rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.08)]`}>
           <div className="px-5 pb-5 pt-7 text-center sm:px-7 sm:pt-8">
             <div className="qada-brand-emblem mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-sm">
               <Scale className="h-6 w-6" strokeWidth={1.8} />

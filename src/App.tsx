@@ -702,7 +702,7 @@ export default function App() {
                   <Menu className="h-5 w-5" />
                 </button>
               )}
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
+              <span className="qada-brand-emblem flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
                 <Scale className="h-4.5 w-4.5" strokeWidth={1.8} />
               </span>
               <div>
@@ -740,7 +740,7 @@ export default function App() {
         {/* مساحة العمل */}
         <main className={`flex-1 overflow-y-auto custom-scrollbar ${
           userMode
-            ? 'bg-[#f7f8fa] p-3 pb-24 sm:p-5 sm:pb-6 lg:p-8'
+            ? 'qada-user-main bg-[#f7f8fa] p-3 pb-24 sm:p-5 sm:pb-6 lg:p-8'
             : 'p-3 sm:p-6 lg:p-8 pb-24 sm:pb-6 lg:pb-8'
         }`}>
           {caseStoreError && (
