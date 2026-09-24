@@ -256,6 +256,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                 </button>
                 <button
                   type="button"
+                  aria-label="إنشاء مستخدم جديد"
                   onClick={() => changeAuthMode('register')}
                   className={`min-h-11 rounded-xl px-3 text-sm font-black transition ${
                     authMode === 'register'
