@@ -110,13 +110,96 @@
   box-shadow: 0 8px 26px rgba(0,61,32,.045);
 }
 .qada-profile-card {
-  background: linear-gradient(135deg, rgba(255,255,255,.99), rgba(246,251,248,.99)) !important;
-  border-color: rgba(0,108,53,.12) !important;
-  box-shadow: 0 8px 30px rgba(0,108,53,.06) !important;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(199,161,90,.10), transparent 22%),
+    linear-gradient(135deg, #fffdf7 0%, #ffffff 48%, #f5faf7 100%) !important;
+  border-color: rgba(199,161,90,.42) !important;
+  box-shadow:
+    0 18px 46px rgba(0,61,32,.09),
+    inset 0 1px rgba(255,255,255,.96) !important;
+}
+.qada-profile-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 7px;
+  z-index: 1;
+  background: linear-gradient(90deg, #004d26 0%, #006c35 58%, #0b7f48 100%);
+}
+.qada-profile-card::after {
+  content: '';
+  position: absolute;
+  top: -94px;
+  left: -54px;
+  width: 245px;
+  height: 150px;
+  border: 2px solid rgba(199,161,90,.46);
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-radius: 50%;
+  transform: rotate(-8deg);
+  pointer-events: none;
+  z-index: 0;
+}
+.qada-profile-ribbon {
+  position: absolute;
+  inset: auto -10% -58px auto;
+  width: 64%;
+  height: 118px;
+  border-radius: 58% 0 0 0;
+  background:
+    linear-gradient(165deg, rgba(0,108,53,.055), rgba(0,77,38,.10));
+  transform: rotate(-3deg);
+  pointer-events: none;
+}
+.qada-profile-gold-sweep {
+  position: absolute;
+  inset: auto -8% -25px auto;
+  width: 58%;
+  height: 72px;
+  border-top: 2px solid rgba(199,161,90,.50);
+  border-radius: 50% 0 0 0;
+  transform: rotate(-2deg);
+  pointer-events: none;
+}
+.qada-profile-avatar-shell {
+  padding: 3px;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #d7bd80, #f4e1aa 45%, #a87f35 100%);
+  box-shadow:
+    0 10px 28px rgba(0,77,38,.16),
+    0 0 0 4px rgba(255,255,255,.86);
 }
 .qada-profile-avatar {
-  background: linear-gradient(145deg, #087540, #006c35 56%, #004d26) !important;
-  box-shadow: 0 9px 22px rgba(0,108,53,.20);
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255,255,255,.16), transparent 26%),
+    linear-gradient(145deg, #0b7d46, #006c35 58%, #004722) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.18);
+}
+.qada-profile-verified {
+  color: #fff;
+  background: linear-gradient(145deg, #006c35, #004d26);
+  border: 2px solid #fffdf7;
+  box-shadow: 0 5px 12px rgba(0,77,38,.22);
+}
+.qada-profile-kicker {
+  color: #8a692f !important;
+  letter-spacing: .01em;
+}
+.qada-profile-name {
+  color: #103823 !important;
+  letter-spacing: -.015em;
+}
+.qada-profile-meta {
+  color: #6d7c74 !important;
+}
+.qada-profile-status,
+.qada-profile-mobile-status {
+  color: #075f34 !important;
+  background: rgba(238,248,242,.86) !important;
+  border: 1px solid rgba(0,108,53,.13) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.72);
 }
 .qada-simple-hero {
   position: relative;
