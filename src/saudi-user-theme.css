@@ -56,6 +56,8 @@
 }
 
 .user-shell .qada-user-sidebar {
+  position: relative;
+  overflow: hidden;
   color: #f6f5ee !important;
   background:
     radial-gradient(circle at 50% 0%, rgba(32,124,84,.20), transparent 34%),
