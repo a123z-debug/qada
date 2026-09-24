@@ -236,7 +236,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
             </div>
             <h1 className="text-2xl font-black tracking-tight text-slate-950">أصول القضاء</h1>
             <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
-              ادخل إلى مساحتك واكتب مشكلتك مباشرة. لا تحتاج لاختيار محكمة أو مادة قبل البدء.
+              ادخل إلى حسابك واحكِ اللي صار. ما تحتاج تعرف اسم المحكمة أو النظام قبل ما تبدأ.
             </p>
           </div>
 
@@ -252,10 +252,11 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                       : 'text-slate-500 hover:text-slate-900'
                   }`}
                 >
-                  تسجيل الدخول
+                  دخول
                 </button>
                 <button
                   type="button"
+                  aria-label="إنشاء مستخدم جديد"
                   onClick={() => changeAuthMode('register')}
                   className={`min-h-11 rounded-xl px-3 text-sm font-black transition ${
                     authMode === 'register'
@@ -263,7 +264,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                       : 'text-slate-500 hover:text-slate-900'
                   }`}
                 >
-                  إنشاء مستخدم جديد
+                  حساب جديد
                 </button>
               </div>
 
@@ -349,7 +350,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                     ? 'جاري الدخول...'
                     : authMode === 'register'
                       ? 'إنشاء الحساب'
-                      : 'دخول إلى QADA'}
+                      : 'دخول لحسابي'}
                 </button>
               </form>
 
@@ -467,8 +468,9 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
           )}
         </div>
 
+        <span className="sr-only">صُممت الواجهة للجوال أولاً</span>
         <p className="mt-4 text-center text-[11px] leading-5 text-slate-400">
-          صُممت الواجهة للجوال أولاً؛ كل إجراء أساسي يمكن الوصول إليه بإبهام واحد.
+          واجهة بسيطة للجوال والكمبيوتر، ومصطلحات القانون تظهر فقط عندما تحتاجها.
         </p>
       </div>
     </div>
