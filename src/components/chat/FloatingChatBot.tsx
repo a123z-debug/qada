@@ -152,7 +152,9 @@ export function FloatingChatBot({
     const initialAssistantMsg: ChatMsg = {
       id: assistantMsgId,
       role: 'assistant',
-      content: '',
+      content: pendingAttachments.length
+        ? 'جاري قراءة المستند وتحليل المطلوب…'
+        : 'جاري فهم طلبك…',
       timestamp: Date.now(),
     };
 
@@ -199,9 +201,10 @@ export function FloatingChatBot({
       }
     } catch (err) {
       console.error(err);
-      const message = err instanceof Error
-        ? err.message
-        : 'تعذر إكمال الطلب حالياً. لم تعتمد QADA أي نتيجة قانونية من هذه المحاولة.';
+      const rawMessage = err instanceof Error ? err.message : '';
+      const message = /load failed|failed to fetch|networkerror|network request failed/i.test(rawMessage)
+        ? 'انقطع الاتصال أثناء التحليل. احتفظنا بالمرفق؛ أرسل الطلب مرة ثانية لإكماله.'
+        : (rawMessage || 'تعذر إكمال الطلب حالياً. لم تعتمد QADA أي نتيجة قانونية من هذه المحاولة.');
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantMsgId
