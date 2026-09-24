@@ -173,7 +173,7 @@ export function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="app-sidebar h-full flex flex-col bg-slate-950 border-l border-slate-800 text-slate-100 select-none">
+    <div className={`app-sidebar ${isAdmin ? 'qada-admin-sidebar' : 'qada-user-sidebar'} h-full flex flex-col bg-slate-950 border-l border-slate-800 text-slate-100 select-none`}>
       
       {/* 1. رأس القائمة والهوية البصرية الفاخرة */}
       <div className="p-4 border-b border-slate-800/80 bg-slate-900/60">
