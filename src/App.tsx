@@ -116,10 +116,10 @@ function SystemAgentBar() {
 // ==========================================
 function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => void }) {
   const quickActions = [
-    { icon: Bot, title: 'اسأل المستشار', text: 'اكتب مشكلتك بطريقتك وخذ التوجه العملي مباشرة.', action: { kind: 'assistant' } as LaunchIntent },
-    { icon: FileText, title: 'اكتب مذكرة', text: 'دعوى أو اعتراض أو رد، من الوقائع إلى المسودة.', action: { kind: 'service', court: 'administrative', service: 'administrative_claim' } as LaunchIntent },
-    { icon: FileCheck, title: 'راجع حكماً', text: 'افهم الحكم وأسباب الاعتراض والنقاط التي تحتاج عملاً.', action: { kind: 'dossier' } as LaunchIntent },
-    { icon: Library, title: 'افتح المراجع', text: 'ارجع للأنظمة والمراجع عندما تحتاجها، بدون زحمة.', action: { kind: 'repository' } as LaunchIntent },
+    { icon: Bot, title: 'عندي مشكلة قانونية', text: 'احكِ اللي صار بطريقتك، وQADA يرتب لك الخطوة التالية.', action: { kind: 'assistant', prefill: 'عندي مشكلة قانونية وأبغى أعرف وش أسوي. اسألني فقط عن المعلومات الناقصة وابدأ من الوقائع.' } as LaunchIntent },
+    { icon: FileCheck, title: 'عندي حكم أو قرار', text: 'ارفعه أو اشرح محتواه، واعرف هل عندك اعتراض وما الذي يلزمك.', action: { kind: 'dossier' } as LaunchIntent },
+    { icon: FileText, title: 'أبغى دعوى أو مذكرة', text: 'QADA يجمع منك البيانات ثم يبني لك مسودة قابلة للمراجعة.', action: { kind: 'assistant', prefill: 'أبغى أجهز دعوى أو مذكرة. اجمع مني البيانات خطوة بخطوة وحدد لي المطلوب والمستندات قبل الصياغة.' } as LaunchIntent },
+    { icon: Library, title: 'أبي أعرف حقي', text: 'ابحث في الأنظمة والمراجع الرسمية واشرحها بكلام واضح.', action: { kind: 'repository' } as LaunchIntent },
   ];
 
   return (
@@ -171,16 +171,16 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
             <div className="max-w-2xl text-right">
               <div className="qada-hero-badge mb-5 inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[11px] font-black">
                 <Scale className="h-4 w-4" strokeWidth={1.8} />
-                QADA • منصة قانونية سعودية
+                QADA • مساعدك القانوني الذكي
               </div>
 
               <h1 className="qada-riyadh-title text-4xl font-black leading-[1.12] tracking-tight sm:text-6xl lg:text-7xl">
-                اكتب المشكلة.
-                <span className="block">وخلك على النتيجة.</span>
+                عندك قضية أو مشكلة؟
+                <span className="block">احكِها مثل ما صارت.</span>
               </h1>
 
               <p className="qada-riyadh-copy mt-5 max-w-xl text-sm leading-7 sm:text-base">
-                QADA يرتب لك الطريق: يفهم المطلوب، يجمع الناقص، يراجع المستندات، ثم يساعدك في الدعوى أو الاعتراض أو المذكرة.
+                ما تحتاج تعرف اسم المحكمة أو رقم المادة. اكتب اللي صار، وارفع أوراقك إن وجدت، وQADA يرتب الوقائع ويحدد لك الخيارات والخطوة التالية.
               </p>
 
               <div className="mt-7 flex max-w-md flex-col gap-2.5 sm:flex-row">
@@ -189,16 +189,16 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
                   onClick={() => onEnterApp({ kind: 'dashboard' })}
                   className="qada-riyadh-primary inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-black transition active:scale-[0.99]"
                 >
-                  ابدأ الآن
+                  ابدأ قضيتي
                   <ArrowLeft className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => onEnterApp({ kind: 'assistant' })}
+                  onClick={() => onEnterApp({ kind: 'assistant', prefill: 'عندي حكم أو قرار وأبغى أعرف وش أقدر أسوي عليه. ابدأ بالسؤال عن نوع القرار وتاريخه وما الذي أريده.' })}
                   className="qada-riyadh-secondary inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-black transition"
                 >
                   <Bot className="h-4 w-4" />
-                  المستشار
+                  عندي حكم أو قرار
                 </button>
               </div>
             </div>
@@ -208,8 +208,8 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
                 <ShieldCheck className="h-5 w-5" strokeWidth={1.7} />
               </div>
               <div>
-                <div className="text-xs font-black">واجهة سعودية معاصرة</div>
-                <div className="mt-1 text-[11px]">هوية بصرية محترمة • تجربة جوال أولاً</div>
+                <div className="text-xs font-black">ابدأ بدون مصطلحات قانونية</div>
+                <div className="mt-1 text-[11px]">قل لنا وش صار • والباقي نرتبه معك</div>
               </div>
             </div>
           </div>
@@ -237,20 +237,20 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
         <section id="about" className="border-y border-slate-200 bg-white">
           <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
-              <span className="text-[11px] font-black text-slate-400">كيف يبدأ؟</span>
+              <span className="text-[11px] font-black text-slate-400">كيف تمشي معك QADA؟</span>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                ثلاث خطوات، بدون تعقيد.
+                من المشكلة إلى خطوة واضحة.
               </h2>
               <p className="mt-3 text-sm leading-7 text-slate-500">
-                اكتب مشكلتك، أرفق ما عندك إن وجد، ثم تابع الأسئلة الضرورية فقط حتى يصل QADA للمخرج المطلوب.
+                أنت تعطينا القصة والمستندات، والمنصة ترتبها وتسألك فقط عن الناقص ثم توضح لك ماذا تفعل بعد ذلك.
               </p>
             </div>
 
             <div className="grid gap-2.5 sm:grid-cols-3">
               {[
-                ['01', 'اكتب طلبك', 'تكلم بطريقتك الطبيعية.'],
-                ['02', 'أرفق ما عندك', 'حكم، تحويل، عقد أو صورة.'],
-                ['03', 'خذ التوجه', 'ثم تابع للتنفيذ أو الصياغة.'],
+                ['01', 'احكِ اللي صار', 'اكتب القصة بطريقتك، حتى لو كانت غير مرتبة.'],
+                ['02', 'ارفع أوراقك', 'حكم، قرار، عقد، تحويل أو أي مستند عندك.'],
+                ['03', 'خذ خطتك', 'نعرض لك النواقص والخطوة التالية أو نبدأ المسودة.'],
               ].map(([number, title, text]) => (
                 <div key={number} className="rounded-2xl bg-[#f7f8fa] p-4">
                   <div className="text-xs font-black text-slate-400">{number}</div>
@@ -262,11 +262,33 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
           </div>
         </section>
 
+        <section className="mx-auto max-w-5xl px-4 pb-4 sm:px-6">
+          <div className="rounded-3xl border border-emerald-900/10 bg-white p-5 shadow-[0_14px_44px_rgba(0,70,45,.06)] sm:p-7">
+            <div className="mb-5">
+              <div className="text-[11px] font-black text-emerald-700">وش تحصل بعد ما تبدأ؟</div>
+              <h2 className="mt-1 text-xl font-black text-slate-950 sm:text-2xl">النتيجة تكون واضحة، مو كلام عام.</h2>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ['فهم وضعك', 'ملخص مرتب للوقائع والمشكلة القانونية.'],
+                ['وش ناقصك', 'المستندات أو المعلومات التي تحتاج تكملها.'],
+                ['وش تسوي بعدين', 'المسار والإجراء التالي بلغة واضحة.'],
+                ['المخرج المطلوب', 'دعوى، اعتراض، مذكرة أو جواب بحسب حالتك.'],
+              ].map(([title, text]) => (
+                <div key={title} className="rounded-2xl bg-[#f7faf8] p-4">
+                  <div className="text-sm font-black text-slate-950">{title}</div>
+                  <div className="mt-1.5 text-xs leading-5 text-slate-500">{text}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section id="contact" className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
           <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-xs leading-6 text-slate-500 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-2.5">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-              <p>QADA أداة مساعدة للبحث والتحليل والصياغة، ويجب مراجعة النتائج قبل الاعتماد القضائي النهائي.</p>
+              <p>QADA يساعدك في فهم القضية وترتيبها والبحث والصياغة. قبل أي تقديم رسمي، راجع المخرج النهائي والمستندات المرتبطة به.</p>
             </div>
             <button
               type="button"
