@@ -230,19 +230,45 @@ export function WelcomeScreen({
   if (interfaceMode === 'simple') {
     return (
       <div className="qada-simple-screen mx-auto w-full max-w-4xl space-y-5 px-1 py-2 sm:px-4 sm:py-4" dir="rtl">
-        <div className="qada-profile-card flex items-center justify-between gap-3 rounded-2xl border bg-white px-3.5 py-3 sm:px-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="qada-profile-avatar flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-black text-white">
-              {(userName || 'مستخدم').trim().slice(0, 1)}
+        <div className="qada-profile-card relative overflow-hidden rounded-[26px] border px-4 py-4 sm:px-5 sm:py-5">
+          <div className="qada-profile-ribbon" aria-hidden="true" />
+          <div className="qada-profile-gold-sweep" aria-hidden="true" />
+
+          <div className="relative z-10 flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3.5 sm:gap-4">
+              <div className="qada-profile-avatar-shell relative shrink-0">
+                <div className="qada-profile-avatar flex h-14 w-14 items-center justify-center rounded-full text-lg font-black text-white sm:h-16 sm:w-16 sm:text-xl">
+                  {(userName || 'مستخدم').trim().slice(0, 1)}
+                </div>
+                <span className="qada-profile-verified absolute -bottom-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full">
+                  <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.2} />
+                </span>
+              </div>
+
+              <div className="min-w-0">
+                <div className="qada-profile-kicker mb-1 inline-flex items-center gap-1.5 text-[10px] font-black">
+                  <Scale className="h-3.5 w-3.5" strokeWidth={1.9} />
+                  الملف الشخصي
+                </div>
+                <div className="qada-profile-name truncate text-base font-black sm:text-lg">
+                  {userName || 'مستخدم QADA'}
+                </div>
+                <div className="qada-profile-meta mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold sm:text-[11px]">
+                  <span>QADA Simple</span>
+                  <span className="opacity-40">•</span>
+                  <span>مساحة شخصية</span>
+                </div>
+              </div>
             </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-black text-emerald-700">الملف الشخصي</div>
-              <div className="truncate text-sm font-black text-slate-950">{userName || 'مستخدم QADA'}</div>
-              <div className="text-[10px] font-bold text-slate-400">QADA Simple</div>
+
+            <div className="qada-profile-status hidden items-center gap-2 rounded-full px-3 py-2 text-[10px] font-black sm:flex">
+              <ShieldCheck className="h-4 w-4" strokeWidth={2} />
+              جلسة محمية
             </div>
           </div>
-          <div className="hidden items-center gap-1.5 rounded-full border border-emerald-900/10 bg-emerald-50 px-3 py-1.5 text-[10px] font-black text-emerald-800 sm:flex">
-            <ShieldCheck className="h-3.5 w-3.5" />
+
+          <div className="qada-profile-mobile-status relative z-10 mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black sm:hidden">
+            <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} />
             جلسة محمية
           </div>
         </div>
