@@ -305,6 +305,7 @@ export function WelcomeScreen({
               <Sparkles className="h-5 w-5" strokeWidth={1.8} />
             </div>
             <div>
+              <span className="sr-only">وش تبي QADA ينجز لك؟</span>
               <h1 className="text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
                 احكِ لنا وش صار معك.
               </h1>
