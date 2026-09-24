@@ -112,6 +112,36 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
   },
 ];
 
+const CLIENT_COURT_COPY: Record<CourtJurisdiction, { title: string; subTitle: string }> = {
+  administrative: {
+    title: 'مشكلة مع جهة حكومية',
+    subTitle: 'قرار، خصم، رفض طلب أو تظلّم',
+  },
+  general: {
+    title: 'مطالبة أو عقد أو حق مالي',
+    subTitle: 'ديون، عقود، عقارات ومطالبات',
+  },
+  criminal: {
+    title: 'قضية جزائية',
+    subTitle: 'دفاع، اعتراض أو مراجعة إجراءات',
+  },
+};
+
+const CLIENT_SERVICE_LABELS: Record<string, string> = {
+  administrative_claim: 'أرفع دعوى على جهة حكومية',
+  administrative_appeal: 'أعترض على حكم إداري',
+  administrative_memo: 'أرد على الجهة',
+  administrative_attachments: 'أراجع القرار والمستندات',
+  general_claim: 'أطالب بحقي',
+  general_appeal: 'أعترض على حكم',
+  general_memo: 'أرد على الطرف الآخر',
+  general_attachments: 'أراجع عقد أو سند',
+  criminal_defense: 'أحتاج دفاع',
+  criminal_appeal: 'أعترض على حكم جزائي',
+  criminal_procedural: 'أراجع الإجراءات',
+  criminal_evidence: 'أراجع محضر الضبط',
+};
+
 interface SidebarProps {
   activeCourt: CourtJurisdiction | null;
   activeService: string | null;
@@ -191,7 +221,7 @@ export function Sidebar({
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400">{isAdmin ? 'منصة التدقيق والتقاضي الذكي' : 'مساحة العمل القانونية'}</p>
+              <p className="text-[11px] text-slate-400">{isAdmin ? 'منصة التدقيق والتقاضي الذكي' : 'قضاياك ومذكراتك في مكان واحد'}</p>
             </div>
           </div>
 
@@ -277,12 +307,13 @@ export function Sidebar({
         {/* قسم أدوات التقاضي والاختصاصات */}
         <div className="space-y-1.5">
           <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-amber-400/90 tracking-wide">
-            <span className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5" /> {isAdmin ? 'أدوات التقاضي والمسارات' : 'المحاكم والمسارات'}</span>
+            <span className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5" /> {isAdmin ? 'أدوات التقاضي والمسارات' : 'نوع القضية'}</span>
           </div>
 
           {COURT_CATEGORIES.map((cat) => {
             const isCurrentCourt = activeCourt === cat.id;
             const CatIcon = cat.icon;
+            const clientCopy = CLIENT_COURT_COPY[cat.id];
 
             return (
               <div
@@ -314,10 +345,10 @@ export function Sidebar({
                     </div>
                     <div className="truncate">
                       <span className="font-bold text-xs text-white block truncate">
-                        {cat.title}
+                        {isAdmin ? cat.title : clientCopy.title}
                       </span>
                       <span className="text-[10px] text-slate-400 block truncate">
-                        {cat.subTitle}
+                        {isAdmin ? cat.subTitle : clientCopy.subTitle}
                       </span>
                     </div>
                   </div>
@@ -345,7 +376,7 @@ export function Sidebar({
                           <SrvIcon className={`w-3.5 h-3.5 shrink-0 ${isServiceActive ? 'text-amber-400' : 'text-slate-400'}`} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs truncate">{srv.label}</span>
+                              <span className="text-xs truncate">{isAdmin ? srv.label : (CLIENT_SERVICE_LABELS[srv.id] || srv.label)}</span>
                               {srv.badge && (
                                 <span className="text-[9px] px-1 rounded bg-slate-800 text-slate-400 font-mono">
                                   {srv.badge}
@@ -366,7 +397,7 @@ export function Sidebar({
         {/* قسم المعرفة والبحث النظامي */}
         <div className="pt-2 border-t border-slate-800/80 space-y-1">
           <div className="px-2 py-1 text-[11px] font-bold text-slate-400 tracking-wide flex items-center gap-1.5">
-            <Library className="w-3.5 h-3.5 text-amber-400" /> {isAdmin ? 'المعرفة والأسانيد' : 'المراجع'}
+            <Library className="w-3.5 h-3.5 text-amber-400" /> {isAdmin ? 'المعرفة والأسانيد' : 'الأنظمة والمراجع'}
           </div>
           
           <button 
@@ -377,7 +408,7 @@ export function Sidebar({
             className="min-h-11 w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
           >
             <Library className="w-4 h-4 text-slate-400" />
-            <span>المكتبة النظامية الشاملة</span>
+            <span>{isAdmin ? 'المكتبة النظامية الشاملة' : 'افتح الأنظمة والمراجع'}</span>
           </button>
 
           <button 
@@ -388,14 +419,14 @@ export function Sidebar({
             className="min-h-11 w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
           >
             <Search className="w-4 h-4 text-slate-400" />
-            <span>البحث المعرفي الذكي</span>
+            <span>{isAdmin ? 'البحث المعرفي الذكي' : 'ابحث عن جواب قانوني'}</span>
           </button>
         </div>
 
         {/* قسم الذكاء الاصطناعي والإدارة */}
         <div className="pt-2 border-t border-slate-800/80 space-y-1">
           <div className="px-2 py-1 text-[11px] font-bold text-slate-400 tracking-wide flex items-center gap-1.5">
-            <Bot className="w-3.5 h-3.5 text-amber-400" /> المحرك الذكي
+            <Bot className="w-3.5 h-3.5 text-amber-400" /> {isAdmin ? 'المحرك الذكي' : 'مساعدة'}
           </div>
 
           <button 
@@ -406,7 +437,7 @@ export function Sidebar({
             className="min-h-11 w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
           >
             <Bot className="w-4 h-4 text-amber-400" />
-            <span>{isAdmin ? 'المستشار الذكي (المدير)' : 'المستشار الذكي'}</span>
+            <span>{isAdmin ? 'المستشار الذكي (المدير)' : 'اسأل QADA'}</span>
           </button>
 
           <button 
@@ -417,7 +448,7 @@ export function Sidebar({
             className="min-h-11 w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-300 hover:bg-slate-900 hover:text-white transition-all"
           >
             <BarChart3 className="w-4 h-4 text-slate-400" />
-            <span>تقارير الفحص والنتائج</span>
+            <span>{isAdmin ? 'تقارير الفحص والنتائج' : 'نتائج مراجعة قضيتي'}</span>
           </button>
 
           {userSession?.role === 'admin' && onOpenAdminMap && (
