@@ -767,7 +767,7 @@ export default function App() {
         }`}>
           {caseStoreError && (
             <div className="mb-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-200">
-              تعذر الوصول إلى مخزن القضايا: {caseStoreError}
+              {userMode ? 'تعذر تحميل قضاياك مؤقتاً. جرّب تحديث الصفحة بعد قليل.' : `تعذر الوصول إلى مخزن القضايا: ${caseStoreError}`}
             </div>
           )}
           {activeCourt && (
