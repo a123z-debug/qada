@@ -354,7 +354,16 @@ export default function App() {
       .then((restoredSession) => {
         if (!cancelled && restoredSession) {
           setSession(restoredSession);
+          setShowLandingPage(false);
           setInterfaceMode(restoredSession.workspaceMode === 'professional' || restoredSession.role === 'admin' ? 'professional' : 'simple');
+          if (restoredSession.role === 'admin' || restoredSession.workspaceMode === 'admin') {
+            setActiveCourt(null);
+            setActiveService(null);
+            setIsAdminAnalysisOpen(false);
+            setIsAdminUsersOpen(false);
+            setIsAdminAuditOpen(false);
+            setIsAdminMapOpen(true);
+          }
         }
       })
       .catch(() => {
@@ -427,6 +436,8 @@ export default function App() {
   };
 
   const handleLoginSuccess = (userSession: UserSession) => {
+    setShowLandingPage(false);
+    setPendingLaunch(null);
     setSession(userSession);
     setInterfaceMode(userSession.workspaceMode === 'professional' || userSession.role === 'admin' ? 'professional' : 'simple');
     setSessionChecked(true);
@@ -435,7 +446,7 @@ export default function App() {
     setIsAdminAnalysisOpen(false);
     setIsAdminUsersOpen(false);
     setIsAdminAuditOpen(false);
-    setIsAdminMapOpen(userSession.workspaceMode === 'admin');
+    setIsAdminMapOpen(userSession.role === 'admin' || userSession.workspaceMode === 'admin');
   };
 
   const handleInterfaceModeChange = (mode: 'simple' | 'professional') => {

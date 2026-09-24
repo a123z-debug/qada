@@ -130,8 +130,8 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
     if (busyMode || checkingAdmin) return;
     setInterfaceMenuOpen(false);
     setError('');
-    const ready = await checkAdminReady();
-    if (ready) setAdminOpen(true);
+    setAdminOpen(true);
+    void checkAdminReady();
   }
 
   async function submitAdmin(event: React.FormEvent) {
@@ -148,8 +148,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
     setError('');
 
     try {
-      const ready = await checkAdminReady();
-      if (!ready) return;
+      await checkAdminReady();
 
       document.cookie = 'qada_test_mode=; Path=/; Max-Age=0; SameSite=Lax; Secure';
 
@@ -174,8 +173,26 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
         throw new Error('لم يتم إنشاء جلسة إدارة صالحة.');
       }
 
+      const verificationResponse = await fetch('/api/session', {
+        method: 'GET',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      const verificationPayload = await verificationResponse.json().catch(() => ({}));
+
+      if (
+        !verificationResponse.ok
+        || verificationPayload?.authenticated !== true
+        || verificationPayload?.session?.role !== 'admin'
+      ) {
+        throw new Error('تم قبول بيانات الإدارة لكن تعذر تثبيت جلسة الدخول. حدّث الصفحة وأعد المحاولة.');
+      }
+
+      setAdminPassword('');
+      setError('');
       onLoginSuccess({
-        ...(payload.session as UserSession),
+        ...(verificationPayload.session as UserSession),
         workspaceMode: 'admin',
       });
     } catch (adminError) {

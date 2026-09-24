@@ -6,6 +6,8 @@ function assert(condition: unknown, message: string): asserts condition {
 
 const adminAnalysis = fs.readFileSync('api/admin-analysis.ts', 'utf8');
 const sessionApi = fs.readFileSync('api/session.ts', 'utf8');
+const appSource = fs.readFileSync('src/App.tsx', 'utf8');
+const loginSource = fs.readFileSync('src/components/LoginScreen.tsx', 'utf8');
 const loginScreen = fs.readFileSync('src/components/LoginScreen.tsx', 'utf8');
 const envExample = fs.readFileSync('.env.example', 'utf8');
 const server = fs.readFileSync('server.ts', 'utf8');
@@ -122,4 +124,13 @@ console.log(JSON.stringify({
 assert(
   sessionApi.includes('[QADA_ADMIN_LOGIN]') && sessionApi.includes("outcome: 'rejected'"),
   'admin login must emit non-secret outcome diagnostics',
+);
+
+assert(
+  appSource.includes('setShowLandingPage(false)') && appSource.includes("setIsAdminMapOpen(userSession.role === 'admin'"),
+  'successful admin login must leave the landing page and open the admin map',
+);
+assert(
+  loginSource.includes("verificationResponse = await fetch('/api/session'") && loginSource.includes("verificationPayload?.session?.role !== 'admin'"),
+  'admin login must verify the persisted HttpOnly session before entering the admin workspace',
 );
