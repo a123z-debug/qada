@@ -153,37 +153,65 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
       </header>
 
       <main>
-        <section className="mx-auto max-w-5xl px-4 pb-10 pt-14 text-center sm:px-6 sm:pb-14 sm:pt-20">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm">
-            <Sparkles className="h-5 w-5" strokeWidth={1.8} />
+        <section className="qada-riyadh-hero relative overflow-hidden">
+          <div className="qada-riyadh-skyline" aria-hidden="true">
+            <div className="qada-riyadh-tower">
+              <span className="qada-riyadh-tower-cutout" />
+            </div>
+            <span className="qada-riyadh-city qada-riyadh-city-a" />
+            <span className="qada-riyadh-city qada-riyadh-city-b" />
+            <span className="qada-riyadh-city qada-riyadh-city-c" />
+            <span className="qada-riyadh-palm qada-riyadh-palm-a" />
+            <span className="qada-riyadh-palm qada-riyadh-palm-b" />
+            <span className="qada-abstract-green-wave qada-wave-one" />
+            <span className="qada-abstract-green-wave qada-wave-two" />
           </div>
 
-          <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-[1.15] tracking-tight text-slate-950 sm:text-6xl">
-            اكتب المشكلة.
-            <span className="block text-slate-500">وخلك على النتيجة.</span>
-          </h1>
+          <div className="relative z-10 mx-auto grid min-h-[560px] max-w-6xl items-end gap-8 px-4 pb-12 pt-24 sm:px-6 sm:pb-16 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:pt-20">
+            <div className="max-w-2xl text-right">
+              <div className="qada-hero-badge mb-5 inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[11px] font-black">
+                <Scale className="h-4 w-4" strokeWidth={1.8} />
+                QADA • منصة قانونية سعودية
+              </div>
 
-          <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-500 sm:text-base">
-            QADA يرتب لك الطريق: يفهم المطلوب، يجمع الناقص، يراجع المستندات، ثم يساعدك في الدعوى أو الاعتراض أو المذكرة.
-          </p>
+              <h1 className="qada-riyadh-title text-4xl font-black leading-[1.12] tracking-tight sm:text-6xl lg:text-7xl">
+                اكتب المشكلة.
+                <span className="block">وخلك على النتيجة.</span>
+              </h1>
 
-          <div className="mx-auto mt-7 flex max-w-md flex-col gap-2.5 sm:flex-row sm:justify-center">
-            <button
-              type="button"
-              onClick={() => onEnterApp({ kind: 'dashboard' })}
-              className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 text-sm font-black text-white transition hover:bg-slate-800 active:scale-[0.99]"
-            >
-              ابدأ الآن
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onEnterApp({ kind: 'assistant' })}
-              className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-6 text-sm font-black text-slate-700 transition hover:border-slate-300 hover:text-slate-950"
-            >
-              <Bot className="h-4 w-4" />
-              المستشار
-            </button>
+              <p className="qada-riyadh-copy mt-5 max-w-xl text-sm leading-7 sm:text-base">
+                QADA يرتب لك الطريق: يفهم المطلوب، يجمع الناقص، يراجع المستندات، ثم يساعدك في الدعوى أو الاعتراض أو المذكرة.
+              </p>
+
+              <div className="mt-7 flex max-w-md flex-col gap-2.5 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => onEnterApp({ kind: 'dashboard' })}
+                  className="qada-riyadh-primary inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-black transition active:scale-[0.99]"
+                >
+                  ابدأ الآن
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onEnterApp({ kind: 'assistant' })}
+                  className="qada-riyadh-secondary inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-black transition"
+                >
+                  <Bot className="h-4 w-4" />
+                  المستشار
+                </button>
+              </div>
+            </div>
+
+            <div className="qada-hero-signature hidden lg:block">
+              <div className="qada-hero-signature-mark">
+                <ShieldCheck className="h-5 w-5" strokeWidth={1.7} />
+              </div>
+              <div>
+                <div className="text-xs font-black">واجهة سعودية معاصرة</div>
+                <div className="mt-1 text-[11px]">هوية بصرية محترمة • تجربة جوال أولاً</div>
+              </div>
+            </div>
           </div>
         </section>
 
