@@ -579,7 +579,7 @@ export default function App() {
       <div
         className={`app-shell flex h-[100dvh] overflow-hidden font-sans ${
           userMode
-            ? 'user-shell bg-[#f7f8fa] text-slate-950 qada-saudi-user'
+            ? 'user-shell bg-[#f7f8fa] text-slate-950'
             : 'admin-shell bg-slate-950 text-slate-100'
         }`}
         dir="rtl"
