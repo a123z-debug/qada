@@ -231,3 +231,400 @@
   .qada-login-card { border-radius: 24px !important; }
   .qada-profile-card { border-radius: 18px !important; }
 }
+
+
+/* ========================================================
+   QADA Riyadh Heritage v3
+   Architecture + sunset + abstract Saudi green identity.
+   No national-flag artwork is used as decoration.
+   ======================================================== */
+.qada-saudi-landing {
+  background: #f6f7f3 !important;
+}
+
+.qada-saudi-landing header {
+  border-color: rgba(255,255,255,.10) !important;
+  background: rgba(4,44,49,.88) !important;
+  box-shadow: 0 10px 34px rgba(1,25,27,.16) !important;
+}
+.qada-saudi-landing header [class~="text-slate-950"],
+.qada-saudi-landing header [class~="text-slate-700"],
+.qada-saudi-landing header [class~="text-slate-400"] {
+  color: rgba(255,255,255,.94) !important;
+}
+.qada-saudi-landing header .qada-brand-emblem {
+  background: rgba(255,255,255,.12) !important;
+  border-color: rgba(255,255,255,.16) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.14) !important;
+}
+.qada-saudi-landing header button[class*="bg-slate-950"] {
+  background: linear-gradient(135deg, #d9b56a, #b6883c) !important;
+  color: #17382d !important;
+  border: 1px solid rgba(255,255,255,.16);
+  box-shadow: 0 8px 24px rgba(0,0,0,.16);
+}
+
+.qada-riyadh-hero {
+  min-height: 560px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 78% 16%, rgba(247,196,111,.24), transparent 18%),
+    linear-gradient(180deg, #07555f 0%, #0c5d62 34%, #8f725c 68%, #4b372f 100%);
+  box-shadow: inset 0 -1px rgba(255,255,255,.05);
+}
+
+.qada-riyadh-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(1,29,31,.65) 0%, rgba(1,29,31,.30) 50%, rgba(2,34,36,.05) 100%),
+    linear-gradient(180deg, transparent 48%, rgba(9,24,22,.22) 78%, rgba(5,18,16,.72) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.qada-riyadh-hero::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 155px;
+  background:
+    linear-gradient(180deg, transparent, rgba(3,20,18,.22) 22%, rgba(2,18,16,.66));
+  z-index: 1;
+  pointer-events: none;
+}
+
+.qada-riyadh-skyline {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.qada-riyadh-tower {
+  position: absolute;
+  top: 12%;
+  left: 66%;
+  width: 162px;
+  height: 74%;
+  transform: translateX(-50%);
+  border-radius: 11px 11px 1px 1px;
+  background:
+    linear-gradient(90deg, rgba(6,30,43,.58), rgba(61,92,105,.78) 48%, rgba(17,47,59,.65)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 2px, transparent 2px 13px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 12px);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 26px 70px rgba(0,0,0,.20);
+}
+
+.qada-riyadh-tower::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 17px;
+  right: 17px;
+  height: 98px;
+  border-radius: 18px 18px 8px 8px;
+  background: linear-gradient(180deg, #d78b3e, #e2a351 46%, #7f5534 100%);
+  clip-path: polygon(0 0,100% 0,84% 100%,16% 100%);
+  filter: drop-shadow(0 8px 18px rgba(169,102,39,.22));
+}
+
+.qada-riyadh-tower-cutout {
+  position: absolute;
+  top: 7px;
+  left: 39px;
+  right: 39px;
+  height: 62px;
+  z-index: 2;
+  background: #075963;
+  border-radius: 12px 12px 44% 44%;
+  clip-path: polygon(0 0,100% 0,72% 100%,28% 100%);
+  box-shadow: inset 0 -8px 12px rgba(0,0,0,.12);
+}
+
+.qada-riyadh-city {
+  position: absolute;
+  bottom: 0;
+  display: block;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,203,128,.13) 0 2px, transparent 2px 15px),
+    linear-gradient(180deg, #2f3c3d, #152222);
+  opacity: .82;
+  box-shadow: 0 -1px rgba(255,255,255,.03);
+}
+.qada-riyadh-city-a {
+  left: 48%;
+  width: 78px;
+  height: 33%;
+}
+.qada-riyadh-city-b {
+  left: 76%;
+  width: 116px;
+  height: 22%;
+}
+.qada-riyadh-city-c {
+  left: 88%;
+  width: 88px;
+  height: 30%;
+}
+
+.qada-riyadh-palm {
+  position: absolute;
+  bottom: 0;
+  width: 15px;
+  height: 118px;
+  border-radius: 12px 12px 0 0;
+  background: linear-gradient(90deg, #18271f, #0f1d17);
+  transform-origin: bottom center;
+  opacity: .94;
+}
+.qada-riyadh-palm::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  width: 114px;
+  height: 68px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(ellipse at 50% 90%, #13261b 0 18%, transparent 20%),
+    conic-gradient(
+      from 0deg at 50% 90%,
+      #173522 0 7%, transparent 7% 13%,
+      #173522 13% 20%, transparent 20% 26%,
+      #173522 26% 34%, transparent 34% 41%,
+      #173522 41% 49%, transparent 49% 56%,
+      #173522 56% 64%, transparent 64% 71%,
+      #173522 71% 79%, transparent 79% 86%,
+      #173522 86% 94%, transparent 94% 100%
+    );
+  border-radius: 50%;
+}
+.qada-riyadh-palm-a {
+  left: 7%;
+  height: 158px;
+  transform: rotate(-3deg);
+}
+.qada-riyadh-palm-b {
+  left: 20%;
+  height: 120px;
+  transform: rotate(2deg) scale(.82);
+  opacity: .75;
+}
+
+.qada-abstract-green-wave {
+  position: absolute;
+  display: block;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #0d613d, #0a4c31);
+  box-shadow: inset 0 1px rgba(255,255,255,.08), 0 14px 28px rgba(0,0,0,.10);
+  opacity: .93;
+  filter: saturate(.9);
+}
+.qada-wave-one {
+  top: 18%;
+  right: -14%;
+  width: 64%;
+  transform: rotate(-7deg) skewX(-12deg);
+}
+.qada-wave-two {
+  top: 26%;
+  right: 34%;
+  width: 48%;
+  height: 86px;
+  transform: rotate(7deg) skewX(16deg);
+  opacity: .78;
+}
+.qada-wave-one::after,
+.qada-wave-two::after {
+  content: '';
+  position: absolute;
+  inset: 9px 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(228,195,126,.48), transparent);
+}
+
+.qada-hero-badge {
+  color: #f4e3bb !important;
+  background: rgba(5,53,49,.46) !important;
+  border: 1px solid rgba(230,196,127,.35);
+  box-shadow: inset 0 1px rgba(255,255,255,.08);
+  backdrop-filter: blur(10px);
+}
+
+.qada-riyadh-title {
+  color: #fff !important;
+  text-shadow: 0 8px 28px rgba(0,0,0,.20);
+}
+.qada-riyadh-title span {
+  color: #f4e6c8 !important;
+}
+
+.qada-riyadh-copy {
+  color: rgba(255,255,255,.78) !important;
+  text-shadow: 0 2px 12px rgba(0,0,0,.14);
+}
+
+.qada-riyadh-primary {
+  color: #17382d !important;
+  background: linear-gradient(135deg, #f0d89e, #d2aa58 62%, #b98532) !important;
+  border: 1px solid rgba(255,255,255,.22);
+  box-shadow: 0 14px 30px rgba(5,24,20,.22);
+}
+.qada-riyadh-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 17px 36px rgba(5,24,20,.28);
+}
+
+.qada-riyadh-secondary {
+  color: #fff !important;
+  background: rgba(255,255,255,.08) !important;
+  border: 1px solid rgba(255,255,255,.22) !important;
+  backdrop-filter: blur(10px);
+}
+.qada-riyadh-secondary:hover {
+  background: rgba(255,255,255,.14) !important;
+}
+
+.qada-hero-signature {
+  align-self: end;
+  justify-self: end;
+  width: min(100%, 285px);
+  padding: 16px;
+  color: rgba(255,255,255,.86);
+  background: rgba(3,37,34,.38);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 20px;
+  backdrop-filter: blur(13px);
+  box-shadow: 0 20px 44px rgba(0,0,0,.16);
+}
+.qada-hero-signature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.qada-hero-signature-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  color: #f0d9a4;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(230,196,127,.28);
+}
+
+.qada-saudi-landing #knowledge {
+  margin-top: -30px;
+  position: relative;
+  z-index: 12;
+}
+.qada-saudi-landing #knowledge > div {
+  padding: 0 4px;
+}
+.qada-saudi-landing #knowledge button {
+  border-color: rgba(0,82,49,.11) !important;
+  box-shadow: 0 16px 40px rgba(0,55,40,.07) !important;
+}
+.qada-saudi-landing #knowledge button:hover {
+  border-color: rgba(190,143,60,.38) !important;
+}
+.qada-saudi-landing #knowledge .group:hover [class~="group-hover:bg-slate-950"] {
+  background: linear-gradient(135deg, #0a7244, #005f35) !important;
+}
+
+@media (max-width: 900px) {
+  .qada-riyadh-tower {
+    left: 77%;
+    width: 128px;
+    height: 62%;
+    top: 18%;
+    opacity: .78;
+  }
+  .qada-wave-one {
+    right: -24%;
+    width: 82%;
+    top: 19%;
+    opacity: .72;
+  }
+  .qada-wave-two {
+    right: 30%;
+    width: 56%;
+    top: 30%;
+    opacity: .48;
+  }
+}
+
+@media (max-width: 640px) {
+  .qada-riyadh-hero {
+    min-height: 620px;
+  }
+  .qada-riyadh-hero::before {
+    background:
+      linear-gradient(180deg, rgba(2,41,43,.28) 0%, rgba(2,34,34,.10) 34%, rgba(4,28,25,.78) 76%, rgba(3,20,18,.92) 100%);
+  }
+  .qada-riyadh-tower {
+    left: 66%;
+    top: 14%;
+    width: 116px;
+    height: 53%;
+    opacity: .82;
+  }
+  .qada-riyadh-tower::before {
+    left: 12px;
+    right: 12px;
+    height: 76px;
+  }
+  .qada-riyadh-tower-cutout {
+    left: 28px;
+    right: 28px;
+    height: 46px;
+  }
+  .qada-abstract-green-wave {
+    height: 72px;
+  }
+  .qada-wave-one {
+    top: 21%;
+    right: -38%;
+    width: 110%;
+    transform: rotate(-7deg) skewX(-12deg);
+  }
+  .qada-wave-two {
+    top: 30%;
+    right: 30%;
+    width: 70%;
+    height: 58px;
+  }
+  .qada-riyadh-palm-a {
+    left: 3%;
+    height: 126px;
+  }
+  .qada-riyadh-palm-b {
+    display: none;
+  }
+  .qada-riyadh-city-a {
+    left: 50%;
+    height: 24%;
+  }
+  .qada-riyadh-city-b {
+    left: 78%;
+    height: 18%;
+  }
+  .qada-riyadh-city-c {
+    display: none;
+  }
+  .qada-riyadh-title {
+    max-width: 340px;
+    font-size: clamp(2.75rem, 12vw, 4.2rem) !important;
+  }
+  .qada-riyadh-copy {
+    max-width: 330px;
+  }
+  .qada-saudi-landing #knowledge {
+    margin-top: -18px;
+  }
+}
