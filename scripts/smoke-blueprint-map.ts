@@ -10,8 +10,8 @@ const requiredIds = [
   'auth','search','laws','judgments','references','cases','advisor','settings',
   'document-reader','case-router','src-bog','src-personnel','src-royal','src-precedents',
   'qada-core','facts','jurisdiction','characterization','evidence','reasoning','procedure',
-  'official-source','exact-text','amendments','conflicts','final-review','drafting','hujja-bayan','final-output',
-  'editor-tool','execution-tool','evaluation-tool','agents-tool',
+  'official-source','exact-text','amendments','conflicts','final-review','drafting','hujja-bayan','virtual-judge','final-output',
+  'editor-tool','execution-tool','evaluation-tool','agents-tool','security-007',
   'admin-entry','judgment-audit','memo-audit','legislative-flaws','judicial-flaws',
   'procedural-flaws','evidence-flaws','reasoning-flaws','rebuttal-review','admin-final'
 ];
@@ -32,15 +32,22 @@ for (const label of [
   assert(map.includes(label), 'Blueprint section missing: ' + label);
 }
 
-assert(map.includes('صاحب حُجّة وبيان') && map.includes("from: 'drafting', to: 'hujja-bayan'") && map.includes("from: 'hujja-bayan', to: 'final-output'"),
-  'Hujja wa Bayan drafting stage is not wired into the blueprint');
+assert(
+  map.includes('صاحب حُجّة وبيان')
+    && map.includes("from: 'drafting', to: 'hujja-bayan'")
+    && map.includes("from: 'hujja-bayan', to: 'virtual-judge'")
+    && map.includes("from: 'virtual-judge', to: 'final-output'"),
+  'Drafting must pass through the Virtual Judge before final output',
+);
 assert(map.includes('Editor') && map.includes('Execution') && map.includes('Evaluation') && map.includes('Agents'),
   'Operations tool row is incomplete');
 assert(map.includes('runtimeById') && map.includes('sourcePacketById'),
   'Blueprint must be wired to real runtime/source telemetry');
 assert(map.includes("fetch('/api/admin-runs'") && map.includes("fetch('/api/health'"),
   'Blueprint must load central run history and live readiness');
-assert(!map.includes("status: 'planned'"),
-  'No blueprint node may be presented as completed architecture while still marked planned');
+assert(
+  map.includes("id: 'security-007'") && map.includes("id: 'security-007', title: '007 — AppSec'") && map.includes("status: 'planned'"),
+  '007 must remain visibly planned until its executable security runtime is implemented',
+);
 
 console.log(JSON.stringify({ ok: true, nodes: requiredIds.length, canonicalBlueprint: true }, null, 2));
