@@ -129,6 +129,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     attachmentParts.length > 0 || Boolean(safeAttachmentsText.trim()),
   );
   const lawOfficeInstruction = buildLawOfficeInstruction(routeAudit, sourceBundle);
+  const reviewProfileInput = [body.court || '', body.documentTitle || '', safeText, safeAttachmentsText].join('\n');
+  const courtProfileInstruction = buildCourtProfileInstruction(reviewProfileInput);
+  const caseStrategyInstruction = buildCaseStrategyInstruction(reviewProfileInput);
+  const virtualJudgeContract = buildAgentContractInstruction('virtual-judge');
   const courtProfileInstruction = buildCourtProfileInstruction([
     body.court || '',
     body.documentTitle || '',
