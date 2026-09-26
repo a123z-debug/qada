@@ -310,27 +310,94 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
       : [];
     const fatalDefect = String(report?.primaryFatalDefect || '').trim();
     const requestedGate = String(report?.gateDecision || '').trim().toUpperCase();
-    const materialArrays = [
-      report?.temporalErrors,
-      report?.hierarchyErrors,
-      report?.exceptionErrors,
-      report?.rebuttalErrors,
-      report?.cassationErrors,
-      report?.claimErrors,
-      report?.attachmentErrors,
-      report?.remedyErrors,
-      report?.contradictions,
+
+    const countFindings = (value: any): number => {
+      if (Array.isArray(value)) return value.length;
+      if (!value || typeof value !== 'object') return 0;
+      const items = Array.isArray(value.items) ? value.items.length : 0;
+      const missing = Array.isArray(value.missingRequiredDocs) ? value.missingRequiredDocs.length : 0;
+      return items + missing;
+    };
+
+    const findingCounts = {
+      temporal: countFindings(report?.temporalErrors),
+      hierarchy: countFindings(report?.hierarchyErrors),
+      exception: countFindings(report?.exceptionErrors),
+      rebuttal: countFindings(report?.rebuttalErrors),
+      cassation: countFindings(report?.cassationErrors),
+      claim: countFindings(report?.claimErrors),
+      attachment: countFindings(report?.attachmentErrors),
+      remedy: countFindings(report?.remedyErrors),
+      contradiction: countFindings(report?.contradictions),
+    };
+    const materialErrorCount = Object.values(findingCounts).reduce((sum, count) => sum + count, 0);
+
+    const caseProfileText = [
+      body.court || '',
+      body.documentTitle || '',
+      safeText,
+      safeAttachmentsText,
+    ].join('\n').toLowerCase();
+
+    const militaryPersonnelCase = /خدمة\s*الأفراد|فرد\s*عسكري|عسكري|القوات\s*(?:البرية|الجوية|البحرية)|وزارة\s*الدفاع|علاوة\s*فنية|بدل\s*عسكري|مكافأة\s*الحاسب|مكافاه\s*الحاسب/.test(caseProfileText);
+    const administrativeCase = militaryPersonnelCase
+      || /ديوان\s*المظالم|المحكمة\s*الإدارية|المحكمه\s*الاداريه|قرار\s*إداري|قرار\s*اداري|جهة\s*إدارية|جهه\s*اداريه/.test(caseProfileText)
+      || String(body.court || '').toLowerCase().includes('administrative');
+
+    const personnelPacket = sourceBundle.packets.find((packet) => packet.agentId === 'src-personnel');
+    const bogPacket = sourceBundle.packets.find((packet) => packet.agentId === 'src-bog');
+    const verifiedPersonnelArticles = personnelPacket?.verifiedArticles.length || 0;
+    const verifiedAdministrativeArticles = bogPacket?.verifiedArticles.length || 0;
+
+    const criticalSourceBlockers: string[] = [];
+    if (sourceBundle.verification.officialSources === 0) {
+      criticalSourceBlockers.push('لا يوجد مصدر رسمي متحقق في حزمة القضية.');
+    }
+    if (militaryPersonnelCase && verifiedPersonnelArticles === 0) {
+      criticalSourceBlockers.push('القضية عسكرية/وظيفية ولم تتحقق مادة ذات صلة من نظام خدمة الأفراد.');
+    }
+    if (administrativeCase && verifiedAdministrativeArticles === 0) {
+      criticalSourceBlockers.push('القضية إدارية ولم تتحقق مادة ذات صلة من أنظمة ديوان المظالم.');
+    }
+    for (const blocker of sourceBlockers) {
+      if (
+        /ذُكرت مواد|سجل مادة متحقق|غير متحقق|needs-correction|لم يعثر الفهرس على مادة|أداة الإصدار غير مكتملة|م\/37/i.test(blocker)
+      ) {
+        criticalSourceBlockers.push(blocker);
+      }
+    }
+
+    const hardBlockers = [
+      ...(routeAudit.blocking ? [routeAudit.reason] : []),
+      ...(citationGuard.blocked ? ['تم إدخال إحالات قانونية غير متحققة في الصياغة.'] : []),
+      ...(fatalDefect ? [fatalDefect] : []),
+      ...criticalSourceBlockers,
     ];
-    const materialErrorCount = materialArrays.reduce(
-      (count, value) => count + (Array.isArray(value) ? value.length : 0),
-      0,
-    );
+
+    let readinessScore = 100;
+    if (routeAudit.blocking) readinessScore -= 40;
+    if (citationGuard.blocked) readinessScore -= 40;
+    if (fatalDefect) readinessScore -= 35;
+    readinessScore -= Math.min(35, criticalSourceBlockers.length * 12);
+    readinessScore -= findingCounts.temporal * 12;
+    readinessScore -= findingCounts.hierarchy * 10;
+    readinessScore -= findingCounts.exception * 12;
+    readinessScore -= findingCounts.rebuttal * 6;
+    readinessScore -= findingCounts.cassation * 8;
+    readinessScore -= findingCounts.claim * 7;
+    readinessScore -= findingCounts.attachment * 5;
+    readinessScore -= findingCounts.remedy * 8;
+    readinessScore -= findingCounts.contradiction * 8;
+    readinessScore = Math.max(0, Math.min(100, readinessScore));
+
+    const readinessTarget = 95;
+    const idealReadinessTarget = 99;
 
     let serverGate: 'PASS' | 'RETURN' | 'BLOCK' = 'RETURN';
-    if (routeAudit.blocking || citationGuard.blocked || fatalDefect) {
+    if (hardBlockers.length > 0) {
       serverGate = 'BLOCK';
     } else if (
-      sourceBlockers.length === 0
+      readinessScore >= readinessTarget
       && materialErrorCount === 0
       && requestedGate === 'PASS'
     ) {
@@ -338,11 +405,24 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     }
 
     report.gateDecision = serverGate;
+    report.readinessScore = readinessScore;
+    report.readinessTarget = readinessTarget;
+    report.idealReadinessTarget = idealReadinessTarget;
+    report.militaryPersonnelCase = militaryPersonnelCase;
+    report.administrativeCase = administrativeCase;
+    report.hardBlockers = hardBlockers;
+    report.verifiedPersonnelArticles = verifiedPersonnelArticles;
+    report.verifiedAdministrativeArticles = verifiedAdministrativeArticles;
+
     if (serverGate === 'BLOCK') {
       report.revisedDocument = body.text;
       report.overallStatus = 'معيب بحاجة لتصحيح';
-    } else if (serverGate === 'RETURN' && report.overallStatus === 'جاهز للإيداع') {
+    } else if (serverGate === 'RETURN') {
       report.overallStatus = 'يحتاج مراجعة قبل الإيداع';
+    } else {
+      report.overallStatus = readinessScore >= idealReadinessTarget
+        ? 'اجتاز بوابة الجاهزية العالية'
+        : 'اجتاز الحد الأدنى لبوابة الجاهزية';
     }
 
     return res.status(200).json({
@@ -360,6 +440,14 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
         workflowStage: routeAudit.stage,
         workflowBlocker: routeAudit.blocking ? routeAudit.reason : '',
         gateDecision: report.gateDecision,
+        readinessScore: report.readinessScore,
+        readinessTarget: report.readinessTarget,
+        idealReadinessTarget: report.idealReadinessTarget,
+        militaryPersonnelCase: report.militaryPersonnelCase,
+        administrativeCase: report.administrativeCase,
+        verifiedPersonnelArticles: report.verifiedPersonnelArticles,
+        verifiedAdministrativeArticles: report.verifiedAdministrativeArticles,
+        hardBlockers: report.hardBlockers,
       },
       sourcePackets: sourceBundle.packets,
     });
