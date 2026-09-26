@@ -570,11 +570,46 @@ export function runLegalSourceAgents(query: string): LegalSourceAgentBundle {
     buildExactTextPacket(query),
   ];
 
-  if (containsAny(normalizedQuery, ['ديوان المظالم', 'قضاء اداري', 'اداري', 'قرار اداري', 'تظلم', 'جهه اداريه'])) {
+  const personnelSignals = containsAny(normalizedQuery, [
+    'خدمه الافراد',
+    'عسكري',
+    'عسكريين',
+    'فرد عسكري',
+    'ترقيه عسكريه',
+    'بدل ترحيل',
+    'حقوق عسكريه',
+    'علاوه فنيه',
+    'مكافاه الحاسب',
+    'وزاره الدفاع',
+    'القوات البريه',
+  ]);
+  const disputeSignals = containsAny(normalizedQuery, [
+    'دعوى',
+    'مطالبه',
+    'حكم',
+    'اعتراض',
+    'استئناف',
+    'نقض',
+    'تظلم',
+    'رفض',
+    'قرار',
+    'صرف',
+    'استحقاق',
+  ]);
+  const administrativeSignals = containsAny(normalizedQuery, [
+    'ديوان المظالم',
+    'قضاء اداري',
+    'اداري',
+    'قرار اداري',
+    'تظلم',
+    'جهه اداريه',
+  ]);
+
+  if (administrativeSignals || (personnelSignals && disputeSignals)) {
     packets.push(buildBogPacket(query));
   }
 
-  if (containsAny(normalizedQuery, ['خدمه الافراد', 'عسكري', 'عسكريين', 'فرد عسكري', 'ترقيه عسكريه', 'بدل ترحيل', 'حقوق عسكريه'])) {
+  if (personnelSignals) {
     packets.push(buildPersonnelPacket(query));
   }
 

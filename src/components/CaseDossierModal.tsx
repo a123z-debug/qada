@@ -161,8 +161,27 @@ export function CaseDossierModal({
       window.print();
       return;
     }
-    popup.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>ملف القضية</title><style>body{font-family:Arial,sans-serif;line-height:1.8;padding:32px;white-space:pre-wrap;color:#111}</style></head><body>${escapeHtml(printableText)}<script>window.onload=()=>window.print()<\/script></body></html>`);
-    popup.document.close();
+
+    popup.document.title = 'ملف القضية';
+    popup.document.documentElement.lang = 'ar';
+    popup.document.documentElement.dir = 'rtl';
+
+    const style = popup.document.createElement('style');
+    style.textContent = 'body{font-family:Arial,sans-serif;line-height:1.8;padding:32px;color:#111;direction:rtl} pre{white-space:pre-wrap;word-break:break-word;font:inherit;margin:0}';
+    popup.document.head.appendChild(style);
+
+    const contentNode = popup.document.createElement('pre');
+    contentNode.textContent = printableText;
+    popup.document.body.replaceChildren(contentNode);
+
+    window.setTimeout(() => {
+      try {
+        popup.focus();
+        popup.print();
+      } catch (error) {
+        console.error('Unable to open dossier print dialog', error);
+      }
+    }, 150);
   };
 
   return (
@@ -282,13 +301,4 @@ function DossierSection({ title, text, compact = false }: { title: string; text:
       <p className="whitespace-pre-wrap text-sm leading-7 text-slate-300">{text || 'غير مدخل'}</p>
     </section>
   );
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }

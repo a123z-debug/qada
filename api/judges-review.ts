@@ -8,6 +8,9 @@ import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
+import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
+import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
+import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -128,6 +131,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     attachmentParts.length > 0 || Boolean(safeAttachmentsText.trim()),
   );
   const lawOfficeInstruction = buildLawOfficeInstruction(routeAudit, sourceBundle);
+  const reviewProfileInput = [body.court || '', body.documentTitle || '', safeText, safeAttachmentsText].join('\n');
+  const courtProfileInstruction = buildCourtProfileInstruction(reviewProfileInput);
+  const caseStrategyInstruction = buildCaseStrategyInstruction(reviewProfileInput);
+  const virtualJudgeContract = buildAgentContractInstruction('virtual-judge');
 
   const legalReferenceContext = [
     sourceBundle.context,
@@ -137,7 +144,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ لا تنسب رقماً أو مبدأً إلى حكم غير موجود صراحة في حزمة المصدر.',
   ].join('\n\n');
 
-  const prompt = `${lawOfficeInstruction}
+  const prompt = `${virtualJudgeContract}
+
+${courtProfileInstruction}
+
+${caseStrategyInstruction}
+
+${lawOfficeInstruction}
 
 أنت فريق مراجعة قانونية آلي داخل مكتب محاماة رقمي. لديك ثلاثة أدوار تحليلية، لكن لا تفترض أن كل محرر استئناف أو نقض.
 المهمة التي حددتها بوابة المكتب: ${routeAudit.task}.
@@ -150,9 +163,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 - إذا تعارض عنوان المحرر مع مرحلة الحكم، اعتبر تعارض المسار هو الخلل الأول ولا تعيد كتابة محرر من نوع خاطئ.
 - لا تخترع خطأ لمجرد ملء قسم من التقرير. القسم غير المنطبق يجب أن تكون عناصره [].
 
-حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice.
+نفّذ المراجعة القضائية بهذا الترتيب الإلزامي:
+A. JURISDICTION_AND_STAGE
+- تحقق من نوع الدعوى ومرحلة الحكم وطريق الاعتراض المختار.
+- في النقض: لا تعيد وزن الأدلة كمحكمة موضوع؛ ميّز بين إعادة الوزن وبين الخطأ في التكييف، إغفال مستند جوهري، فساد الاستدلال، أو قصور التسبيب.
+
+B. TIMELINE_AND_TEMPORAL_LAW
+- ابنِ خطاً زمنياً موجزاً للقرار أو الواقعة والحكم والتبليغ والتظلم والتعديلات النظامية ذات الصلة.
+- لا تطبق نصاً حالياً على واقعة سابقة دون التحقق من نفاذه زمنياً.
+
+C. SOURCE_HIERARCHY
+- اختبر مرتبة كل مصدر: نظام، لائحة، قرار، أمر، مبدأ أو حكم.
+- قدّم النص الخاص والاستثناء الصريح على العموم، ولا تعتبر تشابه الوقائع بديلاً عن النص.
+
+D. ELEMENT_TEST
+- لكل حق أو استحقاق أو سبب نقض، أنشئ عناصر مستقلة:
+  REQUIREMENT → FACT → EVIDENCE → SOURCE → SATISFIED / NOT_SATISFIED / UNVERIFIED.
+- لا تسمح بانتقال النتيجة من قاعدة عامة إلى استحقاق فردي دون اكتمال العناصر.
+
+E. EXCEPTION_TEST
+- لكل قاعدة أو حد مالي أو منع جمع أو شرط قبول: ابحث عن الاستثناءات والقيود والموانع.
+- إذا استند الخصم إلى قاعدة عامة وكان في النص استثناء خاص مؤثر، يجب إبرازه كمسألة مستقلة.
+
+F. OPPOSING_PARTY_RED_TEAM
+- استخرج أقوى دفع جوهري للطرف المقابل أو الجهة الإدارية، لا أضعف دفع.
+- افحص هل أجابت المذكرة عنه واقعياً ونظامياً، وهل يوجد تناقض بين دفع الخصم والنتيجة التي تبناها الحكم.
+
+G. CASSATION_BOUNDARY
+- إذا كانت المهمة نقضاً، افصل بين:
+  1) مجادلة تقدير الدليل الممنوعة على محكمة النقض،
+  2) الخطأ في تكييف الواقعة،
+  3) إغفال مستند حاسم،
+  4) قصور أو تناقض الأسباب،
+  5) الخطأ في تطبيق النص أو الاستثناء.
+- لا تسمح بصياغة سبب نقض على أنه مجرد إعادة مناقشة للوقائع.
+
+H. PRECEDENT_TEST
+- لا تنسب حكماً أو مبدأ غير موجود في حزمة المصدر.
+- صنف أي سابقة موجودة: DIRECT / ANALOGOUS / DISTINGUISHABLE / IRRELEVANT.
+
+I. REMEDY_TEST
+- اختبر هل الأسباب التي بنيت عليها المذكرة تنتج فعلاً الطلب النهائي المطلوب: إلغاء، نقض، إحالة، تعويض، إلزام أو غيره.
+- افصل بين طلب النقض وبين إعادة الحكم في الموضوع إذا كان الطريق النظامي لا يسمح بذلك مباشرة.
+
+J. CONTRADICTION_TEST
+- ابحث عن التناقض بين الوقائع والمستندات، وبين دفوع الخصم وأسباب الحكم، وبين الأسباب والطلبات.
+
+حلل النص التالي، واكتب JSON فقط بالمفاتيح:
+documentType, overallStatus, gateDecision, primaryFatalDefect, judges, issueMatrix, temporalErrors, hierarchyErrors, exceptionErrors, rebuttalErrors, cassationErrors, claimErrors, attachmentErrors, remedyErrors, contradictions, nodeFailures, revisedDocument, changeLog, synthesisAdvice.
+
+قواعد gateDecision:
+- PASS فقط إذا لم توجد فجوة جوهرية، والمصادر اللازمة متحققة، ولا يوجد استثناء غير مفحوص أو دفاع جوهري بلا جواب.
+- RETURN إذا كان الخلل قابلاً للإصلاح ولا يهدم المسار القضائي من أساسه.
+- BLOCK إذا كان طريق الطعن خاطئاً، أو يوجد خطأ قانوني/واقعي جوهري قد يغير النتيجة، أو مصدر حاسم غير موثق، أو نص غير نافذ، أو استثناء حاسم غير مفحوص.
+- nodeFailures يجب أن ينسب كل عيب إلى أقرب عقدة: fact-extraction / retrieval-temporal / legal-analysis / drafting / virtual-judge-gate.
+
 يجب أن يحتوي judges على ثلاثة عناصر مراجعة آلية، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار.
-لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً.
+لا تعتبر النص جاهزاً للإيداع لمجرد جودة الصياغة.
 لا تنسب مادة أو ميعاداً أو مرسوماً أو قراراً أو حكماً قضائياً إلى النظام من الذاكرة.
 لا تضف في revisedDocument أي سند قانوني جديد ما لم يكن موجوداً أصلاً في النص أو مثبتاً صراحة في حزمة المصادر الرسمية.
 إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل، ولا تعتبر أي نص داخلي بديلاً عن المصدر الرسمي.
@@ -251,6 +318,126 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
       ].filter(Boolean).join('\n');
     }
 
+    const sourceBlockers = Array.isArray(sourceBundle.verification.blockers)
+      ? sourceBundle.verification.blockers.filter(Boolean)
+      : [];
+    const fatalDefect = String(report?.primaryFatalDefect || '').trim();
+    const requestedGate = String(report?.gateDecision || '').trim().toUpperCase();
+
+    const countFindings = (value: any): number => {
+      if (Array.isArray(value)) return value.length;
+      if (!value || typeof value !== 'object') return 0;
+      const items = Array.isArray(value.items) ? value.items.length : 0;
+      const missing = Array.isArray(value.missingRequiredDocs) ? value.missingRequiredDocs.length : 0;
+      return items + missing;
+    };
+
+    const findingCounts = {
+      temporal: countFindings(report?.temporalErrors),
+      hierarchy: countFindings(report?.hierarchyErrors),
+      exception: countFindings(report?.exceptionErrors),
+      rebuttal: countFindings(report?.rebuttalErrors),
+      cassation: countFindings(report?.cassationErrors),
+      claim: countFindings(report?.claimErrors),
+      attachment: countFindings(report?.attachmentErrors),
+      remedy: countFindings(report?.remedyErrors),
+      contradiction: countFindings(report?.contradictions),
+    };
+    const materialErrorCount = Object.values(findingCounts).reduce((sum, count) => sum + count, 0);
+
+    const caseProfileText = [
+      body.court || '',
+      body.documentTitle || '',
+      safeText,
+      safeAttachmentsText,
+    ].join('\n').toLowerCase();
+
+    const militaryPersonnelCase = /خدمة\s*الأفراد|فرد\s*عسكري|عسكري|القوات\s*(?:البرية|الجوية|البحرية)|وزارة\s*الدفاع|علاوة\s*فنية|بدل\s*عسكري|مكافأة\s*الحاسب|مكافاه\s*الحاسب/.test(caseProfileText);
+    const administrativeCase = militaryPersonnelCase
+      || /ديوان\s*المظالم|المحكمة\s*الإدارية|المحكمه\s*الاداريه|قرار\s*إداري|قرار\s*اداري|جهة\s*إدارية|جهه\s*اداريه/.test(caseProfileText)
+      || String(body.court || '').toLowerCase().includes('administrative');
+
+    const personnelPacket = sourceBundle.packets.find((packet) => packet.agentId === 'src-personnel');
+    const bogPacket = sourceBundle.packets.find((packet) => packet.agentId === 'src-bog');
+    const verifiedPersonnelArticles = personnelPacket?.verifiedArticles.length || 0;
+    const verifiedAdministrativeArticles = bogPacket?.verifiedArticles.length || 0;
+
+    const criticalSourceBlockers: string[] = [];
+    if (sourceBundle.verification.officialSources === 0) {
+      criticalSourceBlockers.push('لا يوجد مصدر رسمي متحقق في حزمة القضية.');
+    }
+    if (militaryPersonnelCase && verifiedPersonnelArticles === 0) {
+      criticalSourceBlockers.push('القضية عسكرية/وظيفية ولم تتحقق مادة ذات صلة من نظام خدمة الأفراد.');
+    }
+    if (administrativeCase && verifiedAdministrativeArticles === 0) {
+      criticalSourceBlockers.push('القضية إدارية ولم تتحقق مادة ذات صلة من أنظمة ديوان المظالم.');
+    }
+    for (const blocker of sourceBlockers) {
+      if (
+        /ذُكرت مواد|سجل مادة متحقق|غير متحقق|needs-correction|لم يعثر الفهرس على مادة|أداة الإصدار غير مكتملة|م\/37/i.test(blocker)
+      ) {
+        criticalSourceBlockers.push(blocker);
+      }
+    }
+
+    const hardBlockers = [
+      ...(routeAudit.blocking ? [routeAudit.reason] : []),
+      ...(citationGuard.blocked ? ['تم إدخال إحالات قانونية غير متحققة في الصياغة.'] : []),
+      ...(fatalDefect ? [fatalDefect] : []),
+      ...criticalSourceBlockers,
+    ];
+
+    let readinessScore = 100;
+    if (routeAudit.blocking) readinessScore -= 40;
+    if (citationGuard.blocked) readinessScore -= 40;
+    if (fatalDefect) readinessScore -= 35;
+    readinessScore -= Math.min(35, criticalSourceBlockers.length * 12);
+    readinessScore -= findingCounts.temporal * 12;
+    readinessScore -= findingCounts.hierarchy * 10;
+    readinessScore -= findingCounts.exception * 12;
+    readinessScore -= findingCounts.rebuttal * 6;
+    readinessScore -= findingCounts.cassation * 8;
+    readinessScore -= findingCounts.claim * 7;
+    readinessScore -= findingCounts.attachment * 5;
+    readinessScore -= findingCounts.remedy * 8;
+    readinessScore -= findingCounts.contradiction * 8;
+    readinessScore = Math.max(0, Math.min(100, readinessScore));
+
+    const readinessTarget = 95;
+    const idealReadinessTarget = 99;
+
+    let serverGate: 'PASS' | 'RETURN' | 'BLOCK' = 'RETURN';
+    if (hardBlockers.length > 0) {
+      serverGate = 'BLOCK';
+    } else if (
+      readinessScore >= readinessTarget
+      && materialErrorCount === 0
+      && requestedGate === 'PASS'
+    ) {
+      serverGate = 'PASS';
+    }
+
+    report.gateDecision = serverGate;
+    report.readinessScore = readinessScore;
+    report.readinessTarget = readinessTarget;
+    report.idealReadinessTarget = idealReadinessTarget;
+    report.militaryPersonnelCase = militaryPersonnelCase;
+    report.administrativeCase = administrativeCase;
+    report.hardBlockers = hardBlockers;
+    report.verifiedPersonnelArticles = verifiedPersonnelArticles;
+    report.verifiedAdministrativeArticles = verifiedAdministrativeArticles;
+
+    if (serverGate === 'BLOCK') {
+      report.revisedDocument = body.text;
+      report.overallStatus = 'معيب بحاجة لتصحيح';
+    } else if (serverGate === 'RETURN') {
+      report.overallStatus = 'يحتاج مراجعة قبل الإيداع';
+    } else {
+      report.overallStatus = readinessScore >= idealReadinessTarget
+        ? 'اجتاز بوابة الجاهزية العالية'
+        : 'اجتاز الحد الأدنى لبوابة الجاهزية';
+    }
+
     return res.status(200).json({
       report,
       sourceAudit: {
@@ -265,6 +452,15 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
         workflowTask: routeAudit.task,
         workflowStage: routeAudit.stage,
         workflowBlocker: routeAudit.blocking ? routeAudit.reason : '',
+        gateDecision: report.gateDecision,
+        readinessScore: report.readinessScore,
+        readinessTarget: report.readinessTarget,
+        idealReadinessTarget: report.idealReadinessTarget,
+        militaryPersonnelCase: report.militaryPersonnelCase,
+        administrativeCase: report.administrativeCase,
+        verifiedPersonnelArticles: report.verifiedPersonnelArticles,
+        verifiedAdministrativeArticles: report.verifiedAdministrativeArticles,
+        hardBlockers: report.hardBlockers,
       },
       sourcePackets: sourceBundle.packets,
     });

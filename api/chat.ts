@@ -9,6 +9,7 @@ import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 import { buildHujjaBayanInstruction, isHujjaDraftingRequest } from '../src/lib/hujjaBayanAgent.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
+import { reviewDraftBeforeClientRelease } from './_draftReleaseGate.js';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -136,6 +137,7 @@ const SIMPLE_RESPONSE_INSTRUCTION = `وضع الإجابة: QADA Simple — تح
 - في حكم أو اعتراض: اطلب الحكم/القرار وتاريخ التبليغ والنتيجة المطلوبة، ثم ابدأ فحص الاعتراض.
 - في مشكلة مع جهة حكومية: افهم القرار أو الإجراء وتاريخه وما حصل في التظلم إن كان مؤثراً، ثم حدد الطريق المناسب داخلياً.
 - في مذكرة أو رد: اطلب المذكرة المقابلة أو أهم ما ورد فيها ومرحلة القضية، ثم ابدأ الرد.
+- إذا قال المستخدم فقط "أبغى أرفع دعوى" أو معنى قريب ولم يعطِ وقائع: ممنوع شرح الاختصاص أو المواد أو المخاطر. اسأله فقط: ضد من؟ وش صار؟ وش تبي بالنهاية؟ ويمكن طلب أهم مستند إن وجد.
 - إذا قال المستخدم "ما أعرف" أو "ما أدري"، لا تعيده لنقطة البداية؛ خذ بيده بسؤال محدد جداً.
 - اجعل الرد قصيراً بقدر ما يحقق المهمة. لا تكرر كلام المستخدم ولا تملأ الرد بعبارات تمهيدية.
 - الرد المثالي في Simple: توجّه واضح → خطوة تالية → سؤالان أو أقل عند الحاجة.`;
@@ -340,10 +342,12 @@ function buildSafeFallbackReply(messages: IncomingMessage[], targetCourt?: strin
       ].join('\n');
     }
     return [
-      'أفهم أنك تريد حلاً عملياً، وليس شرحاً نظرياً.',
-      normalized ? `طلبك: «${normalized}»` : '',
-      'قل لي النتيجة التي تريد الوصول لها بجملة واحدة، أو أرفق الحكم/المذكرة/المستند وسأبدأ منها مباشرة.',
-    ].filter(Boolean).join('\n');
+      'تمام. اكتب لي باختصار:',
+      '1) ضد من؟',
+      '2) وش صار؟',
+      '3) وش تبي بالنهاية؟',
+      'وإذا عندك حكم أو قرار أو عقد أو تحويل، أرفقه هنا.',
+    ].join('\n');
   }
 
   const lines = [
@@ -494,16 +498,55 @@ function writeSseDelta(res: VercelResponse, text: string) {
   res.write(`data: ${JSON.stringify({ text })}\n\n`);
 }
 
+function startSimpleSseKeepAlive(res: VercelResponse): () => void {
+  if (!res.headersSent) {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.setHeader('X-QADA-Stream', 'keepalive');
+  }
+
+  const raw = res as VercelResponse & {
+    flushHeaders?: () => void;
+    on?: (event: string, listener: () => void) => void;
+    writableEnded?: boolean;
+    destroyed?: boolean;
+  };
+
+  raw.flushHeaders?.();
+  res.write(': qada-processing\n\n');
+
+  let stopped = false;
+  const timer = setInterval(() => {
+    if (stopped || raw.writableEnded || raw.destroyed) return;
+    try {
+      res.write(': qada-keepalive\n\n');
+    } catch {
+      // Socket cleanup below will stop future heartbeats.
+    }
+  }, 10_000);
+  (timer as ReturnType<typeof setInterval> & { unref?: () => void }).unref?.();
+
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    clearInterval(timer);
+  };
+
+  raw.on?.('close', stop);
+  return stop;
+}
+
 async function streamHujjaViaGemini(args: {
-  res: VercelResponse;
   contents: any[];
   contextInstruction: string;
   sourceQuery: string;
   sourceContext: string;
-}): Promise<{ handled: boolean; provider?: string; lastError?: unknown }> {
-  const { res, contents, contextInstruction, sourceQuery, sourceContext } = args;
+}): Promise<{ draft: string; provider?: string; lastError?: unknown }> {
+  const { contents, contextInstruction, sourceQuery, sourceContext } = args;
   const clients = getGeminiClients();
-  if (!clients.length) return { handled: false };
+  if (!clients.length) return { draft: '' };
 
   let lastError: unknown;
   let attempts = 0;
@@ -514,8 +557,8 @@ async function streamHujjaViaGemini(args: {
     for (let clientIndex = 0; clientIndex < clients.length; clientIndex += 1) {
       const ai = clients[clientIndex];
       attempts += 1;
-      let emitted = false;
       let pending = '';
+      let fullDraft = '';
 
       try {
         const stream: any = await withTimeout(
@@ -527,14 +570,6 @@ async function streamHujjaViaGemini(args: {
           25_000,
           'AI_HUJJA_STREAM_START_TIMEOUT',
         );
-
-        res.setHeader('X-QADA-AI-Mode', 'stream');
-        res.setHeader('X-QADA-Agent', 'hujja-bayan');
-        res.setHeader('X-QADA-Stream', 'native');
-        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-transform');
-        res.setHeader('Connection', 'keep-alive');
-        res.setHeader('X-Accel-Buffering', 'no');
 
         for await (const chunk of stream) {
           const chunkText = typeof chunk?.text === 'string'
@@ -548,44 +583,26 @@ async function streamHujjaViaGemini(args: {
             const flushed = takeStreamingFlush(pending, false);
             pending = flushed.rest;
             if (!flushed.send) break;
-
             const safe = protectStreamingSegment(flushed.send, sourceQuery, sourceContext);
-            if (!safe) continue;
-            writeSseDelta(res, safe);
-            emitted = true;
+            if (safe) fullDraft += safe;
           }
         }
 
         const finalFlush = takeStreamingFlush(pending, true);
         const finalSafe = protectStreamingSegment(finalFlush.send, sourceQuery, sourceContext);
-        if (finalSafe) {
-          writeSseDelta(res, finalSafe);
-          emitted = true;
-        }
+        if (finalSafe) fullDraft += finalSafe;
 
-        if (!emitted) {
+        if (!fullDraft.trim()) {
           lastError = new Error('AI_HUJJA_EMPTY_STREAM');
           continue;
         }
 
         const provider = `key${clientIndex + 1}:${model}`;
-        console.info('QADA Hujja stream selected:', provider);
-        res.write('data: [DONE]\n\n');
-        res.end();
-        return { handled: true, provider };
+        console.info('QADA Hujja internal draft selected:', provider);
+        return { draft: fullDraft.trim(), provider };
       } catch (error) {
         lastError = error;
-
-        if (emitted) {
-          writeSseDelta(
-            res,
-            '\n\n[توقف البث قبل اكتمال المسودة. أعد الإرسال لاستكمال الصياغة من ملف القضية دون اعتماد الجزء غير المكتمل.]',
-          );
-          res.write('data: [DONE]\n\n');
-          res.end();
-          return { handled: true, lastError: error };
-        }
-
+        // Never expose a partial legal draft. Discard it and try the next provider/model.
         if (isQuotaError(error)) {
           markModelQuotaError(model, error);
           console.warn('QADA Hujja model quota exhausted, switching model:', model);
@@ -597,7 +614,7 @@ async function streamHujjaViaGemini(args: {
     }
   }
 
-  return { handled: false, lastError };
+  return { draft: '', lastError };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -631,6 +648,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const incomingMessages = trustedUserMessages(clientMessages);
   const contents = toGeminiContents(incomingMessages);
   if (contents.length === 0) return res.status(400).json({ error: 'Invalid request payload.' });
+
+  const stopSimpleKeepAlive = responseMode === 'simple'
+    ? startSimpleSseKeepAlive(res)
+    : () => {};
 
   try {
     const retrievalQuery = clientMessages
@@ -674,28 +695,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'النص الحرفي الكامل للمواد غير معتمد من المستودع؛ لا تضع اقتباساً حرفياً إلا إذا كان وارداً في نص المستخدم نفسه.',
     ].filter(Boolean).join('\n\n');
 
+    let reply = '';
+    let lastError: unknown;
+
     if (hujjaBayanInstruction) {
-      const streamed = await streamHujjaViaGemini({
-        res,
+      const generated = await streamHujjaViaGemini({
         contents,
         contextInstruction,
         sourceQuery,
         sourceContext: sourceBundle.context,
       });
-      if (streamed.handled) return;
-      if (streamed.lastError) {
-        console.error('QADA Hujja native stream unavailable, falling back:', streamed.lastError instanceof Error ? streamed.lastError.message : streamed.lastError);
+      reply = generated.draft;
+      if (generated.lastError) {
+        lastError = generated.lastError;
+        console.error('QADA Hujja internal draft stream unavailable, falling back:', generated.lastError instanceof Error ? generated.lastError.message : generated.lastError);
       }
     }
 
-    let reply = '';
-    let lastError: unknown;
-
-    try {
-      reply = await generateViaGateway(incomingMessages, contextInstruction);
-    } catch (error) {
-      lastError = error;
-      console.error('AI Gateway Error:', error instanceof Error ? error.message : error);
+    if (!reply) {
+      try {
+        reply = await generateViaGateway(incomingMessages, contextInstruction);
+      } catch (error) {
+        lastError = error;
+        console.error('AI Gateway Error:', error instanceof Error ? error.message : error);
+      }
     }
 
     if (!reply) {
@@ -797,21 +820,68 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (auditLines.length > 0) reply = [reply.trim(), ...auditLines].join('\n');
 
+    if (hujjaBayanInstruction) {
+      const releaseGate = await reviewDraftBeforeClientRelease({
+        draft: reply,
+        sourceInputText: sourceQuery,
+        court: body.targetCourt,
+        documentTitle: lawOfficeRoute.task,
+        hasEvidence: hasAttachedEvidence(clientMessages),
+      });
+
+      if (!res.headersSent) {
+        res.setHeader('X-QADA-Legal-Gate', releaseGate.gateDecision);
+        res.setHeader('X-QADA-Readiness-Score', String(releaseGate.readinessScore));
+      }
+
+      if (releaseGate.gateDecision !== 'PASS') {
+        const reasons = [
+          ...releaseGate.hardBlockers,
+          ...releaseGate.materialFindings,
+        ].filter(Boolean).slice(0, 3);
+
+        reply = responseMode === 'simple'
+          ? [
+              'راجعت QADA المسودة قبل تسليمها ولم تعتمدها بعد.',
+              reasons.length ? `السبب: ${reasons[0]}` : 'تحتاج المسودة مراجعة إضافية قبل إخراجها.',
+              'لن أعرض لك مسودة غير معتمدة. أكمل المستند أو المعلومة المطلوبة إن ظهرت، ثم أعد المحاولة.',
+            ].join('\n')
+          : [
+              `بوابة الاعتماد: ${releaseGate.gateDecision}`,
+              `درجة الجاهزية: ${releaseGate.readinessScore}/100 — الحد الأدنى 95/100.`,
+              'تم حجب نص المسودة عن الإخراج لأنها لم تجتز بوابة الاعتماد.',
+              ...reasons.map((reason) => `- ${reason}`),
+            ].join('\n');
+      }
+    }
+
     // Final privacy pass: never echo direct identifiers from prompts or attached documents.
     reply = redactDirectIdentifiers(reply).text;
 
-    res.setHeader('X-QADA-AI-Mode', providerMode);
-    res.setHeader('X-QADA-Response-Mode', responseMode);
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8'); res.setHeader('Cache-Control', 'no-cache, no-transform'); res.setHeader('Connection', 'keep-alive');
-    res.write(`data: ${JSON.stringify({ text: reply })}\n\n`); res.write('data: [DONE]\n\n'); return res.end();
+    if (!res.headersSent) {
+      res.setHeader('X-QADA-AI-Mode', providerMode);
+      res.setHeader('X-QADA-Response-Mode', responseMode);
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+    }
+    stopSimpleKeepAlive();
+    res.write(`data: ${JSON.stringify({ text: reply })}\n\n`);
+    res.write('data: [DONE]\n\n');
+    return res.end();
   } catch (error: any) {
     console.error('AI analysis pipeline error:', error?.message || error);
     const fallbackReply = buildSafeFallbackReply(incomingMessages, body.targetCourt, responseMode);
-    res.setHeader('X-QADA-AI-Mode', 'fallback-error');
-    res.setHeader('X-QADA-Error-Class', 'ANALYSIS_PIPELINE_FALLBACK');
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
+    if (!res.headersSent) {
+      res.setHeader('X-QADA-AI-Mode', 'fallback-error');
+      res.setHeader('X-QADA-Error-Class', 'ANALYSIS_PIPELINE_FALLBACK');
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+    }
+    stopSimpleKeepAlive();
     res.write(`data: ${JSON.stringify({ text: fallbackReply })}\n\n`);
     res.write('data: [DONE]\n\n');
     return res.end();

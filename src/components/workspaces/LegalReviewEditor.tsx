@@ -75,6 +75,15 @@ interface JudgesSourceAudit {
   introducedMarkers?: string[];
   unsupportedMarkers?: string[];
   blockedRevision?: boolean;
+  gateDecision?: 'PASS' | 'RETURN' | 'BLOCK';
+  readinessScore?: number;
+  readinessTarget?: number;
+  idealReadinessTarget?: number;
+  militaryPersonnelCase?: boolean;
+  administrativeCase?: boolean;
+  verifiedPersonnelArticles?: number;
+  verifiedAdministrativeArticles?: number;
+  hardBlockers?: string[];
 }
 
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
@@ -163,9 +172,15 @@ export function LegalReviewEditor({
   const [previousContent, setPreviousContent] = useState<string | null>(null);
   const [revisionToast, setRevisionToast] = useState<string | null>(null);
   const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
+  const [auditedContentSnapshot, setAuditedContentSnapshot] = useState<string | null>(null);
 
   const isAllApproved = checkNames && checkDates && checkRequests;
   const approvedCount = (checkNames ? 1 : 0) + (checkDates ? 1 : 0) + (checkRequests ? 1 : 0);
+  const readinessScore = Number(judgesSourceAudit?.readinessScore ?? 0);
+  const readinessTarget = Number(judgesSourceAudit?.readinessTarget ?? 95);
+  const virtualJudgePassed = judgesSourceAudit?.gateDecision === 'PASS' && readinessScore >= readinessTarget;
+  const auditMatchesCurrentContent = auditedContentSnapshot !== null && auditedContentSnapshot === content;
+  const exportGateApproved = isAllApproved && virtualJudgePassed && auditMatchesCurrentContent;
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
@@ -203,14 +218,24 @@ export function LegalReviewEditor({
 
       const data = await response.json();
       const report = data.report || data.auditReport;
-      setJudgesSourceAudit(data.sourceAudit || null);
+      const sourceAudit = (data.sourceAudit || null) as JudgesSourceAudit | null;
+      setJudgesSourceAudit(sourceAudit);
       if (report) {
         setJudgesReport(normalizeJudgesReport(report, content));
+      }
+      if (
+        sourceAudit?.gateDecision === 'PASS'
+        && Number(sourceAudit?.readinessScore ?? 0) >= Number(sourceAudit?.readinessTarget ?? 95)
+      ) {
+        setAuditedContentSnapshot(content);
+      } else {
+        setAuditedContentSnapshot(null);
       }
     } catch (err: any) {
       console.error('Error invoking judges audit:', err);
       setJudgesReport(null);
       setJudgesSourceAudit(null);
+      setAuditedContentSnapshot(null);
       setAuditError(err instanceof Error ? err.message : 'تعذر إكمال المراجعة الآلية. أعد المحاولة.');
     } finally {
       setIsLoadingJudges(false);
@@ -406,7 +431,7 @@ export function LegalReviewEditor({
   };
 
   const handlePrintPdf = () => {
-    if (!isAllApproved) return;
+    if (!exportGateApproved) return;
     setIsPrintPreviewOpen(true);
   };
 
@@ -416,7 +441,7 @@ export function LegalReviewEditor({
   };
 
   const handleExportWord = () => {
-    if (!isAllApproved) return;
+    if (!exportGateApproved) return;
     const escapeHtml = (value: string) => value
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -439,6 +464,7 @@ export function LegalReviewEditor({
   };
 
   const handleCopyText = () => {
+    if (!exportGateApproved) return;
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -521,8 +547,13 @@ export function LegalReviewEditor({
           <button
             type="button"
             onClick={handleCopyText}
-            className="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-750 text-neutral-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="نسخ النص كاملاً"
+            disabled={!exportGateApproved}
+            className={`p-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors ${
+              exportGateApproved
+                ? 'bg-neutral-800 hover:bg-neutral-750 text-neutral-200 cursor-pointer'
+                : 'bg-neutral-900 text-neutral-600 cursor-not-allowed opacity-60'
+            }`}
+            title={exportGateApproved ? 'نسخ النص المعتمد' : 'النسخ مقفل حتى اجتياز بوابة الجاهزية 95/100'}
           >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
             <span className="hidden sm:inline">{copied ? 'تم النسخ' : 'نسخ'}</span>
@@ -951,24 +982,34 @@ export function LegalReviewEditor({
 
             {/* Export Buttons Gated */}
             <div className="pt-2 border-t border-neutral-850 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] text-neutral-400">
-                {!isAllApproved
-                  ? '⚠️ يجب تحديد صناديق المراجعة الثلاثة لتفعيل التصدير.'
-                  : 'جاهز للتصدير المباشر بصيغة PDF أو Word الرسمية.'}
-              </p>
+              <div className="text-[11px] text-neutral-400">
+                {!isAllApproved ? (
+                  <span>⚠️ أكمل المراجعة اليدوية أولاً.</span>
+                ) : !judgesSourceAudit ? (
+                  <span>⚖️ شغّل هيئة المراجعة القضائية قبل التصدير.</span>
+                ) : !virtualJudgePassed ? (
+                  <span className="text-amber-300">
+                    بوابة القاضي: {judgesSourceAudit.gateDecision || 'RETURN'} • الجاهزية {readinessScore}/100 • الحد الأدنى {readinessTarget}/100
+                  </span>
+                ) : !auditMatchesCurrentContent ? (
+                  <span className="text-amber-300">تم تعديل النص بعد المراجعة؛ أعد تشغيل القاضي الافتراضي.</span>
+                ) : (
+                  <span className="text-emerald-300">PASS • الجاهزية {readinessScore}/100 • التصدير مسموح.</span>
+                )}
+              </div>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   id="btn-export-pdf"
                   onClick={handlePrintPdf}
-                  disabled={!isAllApproved}
+                  disabled={!exportGateApproved}
                   className={`py-2 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md ${
-                    isAllApproved
+                    exportGateApproved
                       ? 'bg-amber-500 hover:bg-amber-400 text-neutral-950 cursor-pointer shadow-amber-500/20'
                       : 'bg-neutral-800 text-neutral-500 opacity-50 cursor-not-allowed'
                   }`}
-                  title={!isAllApproved ? 'مُعطل حتى يتم تدقيق البنود الثلاثة' : 'معاينة اللائحة ثم طباعتها'}
+                  title={!exportGateApproved ? 'مُعطل حتى PASS ودرجة جاهزية 95/100 على الأقل' : 'معاينة اللائحة المعتمدة ثم طباعتها'}
                 >
                   <Printer className="w-4 h-4" />
                   <span>معاينة وطباعة اللائحة</span>
@@ -978,7 +1019,7 @@ export function LegalReviewEditor({
                   type="button"
                   id="btn-export-word"
                   onClick={handleExportWord}
-                  disabled={!isAllApproved}
+                  disabled={!exportGateApproved}
                   className={`py-2 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md ${
                     isAllApproved
                       ? 'bg-neutral-800 hover:bg-neutral-750 text-neutral-100 border border-neutral-700 cursor-pointer'

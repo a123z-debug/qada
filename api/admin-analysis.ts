@@ -9,6 +9,10 @@ import { withTimeout } from './_async.js';
 import { ADMIN_AI_MODELS, USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
 import { protectJson } from './_secureStore.js';
+import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
+import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
+import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
+import { analyzeLawOfficeRoute } from '../src/lib/lawOfficeExpert.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -688,7 +692,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     agentId: 'document-reader',
     label: 'قارئ المستندات ومصنف القضية',
     clientOffset: 0,
-    systemInstruction: `أنت وكيل إدخال قضائي سعودي. اقرأ المستند بدقة ولا تحكم على صحته.
+    systemInstruction: `${buildAgentContractInstruction('document-reader')}
+
+أنت وكيل إدخال قضائي سعودي. اقرأ المستند بدقة ولا تحكم على صحته.
 استخرج نوع المستند والاختصاص الظاهر والوقائع والطلبات والتواريخ والأطراف والمراجع المذكورة والمستندات المشار إليها.
 إذا كان المصدر PDF أو صورة فاستخرج النص المهم كما هو قدر الإمكان، ولا تخترع أجزاء غير مقروءة.
 أعد JSON فقط:
@@ -731,6 +737,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ...stringList(intake.data?.mentionedAuthorities, 20, 300),
   ].filter(Boolean).join('\n');
 
+  const routeAudit = analyzeLawOfficeRoute(
+    [body.court || '', body.documentTitle || '', workingText].join('\n'),
+    attachments.length > 0,
+  );
   const sourceBundle = runLegalSourceAgents(retrievalQuery);
   for (const sourceRun of sourceBundle.runs) {
     upsertLiveAgent(live, {
@@ -742,15 +752,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       blockers: sourceRun.blockers,
     });
   }
-  upsertLiveAgent(live, { id: 'case-router', status: 'success', durationMs: 1, summary: 'تم تحديد مسارات التحليل المطلوبة.' });
+  upsertLiveAgent(live, {
+    id: 'case-router',
+    status: routeAudit.blocking ? 'warning' : 'success',
+    durationMs: 1,
+    summary: `المهمة: ${routeAudit.task} • المرحلة: ${routeAudit.stage} • المحكمة: ${routeAudit.courtProfile} • نظرية القضية: ${routeAudit.caseStrategyProfile}`,
+    blockers: routeAudit.blocking ? [routeAudit.reason] : [],
+  });
+  const coreHasWarnings = routeAudit.blocking || sourceBundle.runs.some((run) => run.status === 'warning');
   upsertLiveAgent(live, {
     id: 'qada-core',
-    status: sourceBundle.runs.some((run) => run.status === 'warning') ? 'warning' : 'success',
+    status: coreHasWarnings ? 'warning' : 'success',
     durationMs: 1,
-    summary: sourceBundle.runs.some((run) => run.status === 'warning')
-      ? 'اكتمل التوجيه مع قيود تحقق مرجعية.'
-      : 'اكتمل التوجيه وبناء حزمة المصادر.',
-    blockers: sourceBundle.verification.blockers,
+    summary: routeAudit.blocking
+      ? 'أوقف موجّه القضية الصياغة النهائية حتى تصحيح المسار.'
+      : sourceBundle.runs.some((run) => run.status === 'warning')
+        ? 'اكتمل التوجيه مع قيود تحقق مرجعية.'
+        : 'اكتمل التوجيه وبناء حزمة المصادر.',
+    blockers: [
+      ...(routeAudit.blocking ? [routeAudit.reason] : []),
+      ...sourceBundle.verification.blockers,
+    ],
   });
   live.sourcePackets = sourceBundle.packets;
   await saveLiveRun(session.id, live);
@@ -781,11 +803,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 - sourceUrls يجب أن تحتوي فقط على روابط موجودة حرفياً في حزمة وكلاء المراجع؛ لا تنشئ رابطاً جديداً ولا تكمل رابطاً ناقصاً.
 ${ISSUE_SCHEMA}`;
 
-  const specialistInput = `بيانات الإدخال:
+  const profileInput = [
+    body.court || '',
+    body.documentTitle || '',
+    workingText,
+  ].join('\n');
+  const courtProfileInstruction = buildCourtProfileInstruction(profileInput);
+  const caseStrategyInstruction = buildCaseStrategyInstruction(profileInput);
+
+  const specialistInput = `${courtProfileInstruction}
+
+${caseStrategyInstruction}
+
+بيانات الإدخال:
 العنوان: ${String(body.documentTitle || 'غير محدد').slice(0, 300)}
 الاختصاص: ${String(body.court || intake.data?.jurisdiction || 'غير محدد').slice(0, 200)}
 نوع المستند: ${String(intake.data?.documentType || 'غير محدد').slice(0, 160)}
 مسار غرفة الأدمن: ${analysisMode}
+مهمة موجّه القضية: ${routeAudit.task}
+مرحلة الحكم: ${routeAudit.stage}
+بروفايل المحكمة: ${routeAudit.courtProfile}
+نظرية القضية: ${routeAudit.caseStrategyProfile}
+بوابة الصياغة: ${routeAudit.blocking ? 'BLOCK' : 'ALLOW'}
+${routeAudit.blocking ? `سبب الإيقاف: ${routeAudit.reason}` : ''}
 
 المستند:
 ${workingText || 'لم يتوفر نص كافٍ بعد الاستخراج.'}
@@ -798,7 +838,9 @@ ${sourceNotice}`;
       agentId: 'legislative-flaws',
       label: 'وكيل التشريعات والسريان والمراجع',
       clientOffset: 1,
-      systemInstruction: `أنت وكيل تدقيق تشريعي سعودي.
+      systemInstruction: `${buildAgentContractInstruction('legislative-flaws')}
+
+أنت وكيل تدقيق تشريعي سعودي.
 افحص النصوص النظامية المذكورة أو الواجب بحثها، حالة السريان والتعديل والإلغاء، المصدر الرسمي، والفرق بين النص النظامي والمبدأ القضائي.
 ركز على ديوان المظالم ونظام المرافعات أمامه ونظام التنفيذ أمامه ونظام خدمة الأفراد والأوامر والمراسيم واللوائح عندما تكون ذات صلة.
 ${sharedRules}
@@ -815,7 +857,9 @@ ${sharedRules}
       agentId: 'judicial-flaws',
       label: 'وكيل العيوب القضائية والمبادئ',
       clientOffset: 2,
-      systemInstruction: `أنت وكيل مراجعة قضائية سعودي.
+      systemInstruction: `${buildAgentContractInstruction('judicial-flaws')}
+
+أنت وكيل مراجعة قضائية سعودي.
 افحص منطق الحكم القضائي، مدى معالجة الدفوع الجوهرية، التناقض بين الأسباب والمنطوق، وحدود الاستناد إلى المبادئ والأحكام السابقة.
 لا تنسب رقماً أو مبدأً إلى حكم أو دائرة إلا إذا ورد ذلك صراحة في حزمة المصدر الرسمية. إذا كانت قاعدة السوابق غير مكتملة فاجعل أي استناد من هذا النوع verificationNeeded=true.
 ${sharedRules}
@@ -832,7 +876,9 @@ ${sharedRules}
       agentId: 'procedural-flaws',
       label: 'وكيل الاختصاص والإجراءات',
       clientOffset: 3,
-      systemInstruction: `أنت وكيل اختصاص وإجراءات قضائية سعودية.
+      systemInstruction: `${buildAgentContractInstruction('procedural-flaws')}
+
+أنت وكيل اختصاص وإجراءات قضائية سعودية.
 افحص الاختصاص الولائي والنوعي، الصفة والمصلحة، المواعيد، التظلم السابق عند لزومه، تسلسل الإجراءات، الطلبات الشكلية، وما إذا كانت الوقائع المتاحة تكفي للجزم بأي نقطة إجرائية.
 ${sharedRules}
 أعد JSON فقط:
@@ -848,7 +894,9 @@ ${sharedRules}
       agentId: 'evidence-flaws',
       label: 'وكيل الإثبات والمرفقات',
       clientOffset: 0,
-      systemInstruction: `أنت وكيل إثبات قضائي سعودي.
+      systemInstruction: `${buildAgentContractInstruction('evidence-flaws')}
+
+أنت وكيل إثبات قضائي سعودي.
 اربط كل واقعة أو ادعاء بما يسنده في المستند والمرفقات، وحدد الفجوات والتناقضات وعبء الإثبات والمستندات الناقصة.
 لا تفترض وجود دليل لم يرفق ولا تعتبر مجرد ذكر مستند إثباتاً لمضمونه.
 ${sharedRules}
@@ -867,7 +915,9 @@ ${sharedRules}
       agentId: 'reasoning-flaws',
       label: 'وكيل التكييف والتسبيب',
       clientOffset: 1,
-      systemInstruction: `أنت وكيل تكييف وتسبيب قضائي سعودي.
+      systemInstruction: `${buildAgentContractInstruction('reasoning-flaws')}
+
+أنت وكيل تكييف وتسبيب قضائي سعودي.
 افحص التكييف النظامي للوقائع، البدائل الممكنة، علاقة الأسباب بالطلبات والمنطوق، وأي قفزة منطقية أو تعارض داخلي.
 لا تعتبر مجرد وجود تكييف مختلف خطأً؛ بين لماذا قد يكون التكييف محل مراجعة وما السند الذي يحتاج تحققاً.
 ${sharedRules}
@@ -885,7 +935,9 @@ ${sharedRules}
       agentId: 'rebuttal-review',
       label: 'وكيل مراجعة الدفوع والردود',
       clientOffset: 2,
-      systemInstruction: `أنت وكيل مراجعة دفوع وردود.
+      systemInstruction: `${buildAgentContractInstruction('rebuttal-review')}
+
+أنت وكيل مراجعة دفوع وردود.
 استخرج كل دفع جوهري أو جواب عليه، وحدد ما إذا كان الرد يعالج جوهر الدفع أم يتجاوزه، وما الذي يحتاج سنداً أو إثباتاً إضافياً.
 لا تصف دفعاً بأنه حاسم أو منتج إلا مع بيان الأساس والتحقق المطلوب.
 ${sharedRules}
@@ -962,7 +1014,9 @@ ${sharedRules}
     agentId: 'admin-final',
     label: 'المراجع النهائي للأدمن',
     clientOffset: 0,
-    systemInstruction: `أنت المراجع النهائي في غرفة تحليل QADA الخاصة بالأدمن.
+    systemInstruction: `${buildAgentContractInstruction('admin-final')}
+
+أنت المراجع النهائي في غرفة تحليل QADA الخاصة بالأدمن.
 ستستلم نتائج وكلاء مستقلين ونتيجة وكلاء المراجع القانونية. مهمتك الدمج وإزالة التكرار وكشف التعارض بينهم، لا اختراع نقاط جديدة بلا سند.
 رتب الملاحظات حسب أثرها المحتمل، واحتفظ بحالة المصدر لكل نقطة.
 إذا تعارض وكيلان فضع التعارض في conflictingPoints ولا تخفِه.
@@ -1041,9 +1095,10 @@ ${ISSUE_SCHEMA}`,
   const routingRun: AgentRun = {
     id: 'case-router',
     label: 'موجّه القضية',
-    status: 'success',
+    status: routeAudit.blocking ? 'warning' : 'success',
     durationMs: 1,
-    summary: `فعّل ${sourceRuns.length} وكلاء مصادر و6 مسارات تحليل تخصصية.`,
+    summary: `${routeAudit.task}/${routeAudit.stage} • ${routeAudit.courtProfile} • ${routeAudit.caseStrategyProfile} • فعّل ${sourceRuns.length} وكلاء مصادر و6 مسارات تحليل تخصصية.`,
+    blockers: routeAudit.blocking ? [routeAudit.reason] : [],
   };
 
   const coreRun: AgentRun = {

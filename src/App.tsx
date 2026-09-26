@@ -931,7 +931,7 @@ export default function App() {
                 onClick={() => handleInterfaceModeChange('professional')}
                 className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
               >
-                <Scale className="h-5 w-5" strokeWidth={1.8} /><span>احترافي</span>
+                <Scale className="h-5 w-5" strokeWidth={1.8} /><span>متقدم</span>
               </button>
             ) : (
               <button
@@ -1008,7 +1008,7 @@ export default function App() {
         activeCourt={activeCourt}
         activeService={activeService}
         userSession={session}
-        responseMode={session.role === 'admin' ? 'professional' : interfaceMode}
+        responseMode={session.role === 'admin' ? 'professional' : 'simple'}
         openSignal={assistantOpenSignal}
         externalPrefill={assistantPrefill}
         externalAttachments={assistantAttachments}

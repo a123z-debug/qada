@@ -160,7 +160,13 @@ export function WelcomeScreen({
 
     const userMessage = { id: 'simple-user-' + Date.now(), role: 'user' as const, content: task };
     const assistantId = 'simple-assistant-' + Date.now();
-    const assistantMessage = { id: assistantId, role: 'assistant' as const, content: '' };
+    const assistantMessage = {
+      id: assistantId,
+      role: 'assistant' as const,
+      content: simpleAttachments.length
+        ? 'جاري قراءة المستند وتحليل المطلوب…'
+        : 'جاري فهم طلبك وترتيب الخطوة التالية…',
+    };
     const previousMessages = simpleMessages;
 
     setSimpleRequest('');
@@ -202,7 +208,10 @@ export function WelcomeScreen({
       }
       // Keep the current evidence attached across follow-up questions until the user removes it.
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'تعذر إكمال المهمة.';
+      const rawMessage = error instanceof Error ? error.message : '';
+      const message = /load failed|failed to fetch|networkerror|network request failed/i.test(rawMessage)
+        ? 'انقطع الاتصال أثناء التحليل. المرفق ما زال موجوداً؛ اضغط «أكمل مع QADA» لإعادة المحاولة.'
+        : (rawMessage || 'تعذر إكمال المهمة. أعد المحاولة بعد قليل.');
       setSimpleError(message);
       setSimpleMessages((current) =>
         current.map((item) =>

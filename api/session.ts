@@ -50,7 +50,8 @@ const SESSION_MAX_AGE = 12 * 60 * 60;
 const PBKDF2_ITERATIONS = 310_000;
 const AUTH_WINDOW_SECONDS = 15 * 60;
 const AUTH_ATTEMPT_LIMIT = 10;
-const OPEN_TEST_MODE = process.env.QADA_OPEN_TEST_MODE === 'true' || !isProductionRuntime();
+const OPEN_TEST_MODE = process.env.QADA_OPEN_TEST_MODE === 'true';
+const GUEST_ACCESS_ENABLED = process.env.QADA_GUEST_ACCESS === 'true';
 
 const localAccounts = new Map<string, string>();
 
@@ -650,6 +651,9 @@ export default async function handler(req: any, res: any) {
         loginAt: Date.now(),
       };
     } else if (action === 'guest-login') {
+      if (!GUEST_ACCESS_ENABLED) {
+        return res.status(403).json({ error: 'دخول الضيف غير مفعّل على هذه البيئة.' });
+      }
       const guestId = `guest-${randomBytes(12).toString('hex')}`;
       session = {
         id: guestId,

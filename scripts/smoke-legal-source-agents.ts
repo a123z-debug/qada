@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -43,6 +45,24 @@ for (const bundle of [administrative, military, royal, precedent]) {
       assert(Boolean(reference.sourceUrl), `missing official URL in ${packet.agentId}`);
     }
   }
+}
+
+
+function runtimeFiles(dir: string): string[] {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return runtimeFiles(full);
+    return /\.(?:ts|tsx|js|jsx)$/.test(entry.name) ? [full] : [];
+  });
+}
+
+for (const file of ['server.ts', ...runtimeFiles('api'), ...runtimeFiles('src')]) {
+  const source = fs.readFileSync(file, 'utf8');
+  assert(
+    !/(?:from\s+['"][^'"]*scratch\/legal_database|import\s*\([^)]*scratch\/legal_database|require\s*\([^)]*scratch\/legal_database)/.test(source),
+    `scratch/legal_database must never be imported into runtime: ${file}`,
+  );
 }
 
 console.log(JSON.stringify({
