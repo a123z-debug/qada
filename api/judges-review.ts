@@ -8,6 +8,7 @@ import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
+import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -128,6 +129,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     attachmentParts.length > 0 || Boolean(safeAttachmentsText.trim()),
   );
   const lawOfficeInstruction = buildLawOfficeInstruction(routeAudit, sourceBundle);
+  const courtProfileInstruction = buildCourtProfileInstruction([
+    body.court || '',
+    body.documentTitle || '',
+    safeText,
+  ].join('\n'));
 
   const legalReferenceContext = [
     sourceBundle.context,
@@ -138,6 +144,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ].join('\n\n');
 
   const prompt = `${lawOfficeInstruction}
+
+${courtProfileInstruction}
 
 أنت فريق مراجعة قانونية آلي داخل مكتب محاماة رقمي. لديك ثلاثة أدوار تحليلية، لكن لا تفترض أن كل محرر استئناف أو نقض.
 المهمة التي حددتها بوابة المكتب: ${routeAudit.task}.
