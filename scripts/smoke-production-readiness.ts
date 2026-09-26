@@ -5,9 +5,15 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 const env = fs.readFileSync('.env.example', 'utf8');
-for (const key of ['AUTH_SECRET', 'DATA_SECRET', 'QADA_ADMIN_CREDENTIAL_HASH_V7', 'REDIS_URL', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN']) {
+for (const key of ['AUTH_SECRET', 'DATA_SECRET', 'QADA_ADMIN_CREDENTIAL_HASH_V7', 'REDIS_URL', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'QADA_OPEN_TEST_MODE', 'QADA_GUEST_ACCESS']) {
   assert(env.includes(key + '='), '.env.example missing ' + key);
 }
+
+
+const session = fs.readFileSync('api/session.ts', 'utf8');
+assert(session.includes("const OPEN_TEST_MODE = process.env.QADA_OPEN_TEST_MODE === 'true';"), 'test access must be explicit and fail closed');
+assert(session.includes("const GUEST_ACCESS_ENABLED = process.env.QADA_GUEST_ACCESS === 'true';"), 'guest access must be explicit and fail closed');
+assert(session.includes('if (!GUEST_ACCESS_ENABLED)'), 'guest login must reject when not explicitly enabled');
 
 const redis = fs.readFileSync('api/_redis.ts', 'utf8');
 assert(redis.includes('process.env.REDIS_URL'), 'Redis adapter must support Railway/native Redis');
