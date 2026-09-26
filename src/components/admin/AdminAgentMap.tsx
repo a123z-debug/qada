@@ -126,7 +126,7 @@ type RuntimeSnapshot = {
 };
 
 const CANVAS_WIDTH = 1600;
-const CANVAS_HEIGHT = 1080;
+const CANVAS_HEIGHT = 1160;
 
 const nodes: AgentNode[] = [
   { id: 'auth', title: 'المصادقة والحساب', subtitle: 'دخول وصلاحيات', x: 35, y: 42, width: 165, height: 74, status: 'linked', tone: 'cyan', icon: ShieldCheck, detail: 'بوابة الدخول والجلسات وتحديد صلاحية المستخدم أو المشرف.' },
@@ -163,12 +163,14 @@ const nodes: AgentNode[] = [
   { id: 'final-review', title: 'المراجع النهائي', subtitle: 'بوابة تحقق داخلية', x: 1410, y: 365, width: 165, height: 90, status: 'linked', tone: 'violet', icon: CheckCircle2, detail: 'بوابة داخلية تجمع النتائج وتمنع إخفاء فشل الوكلاء أو قيود المصادر قبل إخراج التقرير.' },
   { id: 'drafting', title: 'مختبر الصياغة', subtitle: 'دعوى / مذكرة / اعتراض', x: 1410, y: 475, width: 165, height: 82, status: 'linked', tone: 'cyan', icon: FileText, detail: 'يحوّل التحليل الموثق إلى مسودة أولية منظمة قبل تمريرها إلى وكيل الصياغة النهائي.' },
   { id: 'hujja-bayan', title: 'صاحب حُجّة وبيان', subtitle: 'استقراء ثم صياغة', x: 1390, y: 575, width: 205, height: 88, status: 'linked', tone: 'violet', icon: ScrollText, detail: 'وكيل الصياغة النهائي: يراجع الحكم والمبادئ المتاحة أولاً، ثم يصوغ المذكرة أو الاعتراض بقوة حجة وبيان رصين، دون اختراع سابقة أو سند.' },
-  { id: 'final-output', title: 'المخرجات النهائية', subtitle: 'تقرير / مسودة / خطة عمل', x: 1410, y: 690, width: 165, height: 78, status: 'linked', tone: 'amber', icon: FileCheck2, detail: 'يجمع التقرير التحليلي والمسودة المنقحة وروابط المصادر وقائمة التحقق المطلوبة للمراجعة البشرية.' },
+  { id: 'virtual-judge', title: 'القاضي الافتراضي', subtitle: 'PASS / RETURN / BLOCK', x: 1390, y: 680, width: 205, height: 82, status: 'linked', tone: 'violet', icon: Gavel, detail: 'بوابة الجاهزية قبل التصدير: تفحص المحكمة والمرحلة والسريان والمصادر والعناصر والاستثناءات والدفوع والطلبات، وتمنع التصدير تحت 95/100 أو عند وجود مانع جوهري.' },
+  { id: 'final-output', title: 'المخرجات النهائية', subtitle: 'تقرير / مسودة / خطة عمل', x: 1410, y: 780, width: 165, height: 78, status: 'linked', tone: 'amber', icon: FileCheck2, detail: 'لا تصبح المخرجات قابلة للنسخ أو التصدير إلا بعد اجتياز بوابة القاضي الافتراضي واعتماد النسخة نفسها دون تعديل لاحق.' },
 
   { id: 'editor-tool', title: 'Editor', subtitle: 'إدارة وصياغة المواد', x: 610, y: 692, width: 155, height: 58, status: 'linked', tone: 'cyan', icon: FileText, detail: 'واجهة تحرير المذكرات والمسودات ومراجعة النص قبل إدخاله إلى مسارات التحليل.' },
   { id: 'execution-tool', title: 'Execution', subtitle: 'مراقبة سير التشغيل', x: 785, y: 692, width: 155, height: 58, status: 'linked', tone: 'cyan', icon: Activity, detail: 'يعرض حالة تشغيل الوكلاء الفعلية، الأزمنة، التحذيرات، الأخطاء ومسار التنفيذ.' },
   { id: 'evaluation-tool', title: 'Evaluation', subtitle: 'اختبار وتحقق', x: 960, y: 692, width: 155, height: 58, status: 'linked', tone: 'emerald', icon: CheckCircle2, detail: 'طبقة التقييم والاختبارات الآلية التي تمنع اعتماد نسخة لا تجتاز فحوص المصادر والأمان والبناء.' },
   { id: 'agents-tool', title: 'Agents', subtitle: 'إدارة الوكلاء', x: 1135, y: 692, width: 155, height: 58, status: 'linked', tone: 'amber', icon: Layers3, detail: 'فهرس الوكلاء والمسارات المرتبطة بالخريطة التشغيلية وحالة كل وكيل.' },
+  { id: 'security-007', title: '007 — AppSec', subtitle: 'أمن واختبار إصدار', x: 1135, y: 765, width: 205, height: 68, status: 'planned', tone: 'rose', icon: ShieldCheck, adminOnly: true, detail: 'وكيل أمني حرج للإطلاق. المطلوب: فحص Injection وXSS والمصادقة والأسرار والتسريب وإصدار تقرير خطر/مكان/حل/تحقق. يظهر مخططاً حتى يصبح له تنفيذ واختبار Runtime مستقل.' },
 
   { id: 'admin-entry', title: 'غرفة التحليل للأدمن', subtitle: 'مدخل خاص ومقيد', x: 85, y: 840, width: 240, height: 82, status: 'linked', tone: 'violet', icon: LockKeyhole, adminOnly: true, detail: 'مدخل منفصل للمشرف لتحليل حكم أو مذكرة بشكل أعمق من واجهة المستخدم العامة.' },
   { id: 'judgment-audit', title: 'إيجنت تحليل الأحكام', subtitle: 'الحكم كاملاً', x: 380, y: 815, width: 205, height: 74, status: 'linked', tone: 'violet', icon: Gavel, adminOnly: true, detail: 'مسار فعلي لتحليل الأحكام يوزع الحكم على الفحص التشريعي والقضائي والإجرائي والإثباتي والتسبيب والدفوع.' },
@@ -218,11 +220,13 @@ const edges: Edge[] = [
   { from: 'reasoning', to: 'hujja-bayan' },
   { from: 'evidence', to: 'hujja-bayan' },
   { from: 'drafting', to: 'hujja-bayan' },
-  { from: 'hujja-bayan', to: 'final-output' },
+  { from: 'hujja-bayan', to: 'virtual-judge', kind: 'verification' },
+  { from: 'virtual-judge', to: 'final-output', kind: 'verification' },
   { from: 'qada-core', to: 'editor-tool' },
   { from: 'qada-core', to: 'execution-tool' },
   { from: 'qada-core', to: 'evaluation-tool' },
   { from: 'qada-core', to: 'agents-tool' },
+  { from: 'evaluation-tool', to: 'security-007', kind: 'verification' },
 
   { from: 'admin-entry', to: 'judgment-audit', kind: 'admin' },
   { from: 'admin-entry', to: 'memo-audit', kind: 'admin' },
