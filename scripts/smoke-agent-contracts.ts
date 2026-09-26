@@ -1,0 +1,98 @@
+import fs from 'node:fs';
+import { AGENT_CONTRACTS, PLATFORM_NODE_IDS, launchBlockingContracts } from '../src/lib/agentContracts';
+import { allCourtProfiles, detectCourtProfile } from '../src/lib/courtProfiles';
+
+function assert(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
+
+const map = fs.readFileSync('src/components/admin/AdminAgentMap.tsx', 'utf8');
+const nodesBlock = map.match(/const nodes: AgentNode\[\] = \[([\s\S]*?)\n\];/);
+assert(nodesBlock, 'Admin agent map nodes block not found');
+const mapIds = Array.from(nodesBlock[1].matchAll(/\bid:\s*'([^']+)'/g)).map((match) => match[1]);
+
+const contractsById = new Map(AGENT_CONTRACTS.map((contract) => [contract.id, contract]));
+assert(contractsById.size === AGENT_CONTRACTS.length, 'Agent contract IDs must be unique');
+
+for (const id of mapIds) {
+  assert(
+    contractsById.has(id) || PLATFORM_NODE_IDS.has(id),
+    `Map node has no explicit contract or platform classification: ${id}`,
+  );
+}
+
+for (const contract of AGENT_CONTRACTS) {
+  assert(contract.label.trim().length > 0, `Missing label: ${contract.id}`);
+  assert(contract.mission.trim().length >= 20, `Mission too weak: ${contract.id}`);
+  assert(contract.inputs.length > 0, `No inputs: ${contract.id}`);
+  assert(contract.outputs.length > 0, `No outputs: ${contract.id}`);
+  assert(contract.mustDo.length > 0, `No mandatory duties: ${contract.id}`);
+  assert(contract.mustNot.length > 0, `No prohibited behavior: ${contract.id}`);
+  assert(contract.strengths.length > 0, `No strength definition: ${contract.id}`);
+  assert(contract.weaknesses.length > 0, `No weakness definition: ${contract.id}`);
+  assert(contract.implementation.trim().length > 0, `No implementation mapping: ${contract.id}`);
+}
+
+for (const id of [
+  'document-reader',
+  'case-router',
+  'qada-core',
+  'official-source',
+  'exact-text',
+  'amendments',
+  'src-bog',
+  'src-personnel',
+  'src-royal',
+  'src-precedents',
+  'legislative-flaws',
+  'judicial-flaws',
+  'procedural-flaws',
+  'evidence-flaws',
+  'reasoning-flaws',
+  'rebuttal-review',
+  'admin-final',
+  'hujja-bayan',
+  'virtual-judge',
+  'final-review',
+  'security-007',
+]) {
+  assert(contractsById.has(id), `Critical agent contract missing: ${id}`);
+}
+
+const profiles = allCourtProfiles();
+assert(profiles.length >= 8, 'Court profile coverage is too narrow');
+assert(detectCourtProfile('المحكمة الإدارية العليا طعن بالنقض').id === 'administrative-supreme', 'Administrative supreme routing failed');
+assert(detectCourtProfile('محكمة الاستئناف الإدارية').id === 'administrative-appeal', 'Administrative appeal routing failed');
+assert(detectCourtProfile('المحكمة الإدارية ديوان المظالم').id === 'administrative-first', 'Administrative first-instance routing failed');
+assert(detectCourtProfile('المحكمة الجزائية').id === 'criminal-first', 'Criminal court routing failed');
+assert(detectCourtProfile('المحكمة العامة مطالبة مالية').id === 'general-first', 'General court routing failed');
+
+const blockers = launchBlockingContracts();
+assert(
+  blockers.some((contract) => contract.id === 'security-007'),
+  '007 must remain a launch blocker until an executable AppSec agent exists',
+);
+assert(
+  blockers.some((contract) => contract.id === 'exact-text'),
+  'Exact-text verification must remain launch-visible while literal quotation coverage is partial',
+);
+assert(
+  blockers.some((contract) => contract.id === 'src-personnel'),
+  'Personnel-law completeness must remain launch-visible while amendments/regulations are partial',
+);
+assert(
+  blockers.some((contract) => contract.id === 'src-precedents'),
+  'Precedent corpus incompleteness must remain launch-visible',
+);
+
+console.log(JSON.stringify({
+  ok: true,
+  mapNodes: mapIds.length,
+  agentContracts: AGENT_CONTRACTS.length,
+  courtProfiles: profiles.length,
+  launchBlockers: blockers.map((item) => ({
+    id: item.id,
+    label: item.label,
+    readiness: item.readiness,
+  })),
+}, null, 2));
