@@ -117,8 +117,8 @@ assert(app.includes("session.role === 'admin' && <SystemAgentBar />"),
   'Technical system status bar must remain admin-only');
 assert(sidebar.includes("isAdmin ? 'مركز القيادة الرئيسي' : 'الرئيسية'") && sidebar.includes("isAdmin ? 'حماية وعزل قضائي' : 'جلسة محمية'"),
   'Professional user navigation must use simplified labels while preserving admin wording');
-assert(app.includes("handleInterfaceModeChange('professional')") && app.includes('احترافي'),
-  'Simple mobile dock must offer a direct professional-mode handoff');
+assert(app.includes("handleInterfaceModeChange('professional')") && app.includes('متقدم'),
+  'Simple mobile dock must offer a clearly labeled advanced-mode handoff');
 assert(welcome.includes('QADA PROFESSIONAL'), 'Professional interface label missing');
 assert(welcome.includes('واجهة الإدارة'), 'Admin interface entry missing');
 assert(welcome.includes("fetch('/api/ai'"), 'Simple interface is not wired to the canonical assistant API');
@@ -171,8 +171,8 @@ assert(welcome.includes('changeInterfaceMode') && welcome.includes("onModeChange
   'Simple and Professional must be two modes of the same workspace');
 assert(app.includes('handleInterfaceModeChange') && app.includes('onModeChange={handleInterfaceModeChange}'),
   'Unified workspace mode switch is not wired through the application');
-assert(app.includes("responseMode={session.role === 'admin' ? 'professional' : interfaceMode}"),
-  'Assistant response mode is not synchronized with the unified workspace switch');
+assert(app.includes("responseMode={session.role === 'admin' ? 'professional' : 'simple'}"),
+  'Client floating advisor must stay in Simple mode; only admin may receive Professional chat responses');
 assert(
   app.includes("setShowLandingPage(false)")
     && app.includes("setIsAdminMapOpen(userSession.role === 'admin' || userSession.workspaceMode === 'admin')"),
