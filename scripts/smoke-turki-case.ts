@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents';
 import { analyzeLawOfficeRoute, detectLawOfficeTask } from '../src/lib/lawOfficeExpert';
+import { detectCourtProfile } from '../src/lib/courtProfiles';
+import { detectCaseStrategyProfile } from '../src/lib/caseStrategyProfiles';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -77,6 +79,21 @@ const turkiDraftQuery = `
 والمرسوم الملكي م/37 لعام 1430هـ، ويدفع باختلاف مناط العلاوة الفنية ومكافأة الحاسب
 وبثبوت الممارسة الفعلية للعمل.
 `;
+assert(
+  detectCourtProfile(turkiDraftQuery).id === 'administrative-supreme',
+  'Military cassation benchmark must use the administrative-supreme court profile',
+);
+assert(
+  detectCaseStrategyProfile(turkiDraftQuery).id === 'military-personnel-rights',
+  'Military cassation benchmark must use the military-personnel rights strategy',
+);
+const benchmarkRoute = analyzeLawOfficeRoute(turkiDraftQuery, true);
+assert(
+  benchmarkRoute.courtProfile === 'administrative-supreme'
+    && benchmarkRoute.caseStrategyProfile === 'military-personnel-rights',
+  'Case router must carry both court profile and case strategy in the military cassation benchmark',
+);
+
 const turkiBundle = runLegalSourceAgents(turkiDraftQuery);
 const articleKeys = new Set(
   turkiBundle.packets.flatMap((packet) =>
