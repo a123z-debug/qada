@@ -1,4 +1,5 @@
 import type { LegalSourceAgentBundle } from './legalSourceAgents.js';
+import { buildCourtProfileInstruction } from './courtProfiles.js';
 
 export type HujjaDraftingIntent =
   | 'claim'
@@ -45,6 +46,7 @@ export function buildHujjaBayanInstruction(
 ): string {
   const intent = detectHujjaDraftingIntent(userText);
   if (intent === 'none') return '';
+  const courtProfileInstruction = buildCourtProfileInstruction(userText);
 
   const precedentPacket = sourceBundle.packets.find((packet) => packet.agentId === 'src-precedents');
   const precedentReferences = precedentPacket?.references || [];
@@ -64,6 +66,8 @@ export function buildHujjaBayanInstruction(
 
   return `[وكيل الصياغة النهائي: صاحب حُجّة وبيان]
 المهمة الحالية: ${intentLabel(intent)}.
+
+${courtProfileInstruction}
 
 هذه مرحلة صياغة بعد التحليل وليست دردشة عامة. نفّذ العمل على مرحلتين متتاليتين داخلياً، ولا تعرض خطوات التفكير الداخلية للمستخدم:
 
