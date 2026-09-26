@@ -12,6 +12,7 @@ import { protectJson } from './_secureStore.js';
 import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
 import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
+import { analyzeLawOfficeRoute } from '../src/lib/lawOfficeExpert.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -736,6 +737,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ...stringList(intake.data?.mentionedAuthorities, 20, 300),
   ].filter(Boolean).join('\n');
 
+  const routeAudit = analyzeLawOfficeRoute(
+    [body.court || '', body.documentTitle || '', workingText].join('\n'),
+    attachments.length > 0,
+  );
   const sourceBundle = runLegalSourceAgents(retrievalQuery);
   for (const sourceRun of sourceBundle.runs) {
     upsertLiveAgent(live, {
@@ -747,15 +752,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       blockers: sourceRun.blockers,
     });
   }
-  upsertLiveAgent(live, { id: 'case-router', status: 'success', durationMs: 1, summary: 'تم تحديد مسارات التحليل المطلوبة.' });
+  upsertLiveAgent(live, {
+    id: 'case-router',
+    status: routeAudit.blocking ? 'warning' : 'success',
+    durationMs: 1,
+    summary: `المهمة: ${routeAudit.task} • المرحلة: ${routeAudit.stage} • المحكمة: ${routeAudit.courtProfile} • نظرية القضية: ${routeAudit.caseStrategyProfile}`,
+    blockers: routeAudit.blocking ? [routeAudit.reason] : [],
+  });
+  const coreHasWarnings = routeAudit.blocking || sourceBundle.runs.some((run) => run.status === 'warning');
   upsertLiveAgent(live, {
     id: 'qada-core',
-    status: sourceBundle.runs.some((run) => run.status === 'warning') ? 'warning' : 'success',
+    status: coreHasWarnings ? 'warning' : 'success',
     durationMs: 1,
-    summary: sourceBundle.runs.some((run) => run.status === 'warning')
-      ? 'اكتمل التوجيه مع قيود تحقق مرجعية.'
-      : 'اكتمل التوجيه وبناء حزمة المصادر.',
-    blockers: sourceBundle.verification.blockers,
+    summary: routeAudit.blocking
+      ? 'أوقف موجّه القضية الصياغة النهائية حتى تصحيح المسار.'
+      : sourceBundle.runs.some((run) => run.status === 'warning')
+        ? 'اكتمل التوجيه مع قيود تحقق مرجعية.'
+        : 'اكتمل التوجيه وبناء حزمة المصادر.',
+    blockers: [
+      ...(routeAudit.blocking ? [routeAudit.reason] : []),
+      ...sourceBundle.verification.blockers,
+    ],
   });
   live.sourcePackets = sourceBundle.packets;
   await saveLiveRun(session.id, live);
@@ -803,6 +820,12 @@ ${caseStrategyInstruction}
 الاختصاص: ${String(body.court || intake.data?.jurisdiction || 'غير محدد').slice(0, 200)}
 نوع المستند: ${String(intake.data?.documentType || 'غير محدد').slice(0, 160)}
 مسار غرفة الأدمن: ${analysisMode}
+مهمة موجّه القضية: ${routeAudit.task}
+مرحلة الحكم: ${routeAudit.stage}
+بروفايل المحكمة: ${routeAudit.courtProfile}
+نظرية القضية: ${routeAudit.caseStrategyProfile}
+بوابة الصياغة: ${routeAudit.blocking ? 'BLOCK' : 'ALLOW'}
+${routeAudit.blocking ? `سبب الإيقاف: ${routeAudit.reason}` : ''}
 
 المستند:
 ${workingText || 'لم يتوفر نص كافٍ بعد الاستخراج.'}
@@ -1072,9 +1095,10 @@ ${ISSUE_SCHEMA}`,
   const routingRun: AgentRun = {
     id: 'case-router',
     label: 'موجّه القضية',
-    status: 'success',
+    status: routeAudit.blocking ? 'warning' : 'success',
     durationMs: 1,
-    summary: `فعّل ${sourceRuns.length} وكلاء مصادر و6 مسارات تحليل تخصصية.`,
+    summary: `${routeAudit.task}/${routeAudit.stage} • ${routeAudit.courtProfile} • ${routeAudit.caseStrategyProfile} • فعّل ${sourceRuns.length} وكلاء مصادر و6 مسارات تحليل تخصصية.`,
+    blockers: routeAudit.blocking ? [routeAudit.reason] : [],
   };
 
   const coreRun: AgentRun = {
