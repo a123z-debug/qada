@@ -181,8 +181,8 @@ export function detectCaseStrategyProfile(text: string): CaseStrategyProfile {
     return PROFILES['military-personnel-rights'];
   }
   if (/تأديب|تاديب|جزاء|عقوبه اداريه|تحقيق اداري/.test(value)) return PROFILES.disciplinary;
-  if (/الغاء قرار|إلغاء قرار|قرار اداري/.test(value)) return PROFILES['administrative-annulment'];
-  if (/تعويض/.test(value) && /اداري|جهه حكوميه|وزارة|وزاره|ديوان المظالم/.test(value)) return PROFILES['administrative-compensation'];
+  if (/تعويض/.test(value) && /اداري|قرار اداري|جهه حكوميه|وزارة|وزاره|ديوان المظالم/.test(value)) return PROFILES['administrative-compensation'];
+  if (/الغاء قرار|إلغاء قرار|ابطال قرار|إبطال قرار/.test(value)) return PROFILES['administrative-annulment'];
   if (/عقد اداري|منافسه|مناقصة|جهه حكوميه/.test(value) && /عقد|مستخلص|توريد|تنفيذ/.test(value)) return PROFILES['administrative-contract'];
   if (/سلف|دين|تحويل بنكي|مطالبه ماليه/.test(value)) return PROFILES['general-money-claim'];
   if (/عقد|فسخ|اخلال|إخلال/.test(value) && /مدني|تجاري|المحكمه العامه|المحكمة العامة|محكمه تجاريه/.test(value)) return PROFILES['general-contract'];
