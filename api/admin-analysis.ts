@@ -9,6 +9,7 @@ import { withTimeout } from './_async.js';
 import { ADMIN_AI_MODELS, USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
 import { protectJson } from './_secureStore.js';
+import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -781,7 +782,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 - sourceUrls يجب أن تحتوي فقط على روابط موجودة حرفياً في حزمة وكلاء المراجع؛ لا تنشئ رابطاً جديداً ولا تكمل رابطاً ناقصاً.
 ${ISSUE_SCHEMA}`;
 
-  const specialistInput = `بيانات الإدخال:
+  const courtProfileInstruction = buildCourtProfileInstruction([
+    body.court || '',
+    body.documentTitle || '',
+    workingText,
+  ].join('\n'));
+
+  const specialistInput = `${courtProfileInstruction}
+
+بيانات الإدخال:
 العنوان: ${String(body.documentTitle || 'غير محدد').slice(0, 300)}
 الاختصاص: ${String(body.court || intake.data?.jurisdiction || 'غير محدد').slice(0, 200)}
 نوع المستند: ${String(intake.data?.documentType || 'غير محدد').slice(0, 160)}
