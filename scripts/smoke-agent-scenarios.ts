@@ -29,10 +29,15 @@ function packetIds(query: string) {
   const route = analyzeLawOfficeRoute(text, true);
   const profile = detectCourtProfile(text);
   assert(route.task === 'cassation', 'Administrative supreme case must route to cassation');
+  assert(route.courtProfile === 'administrative-supreme', 'Router must return administrative-supreme court profile');
   assert(profile.id === 'administrative-supreme', 'Administrative supreme court profile missing');
+  const militarySupremeRoute = analyzeLawOfficeRoute(
+    'فرد عسكري يطالب بمكافأة حاسب وأريد طعناً بالنقض أمام المحكمة الإدارية العليا على حكم الاستئناف الإداري',
+    true,
+  );
   assert(
-    detectCaseStrategyProfile('فرد عسكري يطالب بمكافأة حاسب أمام المحكمة الإدارية العليا').id === 'military-personnel-rights',
-    'Administrative supreme military case must preserve the military-personnel strategy',
+    militarySupremeRoute.caseStrategyProfile === 'military-personnel-rights',
+    'Router must preserve military-personnel case strategy at supreme administrative stage',
   );
 }
 
