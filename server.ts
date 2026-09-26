@@ -39,6 +39,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production'
   || process.env.VERCEL === '1'
   || process.env.RAILWAY_ENVIRONMENT === 'production'
   || process.env.RAILWAY_ENVIRONMENT_NAME === 'production';
+const PUBLIC_INDEXING_ENABLED = process.env.QADA_PUBLIC_INDEXING === 'true';
 
 async function startServer() {
   const app = express();
@@ -76,6 +77,9 @@ async function startServer() {
     if (IS_PRODUCTION) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
+    if (!PUBLIC_INDEXING_ENABLED) {
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    }
     next();
   });
   app.use(express.json({ limit: '4mb' }));
@@ -94,13 +98,19 @@ async function startServer() {
   });
 
   app.get('/robots.txt', (req, res) => {
+    if (!PUBLIC_INDEXING_ENABLED) {
+      return res.type('text/plain').send('User-agent: *\nDisallow: /\n');
+    }
     const base = (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
-    res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`);
+    return res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`);
   });
 
   app.get('/sitemap.xml', (req, res) => {
+    if (!PUBLIC_INDEXING_ENABLED) {
+      return res.status(404).type('text/plain').send('Not Found');
+    }
     const base = (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
-    res.type('application/xml').send(
+    return res.type('application/xml').send(
       `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${base}/</loc></url></urlset>`
     );
   });
