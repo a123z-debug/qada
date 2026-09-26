@@ -46,8 +46,8 @@ assert(map.includes('runtimeById') && map.includes('sourcePacketById'),
 assert(map.includes("fetch('/api/admin-runs'") && map.includes("fetch('/api/health'"),
   'Blueprint must load central run history and live readiness');
 assert(
-  map.includes("id: 'security-007'") && map.includes("id: 'security-007', title: '007 — AppSec'") && map.includes("status: 'planned'"),
-  '007 must remain visibly planned until its executable security runtime is implemented',
+  map.includes("id: 'security-007'") && map.includes("id: 'security-007', title: '007 — AppSec'") && map.includes("status: 'warning'"),
+  '007 must remain visibly warning until authenticated dynamic staging security testing is completed',
 );
 
 console.log(JSON.stringify({ ok: true, nodes: requiredIds.length, canonicalBlueprint: true }, null, 2));
