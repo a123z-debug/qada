@@ -65,6 +65,16 @@ for (const id of [
 
 const profiles = allCourtProfiles();
 assert(profiles.length >= 8, 'Court profile coverage is too narrow');
+for (const profile of profiles) {
+  assert(profile.mission.trim().length >= 20, `Court profile mission too weak: ${profile.id}`);
+  assert(profile.reviewLens.length > 0, `Court profile missing review lens: ${profile.id}`);
+  assert(profile.draftingFocus.length > 0, `Court profile missing drafting focus: ${profile.id}`);
+  assert(profile.forbiddenShortcuts.length > 0, `Court profile missing forbidden shortcuts: ${profile.id}`);
+  assert(
+    /متحقق|رسم|مصدر/.test(profile.precedentRule),
+    `Court profile may not infer judicial tendency without verified sources: ${profile.id}`,
+  );
+}
 assert(detectCourtProfile('المحكمة الإدارية العليا طعن بالنقض').id === 'administrative-supreme', 'Administrative supreme routing failed');
 assert(detectCourtProfile('محكمة الاستئناف الإدارية').id === 'administrative-appeal', 'Administrative appeal routing failed');
 assert(detectCourtProfile('المحكمة الإدارية ديوان المظالم').id === 'administrative-first', 'Administrative first-instance routing failed');
@@ -73,6 +83,15 @@ assert(detectCourtProfile('المحكمة العامة مطالبة مالية')
 
 const caseProfiles = allCaseStrategyProfiles();
 assert(caseProfiles.length >= 8, 'Case strategy profile coverage is too narrow');
+for (const profile of caseProfiles) {
+  assert(profile.mission.trim().length >= 20, `Case strategy mission too weak: ${profile.id}`);
+  assert(profile.elements.length > 0, `Case strategy missing elements: ${profile.id}`);
+  assert(profile.evidenceFocus.length > 0, `Case strategy missing evidence focus: ${profile.id}`);
+  assert(profile.opposingArguments.length > 0, `Case strategy missing opposing arguments: ${profile.id}`);
+  assert(profile.remedyFocus.length > 0, `Case strategy missing remedy focus: ${profile.id}`);
+  assert(profile.mandatoryChecks.length > 0, `Case strategy missing mandatory checks: ${profile.id}`);
+  assert(profile.forbiddenShortcuts.length > 0, `Case strategy missing forbidden shortcuts: ${profile.id}`);
+}
 assert(
   detectCaseStrategyProfile('أنا فرد عسكري في وزارة الدفاع وأطالب بعلاوة فنية ومكافأة حاسب').id === 'military-personnel-rights',
   'Military personnel rights strategy routing failed',
