@@ -22,9 +22,10 @@
     "test:serverless-runtime": "tsx scripts/smoke-serverless-runtime.ts",
     "test:ai-runtime": "tsx scripts/smoke-ai-runtime.ts",
     "audit:prod": "npm audit --omit=dev --audit-level=low",
-    "verify": "npm run lint && npm run test:legal-sources && npm run test:legal-guard && npm run test:legal-ui-safety && npm run test:api-auth && npm run test:auth-consistency && npm run test:privacy-storage && npm run test:multimodal-evidence && npm run test:production-readiness && npm run test:blueprint-map && npm run test:interaction-wiring && npm run test:serverless-runtime && npm run test:security-hardening && npm run test:turki-case",
+    "verify": "npm run lint && npm run test:legal-sources && npm run test:legal-guard && npm run test:legal-ui-safety && npm run test:api-auth && npm run test:auth-consistency && npm run test:privacy-storage && npm run test:multimodal-evidence && npm run test:production-readiness && npm run test:blueprint-map && npm run test:interaction-wiring && npm run test:serverless-runtime && npm run test:security-hardening && npm run test:virtual-judge-gate && npm run test:turki-case",
     "test:turki-case": "tsx scripts/smoke-turki-case.ts",
-    "test:security-hardening": "tsx scripts/smoke-security-hardening.ts"
+    "test:security-hardening": "tsx scripts/smoke-security-hardening.ts",
+    "test:virtual-judge-gate": "tsx scripts/smoke-virtual-judge-gate.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
