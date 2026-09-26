@@ -84,10 +84,12 @@ assert(
 assert(
   !sessionApi.includes("cookies(header)[TEST_MODE_COOKIE]")
     && sessionApi.includes("process.env.QADA_OPEN_TEST_MODE === 'true'")
+    && sessionApi.includes("process.env.QADA_GUEST_ACCESS === 'true'")
     && sessionApi.includes("action === 'test-access'")
     && sessionApi.includes("requestedMode === 'admin'")
-    && sessionApi.includes("test-${workspaceMode}-${randomBytes(10).toString('hex')}"),
-  'direct access must be unique and server-signed and must not mint admin access',
+    && sessionApi.includes("test-${workspaceMode}-${randomBytes(10).toString('hex')}")
+    && sessionApi.includes('if (!GUEST_ACCESS_ENABLED)'),
+  'direct test/guest access must be explicit, unique, server-signed, and fail closed',
 );
 assert(
   envExample.includes('REDIS_URL')
