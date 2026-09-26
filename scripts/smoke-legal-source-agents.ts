@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 
 function assert(condition: unknown, message: string): asserts condition {
