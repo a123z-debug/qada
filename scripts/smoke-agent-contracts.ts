@@ -1,12 +1,16 @@
 import fs from 'node:fs';
 import { AGENT_CONTRACTS, PLATFORM_NODE_IDS, launchBlockingContracts } from '../src/lib/agentContracts';
 import { allCourtProfiles, detectCourtProfile } from '../src/lib/courtProfiles';
+import { allCaseStrategyProfiles, detectCaseStrategyProfile } from '../src/lib/caseStrategyProfiles';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
 const map = fs.readFileSync('src/components/admin/AdminAgentMap.tsx', 'utf8');
+const adminAnalysis = fs.readFileSync('api/admin-analysis.ts', 'utf8');
+const judgesReview = fs.readFileSync('api/judges-review.ts', 'utf8');
+const hujja = fs.readFileSync('src/lib/hujjaBayanAgent.ts', 'utf8');
 const nodesBlock = map.match(/const nodes: AgentNode\[\] = \[([\s\S]*?)\n\];/);
 assert(nodesBlock, 'Admin agent map nodes block not found');
 const mapIds = Array.from(nodesBlock[1].matchAll(/\bid:\s*'([^']+)'/g)).map((match) => match[1]);
@@ -67,6 +71,52 @@ assert(detectCourtProfile('المحكمة الإدارية ديوان المظا
 assert(detectCourtProfile('المحكمة الجزائية').id === 'criminal-first', 'Criminal court routing failed');
 assert(detectCourtProfile('المحكمة العامة مطالبة مالية').id === 'general-first', 'General court routing failed');
 
+const caseProfiles = allCaseStrategyProfiles();
+assert(caseProfiles.length >= 8, 'Case strategy profile coverage is too narrow');
+assert(
+  detectCaseStrategyProfile('أنا فرد عسكري في وزارة الدفاع وأطالب بعلاوة فنية ومكافأة حاسب').id === 'military-personnel-rights',
+  'Military personnel rights strategy routing failed',
+);
+assert(
+  detectCaseStrategyProfile('أطعن في قرار إداري وأطلب إلغاء القرار').id === 'administrative-annulment',
+  'Administrative annulment strategy routing failed',
+);
+assert(
+  detectCaseStrategyProfile('سلفت شخص مبلغاً بتحويل بنكي ورفض السداد').id === 'general-money-claim',
+  'General money-claim strategy routing failed',
+);
+assert(
+  detectCaseStrategyProfile('قضية جزائية واتهام ومحضر قبض وتفتيش').id === 'criminal-defense',
+  'Criminal-defense strategy routing failed',
+);
+
+for (const id of [
+  'document-reader',
+  'legislative-flaws',
+  'judicial-flaws',
+  'procedural-flaws',
+  'evidence-flaws',
+  'reasoning-flaws',
+  'rebuttal-review',
+  'admin-final',
+]) {
+  assert(
+    adminAnalysis.includes(`buildAgentContractInstruction('${id}')`),
+    `Runtime analysis prompt is not bound to agent contract: ${id}`,
+  );
+}
+assert(
+  hujja.includes("buildAgentContractInstruction('hujja-bayan')")
+    && hujja.includes('buildCaseStrategyInstruction'),
+  'Hujja must receive both its agent contract and case strategy profile',
+);
+assert(
+  judgesReview.includes("buildAgentContractInstruction('virtual-judge')")
+    && judgesReview.includes('buildCourtProfileInstruction')
+    && judgesReview.includes('buildCaseStrategyInstruction'),
+  'Virtual Judge must receive its contract, court profile, and case strategy profile',
+);
+
 const blockers = launchBlockingContracts();
 assert(
   blockers.some((contract) => contract.id === 'security-007'),
@@ -90,6 +140,7 @@ console.log(JSON.stringify({
   mapNodes: mapIds.length,
   agentContracts: AGENT_CONTRACTS.length,
   courtProfiles: profiles.length,
+  caseStrategyProfiles: caseProfiles.length,
   launchBlockers: blockers.map((item) => ({
     id: item.id,
     label: item.label,
