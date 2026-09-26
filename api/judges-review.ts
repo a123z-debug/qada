@@ -150,9 +150,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 - إذا تعارض عنوان المحرر مع مرحلة الحكم، اعتبر تعارض المسار هو الخلل الأول ولا تعيد كتابة محرر من نوع خاطئ.
 - لا تخترع خطأ لمجرد ملء قسم من التقرير. القسم غير المنطبق يجب أن تكون عناصره [].
 
-حلل النص التالي، واكتب JSON فقط بالمفاتيح: documentType, overallStatus, primaryFatalDefect, judges, cassationErrors, claimErrors, attachmentErrors, revisedDocument, changeLog, synthesisAdvice.
+نفّذ المراجعة القضائية بهذا الترتيب الإلزامي:
+A. JURISDICTION_AND_STAGE
+- تحقق من نوع الدعوى ومرحلة الحكم وطريق الاعتراض المختار.
+- في النقض: لا تعيد وزن الأدلة كمحكمة موضوع؛ ميّز بين إعادة الوزن وبين الخطأ في التكييف، إغفال مستند جوهري، فساد الاستدلال، أو قصور التسبيب.
+
+B. TIMELINE_AND_TEMPORAL_LAW
+- ابنِ خطاً زمنياً موجزاً للقرار أو الواقعة والحكم والتبليغ والتظلم والتعديلات النظامية ذات الصلة.
+- لا تطبق نصاً حالياً على واقعة سابقة دون التحقق من نفاذه زمنياً.
+
+C. SOURCE_HIERARCHY
+- اختبر مرتبة كل مصدر: نظام، لائحة، قرار، أمر، مبدأ أو حكم.
+- قدّم النص الخاص والاستثناء الصريح على العموم، ولا تعتبر تشابه الوقائع بديلاً عن النص.
+
+D. ELEMENT_TEST
+- لكل حق أو استحقاق أو سبب نقض، أنشئ عناصر مستقلة:
+  REQUIREMENT → FACT → EVIDENCE → SOURCE → SATISFIED / NOT_SATISFIED / UNVERIFIED.
+- لا تسمح بانتقال النتيجة من قاعدة عامة إلى استحقاق فردي دون اكتمال العناصر.
+
+E. EXCEPTION_TEST
+- لكل قاعدة أو حد مالي أو منع جمع أو شرط قبول: ابحث عن الاستثناءات والقيود والموانع.
+- إذا استند الخصم إلى قاعدة عامة وكان في النص استثناء خاص مؤثر، يجب إبرازه كمسألة مستقلة.
+
+F. OPPOSING_PARTY_RED_TEAM
+- استخرج أقوى دفع جوهري للطرف المقابل أو الجهة الإدارية، لا أضعف دفع.
+- افحص هل أجابت المذكرة عنه واقعياً ونظامياً، وهل يوجد تناقض بين دفع الخصم والنتيجة التي تبناها الحكم.
+
+G. CASSATION_BOUNDARY
+- إذا كانت المهمة نقضاً، افصل بين:
+  1) مجادلة تقدير الدليل الممنوعة على محكمة النقض،
+  2) الخطأ في تكييف الواقعة،
+  3) إغفال مستند حاسم،
+  4) قصور أو تناقض الأسباب،
+  5) الخطأ في تطبيق النص أو الاستثناء.
+- لا تسمح بصياغة سبب نقض على أنه مجرد إعادة مناقشة للوقائع.
+
+H. PRECEDENT_TEST
+- لا تنسب حكماً أو مبدأ غير موجود في حزمة المصدر.
+- صنف أي سابقة موجودة: DIRECT / ANALOGOUS / DISTINGUISHABLE / IRRELEVANT.
+
+I. REMEDY_TEST
+- اختبر هل الأسباب التي بنيت عليها المذكرة تنتج فعلاً الطلب النهائي المطلوب: إلغاء، نقض، إحالة، تعويض، إلزام أو غيره.
+- افصل بين طلب النقض وبين إعادة الحكم في الموضوع إذا كان الطريق النظامي لا يسمح بذلك مباشرة.
+
+J. CONTRADICTION_TEST
+- ابحث عن التناقض بين الوقائع والمستندات، وبين دفوع الخصم وأسباب الحكم، وبين الأسباب والطلبات.
+
+حلل النص التالي، واكتب JSON فقط بالمفاتيح:
+documentType, overallStatus, gateDecision, primaryFatalDefect, judges, issueMatrix, temporalErrors, hierarchyErrors, exceptionErrors, rebuttalErrors, cassationErrors, claimErrors, attachmentErrors, remedyErrors, contradictions, nodeFailures, revisedDocument, changeLog, synthesisAdvice.
+
+قواعد gateDecision:
+- PASS فقط إذا لم توجد فجوة جوهرية، والمصادر اللازمة متحققة، ولا يوجد استثناء غير مفحوص أو دفاع جوهري بلا جواب.
+- RETURN إذا كان الخلل قابلاً للإصلاح ولا يهدم المسار القضائي من أساسه.
+- BLOCK إذا كان طريق الطعن خاطئاً، أو يوجد خطأ قانوني/واقعي جوهري قد يغير النتيجة، أو مصدر حاسم غير موثق، أو نص غير نافذ، أو استثناء حاسم غير مفحوص.
+- nodeFailures يجب أن ينسب كل عيب إلى أقرب عقدة: fact-extraction / retrieval-temporal / legal-analysis / drafting / virtual-judge-gate.
+
 يجب أن يحتوي judges على ثلاثة عناصر مراجعة آلية، وأن يكون revisedDocument النص الكامل بعد التصحيح دون اختصار.
-لا تعتبر النص جاهزاً للإيداع ولا تمنحه درجة سلامة إلا إذا اكتمل الفحص فعلياً.
+لا تعتبر النص جاهزاً للإيداع لمجرد جودة الصياغة.
 لا تنسب مادة أو ميعاداً أو مرسوماً أو قراراً أو حكماً قضائياً إلى النظام من الذاكرة.
 لا تضف في revisedDocument أي سند قانوني جديد ما لم يكن موجوداً أصلاً في النص أو مثبتاً صراحة في حزمة المصادر الرسمية.
 إذا لم يكن المصدر الرسمي متحققاً فاذكر أن التحقق المرجعي غير مكتمل، ولا تعتبر أي نص داخلي بديلاً عن المصدر الرسمي.
@@ -251,6 +305,46 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
       ].filter(Boolean).join('\n');
     }
 
+    const sourceBlockers = Array.isArray(sourceBundle.verification.blockers)
+      ? sourceBundle.verification.blockers.filter(Boolean)
+      : [];
+    const fatalDefect = String(report?.primaryFatalDefect || '').trim();
+    const requestedGate = String(report?.gateDecision || '').trim().toUpperCase();
+    const materialArrays = [
+      report?.temporalErrors,
+      report?.hierarchyErrors,
+      report?.exceptionErrors,
+      report?.rebuttalErrors,
+      report?.cassationErrors,
+      report?.claimErrors,
+      report?.attachmentErrors,
+      report?.remedyErrors,
+      report?.contradictions,
+    ];
+    const materialErrorCount = materialArrays.reduce(
+      (count, value) => count + (Array.isArray(value) ? value.length : 0),
+      0,
+    );
+
+    let serverGate: 'PASS' | 'RETURN' | 'BLOCK' = 'RETURN';
+    if (routeAudit.blocking || citationGuard.blocked || fatalDefect) {
+      serverGate = 'BLOCK';
+    } else if (
+      sourceBlockers.length === 0
+      && materialErrorCount === 0
+      && requestedGate === 'PASS'
+    ) {
+      serverGate = 'PASS';
+    }
+
+    report.gateDecision = serverGate;
+    if (serverGate === 'BLOCK') {
+      report.revisedDocument = body.text;
+      report.overallStatus = 'معيب بحاجة لتصحيح';
+    } else if (serverGate === 'RETURN' && report.overallStatus === 'جاهز للإيداع') {
+      report.overallStatus = 'يحتاج مراجعة قبل الإيداع';
+    }
+
     return res.status(200).json({
       report,
       sourceAudit: {
@@ -265,6 +359,7 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
         workflowTask: routeAudit.task,
         workflowStage: routeAudit.stage,
         workflowBlocker: routeAudit.blocking ? routeAudit.reason : '',
+        gateDecision: report.gateDecision,
       },
       sourcePackets: sourceBundle.packets,
     });
