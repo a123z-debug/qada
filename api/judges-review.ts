@@ -9,6 +9,8 @@ import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
+import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
+import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -133,11 +135,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const courtProfileInstruction = buildCourtProfileInstruction(reviewProfileInput);
   const caseStrategyInstruction = buildCaseStrategyInstruction(reviewProfileInput);
   const virtualJudgeContract = buildAgentContractInstruction('virtual-judge');
-  const courtProfileInstruction = buildCourtProfileInstruction([
-    body.court || '',
-    body.documentTitle || '',
-    safeText,
-  ].join('\n'));
 
   const legalReferenceContext = [
     sourceBundle.context,
@@ -147,9 +144,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ لا تنسب رقماً أو مبدأً إلى حكم غير موجود صراحة في حزمة المصدر.',
   ].join('\n\n');
 
-  const prompt = `${lawOfficeInstruction}
+  const prompt = `${virtualJudgeContract}
 
 ${courtProfileInstruction}
+
+${caseStrategyInstruction}
+
+${lawOfficeInstruction}
 
 أنت فريق مراجعة قانونية آلي داخل مكتب محاماة رقمي. لديك ثلاثة أدوار تحليلية، لكن لا تفترض أن كل محرر استئناف أو نقض.
 المهمة التي حددتها بوابة المكتب: ${routeAudit.task}.
