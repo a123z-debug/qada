@@ -281,7 +281,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST' && action === 'pull') {
     const session = await readActiveSession(req.headers?.cookie);
-    if (!session || session.role !== 'admin') return res.status(403).json({ error: 'ADMIN_ONLY' });
+    const adminAuthorized = Boolean(session && session.role === 'admin');
+    const tokenAuthorized = sourceAuthorized(req);
+    if (!adminAuthorized && !tokenAuthorized) {
+      return res.status(403).json({ error: 'MIGRATION_FORBIDDEN' });
+    }
 
     const sourceUrl = String(process.env.QADA_MIGRATION_SOURCE_URL || '').trim().replace(/\/$/, '');
     const token = migrationToken();
