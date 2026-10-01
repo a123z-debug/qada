@@ -8,7 +8,7 @@ jobs:
       - name: Verify deployed readiness endpoint
         run: |
           set -euo pipefail
-          code=$(curl -sS -o /tmp/qada-health.json -w "%{http_code}" "https://promptmaster-nine.vercel.app/api/health")
+          code=$(curl -sS -o /tmp/qada-health.json -w "%{http_code}" "https://qada-production-5067.up.railway.app/api/health")
           cat /tmp/qada-health.json
           echo
           echo "HTTP=$code"
