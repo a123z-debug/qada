@@ -40,11 +40,28 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production'
   || process.env.RAILWAY_ENVIRONMENT === 'production'
   || process.env.RAILWAY_ENVIRONMENT_NAME === 'production';
 const PUBLIC_INDEXING_ENABLED = process.env.QADA_PUBLIC_INDEXING === 'true';
+const CANONICAL_PUBLIC_URL = (process.env.QADA_CANONICAL_URL || '').trim().replace(/\/$/, '');
+const RETIRED_PUBLIC_HOSTS = new Set([
+  'qada-production.up.railway.app',
+  'qada-v2-production.up.railway.app',
+]);
 
 async function startServer() {
   const app = express();
 
   app.disable('x-powered-by');
+
+  // Retire legacy Railway public domains without breaking old bookmarks.
+  // Requests to the retired hosts are permanently redirected to the single
+  // canonical QADA deployment. The canonical host itself is never redirected.
+  app.use((req, res, next) => {
+    const host = String(req.headers.host || '').split(':')[0].trim().toLowerCase();
+    if (CANONICAL_PUBLIC_URL && RETIRED_PUBLIC_HOSTS.has(host)) {
+      const target = `${CANONICAL_PUBLIC_URL}${req.originalUrl || '/'}`;
+      return res.redirect(308, target);
+    }
+    next();
+  });
   app.use((_req, res, next) => {
     const csp = [
       "default-src 'self'",
