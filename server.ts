@@ -15,7 +15,6 @@ import adminRunsHandler from './api/admin-runs';
 import healthHandler from './api/health';
 import adminUsersHandler from './api/admin-users';
 import auditLogHandler from './api/audit-log';
-import migrationHandler from './api/migration';
 
 dotenv.config();
 
@@ -57,11 +56,7 @@ async function startServer() {
   // canonical QADA deployment. The canonical host itself is never redirected.
   app.use((req, res, next) => {
     const host = String(req.headers.host || '').split(':')[0].trim().toLowerCase();
-    if (
-      CANONICAL_PUBLIC_URL
-      && RETIRED_PUBLIC_HOSTS.has(host)
-      && !String(req.originalUrl || '').startsWith('/api/migration')
-    ) {
+    if (CANONICAL_PUBLIC_URL && RETIRED_PUBLIC_HOSTS.has(host)) {
       const target = `${CANONICAL_PUBLIC_URL}${req.originalUrl || '/'}`;
       return res.redirect(308, target);
     }
@@ -182,10 +177,6 @@ async function startServer() {
 
   app.all('/api/audit-log', (req, res) => {
     void auditLogHandler(req as any, res as any);
-  });
-
-  app.all('/api/migration', (req, res) => {
-    void migrationHandler(req as any, res as any);
   });
 
   if (process.env.NODE_ENV !== 'production') {
