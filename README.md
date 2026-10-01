@@ -1,20 +1,47 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# أصول القضاء — QADA
 
-# Run and deploy your AI Studio app
+منصة قانونية سعودية متعددة الوكلاء لتحليل القضايا والمستندات وصياغة المذكرات ومراجعتها قبل الإخراج النهائي.
 
-This contains everything you need to run your app locally.
+## الإنتاج المعتمد
 
-View your app in AI Studio: https://ai.studio/apps/d7cef9c8-8cde-4f7a-b617-cec4c876d969
+- المستودع: `a123z-debug/qada`
+- الفرع: `master`
+- الاستضافة: Railway
+- الرابط المعتمد: https://qada-production-5067.up.railway.app/
+- التخزين: Redis خاص داخل Railway
+- وضع الاختبار العام: مغلق افتراضياً
 
-## Run Locally
+## بنية الاستخدام
 
-**Prerequisites:**  Node.js
+- **Simple**: للمستخدم العادي، يصف المشكلة أو يرفع المستند وتدير المنصة المسار دون إغراقه بالتفاصيل القانونية.
+- **Professional**: للتحليل التفصيلي والمراجع والمواد والأدلة.
+- **Admin**: لإدارة الوكلاء، السجلات، المصادر، الجاهزية والأخطاء.
 
+## بوابة الجودة القانونية
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+المخرجات النهائية تمر عبر:
+`Court Profile → Case Strategy → Source Verification → Drafting → Red Team → Virtual Judge → Release Gate`.
+
+لا يسمح بإخراج نهائي عندما توجد عوائق جوهرية، والمستهدف الداخلي للجاهزية 99/100 مع حد أدنى 95/100 قبل الاعتماد.
+
+## التشغيل المحلي
+
+المتطلبات: Node.js 22.
+
+```bash
+npm ci
+cp .env.example .env.local
+npm run dev
+```
+
+المتغيرات الحقيقية تحفظ في Railway Variables ولا تضاف إلى Git.
+
+## التحقق قبل الدمج
+
+```bash
+npm run verify
+npm run build
+npm run audit:prod
+```
+
+راجع `QADA_RELEASE_GATES.md` لشروط الإصدار.
