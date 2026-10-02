@@ -143,9 +143,11 @@ const SIMPLE_RESPONSE_INSTRUCTION = `وضع الإجابة: QADA Simple — تح
 - الرد المثالي في Simple: توجّه واضح → خطوة تالية → سؤالان أو أقل عند الحاجة.`;
 
 const PROFESSIONAL_RESPONSE_INSTRUCTION = `وضع الإجابة: QADA Professional.
-- قدم تحليلاً منظماً ومفصلاً يناسب المستخدم المتخصص.
+- قدم تحليلاً منظماً ومفصلاً يناسب المستخدم المتخصص عندما تكون هناك وقائع أو مسألة قانونية فعلية تستحق التحليل.
+- إذا كانت رسالة المستخدم مجرد تحية أو اختبار أو طلب عام بلا وقائع، فلا تعرض هيكلاً قانونياً ولا قائمة أنواع دعاوى ولا مواد نظامية؛ رحّب باختصار واطلب منه وصف المشكلة أو إرفاق المستند.
+- لا تعرض مادة نظامية لمجرد أنها موجودة في حزمة المصادر. يجب أن تكون مرتبطة مباشرة بمسألة محددة ظهرت في وقائع المستخدم أو طلبه.
 - عند ذكر سند قانوني متحقق، رتبه بصيغة: اسم النظام — المادة (رقم): المضمون النظامي المتحقق ذي الصلة.
-- ميّز بين الوقائع، المسألة النظامية، السند المتحقق، التحليل، المخاطر، والخطوة التالية.`;
+- ميّز بين الوقائع، المسألة النظامية، السند المتحقق، التحليل، المخاطر، والخطوة التالية، ولا تنشئ هذه الأقسام قبل وجود مادة واقعية كافية للتحليل.`;
 
 type SimpleIntent =
   | 'money-claim'
@@ -233,6 +235,17 @@ function simpleUserExplicitlyRequestsDetail(messages: IncomingMessage[]): boolea
     .map((message) => typeof message.content === 'string' ? message.content : '')
     .join(' ');
   return /(?:اذكر|اعطني|أعطني|ابي|أبي|ابغى|أبغى|اريد|أريد).{0,30}(?:المواد|المراجع|الأسانيد|السند|النظام|تحليل\s+(?:قانوني|نظامي)|شرح\s+(?:قانوني|نظامي)|تفصيل)|(?:حلل|حلّل).{0,20}(?:قانونياً|قانونيا|نظامياً|نظاميا|بالتفصيل)|(?:ما\s+هي|وش).{0,20}(?:المواد|الأنظمة|الأسانيد)/i.test(text);
+}
+
+function isSubstantiveLegalRequest(text: string): boolean {
+  const value = text.replace(/\s+/g, ' ').trim();
+  if (!value) return false;
+
+  const greetingOnly = /^(?:السلام(?:\s+عليكم)?|وعليكم\s+السلام|أهلاً|اهلاً|اهلا|هلا|مرحبا|مرحباً|صباح\s+الخير|مساء\s+الخير|hi|hello|test|تجربة)[.!؟\s]*$/i;
+  if (greetingOnly.test(value)) return false;
+
+  const legalSignal = /(?:دعوى|قضية|حكم|قرار|اعتراض|استئناف|نقض|التماس|تظلم|مذكرة|محكمة|ديوان\s+المظالم|مطالبة|دين|سداد|عقد|تعويض|فصل|راتب|بدل|مخالفة|تنفيذ|خصم|مدعى|مدعي|جهة\s+حكومية|وزارة)/i;
+  return legalSignal.test(value) || value.length >= 40;
 }
 
 function simpleReplyLooksLikeLecture(reply: string): boolean {
@@ -640,7 +653,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = (req.body ?? {}) as { message?: string; messages?: IncomingMessage[]; history?: IncomingMessage[]; targetCourt?: string; responseMode?: ResponseMode };
-  const responseMode: ResponseMode = body.responseMode === 'simple' ? 'simple' : 'professional';
+  const responseMode: ResponseMode = body.responseMode === 'professional' ? 'professional' : 'simple';
   const clientMessages: IncomingMessage[] = Array.isArray(body.messages) && body.messages.length > 0 ? body.messages : [
     ...(Array.isArray(body.history) ? body.history : []),
     ...(typeof body.message === 'string' && body.message.trim() ? [{ role: 'user', content: body.message }] : []),
@@ -793,9 +806,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const verifiedArticleList = Array.from(verifiedArticleMap.values()).slice(0, 8);
     const queryAsksForSourceLink = /(?:رابط|المصدر|المصادر|لينك|url)/i.test(retrievalQuery);
+    const shouldAppendProfessionalAudit = responseMode === 'professional' && isSubstantiveLegalRequest(retrievalQuery);
 
     const auditLines: string[] = [];
-    if (responseMode === 'professional' && verifiedArticleList.length > 0) {
+    if (shouldAppendProfessionalAudit && verifiedArticleList.length > 0) {
       auditLines.push('', 'المواد النظامية المتحققة ذات الصلة:');
       for (const article of verifiedArticleList) {
         auditLines.push(
@@ -807,14 +821,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    if (responseMode === 'professional' && verifiedArticleList.length === 0 && sourceBundle.verification.officialSources > 0) {
+    if (shouldAppendProfessionalAudit && verifiedArticleList.length === 0 && sourceBundle.verification.officialSources > 0) {
       auditLines.push(
         '',
         'لم يثبت في الفهرس التفصيلي الحالي رقم مادة محدد بدرجة كافية لهذا السؤال؛ لذلك لن أعرض روابط بدل المواد أو أخمن مادة من الذاكرة.'
       );
     }
 
-    if (responseMode === 'professional' && (sourceBundle.verification.blockers.length > 0 || citationGuard.unsupportedMarkers.length > 0)) {
+    if (shouldAppendProfessionalAudit && (sourceBundle.verification.blockers.length > 0 || citationGuard.unsupportedMarkers.length > 0)) {
       auditLines.push('', 'حالة التحقق: توجد نقاط تحتاج مراجعة المصدر الرسمي قبل الاعتماد النهائي.');
     }
 
