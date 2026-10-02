@@ -1753,3 +1753,80 @@ body {
     transform: none !important;
   }
 }
+
+
+/* Public Saudi landing + authentication aligned to Quiet Luxury. */
+.qada-saudi-landing {
+  background:
+    radial-gradient(circle at 86% 4%, rgba(199,161,90,.075), transparent 24%),
+    radial-gradient(circle at 9% 34%, rgba(0,108,53,.065), transparent 28%),
+    linear-gradient(180deg, #fbfcf9 0%, #f7f8f3 56%, #f2f0e9 100%) !important;
+}
+
+.qada-saudi-landing header {
+  background: rgba(7,49,38,.93) !important;
+  border-color: rgba(231,207,154,.12) !important;
+  box-shadow: 0 12px 40px rgba(5,31,24,.12) !important;
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+
+.qada-riyadh-hero {
+  min-height: 570px;
+  background:
+    radial-gradient(circle at 75% 15%, rgba(221,188,116,.22), transparent 18%),
+    linear-gradient(180deg, #0a554b 0%, #10594c 34%, #7a705c 69%, #332c25 100%) !important;
+}
+
+.qada-riyadh-hero::before {
+  background:
+    linear-gradient(90deg, rgba(4,38,31,.78) 0%, rgba(4,38,31,.38) 48%, rgba(4,38,31,.10) 100%),
+    linear-gradient(180deg, transparent 46%, rgba(8,31,24,.18) 75%, rgba(5,20,15,.70) 100%) !important;
+}
+
+.qada-riyadh-hero h1 {
+  text-shadow: 0 16px 42px rgba(0,0,0,.22);
+}
+
+.qada-riyadh-hero [class*="bg-slate-950"],
+.qada-riyadh-hero [class*="bg-slate-900"] {
+  background-color: rgba(8,32,24,.84) !important;
+}
+
+.qada-login-shell.qada-user-auth-shell {
+  background:
+    radial-gradient(circle at 75% 12%, rgba(221,188,116,.22), transparent 18%),
+    radial-gradient(circle at 8% 88%, rgba(0,108,53,.18), transparent 26%),
+    linear-gradient(145deg, #0b554b 0%, #315e51 42%, #8b7761 68%, #2e2924 100%) !important;
+}
+
+.qada-user-auth-shell .qada-user-login-card {
+  background:
+    linear-gradient(180deg, rgba(255,254,250,.965), rgba(249,248,242,.955)) !important;
+  border-color: rgba(231,207,154,.34) !important;
+  box-shadow:
+    0 32px 90px rgba(3,25,19,.24),
+    inset 0 1px rgba(255,255,255,.98) !important;
+  backdrop-filter: blur(22px) saturate(1.05);
+}
+
+.qada-user-auth-shell .qada-user-login-card input {
+  background: rgba(255,255,255,.88) !important;
+  border-color: rgba(16,32,25,.10) !important;
+}
+
+.qada-user-auth-shell .qada-user-login-card input:focus {
+  border-color: rgba(0,108,53,.32) !important;
+  box-shadow: 0 0 0 4px rgba(0,108,53,.045) !important;
+}
+
+.qada-user-auth-shell .qada-user-login-card button[type="submit"] {
+  background: linear-gradient(145deg, #087540, #006c35 58%, #04542d) !important;
+  border-color: rgba(0,77,38,.26) !important;
+  box-shadow: 0 13px 32px rgba(0,83,43,.20) !important;
+}
+
+.qada-admin-auth-shell .qada-admin-login-card {
+  border-color: rgba(231,207,154,.12) !important;
+  background: rgba(7,23,18,.97) !important;
+  box-shadow: 0 34px 90px rgba(0,0,0,.38) !important;
+}
