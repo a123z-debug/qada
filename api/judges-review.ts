@@ -212,13 +212,13 @@ I. REMEDY_TEST
 - اختبر هل الأسباب التي بنيت عليها المذكرة تنتج فعلاً الطلب النهائي المطلوب: إلغاء، نقض، إحالة، تعويض، إلزام أو غيره.
 - افصل بين طلب النقض وبين إعادة الحكم في الموضوع إذا كان الطريق النظامي لا يسمح بذلك مباشرة.
 
+J. CONTRADICTION_TEST
+- ابحث عن التناقض بين الوقائع والمستندات، وبين دفوع الخصم وأسباب الحكم، وبين الأسباب والطلبات.
+
 K. CLAIM_LIBERATION_TEST
 - إذا كانت المهمة دعوى، فلا تعتبرها محررة إلا إذا اشتملت بوضوح وعلى الترتيب على: البيانات، الوقائع، المستندات، الطلبات.
 - لا يكفي وجود العناوين؛ افحص أن البيانات تعرّف أطراف النزاع وصفاتهم، وأن الوقائع تحرر أصل النزاع، وأن المستندات مرتبطة بما تثبته أو يصرح بنقصها، وأن الطلبات جازمة ومحددة ومتصلة بالوقائع والمستندات.
 - إذا نقص ركن من هذه الأركان أو كان مجهلاً، سجله في claimErrors ولا تمنح PASS.
-
-J. CONTRADICTION_TEST
-- ابحث عن التناقض بين الوقائع والمستندات، وبين دفوع الخصم وأسباب الحكم، وبين الأسباب والطلبات.
 
 حلل النص التالي، واكتب JSON فقط بالمفاتيح:
 documentType, overallStatus, gateDecision, primaryFatalDefect, judges, issueMatrix, temporalErrors, hierarchyErrors, exceptionErrors, rebuttalErrors, cassationErrors, claimErrors, attachmentErrors, remedyErrors, contradictions, nodeFailures, revisedDocument, changeLog, synthesisAdvice.
