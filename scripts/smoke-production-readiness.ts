@@ -57,6 +57,7 @@ const srcFiles = [
   'src/components/LoginScreen.tsx',
   'src/components/admin/AdminAnalysisRoom.tsx',
   'src/components/admin/AdminAgentMap.tsx',
+  'src/components/admin/AdminSentinel.tsx',
 ];
 for (const file of srcFiles) {
   const source = fs.readFileSync(file, 'utf8');
