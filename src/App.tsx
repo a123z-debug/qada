@@ -837,6 +837,11 @@ export default function App() {
                   requestAssistant('');
                   return;
                 }
+                if (nodeId === 'sentinel') {
+                  setIsAdminMapOpen(false);
+                  setIsAdminSentinelOpen(true);
+                  return;
+                }
                 if (nodeId === 'drafting' || nodeId === 'editor-tool') {
                   setIsAdminMapOpen(false);
                   setActiveCourt('administrative');
