@@ -717,6 +717,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let lastError: unknown;
     let sentinelReleaseGateDecision = '';
     let sentinelReleaseGateScore: number | undefined;
+    let sentinelClaimLiberationApplicable = false;
+    let sentinelClaimLiberationComplete = true;
+    let sentinelMissingClaimPillars: string[] = [];
+    let sentinelClaimLiberationIssues: string[] = [];
 
     if (hujjaBayanInstruction) {
       const generated = await streamHujjaViaGemini({
@@ -852,6 +856,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       sentinelReleaseGateDecision = releaseGate.gateDecision;
       sentinelReleaseGateScore = releaseGate.readinessScore;
+      sentinelClaimLiberationApplicable = releaseGate.claimLiberation.applicable;
+      sentinelClaimLiberationComplete = releaseGate.claimLiberation.complete;
+      sentinelMissingClaimPillars = releaseGate.claimLiberation.missingPillars;
+      sentinelClaimLiberationIssues = releaseGate.claimLiberation.linkageIssues;
 
       if (!res.headersSent) {
         res.setHeader('X-QADA-Legal-Gate', releaseGate.gateDecision);
@@ -900,6 +908,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           sourceBlockers: sourceBundle.verification.blockers.length,
           unsupportedCitations: citationGuard.unsupportedMarkers.length,
           providerMode,
+          claimLiberationApplicable: sentinelClaimLiberationApplicable,
+          claimLiberationComplete: sentinelClaimLiberationComplete,
+          missingClaimPillars: sentinelMissingClaimPillars,
+          claimLiberationIssues: sentinelClaimLiberationIssues,
         }),
         650,
         'SENTINEL_WRITE_TIMEOUT',
