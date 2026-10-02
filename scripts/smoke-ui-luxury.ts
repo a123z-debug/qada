@@ -45,6 +45,16 @@ assert(!css.includes('@import url("https://fonts.googleapis.com') && !css.includ
 assert(master.includes('Quiet Luxury') && master.includes('Mobile-first') && master.includes('Avoid neon'), 'Design-system master must preserve the premium direction and anti-patterns');
 assert(css.includes('qada-user-auth-shell') && css.includes('qada-riyadh-hero'), 'Public landing and auth surfaces must share the premium identity');
 
+for (const path of [
+  'src/components/workspaces/AdministrativeWorkspace.tsx',
+  'src/components/workspaces/GeneralWorkspace.tsx',
+  'src/components/workspaces/CriminalWorkspace.tsx',
+]) {
+  const workspace = fs.readFileSync(path, 'utf8');
+  assert(workspace.includes('qada-case-workspace'), 'Premium case workspace class missing: ' + path);
+}
+assert(css.includes('Case workspaces — one premium legal-document language'), 'Premium case workspace CSS layer missing');
+
 console.log(JSON.stringify({
   ok: true,
   designSystem: 'QADA Quiet Luxury',
