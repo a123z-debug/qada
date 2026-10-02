@@ -10,9 +10,9 @@ function normalize(value: string): string { return (value || '').toLowerCase().r
 
 export function detectLawOfficeTask(text: string): LawOfficeTask {
   const value = normalize(text);
-  if (/(?:طعن|اعتراض).{0,16}(?:نقض)|(?:لائحه|صحيفه)\s+نقض|المحكمه\s+(?:الاداريه\s+)?العليا/.test(value)) return 'cassation';
+  if (/(?:طعن|اعتراض).{0,16}(?:نقض)|(?:لائحه|صحيفه)\s+نقض|(?:اريد|ابي|ابغى).{0,24}(?:طعن\s+)?(?:بال)?نقض/.test(value)) return 'cassation';
   if (/التماس\s+اعاد(?:ه|ة)\s+النظر/.test(value)) return 'petition';
-  if (/(?:لائحه\s+)?(?:اعتراض|استئناف)|اعترض\s+على\s+(?:حكم|قرار)/.test(value)) return 'appeal';
+  if (/(?:لائحه|صحيفه)\s+(?:اعتراض|استئناف)|(?:اعتراض|استئناف)\s+على\s+(?:حكم|قرار)|(?:اريد|ابي|ابغى).{0,24}(?:اعتراض|استئناف)|اعترض\s+على\s+(?:حكم|قرار)/.test(value)) return 'appeal';
   if (/رد\s+على\s+مذكره|مذكره\s+رد|جواب\s+على\s+مذكره/.test(value)) return 'reply';
   if (/(?:لائحه|صحيفه)\s+دعوى|(?:اكتب|صغ|جهز|اعد).{0,24}دعوى/.test(value)) return 'claim';
   if (/(?:اكتب|صغ|جهز|اعد|راجع).{0,28}(?:مذكره|لائحه)|مذكره\s+(?:جوابيه|دفاع|دفوع|ختاميه)/.test(value)) return 'memo';
