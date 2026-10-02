@@ -50,6 +50,7 @@ results.push(await exercise('../api/session.ts', 'GET', [401, 200]));
 results.push(await exercise('../api/cases.ts', 'GET', [401]));
 results.push(await exercise('../api/admin-runs.ts', 'GET', [401]));
 results.push(await exercise('../api/admin-users.ts', 'GET', [401]));
+results.push(await exercise('../api/admin-sentinel.ts', 'GET', [401]));
 results.push(await exercise('../api/chat.ts', 'POST', [401]));
 
 console.log(JSON.stringify({ ok: true, results }, null, 2));
