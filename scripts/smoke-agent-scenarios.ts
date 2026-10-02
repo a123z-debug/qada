@@ -128,6 +128,17 @@ assert(detectHujjaDraftingIntent('جهز رد على مذكرة الخصم') ===
   assert(profile.elements.some((item) => item.includes('سببية')), 'Compensation strategy must test causation');
 }
 
+
+for (const [courtName, expectedStage] of [
+  ['محكمة الاستئناف الإدارية', 'unknown'],
+  ['المحكمة الإدارية العليا', 'unknown'],
+  ['المحكمة العليا', 'unknown'],
+] as const) {
+  const route = analyzeLawOfficeRoute(courtName, false);
+  assert(route.task === 'consultation', `bare court name must not infer a drafting task: ${courtName}`);
+  assert(route.draftingRequested === false, `bare court name must not request drafting: ${courtName}`);
+}
+
 console.log(JSON.stringify({
   ok: true,
   scenarios: [
