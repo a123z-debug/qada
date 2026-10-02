@@ -162,8 +162,10 @@ assert(chatApi.includes('النية العملية المستنتجة: مطال�
 assert(chatApi.includes('النية العملية المستنتجة: إعداد لائحة اعتراض/استئناف.'), 'Appeal drafting routing directive missing');
 assert(chatApi.includes('لا تشرح منصة QADA'), 'Simple assistant must not explain the platform unless asked');
 assert(chatApi.includes('الرد المثالي في Simple: توجّه واضح → خطوة تالية → سؤالان أو أقل عند الحاجة.'), 'Simple action-first response contract missing');
-assert(chatApi.includes("responseMode === 'professional' && verifiedArticleList.length > 0"),
-  'Simple mode must not auto-append the verified legal article list');
+assert(chatApi.includes("body.responseMode === 'professional' ? 'professional' : 'simple'"),
+  'Chat API must default to Simple unless Professional is explicitly requested');
+assert(chatApi.includes('shouldAppendProfessionalAudit') && chatApi.includes('isSubstantiveLegalRequest(retrievalQuery)'),
+  'Professional legal audit must require a substantive legal request and must not appear on greetings');
 assert(login.includes("action: authMode === 'register' ? 'register' : 'user-login'"), 'Email/password user access missing');
 assert(login.includes('إنشاء مستخدم جديد'), 'New user registration UI missing');
 assert(!login.includes("mode: 'admin',\n      title: 'الإدارة'"), 'Admin must not be exposed as a primary portal card');
