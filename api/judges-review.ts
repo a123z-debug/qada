@@ -11,6 +11,7 @@ import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/law
 import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
 import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
+import { assessClaimLiberation } from '../src/lib/claimLiberationGate.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -130,6 +131,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     [body.court || '', body.documentTitle || '', safeText, safeAttachmentsText].join('\n'),
     attachmentParts.length > 0 || Boolean(safeAttachmentsText.trim()),
   );
+  const claimLiberation = assessClaimLiberation({
+    draft: safeText,
+    task: routeAudit.task,
+    sourceInputText: [body.court || '', body.documentTitle || '', safeAttachmentsText].join('\n'),
+  });
   const lawOfficeInstruction = buildLawOfficeInstruction(routeAudit, sourceBundle);
   const reviewProfileInput = [body.court || '', body.documentTitle || '', safeText, safeAttachmentsText].join('\n');
   const courtProfileInstruction = buildCourtProfileInstruction(reviewProfileInput);
@@ -205,6 +211,11 @@ H. PRECEDENT_TEST
 I. REMEDY_TEST
 - اختبر هل الأسباب التي بنيت عليها المذكرة تنتج فعلاً الطلب النهائي المطلوب: إلغاء، نقض، إحالة، تعويض، إلزام أو غيره.
 - افصل بين طلب النقض وبين إعادة الحكم في الموضوع إذا كان الطريق النظامي لا يسمح بذلك مباشرة.
+
+K. CLAIM_LIBERATION_TEST
+- إذا كانت المهمة دعوى، فلا تعتبرها محررة إلا إذا اشتملت بوضوح وعلى الترتيب على: البيانات، الوقائع، المستندات، الطلبات.
+- لا يكفي وجود العناوين؛ افحص أن البيانات تعرّف أطراف النزاع وصفاتهم، وأن الوقائع تحرر أصل النزاع، وأن المستندات مرتبطة بما تثبته أو يصرح بنقصها، وأن الطلبات جازمة ومحددة ومتصلة بالوقائع والمستندات.
+- إذا نقص ركن من هذه الأركان أو كان مجهلاً، سجله في claimErrors ولا تمنح PASS.
 
 J. CONTRADICTION_TEST
 - ابحث عن التناقض بين الوقائع والمستندات، وبين دفوع الخصم وأسباب الحكم، وبين الأسباب والطلبات.
@@ -380,10 +391,18 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
       }
     }
 
+    const claimLiberationBlockers = claimLiberation.applicable && !claimLiberation.complete
+      ? [
+          ...claimLiberation.missingPillars.map((pillar) => `الدعوى غير محررة: قسم ${pillar} مفقود أو غير مكتمل.`),
+          ...claimLiberation.linkageIssues.map((issue) => `تحرير الدعوى: ${issue}`),
+        ]
+      : [];
+
     const hardBlockers = [
       ...(routeAudit.blocking ? [routeAudit.reason] : []),
       ...(citationGuard.blocked ? ['تم إدخال إحالات قانونية غير متحققة في الصياغة.'] : []),
       ...(fatalDefect ? [fatalDefect] : []),
+      ...claimLiberationBlockers,
       ...criticalSourceBlockers,
     ];
 
@@ -391,6 +410,7 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     if (routeAudit.blocking) readinessScore -= 40;
     if (citationGuard.blocked) readinessScore -= 40;
     if (fatalDefect) readinessScore -= 35;
+    if (claimLiberationBlockers.length > 0) readinessScore -= Math.min(45, claimLiberationBlockers.length * 15);
     readinessScore -= Math.min(35, criticalSourceBlockers.length * 12);
     readinessScore -= findingCounts.temporal * 12;
     readinessScore -= findingCounts.hierarchy * 10;
@@ -424,6 +444,7 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     report.militaryPersonnelCase = militaryPersonnelCase;
     report.administrativeCase = administrativeCase;
     report.hardBlockers = hardBlockers;
+    report.claimLiberation = claimLiberation;
     report.verifiedPersonnelArticles = verifiedPersonnelArticles;
     report.verifiedAdministrativeArticles = verifiedAdministrativeArticles;
 
@@ -461,6 +482,7 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
         verifiedPersonnelArticles: report.verifiedPersonnelArticles,
         verifiedAdministrativeArticles: report.verifiedAdministrativeArticles,
         hardBlockers: report.hardBlockers,
+        claimLiberation: report.claimLiberation,
       },
       sourcePackets: sourceBundle.packets,
     });
