@@ -10,6 +10,11 @@ import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError }
 import { buildHujjaBayanInstruction, isHujjaDraftingRequest } from '../src/lib/hujjaBayanAgent.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 import { reviewDraftBeforeClientRelease } from './_draftReleaseGate.js';
+import {
+  buildConversationStateInstruction,
+  latestUserTurnText,
+  shouldActivateDrafting,
+} from '../src/lib/conversationState.js';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -172,11 +177,7 @@ function detectSimpleIntent(text: string): SimpleIntent {
 }
 
 function buildSimpleActionDirective(messages: IncomingMessage[]): string {
-  const userText = messages
-    .filter((message) => message.role !== 'assistant' && message.role !== 'model')
-    .map((message) => typeof message.content === 'string' ? message.content : '')
-    .join('\n')
-    .slice(-12000);
+  const userText = latestUserTurnText(messages).slice(0, 12000);
   const intent = detectSimpleIntent(userText);
 
   const directives: Record<SimpleIntent, string> = {
@@ -230,10 +231,7 @@ function buildSimpleActionDirective(messages: IncomingMessage[]): string {
 }
 
 function simpleUserExplicitlyRequestsDetail(messages: IncomingMessage[]): boolean {
-  const text = messages
-    .filter((message) => message.role !== 'assistant' && message.role !== 'model')
-    .map((message) => typeof message.content === 'string' ? message.content : '')
-    .join(' ');
+  const text = latestUserTurnText(messages);
   return /(?:اذكر|اعطني|أعطني|ابي|أبي|ابغى|أبغى|اريد|أريد).{0,30}(?:المواد|المراجع|الأسانيد|السند|النظام|تحليل\s+(?:قانوني|نظامي)|شرح\s+(?:قانوني|نظامي)|تفصيل)|(?:حلل|حلّل).{0,20}(?:قانونياً|قانونيا|نظامياً|نظاميا|بالتفصيل)|(?:ما\s+هي|وش).{0,20}(?:المواد|الأنظمة|الأسانيد)/i.test(text);
 }
 
@@ -667,11 +665,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     : () => {};
 
   try {
-    const retrievalQuery = clientMessages
+    const recentUserMessages = clientMessages
       .filter((message) => message.role !== 'assistant' && message.role !== 'model')
+      .slice(-6);
+    const retrievalQuery = recentUserMessages
       .map((message) => typeof message.content === 'string' ? redactDirectIdentifiers(message.content).text : '')
       .join('\n')
       .slice(0, 24000);
+    const currentUserTurn = latestUserTurnText(clientMessages);
     const attachmentReferenceHints = await extractAttachmentReferenceHints(clientMessages);
     const sourceQuery = [retrievalQuery, attachmentReferenceHints].filter(Boolean).join('\n').slice(0, 26000);
     const sourceBundle = runLegalSourceAgents(
@@ -687,14 +688,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasAttachedEvidence(clientMessages),
     );
     const lawOfficeInstruction = buildLawOfficeInstruction(lawOfficeRoute, sourceBundle);
-    const hujjaBayanInstruction = isHujjaDraftingRequest(draftingRequestText) && lawOfficeRoute.allowDrafting
+    const activateHujjaDrafting = shouldActivateDrafting(clientMessages);
+    const hujjaBayanInstruction = activateHujjaDrafting && lawOfficeRoute.allowDrafting
       ? buildHujjaBayanInstruction(draftingRequestText, sourceBundle)
       : '';
+    const conversationStateInstruction = buildConversationStateInstruction(clientMessages);
 
     const contextInstruction = [
       SERVER_LEGAL_INSTRUCTION,
       responseMode === 'simple' ? SIMPLE_RESPONSE_INSTRUCTION : PROFESSIONAL_RESPONSE_INSTRUCTION,
       sourceBundle.context,
+      conversationStateInstruction,
       lawOfficeInstruction,
       hujjaBayanInstruction,
       body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '',
@@ -806,7 +810,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const verifiedArticleList = Array.from(verifiedArticleMap.values()).slice(0, 8);
     const queryAsksForSourceLink = /(?:رابط|المصدر|المصادر|لينك|url)/i.test(retrievalQuery);
-    const shouldAppendProfessionalAudit = responseMode === 'professional' && isSubstantiveLegalRequest(retrievalQuery);
+    const shouldAppendProfessionalAudit = responseMode === 'professional' && isSubstantiveLegalRequest(currentUserTurn);
 
     const auditLines: string[] = [];
     if (shouldAppendProfessionalAudit && verifiedArticleList.length > 0) {
@@ -856,9 +860,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         reply = responseMode === 'simple'
           ? [
-              'راجعت QADA المسودة قبل تسليمها ولم تعتمدها بعد.',
-              reasons.length ? `السبب: ${reasons[0]}` : 'تحتاج المسودة مراجعة إضافية قبل إخراجها.',
-              'لن أعرض لك مسودة غير معتمدة. أكمل المستند أو المعلومة المطلوبة إن ظهرت، ثم أعد المحاولة.',
+              'ما زال ينقصني عنصر أساسي قبل إخراج الصيغة النهائية.',
+              lawOfficeRoute.nextAction && !/ابدأ بتحليل ملف القضية ثم الصياغة/i.test(lawOfficeRoute.nextAction)
+                ? `المطلوب الآن: ${lawOfficeRoute.nextAction}`
+                : 'أرسل المستند أو المعلومة الناقصة التي طلبتها منك، وسأكمل من نفس النقطة.',
+              'لن أضيف تكييفاً أو مادة نظامية من عندي قبل اكتمال هذه المعلومة.',
             ].join('\n')
           : [
               `بوابة الاعتماد: ${releaseGate.gateDecision}`,
