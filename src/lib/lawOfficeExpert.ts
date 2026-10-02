@@ -16,7 +16,7 @@ export function detectLawOfficeTask(text: string): LawOfficeTask {
   if (/رد\s+على\s+مذكره|مذكره\s+رد|جواب\s+على\s+مذكره/.test(value)) return 'reply';
   if (/(?:لائحه|صحيفه)\s+دعوى|(?:اكتب|صغ|جهز|اعد).{0,24}دعوى/.test(value)) return 'claim';
   if (/(?:اكتب|صغ|جهز|اعد|راجع).{0,28}(?:مذكره|لائحه)|مذكره\s+(?:جوابيه|دفاع|دفوع|ختاميه)/.test(value)) return 'memo';
-  if (/راجع|حلل|افحص|حكم|قرار|مستند/.test(value)) return 'document-review';
+  if (/(?:راجع|حلل|افحص)|(?:^|\s)(?:حكم|قرار|مستند)(?:\s|$)/.test(value)) return 'document-review';
   return 'consultation';
 }
 
