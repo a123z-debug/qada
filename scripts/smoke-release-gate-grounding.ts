@@ -16,6 +16,13 @@ assert(
   'release gate must explicitly forbid invented substitute legal theories',
 );
 
+assert(
+  gate.includes('assessClaimLiberation')
+    && gate.includes('الدعوى غير محررة')
+    && gate.includes('البيانات → الوقائع → المستندات → الطلبات'),
+  'release gate must block claims that are not fully liberated across the four mandatory pillars',
+);
+
 const chat = fs.readFileSync('api/chat.ts', 'utf8');
 assert(chat.includes('shouldActivateDrafting(clientMessages)'), 'chat must gate drafting by current conversation state');
 assert(chat.includes('buildConversationStateInstruction(clientMessages)'), 'chat must inject continuation state');
