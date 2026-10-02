@@ -159,6 +159,7 @@ interface SidebarProps {
   onOpenAdminAnalysis?: () => void;
   onOpenAdminUsers?: () => void;
   onOpenAdminAudit?: () => void;
+  onOpenAdminSentinel?: () => void;
   onOpenAccountSecurity?: () => void;
 }
 
@@ -179,6 +180,7 @@ export function Sidebar({
   onOpenAdminAnalysis,
   onOpenAdminUsers,
   onOpenAdminAudit,
+  onOpenAdminSentinel,
   onOpenAccountSecurity,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
@@ -516,6 +518,23 @@ export function Sidebar({
                 <span>سجل التدقيق</span>
               </span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-400/20">ADMIN</span>
+            </button>
+          )}
+
+          {userSession?.role === 'admin' && onOpenAdminSentinel && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenAdminSentinel();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className="min-h-12 w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-black text-rose-200 border border-rose-400/30 bg-rose-500/10 hover:bg-rose-500/15 hover:border-rose-300/50 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <ShieldAlert className="w-4 h-4 text-rose-300" />
+                <span>QADA Sentinel — المراقبة الحية</span>
+              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-200 border border-rose-400/20">LIVE</span>
             </button>
           )}
         </div>
