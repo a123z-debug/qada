@@ -91,6 +91,9 @@ assert(sidebar.includes('QADA Sentinel — المراقبة الحية'), 'Senti
 assert(server.includes("/api/admin-sentinel"), 'Sentinel API route missing');
 assert(chat.includes('recordSentinelTurn') && chat.includes('SENTINEL_WRITE_TIMEOUT'), 'Chat monitoring hook missing');
 assert(dashboard.includes('استنتاجات المراقب') && dashboard.includes('P0 حرج'), 'Sentinel dashboard conclusions missing');
+assert(dashboard.includes('}, 1000);'), 'Sentinel admin heartbeat must refresh every second');
+const sentinelApi = fs.readFileSync('api/admin-sentinel.ts', 'utf8');
+assert(sentinelApi.includes("enforceRateLimit('admin-sentinel', session.id, 900, 10 * 60)"), 'Sentinel heartbeat rate budget must support one-second admin refresh');
 
 console.log(JSON.stringify({
   ok: true,
