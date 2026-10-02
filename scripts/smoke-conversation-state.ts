@@ -37,6 +37,23 @@ assert(
   'explicit current drafting request must activate drafting',
 );
 
+for (const courtAnswer of [
+  'محكمة الاستئناف الإدارية',
+  'المحكمة الإدارية العليا',
+  'المحكمة العليا',
+  'محكمة الاستئناف',
+  'المحكمة الجزائية',
+  'المحكمة العامة',
+]) {
+  const messages = [
+    { role: 'user', content: 'أريد صحيفة دعوى' },
+    { role: 'assistant', content: 'ما اسم المحكمة؟' },
+    { role: 'user', content: courtAnswer },
+  ];
+  assert(isLikelyContinuationAnswer(messages), `court answer must remain continuation: ${courtAnswer}`);
+  assert(!shouldActivateDrafting(messages), `court answer must not become drafting request: ${courtAnswer}`);
+}
+
 const fieldValues = [
   'محكمة خميس مشيط',
   'المحكمة العامة بخميس مشيط',
