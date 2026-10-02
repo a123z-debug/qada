@@ -238,8 +238,8 @@ export function WelcomeScreen({
 
   if (interfaceMode === 'simple') {
     return (
-      <div className="qada-simple-screen mx-auto w-full max-w-4xl space-y-5 px-1 py-2 sm:px-4 sm:py-4" dir="rtl">
-        <div className="qada-profile-card relative overflow-hidden rounded-[26px] border px-4 py-4 sm:px-5 sm:py-5">
+      <div className="qada-simple-screen qada-luxury-simple mx-auto w-full max-w-5xl space-y-6 px-1 py-2 sm:px-4 sm:py-5" dir="rtl">
+        <div className="qada-profile-card qada-luxury-profile relative overflow-hidden rounded-[28px] border px-4 py-4 sm:px-6 sm:py-5">
           <div className="qada-profile-ribbon" aria-hidden="true" />
           <div className="qada-profile-gold-sweep" aria-hidden="true" />
 
@@ -308,7 +308,7 @@ export function WelcomeScreen({
           </div>
         </div>
 
-        <section className="qada-simple-hero rounded-[28px] border border-slate-200 bg-white p-4 shadow-[0_12px_45px_rgba(15,23,42,0.06)] sm:p-7">
+        <section className="qada-simple-hero qada-consultation-desk rounded-[30px] border border-slate-200 bg-white p-4 sm:p-8">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
               <Sparkles className="h-5 w-5" strokeWidth={1.8} />
@@ -324,7 +324,7 @@ export function WelcomeScreen({
             </div>
           </div>
 
-          <div className="mt-5 grid gap-2 sm:grid-cols-3">
+          <div className="qada-simple-steps mt-6 grid gap-2.5 sm:grid-cols-3">
             {[
               ['1', 'احكِ المشكلة', 'اكتب اللي صار بطريقتك.'],
               ['2', 'أرفق أوراقك', 'إن عندك حكم أو عقد أو صورة.'],
@@ -347,8 +347,8 @@ export function WelcomeScreen({
                   key={message.id}
                   className={
                     message.role === 'user'
-                      ? 'mr-auto max-w-[92%] rounded-2xl rounded-tr-md border border-blue-100 bg-blue-50 p-3'
-                      : 'ml-auto max-w-[96%] rounded-2xl rounded-tl-md border border-slate-200 bg-white p-3'
+                      ? 'qada-chat-bubble qada-chat-bubble-user mr-auto max-w-[92%] rounded-2xl rounded-tr-md border p-3.5'
+                      : 'qada-chat-bubble qada-chat-bubble-ai ml-auto max-w-[96%] rounded-2xl rounded-tl-md border p-3.5'
                   }
                 >
                   <div className="mb-1 text-[10px] font-black text-slate-400">
@@ -362,7 +362,7 @@ export function WelcomeScreen({
             </div>
           )}
 
-          <div className="mt-5 rounded-2xl border border-slate-200 bg-[#fafbfc] p-2.5 sm:p-3">
+          <div className="qada-simple-composer mt-5 rounded-[22px] border border-slate-200 p-2.5 sm:p-3">
             <textarea
               value={simpleRequest}
               onChange={(event) => setSimpleRequest(event.target.value)}
@@ -438,7 +438,7 @@ export function WelcomeScreen({
                     key={action.title}
                     type="button"
                     onClick={() => void openSimpleTask(action.text)}
-                    className="group flex min-h-[104px] items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-right shadow-[0_6px_24px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_30px_rgba(15,23,42,0.07)]"
+                    className="qada-luxury-action group flex min-h-[112px] items-start gap-3.5 rounded-[20px] border border-slate-200 bg-white p-4.5 text-right transition hover:-translate-y-0.5"
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition group-hover:bg-slate-950 group-hover:text-white">
                       <ActionIcon className="h-5 w-5" strokeWidth={1.8} />
@@ -462,8 +462,8 @@ export function WelcomeScreen({
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 py-4 px-2 sm:px-6 select-none" dir="rtl">
-      <div className="flex flex-col gap-3 rounded-2xl border border-amber-400/15 bg-slate-900/70 p-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="qada-professional-screen max-w-7xl mx-auto space-y-7 py-4 px-2 sm:px-6 select-none" dir="rtl">
+      <div className="qada-pro-toolbar flex flex-col gap-3 rounded-2xl border p-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-[11px] font-black text-amber-300">QADA PROFESSIONAL</div>
           <p className="mt-1 text-xs text-slate-400">للشخص الذي يعرف نوع القضية ويريد اختيار المحكمة والخدمة والمراجع بنفسه.</p>
@@ -481,7 +481,7 @@ export function WelcomeScreen({
       </div>
 
       {sharedTask && (
-        <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+        <div className="qada-pro-shared rounded-2xl border p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-[11px] font-black text-cyan-200">ملف العمل المشترك بين Simple وProfessional</div>
@@ -496,7 +496,7 @@ export function WelcomeScreen({
       )}
       
       {/* 1. بانر الـ Hero الرئيسي */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-amber-500/20 p-6 sm:p-10 shadow-2xl">
+      <div className="qada-pro-hero relative overflow-hidden rounded-[30px] border p-6 sm:p-10">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
           
@@ -532,7 +532,7 @@ export function WelcomeScreen({
           </div>
 
           {/* لوحة مصغرة تمثل ملف القضية الرقمي */}
-          <div className="w-full md:w-80 bg-slate-950/80 border border-amber-500/30 rounded-2xl p-5 shadow-2xl backdrop-blur-md shrink-0">
+          <div className="qada-pro-file w-full md:w-80 border rounded-[22px] p-5 shrink-0">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
               <span className="font-bold text-xs text-amber-400 flex items-center gap-1.5">
                 <FolderOpen className="w-4 h-4" /> مساحة قضيتي
@@ -573,7 +573,7 @@ export function WelcomeScreen({
       </div>
 
       {isAdmin && onOpenAdminOverview && (
-        <div className="relative overflow-hidden rounded-3xl border border-violet-400/35 bg-gradient-to-l from-violet-500/15 via-slate-950/95 to-cyan-500/10 p-5 sm:p-6 shadow-[0_20px_70px_rgba(76,29,149,.18)]">
+        <div className="qada-pro-admin relative overflow-hidden rounded-[26px] border p-5 sm:p-6">
           <div className="absolute -top-16 -left-16 h-44 w-44 rounded-full bg-violet-500/15 blur-3xl pointer-events-none" />
           <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
             <div className="flex items-start gap-4">
@@ -622,7 +622,7 @@ export function WelcomeScreen({
             return (
               <div
                 key={cat.id}
-                className="group relative rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/40 transition-all duration-300 p-6 flex flex-col justify-between shadow-xl backdrop-blur-sm"
+                className="qada-pro-court-card group relative rounded-[24px] border transition-all duration-300 p-6 flex flex-col justify-between"
               >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -677,7 +677,7 @@ export function WelcomeScreen({
 
       {/* 3. تنبيهات وخصائص المنصة الذكية */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-        <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-start gap-3">
+        <div className="qada-pro-feature p-4 rounded-[20px] border flex items-start gap-3">
           <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 shrink-0">
             <Zap className="w-4 h-4" />
           </div>
