@@ -44,6 +44,7 @@ type SentinelEvent = {
 type SentinelPayload = {
   events?: SentinelEvent[];
   summary?: { total: number; flagged: number; clean: number; P0: number; P1: number; P2: number };
+  meta?: { sampledAt?: number; mode?: string; retention?: number; privacy?: string };
   degraded?: boolean;
   warning?: string;
   error?: string;
@@ -76,6 +77,7 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [warning, setWarning] = useState('');
+  const [lastHeartbeatAt, setLastHeartbeatAt] = useState(0);
 
   const load = useCallback(async (soft = false) => {
     if (soft) setRefreshing(true);
@@ -93,6 +95,7 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
       setEvents(next);
       setSummary(payload.summary || { total: 0, flagged: 0, clean: 0, P0: 0, P1: 0, P2: 0 });
       setWarning(payload.warning || '');
+      setLastHeartbeatAt(Number(payload.meta?.sampledAt || Date.now()));
       setSelectedId((current) => current && next.some((item) => item.id === current)
         ? current
         : (next.find((item) => item.status === 'flagged')?.id || next[0]?.id || ''));
@@ -109,7 +112,7 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
     void load();
     const timer = window.setInterval(() => {
       if (!cancelled) void load(true);
-    }, 5000);
+    }, 1000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -123,6 +126,7 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
   }, [events, filter]);
 
   const selected = events.find((item) => item.id === selectedId) || filtered[0] || null;
+  const heartbeatFresh = lastHeartbeatAt > 0 && Date.now() - lastHeartbeatAt < 3500;
 
   return (
     <section className="min-h-full bg-slate-950 text-slate-100" dir="rtl">
@@ -140,12 +144,16 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-rose-300" />
               <h1 className="text-base font-black">QADA Sentinel — المراقب الظل</h1>
-              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2 py-1 text-[10px] font-black text-emerald-200">
-                <Radio className="h-3 w-3" />
-                LIVE
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-black ${
+                heartbeatFresh
+                  ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
+                  : 'border-amber-400/25 bg-amber-500/10 text-amber-200'
+              }`}>
+                <Radio className={`h-3 w-3 ${heartbeatFresh ? 'animate-pulse' : ''}`} />
+                {heartbeatFresh ? 'LIVE • 1s' : 'إعادة اتصال'}
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">يراقب انتقالات المحادثة والوكلاء والبوابات ويكشف الانحراف قبل أن يتحول إلى نمط متكرر.</p>
+            <p className="mt-1 text-[11px] text-slate-400">يراقب انتقالات المحادثة والوكلاء والبوابات ويكشف الانحراف قبل أن يتحول إلى نمط متكرر — نبض اتصال كل ثانية وتحليل فوري عند الحدث.</p>
           </div>
         </div>
         <button
