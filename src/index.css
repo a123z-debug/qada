@@ -1830,3 +1830,140 @@ body {
   background: rgba(7,23,18,.97) !important;
   box-shadow: 0 34px 90px rgba(0,0,0,.38) !important;
 }
+
+
+/* Case workspaces — one premium legal-document language across all jurisdictions. */
+.user-shell .qada-case-workspace {
+  --workspace-accent: var(--qada-green-700);
+  --workspace-accent-soft: rgba(0,108,53,.065);
+  color: var(--qada-ink-900);
+}
+
+.user-shell .qada-case-workspace > div:first-child {
+  background:
+    linear-gradient(120deg, rgba(199,161,90,.045), transparent 36%),
+    linear-gradient(180deg, #fffefa, #fbfcf9) !important;
+  border-color: rgba(151,116,50,.18) !important;
+  box-shadow: var(--qada-shadow-sm);
+}
+
+.user-shell .qada-case-workspace > div:first-child h2 {
+  color: var(--qada-ink-900) !important;
+  letter-spacing: -.01em;
+}
+
+.user-shell .qada-case-workspace > div:first-child p {
+  color: var(--qada-muted) !important;
+}
+
+.user-shell .qada-case-workspace [class~="bg-neutral-900"],
+.user-shell .qada-case-workspace [class*="bg-neutral-900/"],
+.user-shell .qada-case-workspace [class~="bg-neutral-950"],
+.user-shell .qada-case-workspace [class*="bg-neutral-950/"] {
+  background: #fffefa !important;
+}
+
+.user-shell .qada-case-workspace [class~="border-neutral-800"],
+.user-shell .qada-case-workspace [class*="border-neutral-800/"],
+.user-shell .qada-case-workspace [class~="border-neutral-700"] {
+  border-color: rgba(16,32,25,.095) !important;
+}
+
+.user-shell .qada-case-workspace [class~="text-neutral-100"],
+.user-shell .qada-case-workspace [class~="text-neutral-200"],
+.user-shell .qada-case-workspace [class~="text-neutral-300"] {
+  color: var(--qada-ink-900) !important;
+}
+
+.user-shell .qada-case-workspace [class~="text-neutral-400"],
+.user-shell .qada-case-workspace [class~="text-neutral-500"] {
+  color: var(--qada-muted) !important;
+}
+
+.user-shell .qada-case-workspace input,
+.user-shell .qada-case-workspace textarea,
+.user-shell .qada-case-workspace select {
+  min-height: 44px;
+  color: var(--qada-ink-900) !important;
+  background: #ffffff !important;
+  border-color: rgba(16,32,25,.11) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.96);
+}
+
+.user-shell .qada-case-workspace textarea {
+  line-height: 1.8;
+}
+
+.user-shell .qada-case-workspace input:focus,
+.user-shell .qada-case-workspace textarea:focus,
+.user-shell .qada-case-workspace select:focus {
+  border-color: rgba(0,108,53,.30) !important;
+  box-shadow: 0 0 0 4px rgba(0,108,53,.045) !important;
+}
+
+.user-shell .qada-case-workspace [class*="bg-white/5"],
+.user-shell .qada-case-workspace [class*="bg-slate-800/30"] {
+  background: linear-gradient(180deg, #f8faf7, #f4f6f2) !important;
+  border-color: rgba(16,32,25,.085) !important;
+}
+
+.user-shell .qada-case-workspace button[class*="bg-amber-500"],
+.user-shell .qada-case-workspace button[class*="bg-emerald-500"],
+.user-shell .qada-case-workspace button[class*="bg-rose-500"],
+.user-shell .qada-case-workspace label[class*="bg-amber-500"],
+.user-shell .qada-case-workspace label[class*="bg-emerald-500"],
+.user-shell .qada-case-workspace label[class*="bg-rose-500"] {
+  color: #fff !important;
+  background: linear-gradient(145deg, #087540, #006c35 58%, #04542d) !important;
+  border: 1px solid rgba(0,77,38,.24) !important;
+  box-shadow: 0 10px 26px rgba(0,83,43,.16) !important;
+}
+
+.user-shell .qada-case-workspace button[class*="bg-amber-500"]:hover,
+.user-shell .qada-case-workspace button[class*="bg-emerald-500"]:hover,
+.user-shell .qada-case-workspace button[class*="bg-rose-500"]:hover,
+.user-shell .qada-case-workspace label[class*="bg-amber-500"]:hover,
+.user-shell .qada-case-workspace label[class*="bg-emerald-500"]:hover,
+.user-shell .qada-case-workspace label[class*="bg-rose-500"]:hover {
+  background: linear-gradient(145deg, #0a7d47, #006334 62%, #044927) !important;
+}
+
+.user-shell .qada-case-workspace [class*="text-amber-"],
+.user-shell .qada-case-workspace [class*="text-emerald-"],
+.user-shell .qada-case-workspace [class*="text-rose-"]:not(.text-rose-600):not(.text-rose-700):not(.text-rose-800) {
+  color: var(--qada-green-700) !important;
+}
+
+.user-shell .qada-case-workspace [class*="border-amber-"],
+.user-shell .qada-case-workspace [class*="border-emerald-"],
+.user-shell .qada-case-workspace [class*="border-rose-"] {
+  border-color: rgba(0,108,53,.16) !important;
+}
+
+.user-shell .qada-case-workspace [class*="bg-amber-500/"],
+.user-shell .qada-case-workspace [class*="bg-emerald-500/"],
+.user-shell .qada-case-workspace [class*="bg-rose-500/"] {
+  background-color: rgba(0,108,53,.065) !important;
+}
+
+.user-shell .qada-case-workspace > div:not(:first-child)[class*="rounded-3xl"],
+.user-shell .qada-case-workspace > div > div[class*="rounded-3xl"] {
+  box-shadow: var(--qada-shadow-sm);
+}
+
+@media (max-width: 640px) {
+  .user-shell .qada-case-workspace {
+    padding-inline: 0;
+  }
+
+  .user-shell .qada-case-workspace > div:first-child {
+    border-radius: 20px !important;
+    padding: 14px !important;
+  }
+
+  .user-shell .qada-case-workspace input,
+  .user-shell .qada-case-workspace textarea,
+  .user-shell .qada-case-workspace select {
+    font-size: 16px !important;
+  }
+}
