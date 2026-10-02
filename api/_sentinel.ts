@@ -27,6 +27,10 @@ export type SentinelTurnInput = {
   sourceBlockers?: number;
   unsupportedCitations?: number;
   providerMode?: string;
+  claimLiberationApplicable?: boolean;
+  claimLiberationComplete?: boolean;
+  missingClaimPillars?: string[];
+  claimLiberationIssues?: string[];
 };
 
 export type SentinelEvent = {
@@ -161,6 +165,23 @@ export function detectSentinelFindings(input: Omit<SentinelTurnInput, 'sessionId
       expected: 'حفظ المعلومة واستكمال الحقول الناقصة دون تغيير نظرية القضية.',
       actual: 'إدخال تكييف قانوني جديد في الرد.',
       agent: 'reasoning-flaws',
+    });
+  }
+
+  if (input.claimLiberationApplicable && input.claimLiberationComplete === false) {
+    const missing = Array.isArray(input.missingClaimPillars) ? input.missingClaimPillars.filter(Boolean) : [];
+    const issues = Array.isArray(input.claimLiberationIssues) ? input.claimLiberationIssues.filter(Boolean) : [];
+    findings.push({
+      severity: 'P0',
+      code: 'UNLIBERATED_CLAIM',
+      title: 'محاولة إخراج دعوى غير محررة',
+      conclusion: [
+        missing.length ? `الأركان الناقصة: ${missing.join('، ')}.` : '',
+        issues.length ? `ملاحظات التحرير: ${issues.join(' | ')}` : '',
+      ].filter(Boolean).join(' '),
+      expected: 'لا يخرج محرر نهائي حتى تكتمل البيانات ثم الوقائع ثم المستندات ثم الطلبات ويتحقق الترابط بينها.',
+      actual: 'مسار الدعوى وصل إلى بوابة الصياغة مع نقص في تحرير الدعوى.',
+      agent: 'virtual-judge',
     });
   }
 
