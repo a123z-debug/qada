@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const limitCheck = await enforceRateLimit('admin-sentinel', session.id, 240, 10 * 60);
+    const limitCheck = await enforceRateLimit('admin-sentinel', session.id, 900, 10 * 60);
     if (!limitCheck.allowed) {
       res.setHeader('Retry-After', String(limitCheck.retryAfterSeconds));
       return res.status(429).json({ error: 'RATE_LIMITED' });
