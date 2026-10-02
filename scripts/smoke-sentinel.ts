@@ -46,6 +46,21 @@ const doctrine = detectSentinelFindings({
 });
 assert(doctrine.some((item) => item.code === 'UNSUPPORTED_RECHARACTERIZATION' && item.severity === 'P0'), 'Sentinel must catch unsupported recharacterization');
 
+const unliberatedClaim = detectSentinelFindings({
+  responseMode: 'simple',
+  lastUserText: 'اكتب لي لائحة دعوى',
+  conversationText: 'اكتب لي لائحة دعوى',
+  reply: 'مسودة دعوى',
+  routeTask: 'claim',
+  draftingActive: true,
+  releaseGateDecision: 'BLOCK',
+  claimLiberationApplicable: true,
+  claimLiberationComplete: false,
+  missingClaimPillars: ['المستندات', 'الطلبات'],
+  claimLiberationIssues: ['الطلبات غير مرتبطة بالوقائع.'],
+});
+assert(unliberatedClaim.some((item) => item.code === 'UNLIBERATED_CLAIM' && item.severity === 'P0'), 'Sentinel must raise P0 on unliberated claims');
+
 const citation = detectSentinelFindings({
   responseMode: 'professional',
   lastUserText: 'حلل القضية',
