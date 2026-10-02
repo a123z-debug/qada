@@ -167,8 +167,8 @@ type SimpleIntent =
 function detectSimpleIntent(text: string): SimpleIntent {
   const value = text.replace(/\s+/g, ' ').trim();
   if (/(?:سلفت|سلف|اقرضت|أقرضت|قرض|دين|مبلغ|تحويل(?:\s+بنكي)?|رفض\s+(?:يسدد|يرجع|يدفع)|ما\s*رجع|لم\s*يسدد)/i.test(value)) return 'money-claim';
-  if (/(?:طعن|اعتراض).{0,16}(?:بال)?نقض|لائحة\s+نقض|صحيفة\s+نقض|المحكمة\s+(?:الإدارية\s+)?العليا/i.test(value)) return 'cassation';
-  if (/(?:لائحة\s+(?:اعتراض|استئناف)|اعتراض\s+على\s+(?:حكم|قرار)|استئناف|أعترض|اعترض)/i.test(value)) return 'appeal';
+  if (/(?:طعن|اعتراض).{0,16}(?:بال)?نقض|لائحة\s+نقض|صحيفة\s+نقض|(?:أريد|اريد|أبي|ابي|أبغى|ابغى).{0,24}(?:طعن\s+)?(?:بال)?نقض/i.test(value)) return 'cassation';
+  if (/(?:لائحة|صحيفة)\s+(?:اعتراض|استئناف)|(?:اعتراض|استئناف)\s+على\s+(?:حكم|قرار)|(?:أريد|اريد|أبي|ابي|أبغى|ابغى).{0,24}(?:اعتراض|استئناف)|أعترض\s+على\s+(?:حكم|قرار)|اعترض\s+على\s+(?:حكم|قرار)/i.test(value)) return 'appeal';
   if (/(?:لائحة\s+دعوى|صحيفة\s+دعوى|ارفع\s+دعوى|رفع\s+دعوى|أبي\s+دعوى|ابغى\s+دعوى)/i.test(value)) return 'claim-draft';
   if (/(?:رد\s+على\s+مذكرة|مذكرة\s+رد|اكتب\s+مذكرة|صياغة\s+مذكرة|مذكرة\s+دفاع)/i.test(value)) return 'memo-reply';
   if (/(?:قرار\s+إداري|تظلم|ديوان\s+المظالم|جهة\s+حكومية|قرار\s+جهة)/i.test(value)) return 'administrative';
@@ -707,7 +707,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       responseMode === 'professional'
         ? 'رتّب الأسانيد القانونية في الإجابة بصيغة: اسم النظام — المادة (رقم): المضمون النظامي المتحقق ذي الصلة.'
         : 'لا تضف سرداً للمواد أو الأسانيد في وضع Simple ما لم يطلبها المستخدم صراحة؛ اجعل التحقق المرجعي خلف التحليل لا أمام المستخدم.',
-      responseMode === 'simple' ? buildSimpleActionDirective(clientMessages) : '',
+      responseMode === 'simple' && !conversationStateInstruction ? buildSimpleActionDirective(clientMessages) : '',
       'لا تطبع روابط المصادر الخام داخل الجواب إلا إذا طلب المستخدم الرابط أو المصدر صراحة؛ تبقى الروابط لأغراض التحقق داخل المنصة.',
       'النص الحرفي الكامل للمواد غير معتمد من المستودع؛ لا تضع اقتباساً حرفياً إلا إذا كان وارداً في نص المستخدم نفسه.',
     ].filter(Boolean).join('\n\n');
