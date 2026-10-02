@@ -205,13 +205,13 @@ export function Sidebar({
   };
 
   const sidebarContent = (
-    <div className={`app-sidebar ${isAdmin ? 'qada-admin-sidebar' : 'qada-user-sidebar'} h-full flex flex-col bg-slate-950 border-l border-slate-800 text-slate-100 select-none`}>
+    <div className={`app-sidebar ${isAdmin ? 'qada-admin-sidebar qada-luxury-admin-sidebar' : 'qada-user-sidebar qada-luxury-user-sidebar'} h-full flex flex-col bg-slate-950 border-l border-slate-800 text-slate-100 select-none`}>
       
       {/* 1. رأس القائمة والهوية البصرية الفاخرة */}
-      <div className="p-4 border-b border-slate-800/80 bg-slate-900/60">
+      <div className="qada-sidebar-head p-4 border-b border-slate-800/80 bg-slate-900/60">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <div className="qada-sidebar-emblem w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
               <Scale className="w-5 h-5" />
             </div>
             <div>
@@ -240,7 +240,7 @@ export function Sidebar({
 
         {/* بيانات المستخدم الجلسة */}
         {userSession && (
-          <div className="mt-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs shadow-inner">
+          <div className="qada-sidebar-account mt-3 p-2.5 rounded-xl border text-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
@@ -282,14 +282,14 @@ export function Sidebar({
       </div>
 
       {/* 2. زر الرئيسية (مركز القيادة) */}
-      <div className="p-3 border-b border-slate-800/60 bg-slate-900/40">
+      <div className="qada-sidebar-home-wrap p-3 border-b border-slate-800/60 bg-slate-900/40">
         <button
           type="button"
           onClick={() => {
             onSelectCourt(null);
             if (onCloseMobile) onCloseMobile();
           }}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`qada-sidebar-home w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
             activeCourt === null
               ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.3)] font-black'
               : 'bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
@@ -320,7 +320,7 @@ export function Sidebar({
             return (
               <div
                 key={cat.id}
-                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                className={`qada-sidebar-court rounded-2xl border transition-all duration-200 overflow-hidden ${
                   isCurrentCourt
                     ? 'border-amber-500/50 bg-slate-900 shadow-lg ring-1 ring-amber-500/20'
                     : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
