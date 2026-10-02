@@ -10,6 +10,7 @@ import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError }
 import { buildHujjaBayanInstruction, isHujjaDraftingRequest } from '../src/lib/hujjaBayanAgent.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 import { reviewDraftBeforeClientRelease } from './_draftReleaseGate.js';
+import { recordSentinelTurn } from './_sentinel.js';
 import {
   buildConversationStateInstruction,
   latestUserTurnText,
@@ -714,6 +715,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let reply = '';
     let lastError: unknown;
+    let sentinelReleaseGateDecision = '';
+    let sentinelReleaseGateScore: number | undefined;
 
     if (hujjaBayanInstruction) {
       const generated = await streamHujjaViaGemini({
@@ -847,6 +850,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         hasEvidence: hasAttachedEvidence(clientMessages),
       });
 
+      sentinelReleaseGateDecision = releaseGate.gateDecision;
+      sentinelReleaseGateScore = releaseGate.readinessScore;
+
       if (!res.headersSent) {
         res.setHeader('X-QADA-Legal-Gate', releaseGate.gateDecision);
         res.setHeader('X-QADA-Readiness-Score', String(releaseGate.readinessScore));
@@ -877,6 +883,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Final privacy pass: never echo direct identifiers from prompts or attached documents.
     reply = redactDirectIdentifiers(reply).text;
+
+    try {
+      await withTimeout(
+        recordSentinelTurn({
+          sessionId: session.id,
+          responseMode,
+          lastUserText: currentUserTurn,
+          conversationText: draftingRequestText,
+          reply,
+          routeTask: lawOfficeRoute.task,
+          routeStage: lawOfficeRoute.stage,
+          draftingActive: Boolean(hujjaBayanInstruction),
+          releaseGateDecision: sentinelReleaseGateDecision,
+          releaseGateScore: sentinelReleaseGateScore,
+          sourceBlockers: sourceBundle.verification.blockers.length,
+          unsupportedCitations: citationGuard.unsupportedMarkers.length,
+          providerMode,
+        }),
+        650,
+        'SENTINEL_WRITE_TIMEOUT',
+      );
+    } catch (sentinelError) {
+      console.warn('QADA Sentinel telemetry skipped:', sentinelError instanceof Error ? sentinelError.message : sentinelError);
+    }
 
     if (!res.headersSent) {
       res.setHeader('X-QADA-AI-Mode', providerMode);
