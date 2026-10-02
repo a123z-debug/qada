@@ -23,6 +23,7 @@ const AdminAgentMap = React.lazy(() => import('./components/admin/AdminAgentMap'
 const AdminAnalysisRoom = React.lazy(() => import('./components/admin/AdminAnalysisRoom').then((module) => ({ default: module.AdminAnalysisRoom })));
 const AdminUserManagement = React.lazy(() => import('./components/admin/AdminUserManagement').then((module) => ({ default: module.AdminUserManagement })));
 const AdminAuditLog = React.lazy(() => import('./components/admin/AdminAuditLog').then((module) => ({ default: module.AdminAuditLog })));
+const AdminSentinel = React.lazy(() => import('./components/admin/AdminSentinel').then((module) => ({ default: module.AdminSentinel })));
 const AccountSecurityModal = React.lazy(() => import('./components/AccountSecurityModal').then((module) => ({ default: module.AccountSecurityModal })));
 type LaunchIntent =
   | { kind: 'dashboard' }
@@ -330,6 +331,7 @@ export default function App() {
   const [isAdminAnalysisOpen, setIsAdminAnalysisOpen] = useState(false);
   const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
   const [isAdminAuditOpen, setIsAdminAuditOpen] = useState(false);
+  const [isAdminSentinelOpen, setIsAdminSentinelOpen] = useState(false);
   const [isAccountSecurityOpen, setIsAccountSecurityOpen] = useState(false);
 
   const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>([]);
@@ -436,6 +438,7 @@ export default function App() {
       setIsAdminAnalysisOpen(false);
       setIsAdminUsersOpen(false);
       setIsAdminAuditOpen(false);
+      setIsAdminSentinelOpen(false);
       setIsAdminMapOpen(true);
     }
   }, [session?.id, session?.workspaceMode]);
@@ -496,6 +499,7 @@ export default function App() {
     setIsAdminAnalysisOpen(false);
     setIsAdminUsersOpen(false);
     setIsAdminAuditOpen(false);
+    setIsAdminSentinelOpen(false);
     setIsAdminMapOpen(userSession.role === 'admin' || userSession.workspaceMode === 'admin');
   };
 
@@ -518,6 +522,7 @@ export default function App() {
       setIsAdminAnalysisOpen(false);
       setIsAdminUsersOpen(false);
       setIsAdminAuditOpen(false);
+      setIsAdminSentinelOpen(false);
       setIsAccountSecurityOpen(false);
       setJudgmentRecords([]);
     };
@@ -670,6 +675,7 @@ export default function App() {
           setIsAdminAnalysisOpen(false);
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(false);
+          setIsAdminSentinelOpen(false);
           setIsAdminMapOpen(true);
         } : undefined}
         onOpenAdminAnalysis={session.role === 'admin' ? () => {
@@ -678,6 +684,7 @@ export default function App() {
           setIsAdminMapOpen(false);
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(false);
+          setIsAdminSentinelOpen(false);
           setIsAdminAnalysisOpen(true);
         } : undefined}
         onOpenAdminUsers={session.role === 'admin' ? () => {
@@ -685,6 +692,7 @@ export default function App() {
           setActiveService(null);
           setIsAdminMapOpen(false);
           setIsAdminAnalysisOpen(false);
+          setIsAdminSentinelOpen(false);
           setIsAdminUsersOpen(true);
         } : undefined}
         onOpenAdminAudit={session.role === 'admin' ? () => {
@@ -693,7 +701,17 @@ export default function App() {
           setIsAdminMapOpen(false);
           setIsAdminAnalysisOpen(false);
           setIsAdminUsersOpen(false);
+          setIsAdminSentinelOpen(false);
           setIsAdminAuditOpen(true);
+        } : undefined}
+        onOpenAdminSentinel={session.role === 'admin' ? () => {
+          setActiveCourt(null);
+          setActiveService(null);
+          setIsAdminMapOpen(false);
+          setIsAdminAnalysisOpen(false);
+          setIsAdminUsersOpen(false);
+          setIsAdminAuditOpen(false);
+          setIsAdminSentinelOpen(true);
         } : undefined}
         onOpenAccountSecurity={session.loginMethod === 'test_open' ? undefined : () => setIsAccountSecurityOpen(true)}
       />
@@ -788,7 +806,7 @@ export default function App() {
             </div>
           )}
 
-          {session.role === 'admin' && isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && (
+          {session.role === 'admin' && isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && (
             <AdminAgentMap
               onOpenAnalysisRoom={() => {
                 setIsAdminMapOpen(false);
@@ -851,12 +869,22 @@ export default function App() {
             <AdminAuditLog
               onBack={() => {
                 setIsAdminAuditOpen(false);
+                setIsAdminSentinelOpen(false);
                 setIsAdminMapOpen(true);
               }}
             />
           )}
 
-          {!activeCourt && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && (
+          {session.role === 'admin' && isAdminSentinelOpen && (
+            <AdminSentinel
+              onBack={() => {
+                setIsAdminSentinelOpen(false);
+                setIsAdminMapOpen(true);
+              }}
+            />
+          )}
+
+          {!activeCourt && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && (
             <WelcomeScreen
               userName={session.name}
               message="مرحباً بك في مساحة القضية الرقمية."
@@ -882,7 +910,7 @@ export default function App() {
             />
           )}
 
-          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && activeCourt === 'administrative' && (
+          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'administrative' && (
             <AdministrativeWorkspace
               service={activeService}
               userSession={session}
@@ -893,14 +921,14 @@ export default function App() {
             />
           )}
 
-          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && activeCourt === 'general' && (
+          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'general' && (
             <GeneralWorkspace
               service={activeService}
               userSession={session}
             />
           )}
 
-          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && activeCourt === 'criminal' && (
+          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'criminal' && (
             <CriminalWorkspace
               service={activeService}
               userSession={session}
