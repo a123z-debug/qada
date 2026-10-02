@@ -15,6 +15,10 @@ import { EXECUTION_LAW_1447 } from '../data/officialReferences/executionLaw1447.
 import { JUDICIARY_LAW_1428 } from '../data/officialReferences/judiciaryLaw1428.js';
 import { LAW_PRACTICE_LAW_1422 } from '../data/officialReferences/lawPracticeLaw1422.js';
 import { PERSONNEL_SERVICE_LAW_1397 } from '../data/officialReferences/personnelServiceLaw1397.js';
+import {
+  PERSONNEL_USER_TRANSCRIPT_META,
+  retrievePersonnelUserReviewExcerpts,
+} from '../data/reviewReferences/personnelServiceLaw1397UserTranscript.js';
 
 export type SourceAgentStatus = 'success' | 'warning' | 'error';
 
@@ -45,6 +49,13 @@ export type LegalSourcePacket = {
     system: string;
     article: string;
     sourceUrl: string;
+    note: string;
+  }>;
+  reviewMaterials?: Array<{
+    title: string;
+    excerpt: string;
+    provenance: 'user-supplied';
+    status: 'review-only-unverified';
     note: string;
   }>;
   blockers: string[];
@@ -155,6 +166,21 @@ function packetToContext(packet: LegalSourcePacket): string {
         `- ${article.system} — المادة ${article.article}`,
         `  المصدر: ${article.sourceUrl}`,
         `  ملاحظة: ${article.note}`,
+      );
+    }
+  }
+
+  if (packet.reviewMaterials?.length) {
+    lines.push(
+      'مواد مراجعة داخلية غير رسمية — للمقارنة والاستخراج الأولي فقط، ولا ترفع حالة التحقق ولا تصلح وحدها للاقتباس القضائي:'
+    );
+    for (const material of packet.reviewMaterials) {
+      lines.push(
+        `- ${material.title}`,
+        `  المصدر الداخلي: ${PERSONNEL_USER_TRANSCRIPT_META.name}`,
+        `  الحالة: ${material.status}`,
+        `  مقتطف: ${material.excerpt}`,
+        `  ملاحظة: ${material.note}`,
       );
     }
   }
@@ -292,6 +318,8 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
     containsAny([regulation.parentSystem, regulation.regulationName].join(' '), ['خدمة الأفراد'])
   );
 
+  const reviewMaterials = retrievePersonnelUserReviewExcerpts(query, 6);
+
   const requestedArticles = new Set(articleNumbers(query));
   const personnelQuery = normalizeArabic(query);
   const allowanceDispute = containsAny(personnelQuery, [
@@ -370,6 +398,7 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
       })),
     ].slice(0, 16),
     verifiedArticles,
+    reviewMaterials,
     blockers,
   };
 }
