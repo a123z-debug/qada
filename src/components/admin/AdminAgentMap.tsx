@@ -25,6 +25,7 @@ import {
   Search,
   SearchCheck,
   Settings,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Workflow,
@@ -171,6 +172,7 @@ const nodes: AgentNode[] = [
   { id: 'evaluation-tool', title: 'Evaluation', subtitle: 'اختبار وتحقق', x: 960, y: 692, width: 155, height: 58, status: 'linked', tone: 'emerald', icon: CheckCircle2, detail: 'طبقة التقييم والاختبارات الآلية التي تمنع اعتماد نسخة لا تجتاز فحوص المصادر والأمان والبناء.' },
   { id: 'agents-tool', title: 'Agents', subtitle: 'إدارة الوكلاء', x: 1135, y: 692, width: 155, height: 58, status: 'linked', tone: 'amber', icon: Layers3, detail: 'فهرس الوكلاء والمسارات المرتبطة بالخريطة التشغيلية وحالة كل وكيل.' },
   { id: 'security-007', title: '007 — AppSec', subtitle: 'أمن واختبار إصدار', x: 1135, y: 765, width: 205, height: 68, status: 'warning', tone: 'rose', icon: ShieldCheck, adminOnly: true, detail: 'وكيل أمني حرج للإطلاق. يعمل الآن كـ Release AppSec Audit داخل Verify لفحص الأسرار وXSS والمصادقة وواجهات API والفهرسة. يبقى Warning حتى اجتياز DAST حي على Staging.' },
+  { id: 'sentinel', title: 'QADA Sentinel', subtitle: 'مراقبة المحادثات لحظياً', x: 85, y: 955, width: 240, height: 82, status: 'linked', tone: 'rose', icon: ShieldAlert, adminOnly: true, detail: 'مراقب ظل يسجل انتقالات المحادثة والـRouter والصياغة وبوابة الاعتماد، ويكشف تعارض الحالة والنية والتكييف غير المبرر والتسريب الداخلي مع استنتاج قابل للتتبع.' },
 
   { id: 'admin-entry', title: 'غرفة التحليل للأدمن', subtitle: 'مدخل خاص ومقيد', x: 85, y: 840, width: 240, height: 82, status: 'linked', tone: 'violet', icon: LockKeyhole, adminOnly: true, detail: 'مدخل منفصل للمشرف لتحليل حكم أو مذكرة بشكل أعمق من واجهة المستخدم العامة.' },
   { id: 'judgment-audit', title: 'إيجنت تحليل الأحكام', subtitle: 'الحكم كاملاً', x: 380, y: 815, width: 205, height: 74, status: 'linked', tone: 'violet', icon: Gavel, adminOnly: true, detail: 'مسار فعلي لتحليل الأحكام يوزع الحكم على الفحص التشريعي والقضائي والإجرائي والإثباتي والتسبيب والدفوع.' },
@@ -227,6 +229,8 @@ const edges: Edge[] = [
   { from: 'qada-core', to: 'evaluation-tool' },
   { from: 'qada-core', to: 'agents-tool' },
   { from: 'evaluation-tool', to: 'security-007', kind: 'verification' },
+  { from: 'qada-core', to: 'sentinel', kind: 'admin' },
+  { from: 'virtual-judge', to: 'sentinel', kind: 'admin' },
 
   { from: 'admin-entry', to: 'judgment-audit', kind: 'admin' },
   { from: 'admin-entry', to: 'memo-audit', kind: 'admin' },
@@ -312,6 +316,7 @@ export function AdminAgentMap({
     'drafting',
     'editor-tool',
     'final-output',
+    'sentinel',
   ]);
 
   const fitCanvasToViewport = useCallback(() => {
