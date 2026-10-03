@@ -299,7 +299,8 @@ export function JudgmentRepositoryModal({
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
+              aria-label="إغلاق مستودع الأحكام"
+              className="qada-8k-icon-button p-1.5 text-neutral-400 hover:text-white rounded-lg hover:bg-neutral-800 transition-colors"
             >
               <ArrowRight className="w-5 h-5" />
             </button>
