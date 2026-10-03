@@ -149,10 +149,10 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div className="qada-8k-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div
         id="article8-modal"
-        className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-xl w-full text-neutral-100 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="qada-8k-modal bg-neutral-900 border border-neutral-700 rounded-2xl max-w-xl w-full text-neutral-100 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/90">
