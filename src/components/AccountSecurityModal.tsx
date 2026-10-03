@@ -62,9 +62,9 @@ export function AccountSecurityModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] bg-slate-950/80 backdrop-blur-sm p-3 sm:p-6" dir="rtl">
+    <div className="qada-8k-modal-overlay fixed inset-0 z-[90] bg-slate-950/80 backdrop-blur-sm p-3 sm:p-6" dir="rtl">
       <div className="mx-auto flex h-full max-w-xl items-center justify-center">
-        <div className="w-full rounded-3xl border border-cyan-400/20 bg-slate-950 shadow-2xl">
+        <div className="qada-8k-modal w-full rounded-3xl border border-cyan-400/20 bg-slate-950 shadow-2xl">
           <div className="flex items-start justify-between border-b border-slate-800 p-5">
             <div className="flex items-start gap-3">
               <div className="grid h-11 w-11 place-items-center rounded-2xl border border-cyan-400/20 bg-cyan-500/10 text-cyan-200">
