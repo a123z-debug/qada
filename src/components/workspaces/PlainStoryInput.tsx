@@ -113,7 +113,7 @@ export function PlainStoryInput({
   return (
     <div
       id="plain-story-assistant"
-      className="p-4 sm:p-5 rounded-3xl bg-neutral-950/90 border border-amber-500/40 shadow-lg space-y-3.5 transition-all"
+      className="qada-8k-story p-4 sm:p-5 rounded-3xl bg-neutral-950/90 border border-amber-500/40 shadow-lg space-y-3.5 transition-all"
     >
       {/* 1. Header & Title */}
       <div className="flex flex-wrap items-center justify-between gap-3">
