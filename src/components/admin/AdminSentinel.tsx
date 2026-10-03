@@ -129,7 +129,7 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
   const heartbeatFresh = lastHeartbeatAt > 0 && Date.now() - lastHeartbeatAt < 3500;
 
   return (
-    <section className="min-h-full bg-slate-950 text-slate-100" dir="rtl">
+    <section className="qada-8k-admin-view qada-8k-sentinel min-h-full bg-slate-950 text-slate-100" dir="rtl">
       <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-slate-950/95 px-4 py-3 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <button
