@@ -569,7 +569,7 @@ export function AdminAgentMap({
   }, [health]);
 
   return (
-    <section className="space-y-4" dir="rtl">
+    <section className="qada-8k-admin-view qada-8k-agent-map space-y-4" dir="rtl">
       <div className="rounded-2xl border border-violet-400/20 bg-gradient-to-l from-violet-500/10 via-slate-950/90 to-cyan-500/10 p-4 sm:p-5">
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div>
