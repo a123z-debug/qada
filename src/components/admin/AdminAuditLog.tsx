@@ -60,7 +60,7 @@ export function AdminAuditLog({ onBack }: { onBack: () => void }) {
   const failures = events.filter((event) => event.outcome === 'error' || event.outcome === 'denied').length;
 
   return (
-    <section className="space-y-4" dir="rtl">
+    <section className="qada-8k-admin-view qada-8k-audit-log space-y-4" dir="rtl">
       <div className="rounded-3xl border border-cyan-400/20 bg-gradient-to-l from-cyan-500/12 via-slate-950 to-violet-500/10 p-5 sm:p-6 shadow-2xl">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-start gap-4">
