@@ -51,10 +51,10 @@ export function ChatSettingsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div className="qada-8k-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div
         id="chat-settings-modal"
-        className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col text-neutral-100"
+        className="qada-8k-modal bg-neutral-900 border border-neutral-700 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col text-neutral-100"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/90">
