@@ -459,7 +459,7 @@ ${sharedRules}`;
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-semibold text-neutral-300">التهمة المنسوبة ولائحة النيابة:</label>
                   {isAutoFilled && (
-                    <span className="text-[10px] text-rose-400 font-bold animate-pulse">تم التكييف والتعبئة 🪄</span>
+                    <span className="text-[10px] text-rose-400 font-bold animate-pulse">تم التكييف والتعبئة</span>
                   )}
                 </div>
                 <input
