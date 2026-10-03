@@ -75,8 +75,8 @@ export function AccountSecurityModal({
                 <p className="mt-1 text-xs leading-6 text-slate-500">إدارة بيانات الدخول دون كشف كلمة المرور أو تخزينها في المتصفح.</p>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-white">
-              <X className="h-4 w-4" />
+            <button type="button" onClick={onClose} aria-label="إغلاق أمان الحساب" className="qada-8k-icon-button grid h-10 w-10 place-items-center rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-white">
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 
