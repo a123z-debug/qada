@@ -537,7 +537,7 @@ export function LegalReviewEditor({
               }`}
             >
               <Gavel className="w-3.5 h-3.5 text-amber-400" />
-              <span>هيئة المراجعة القانونية الآلية ⚖️</span>
+              <span>هيئة المراجعة القانونية الآلية</span>
               {judgesReport && (
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               )}
@@ -984,9 +984,9 @@ export function LegalReviewEditor({
             <div className="pt-2 border-t border-neutral-850 flex flex-wrap items-center justify-between gap-2">
               <div className="text-[11px] text-neutral-400">
                 {!isAllApproved ? (
-                  <span>⚠️ أكمل المراجعة اليدوية أولاً.</span>
+                  <span>أكمل المراجعة اليدوية أولاً.</span>
                 ) : !judgesSourceAudit ? (
-                  <span>⚖️ شغّل هيئة المراجعة القضائية قبل التصدير.</span>
+                  <span>شغّل هيئة المراجعة القضائية قبل التصدير.</span>
                 ) : !virtualJudgePassed ? (
                   <span className="text-amber-300">
                     بوابة القاضي: {judgesSourceAudit.gateDecision || 'RETURN'} • الجاهزية {readinessScore}/100 • الحد الأدنى {readinessTarget}/100
