@@ -131,7 +131,7 @@ export function JudgesCassationReviewPanel({
 
   if (isLoading) {
     return (
-      <div className="p-8 rounded-3xl bg-neutral-900/90 border border-amber-500/30 text-center space-y-5 animate-pulse">
+      <div className="qada-8k-judge-panel p-8 rounded-3xl bg-neutral-900/90 border border-amber-500/30 text-center space-y-5 animate-pulse">
         <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
           <Gavel className="w-8 h-8 animate-bounce" />
         </div>
@@ -163,7 +163,7 @@ export function JudgesCassationReviewPanel({
 
   if (!report) {
     return (
-      <div className="p-6 rounded-3xl bg-neutral-900 border border-neutral-800 text-center space-y-4">
+      <div className="qada-8k-judge-panel p-6 rounded-3xl bg-neutral-900 border border-neutral-800 text-center space-y-4">
         <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
           <Scale className="w-6 h-6" />
         </div>
@@ -194,7 +194,7 @@ export function JudgesCassationReviewPanel({
       : null;
 
   return (
-    <div className="rounded-3xl bg-neutral-900/95 border border-amber-500/30 overflow-hidden shadow-2xl space-y-0 transition-all text-right">
+    <div className="qada-8k-judge-panel rounded-3xl bg-neutral-900/95 border border-amber-500/30 overflow-hidden shadow-2xl space-y-0 transition-all text-right">
       {/* 1. Header & Verdict Banner */}
       <div className="p-4 sm:p-5 bg-gradient-to-b from-neutral-900 via-neutral-900 to-neutral-950 border-b border-neutral-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -554,7 +554,7 @@ export function JudgesCassationReviewPanel({
                       <div className="flex flex-wrap gap-1.5">
                         {report.attachmentErrors.missingRequiredDocs.map((doc, idx) => (
                           <span key={idx} className="text-[10px] px-2 py-0.5 rounded-md bg-neutral-900 text-sky-200 border border-sky-500/30 font-medium">
-                            📎 {doc}
+                            <span className="inline-flex items-center gap-1"><Paperclip className="h-3 w-3" aria-hidden="true" />{doc}</span>
                           </span>
                         ))}
                       </div>
