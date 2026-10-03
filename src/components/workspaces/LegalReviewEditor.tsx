@@ -471,7 +471,7 @@ export function LegalReviewEditor({
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-10">
+    <div className="qada-8k-editor space-y-4 max-w-7xl mx-auto pb-10">
       {/* 1. Top Focus Mode Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl bg-neutral-900 border border-neutral-800 shadow-xl">
         <div className="flex items-center gap-3">
