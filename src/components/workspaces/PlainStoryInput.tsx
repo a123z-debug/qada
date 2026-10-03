@@ -84,7 +84,7 @@ export function PlainStoryInput({
       onApplyExtractedData(data);
       setSuccessMessage(
         data.legal_bases.length > 0
-          ? `تم إعداد التكييف وربطه بـ ${data.legal_bases.length} مراجع رسمية متاحة للمراجعة 🪄`
+          ? `تم إعداد التكييف وربطه بـ ${data.legal_bases.length} مراجع رسمية متاحة للمراجعة`
           : 'تم إعداد التكييف والطلبات، ولم يظهر سند رسمي مطابق بدرجة كافية؛ راجع المراجع قبل الاعتماد.'
       );
       setTimeout(() => setSuccessMessage(null), 4500);
@@ -141,7 +141,7 @@ export function PlainStoryInput({
             title="لصق النص من الحافظة"
           >
             <ClipboardPaste className="w-4 h-4 text-amber-400" />
-            <span>📋 لصق نص منسوخ</span>
+            <span>لصق نص منسوخ</span>
           </button>
 
           <button
@@ -152,7 +152,7 @@ export function PlainStoryInput({
             className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Sparkles className="w-4 h-4" />
-            <span>{isExtracting ? 'جاري التكييف والتحقق...' : 'تكييف القصة وربطها بالمراجع الرسمية 🪄'}</span>
+            <span>{isExtracting ? 'جاري التكييف والتحقق...' : 'تكييف القصة وربطها بالمراجع الرسمية'}</span>
           </button>
         </div>
       </div>
