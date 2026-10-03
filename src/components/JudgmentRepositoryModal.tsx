@@ -256,10 +256,10 @@ export function JudgmentRepositoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-xs overflow-y-auto">
+    <div className="qada-8k-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/80 backdrop-blur-xs overflow-y-auto">
       <div
         id="judgment-repository-modal"
-        className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-7xl w-full shadow-2xl overflow-hidden flex flex-col text-neutral-100 max-h-[94vh]"
+        className="qada-8k-modal qada-8k-repository bg-neutral-900 border border-neutral-700 rounded-2xl max-w-7xl w-full shadow-2xl overflow-hidden flex flex-col text-neutral-100 max-h-[94vh]"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/95">
