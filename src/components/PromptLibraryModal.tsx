@@ -34,10 +34,10 @@ export function PromptLibraryModal({ isOpen, onClose, onSelect }: PromptLibraryM
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div className="qada-8k-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div
         id="prompt-library-modal"
-        className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden text-neutral-100"
+        className="qada-8k-modal qada-8k-library bg-neutral-900 border border-neutral-700 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden text-neutral-100"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/90">
