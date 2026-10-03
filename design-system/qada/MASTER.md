@@ -1,88 +1,196 @@
-# QADA Quiet Luxury — Design System
+# QADA 8K Quiet Luxury — Design System
 
-Source basis: UI/UX Pro Max design-system workflow, adapted for a Saudi legal AI platform.
+## Source of truth
+
+Primary design intelligence: `a123z-debug/ui-ux-pro-max-skill` (fork of `nextlevelbuilder/ui-ux-pro-max-skill`), Skill version `2.13.0`.
+
+The design is synthesized from these UI/UX Pro Max product profiles:
+- **Legal Services** → Accessible & Ethical + Minimalism & Swiss Style, Trust & Authority, case-management dashboard, credibility paramount.
+- **Government/Public Service** → accessibility-first, minimal/direct, high contrast, trust paramount.
+- **Luxury/Premium Brand** → premium restraint, black/ivory/gold discipline, whitespace, exclusive feel.
+
+QADA combines those recommendations with Saudi judicial identity. The product must look authoritative before it looks decorative.
 
 ## Product posture
-- Category: Legal / AI / professional services.
+
+- Category: Saudi legal AI / judicial professional services.
 - Primary experience: trust, clarity, authority, calm precision.
-- Visual direction: Quiet Luxury + restrained editorial + enterprise legal-tech.
-- Mobile-first and Arabic RTL by default.
+- Visual direction: **Quiet Luxury + Accessible Swiss Legal-Tech**.
+- Arabic RTL and mobile-first by default.
+- “8K” means maximum perceived fidelity and consistency, not oversized effects or raster-heavy decoration.
 
 ## Core principles
-1. Authority before decoration.
-2. Gold is an accent, never the primary canvas.
-3. Saudi green is the identity anchor.
-4. Avoid neon, loud AI-purple/pink gradients, decorative glass overload, and excessive glow.
-5. Every interactive element must have visible hover/focus/pressed states.
-6. Dense legal information must remain legible and scannable.
-7. Simple mode removes technical language; Professional and Admin may expose structure.
-8. No functionality or legal logic should depend on color alone.
 
-## Color tokens
-- Ink 950: #08130F
-- Ink 900: #102019
-- Green 800: #064B32
-- Green 700: #006C35
-- Green 600: #0A7B47
-- Gold 500: #C7A15A
-- Gold 300: #E7CF9A
-- Ivory 50: #FBFAF5
-- Paper 100: #F4F1E8
-- Surface: #FFFFFF
-- Muted: #66736D
-- Border: rgba(16, 32, 25, .10)
-- Danger: #B42318
-- Warning: #B7791F
-- Success: #176B45
+1. Authority before decoration.
+2. Saudi judicial green anchors the brand.
+3. Brass/gold is an accent and status material, never the primary canvas.
+4. Ivory/paper surfaces are used for human-facing legal work; deep ink/evergreen for command-center and modal depth.
+5. Avoid neon, loud AI-purple/pink gradients, decorative glass overload, and bloom/glow.
+6. Every interactive element has visible hover/focus/pressed/disabled states.
+7. Dense legal information remains legible and scannable.
+8. Simple mode removes internal agent/gate terminology.
+9. Color never carries legal/status meaning alone; pair it with text/icon/label.
+10. One primary action per view.
+
+## Semantic color tokens
+
+- Ink 1000: `#050B09`
+- Ink 950: `#08130F`
+- Ink 900: `#102019`
+- Judicial Green 800: `#064B32`
+- Judicial Green 700: `#006C35`
+- Judicial Green 600: `#0A7B47`
+- Trust Navy 800: `#18334B`
+- Brass 600: `#A9823F`
+- Brass 500: `#C7A15A`
+- Brass 300: `#E7CF9A`
+- Ivory 50: `#FBFAF5`
+- Ivory 100: `#F7F4EC`
+- Paper 100: `#F1EEE5`
+- Text: `#13261F`
+- Muted: `#66736D`
+- Danger: `#B42318`
+- Warning: `#B7791F`
+- Success: `#18764B`
+- Info: `#286483`
 
 ## Typography
-Use local/system-safe Arabic stacks only; do not add remote font dependencies.
-- UI: "IBM Plex Sans Arabic", "Noto Kufi Arabic", "Segoe UI", Tahoma, Arial, sans-serif
-- Legal/editorial: "Traditional Arabic", "Noto Naskh Arabic", Tahoma, serif
-- Headings: strong weight with tighter tracking; avoid exaggerated display sizes on mobile.
-- Body: line-height 1.75–1.9 for legal prose.
 
-## Surfaces
-- User: warm ivory canvas, white paper-like cards, subtle green tint.
-- Professional: dark evergreen/ink hero with ivory content surfaces.
-- Admin: technical dark mode retained, but reduce violet/cyan decoration to functional status only.
-- Borders: thin and low-contrast.
-- Shadows: broad, soft, low opacity; no neon bloom.
+No remote font dependency is required for the production shell.
+
+- UI Arabic stack: `"IBM Plex Sans Arabic", "Noto Kufi Arabic", "Segoe UI", Tahoma, Arial, sans-serif`
+- Legal/editorial stack: `"Traditional Arabic", "Noto Naskh Arabic", Tahoma, serif`
+- Body size on mobile: 16px minimum for editable text.
+- Legal prose line-height: 1.75–1.95.
+- Heading hierarchy: 700–900 weight, compact but readable.
+- Long tokens/IDs must wrap without breaking normal prose.
+
+## Elevation system
+
+- Level 1: subtle cards / secondary tools.
+- Level 2: consultation desk / workspace headers / sticky editor toolbar.
+- Level 3: modals / command-center / critical surfaces.
+- Never use random shadows per component.
+- No neon glow.
 
 ## Radius & spacing
-- Small controls: 12–14px
-- Cards: 18–24px
-- Hero / primary shell: 28–32px
-- Use 4/8/12/16/24/32 spacing rhythm.
+
+- Small controls: 12px.
+- Inputs/chips: 12–16px.
+- Cards: 18–24px.
+- Hero / primary shell: 28–32px.
+- Spacing rhythm: 4 / 8 / 12 / 16 / 24 / 32 / 48.
+- Touch targets on mobile: 44px minimum.
 
 ## Motion
-- 160–240ms for hover/focus transitions.
-- Subtle translateY(-1px) on premium cards only.
-- Respect prefers-reduced-motion.
-- Never animate critical legal content or change semantic state through animation.
 
-## Simple mode
+Shared motion tokens:
+- Fast: 140ms.
+- Base: 210ms.
+- Slow: 320ms.
+
+Rules:
+- Animate transform/opacity/color/elevation, not layout dimensions.
+- Press feedback is immediate and does not shift surrounding layout.
+- Critical legal content does not animate for decoration.
+- Respect `prefers-reduced-motion`.
+- No more than 1–2 attention animations per view.
+
+## Surface language
+
+### Public / Authentication
+Warm premium judicial identity. High trust, strong contrast, low decorative noise.
+
+### QADA Simple
+A premium consultation desk:
 - One dominant action.
-- One clear question at a time.
-- Avoid technical agent/gate terminology.
-- User story input must feel like a premium consultation desk, not a chatbot toy.
+- One question at a time.
+- Paper/ivory surfaces.
+- No internal pipeline language.
+- User story area feels like a legal consultation form, not a toy chatbot.
 
-## Professional mode
-- Explicit structure and case tools.
-- Court cards behave like premium workspace modules.
+### QADA Professional
+A professional legal workspace:
+- Strong hierarchy.
+- Explicit tools and court context.
+- Dark evergreen/ink hero with paper work surfaces.
 - Gold indicates priority/selection only.
-- Dark hero + light content creates hierarchy without visual noise.
 
-## Admin
-- Sentinel, Agent Map, Audit, Analysis remain technical.
-- Status colors preserve semantic meaning.
-- Keep typography and spacing aligned with the rest of QADA.
+### Case Workspaces
+Administrative, general, and criminal areas use one visual language. Jurisdiction changes content and semantics, not the entire visual brand.
 
-## Accessibility / delivery checks
-- 44px minimum touch targets on mobile.
-- Visible :focus-visible states.
-- Text contrast >= 4.5:1 where applicable.
-- Layout checks: 375, 768, 1024, 1440.
-- No clipped chips, long labels, identifiers, or Arabic headings.
-- Icons from Lucide; no emoji-as-icon UI.
-- prefers-reduced-motion respected.
+### Legal Editor
+Paper-first reading/writing surface, sticky high-quality toolbar, comfortable long-form line height, obvious review states.
+
+### Modal System
+Deep ink/evergreen private-chamber surface with restrained brass top edge. All modals share the same elevation, border, input, focus, and mobile sheet behavior.
+
+### Admin
+Technical dark mode with judicial material palette:
+- Sentinel severity colors remain semantic.
+- Violet/cyan decorative gradients are suppressed.
+- Agent Map, Analysis, Audit, Users share one command-center language.
+
+## Accessibility requirements
+
+Derived directly from UI/UX Pro Max priority rules:
+- Normal text contrast >= 4.5:1.
+- Visible `:focus-visible`.
+- Keyboard navigation must remain usable.
+- Icon-only controls require accessible names.
+- Decorative icons beside visible labels should be hidden from the accessibility tree.
+- 44px touch targets on mobile.
+- 8px+ spacing between primary touch targets where practical.
+- No hover-only primary interaction.
+- Loading and disabled states must be visually distinct.
+- Error messages must explain recovery.
+- Authentication must allow paste/password managers.
+- Sticky headers must not obscure focus.
+- Reduced motion supported.
+
+## Performance requirements
+
+- Prefer CSS/vector surfaces over raster decoration.
+- No remote font dependency in the premium layer.
+- No heavyweight visual library required for polish.
+- Avoid layout-thrashing animation.
+- Preserve current lazy-loaded feature boundaries.
+- Keep visual effects compositing-friendly.
+
+## Responsive checkpoints
+
+Mandatory review widths:
+- 375px
+- 768px
+- 1024px
+- 1440px
+
+Also review mobile landscape where fixed/sticky UI exists.
+
+## Iconography
+
+- Lucide is the structural icon system.
+- No emoji as navigation, status, or button icons.
+- Keep stroke style consistent within each hierarchy.
+- Meaningful icon-only controls require `aria-label`.
+- Status uses icon + text, not color alone.
+
+## Anti-patterns
+
+- AI-purple as the default brand language.
+- Mixed neon cyan/violet/rose decoration.
+- Excessive glassmorphism.
+- Gold-filled entire pages.
+- Tiny icon-only buttons.
+- Placeholder-only fields.
+- Random shadows/radii.
+- Arbitrary per-court color themes.
+- Emoji used as product UI icons.
+- Giant marketing typography inside workspaces.
+- Hidden overflow that clips Arabic labels or identifiers.
+
+## Implementation
+
+The final cascade layer is `src/qada-8k.css`, imported after `src/index.css` from `src/main.tsx`.
+
+Component hooks use explicit `qada-8k-*` classes so the premium layer can be audited and regression-tested without modifying legal logic.
