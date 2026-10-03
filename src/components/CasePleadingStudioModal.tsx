@@ -233,10 +233,10 @@ ${effectiveRecord.dialoguesAndExchanges.length
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto">
+    <div className="qada-8k-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto">
       <div
         id="case-pleading-studio-modal"
-        className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-5xl w-full shadow-2xl overflow-hidden flex flex-col text-neutral-100 max-h-[92vh]"
+        className="qada-8k-modal qada-8k-pleading bg-neutral-900 border border-neutral-700 rounded-2xl max-w-5xl w-full shadow-2xl overflow-hidden flex flex-col text-neutral-100 max-h-[92vh]"
       >
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/90">
