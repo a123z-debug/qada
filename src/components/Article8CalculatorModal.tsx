@@ -182,10 +182,11 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
             <button
               id="close-article8-modal"
               onClick={onClose}
-              className="p-1.5 text-neutral-400 hover:text-neutral-200 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
+              className="qada-8k-icon-button p-1.5 text-neutral-400 hover:text-neutral-200 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
+              aria-label="إغلاق"
               title="إغلاق"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
