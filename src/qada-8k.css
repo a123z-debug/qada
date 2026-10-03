@@ -1,0 +1,737 @@
+/* ==========================================================================
+   QADA 8K — Premium Judicial Interface Layer
+   Derived from a123z-debug/ui-ux-pro-max-skill:
+   Legal Services + Trust & Authority + Accessible & Ethical + Swiss Minimalism
+   Luxury treatment is restrained: deep judicial ink, Saudi green, ivory, brass.
+   ========================================================================== */
+
+:root {
+  --q8-ink-1000: #050b09;
+  --q8-ink-950: #08130f;
+  --q8-ink-900: #102019;
+  --q8-ink-850: #14271f;
+  --q8-ink-800: #193027;
+  --q8-green-800: #064b32;
+  --q8-green-700: #006c35;
+  --q8-green-600: #0a7b47;
+  --q8-green-500: #168c55;
+  --q8-navy-800: #18334b;
+  --q8-navy-700: #214761;
+  --q8-brass-600: #a9823f;
+  --q8-brass-500: #c7a15a;
+  --q8-brass-400: #d8bc80;
+  --q8-brass-300: #e7cf9a;
+  --q8-ivory-50: #fbfaf5;
+  --q8-ivory-100: #f7f4ec;
+  --q8-paper-100: #f1eee5;
+  --q8-paper-200: #e8e3d8;
+  --q8-text: #13261f;
+  --q8-muted: #66736d;
+  --q8-muted-dark: #9aa9a2;
+  --q8-border-light: rgba(16,32,25,.10);
+  --q8-border-dark: rgba(231,207,154,.13);
+  --q8-success: #18764b;
+  --q8-warning: #b7791f;
+  --q8-danger: #b42318;
+  --q8-info: #286483;
+  --q8-radius-sm: 12px;
+  --q8-radius-md: 16px;
+  --q8-radius-lg: 22px;
+  --q8-radius-xl: 30px;
+  --q8-shadow-1: 0 5px 18px rgba(8,19,15,.045);
+  --q8-shadow-2: 0 14px 42px rgba(8,19,15,.075);
+  --q8-shadow-3: 0 28px 80px rgba(8,19,15,.12);
+  --q8-shadow-dark-1: 0 10px 34px rgba(0,0,0,.18);
+  --q8-shadow-dark-2: 0 30px 90px rgba(0,0,0,.28);
+  --q8-motion-fast: 140ms;
+  --q8-motion-base: 210ms;
+  --q8-motion-slow: 320ms;
+  --q8-ease-out: cubic-bezier(.2,.8,.2,1);
+  --q8-ease-in: cubic-bezier(.4,0,1,1);
+  --q8-focus: 0 0 0 4px rgba(0,108,53,.10);
+  --q8-focus-dark: 0 0 0 4px rgba(231,207,154,.11);
+}
+
+/* ---------- Universal polish ---------- */
+
+::selection {
+  color: var(--q8-ink-950);
+  background: var(--q8-brass-300);
+}
+
+.user-shell,
+.admin-shell,
+.qada-login-shell,
+.qada-saudi-landing {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.user-shell button,
+.user-shell a,
+.admin-shell button,
+.admin-shell a,
+.qada-8k-modal button,
+.qada-8k-modal a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.user-shell button,
+.admin-shell button,
+.qada-8k-modal button {
+  transition:
+    background-color var(--q8-motion-base) var(--q8-ease-out),
+    border-color var(--q8-motion-base) var(--q8-ease-out),
+    color var(--q8-motion-base) var(--q8-ease-out),
+    box-shadow var(--q8-motion-base) var(--q8-ease-out),
+    opacity var(--q8-motion-fast) var(--q8-ease-out),
+    transform var(--q8-motion-fast) var(--q8-ease-out);
+}
+
+.user-shell button:active:not(:disabled),
+.admin-shell button:active:not(:disabled),
+.qada-8k-modal button:active:not(:disabled) {
+  transform: scale(.985);
+}
+
+.user-shell button:disabled,
+.admin-shell button:disabled,
+.qada-8k-modal button:disabled {
+  opacity: .46 !important;
+  cursor: not-allowed !important;
+  filter: saturate(.7);
+}
+
+.user-shell :is(button,a,input,textarea,select):focus-visible {
+  outline: 2px solid rgba(0,108,53,.58) !important;
+  outline-offset: 3px !important;
+  box-shadow: var(--q8-focus);
+}
+
+.admin-shell :is(button,a,input,textarea,select):focus-visible,
+.qada-8k-modal :is(button,a,input,textarea,select):focus-visible {
+  outline: 2px solid rgba(231,207,154,.58) !important;
+  outline-offset: 3px !important;
+  box-shadow: var(--q8-focus-dark);
+}
+
+.user-shell input,
+.user-shell textarea,
+.user-shell select,
+.qada-8k-modal input,
+.qada-8k-modal textarea,
+.qada-8k-modal select,
+.admin-shell input,
+.admin-shell textarea,
+.admin-shell select {
+  transition:
+    border-color var(--q8-motion-base) var(--q8-ease-out),
+    background-color var(--q8-motion-base) var(--q8-ease-out),
+    box-shadow var(--q8-motion-base) var(--q8-ease-out);
+}
+
+.user-shell :is(p,li,blockquote),
+.qada-8k-modal :is(p,li,blockquote),
+.admin-shell :is(p,li,blockquote) {
+  overflow-wrap: anywhere;
+}
+
+.font-mono,
+[dir="ltr"],
+code,
+pre {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Public landing & auth ---------- */
+
+.qada-saudi-landing {
+  background:
+    radial-gradient(circle at 92% 0%, rgba(199,161,90,.09), transparent 26%),
+    radial-gradient(circle at 8% 28%, rgba(0,108,53,.075), transparent 26%),
+    linear-gradient(180deg, #fcfdf9 0%, #f7f8f3 55%, #efede5 100%) !important;
+}
+
+.qada-saudi-landing header {
+  border-color: rgba(231,207,154,.14) !important;
+  background: rgba(6,50,38,.94) !important;
+  box-shadow: 0 14px 46px rgba(4,34,25,.12) !important;
+  backdrop-filter: blur(18px) saturate(1.08);
+}
+
+.qada-riyadh-hero {
+  isolation: isolate;
+  min-height: clamp(520px, 72vh, 760px);
+  background:
+    radial-gradient(circle at 76% 14%, rgba(232,204,145,.24), transparent 16%),
+    linear-gradient(180deg, #0b5548 0%, #0e5849 30%, #6a6555 70%, #332c24 100%) !important;
+}
+
+.qada-riyadh-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(3,35,27,.84) 0%, rgba(3,35,27,.50) 48%, rgba(3,35,27,.10) 100%),
+    linear-gradient(180deg, transparent 44%, rgba(8,25,20,.18) 72%, rgba(5,18,14,.72) 100%) !important;
+}
+
+.qada-user-auth-shell {
+  background:
+    radial-gradient(circle at 82% 10%, rgba(231,207,154,.22), transparent 20%),
+    radial-gradient(circle at 12% 90%, rgba(0,108,53,.17), transparent 25%),
+    linear-gradient(140deg, #0b574a 0%, #2f6456 42%, #8d7860 70%, #2e2924 100%) !important;
+}
+
+.qada-user-auth-shell .qada-user-login-card {
+  background:
+    linear-gradient(180deg, rgba(255,254,250,.975), rgba(248,247,241,.965)) !important;
+  border: 1px solid rgba(231,207,154,.38) !important;
+  box-shadow: 0 38px 110px rgba(3,25,19,.26), inset 0 1px rgba(255,255,255,.98) !important;
+  backdrop-filter: blur(24px) saturate(1.05);
+}
+
+.qada-user-auth-shell .qada-user-login-card input {
+  min-height: 48px;
+  color: var(--q8-text) !important;
+  background: rgba(255,255,255,.92) !important;
+  border-color: rgba(16,32,25,.11) !important;
+}
+
+.qada-user-auth-shell .qada-user-login-card button[type="submit"] {
+  min-height: 48px;
+  color: white !important;
+  background: linear-gradient(145deg, #087540, #006c35 58%, #04542d) !important;
+  border: 1px solid rgba(0,77,38,.24) !important;
+  box-shadow: 0 13px 32px rgba(0,83,43,.20) !important;
+}
+
+/* ---------- Simple / welcome ---------- */
+
+.user-shell .qada-8k-welcome {
+  position: relative;
+}
+
+.user-shell .qada-8k-welcome > h1 {
+  max-width: 900px;
+  color: var(--q8-text) !important;
+  text-wrap: balance;
+  line-height: 1.25;
+}
+
+.user-shell .qada-8k-welcome > p {
+  color: var(--q8-muted) !important;
+  max-width: 780px;
+  line-height: 1.9;
+}
+
+.user-shell .qada-8k-welcome > div {
+  border-color: rgba(16,32,25,.09) !important;
+}
+
+.user-shell .qada-8k-story {
+  position: relative;
+  overflow: hidden;
+  color: var(--q8-text);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(199,161,90,.07), transparent 26%),
+    linear-gradient(180deg, #fffefa 0%, #f9faf6 100%) !important;
+  border: 1px solid rgba(151,116,50,.20) !important;
+  box-shadow: var(--q8-shadow-2) !important;
+}
+
+.user-shell .qada-8k-story::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--q8-green-800), var(--q8-green-600) 66%, var(--q8-brass-500));
+}
+
+.user-shell .qada-8k-story h4 {
+  color: var(--q8-text) !important;
+}
+
+.user-shell .qada-8k-story p,
+.user-shell .qada-8k-story > div > span {
+  color: var(--q8-muted) !important;
+}
+
+.user-shell .qada-8k-story textarea {
+  min-height: 124px !important;
+  font-size: 16px !important;
+  line-height: 1.8 !important;
+  color: var(--q8-text) !important;
+  background: #fff !important;
+  border: 1px solid rgba(16,32,25,.11) !important;
+}
+
+.user-shell .qada-8k-story button {
+  min-height: 40px;
+}
+
+/* ---------- Case workspaces ---------- */
+
+.user-shell .qada-case-workspace {
+  --q8-workspace-accent: var(--q8-green-700);
+}
+
+.user-shell .qada-case-workspace > div:first-child {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(199,161,90,.055), transparent 28%),
+    linear-gradient(180deg, #fffefa, #fafbf7) !important;
+  border: 1px solid rgba(151,116,50,.17) !important;
+  box-shadow: var(--q8-shadow-2) !important;
+}
+
+.user-shell .qada-case-workspace > div:first-child::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--q8-green-800), var(--q8-green-600), var(--q8-brass-500));
+}
+
+.user-shell .qada-case-workspace :is(input,textarea,select) {
+  min-height: 44px;
+  color: var(--q8-text) !important;
+  background: #fff !important;
+  border-color: rgba(16,32,25,.11) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.96);
+}
+
+.user-shell .qada-case-workspace textarea {
+  line-height: 1.8;
+}
+
+.user-shell .qada-case-workspace :is(input,textarea,select):focus {
+  border-color: rgba(0,108,53,.32) !important;
+  box-shadow: var(--q8-focus) !important;
+}
+
+/* ---------- Legal editor ---------- */
+
+.user-shell .qada-8k-editor > div:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 18;
+  background: rgba(255,254,250,.94) !important;
+  border: 1px solid rgba(151,116,50,.15) !important;
+  box-shadow: var(--q8-shadow-2) !important;
+  backdrop-filter: blur(18px) saturate(1.05);
+}
+
+.user-shell .qada-8k-editor > div:first-child h2 {
+  color: var(--q8-text) !important;
+}
+
+.user-shell .qada-8k-editor [class*="bg-neutral-900"],
+.user-shell .qada-8k-editor [class*="bg-neutral-950"] {
+  background-color: #fffefa !important;
+}
+
+.user-shell .qada-8k-editor [class*="text-neutral-100"],
+.user-shell .qada-8k-editor [class*="text-neutral-200"],
+.user-shell .qada-8k-editor [class*="text-neutral-300"] {
+  color: var(--q8-text) !important;
+}
+
+.user-shell .qada-8k-editor [class*="text-neutral-400"],
+.user-shell .qada-8k-editor [class*="text-neutral-500"] {
+  color: var(--q8-muted) !important;
+}
+
+.user-shell .qada-8k-editor [class*="border-neutral-800"],
+.user-shell .qada-8k-editor [class*="border-neutral-700"] {
+  border-color: rgba(16,32,25,.10) !important;
+}
+
+.user-shell .qada-8k-editor textarea {
+  color: #1b2b25 !important;
+  background: #fff !important;
+  border-color: rgba(16,32,25,.10) !important;
+  line-height: 1.95;
+}
+
+/* ---------- Messages / floating assistant ---------- */
+
+.user-shell .qada-8k-message {
+  border-color: rgba(16,32,25,.075) !important;
+}
+
+.user-shell .qada-8k-message:hover {
+  background-color: rgba(0,108,53,.018) !important;
+}
+
+.user-shell .qada-8k-message [class*="text-neutral-100"],
+.user-shell .qada-8k-message [class*="text-neutral-200"],
+.user-shell .qada-8k-message [class*="text-neutral-300"] {
+  color: var(--q8-text) !important;
+}
+
+.user-shell .qada-8k-message [class*="text-neutral-400"],
+.user-shell .qada-8k-message [class*="text-neutral-500"] {
+  color: var(--q8-muted) !important;
+}
+
+.qada-8k-floating-chat > div:first-child {
+  border: 1px solid rgba(231,207,154,.19) !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(199,161,90,.08), transparent 28%),
+    linear-gradient(180deg, rgba(8,27,21,.98), rgba(5,18,14,.985)) !important;
+  box-shadow: 0 30px 90px rgba(0,0,0,.30), inset 0 1px rgba(255,255,255,.045) !important;
+}
+
+.qada-8k-floating-chat button {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.qada-8k-floating-chat textarea {
+  min-height: 44px;
+}
+
+/* ---------- Modal system ---------- */
+
+.qada-8k-modal-overlay {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(0,108,53,.08), transparent 30%),
+    rgba(2,8,6,.82) !important;
+  backdrop-filter: blur(15px) saturate(.9) !important;
+}
+
+.qada-8k-modal {
+  position: relative;
+  isolation: isolate;
+  color: #f4f6f3 !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(199,161,90,.075), transparent 28%),
+    linear-gradient(180deg, #0a1c16 0%, #071510 100%) !important;
+  border: 1px solid rgba(231,207,154,.18) !important;
+  border-radius: var(--q8-radius-xl) !important;
+  box-shadow: var(--q8-shadow-dark-2), inset 0 1px rgba(255,255,255,.045) !important;
+}
+
+.qada-8k-modal::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  height: 3px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--q8-green-600), var(--q8-brass-500), var(--q8-green-600));
+  opacity: .85;
+  pointer-events: none;
+}
+
+.qada-8k-modal > header,
+.qada-8k-modal > div:first-child {
+  border-color: rgba(231,207,154,.10) !important;
+  background: rgba(9,28,21,.90) !important;
+  backdrop-filter: blur(16px);
+}
+
+.qada-8k-modal [class*="bg-neutral-950"],
+.qada-8k-modal [class*="bg-slate-950"],
+.qada-8k-modal [class*="bg-[#030b1b]"],
+.qada-8k-modal [class*="bg-[#06142b]"] {
+  background-color: rgba(4,15,11,.72) !important;
+}
+
+.qada-8k-modal [class*="bg-neutral-900"],
+.qada-8k-modal [class*="bg-slate-900"] {
+  background-color: rgba(13,33,26,.72) !important;
+}
+
+.qada-8k-modal [class*="border-neutral-800"],
+.qada-8k-modal [class*="border-neutral-700"],
+.qada-8k-modal [class*="border-slate-800"],
+.qada-8k-modal [class*="border-slate-700"],
+.qada-8k-modal [class*="border-cyan-"] {
+  border-color: rgba(231,207,154,.11) !important;
+}
+
+.qada-8k-modal [class*="text-neutral-400"],
+.qada-8k-modal [class*="text-neutral-500"],
+.qada-8k-modal [class*="text-slate-400"],
+.qada-8k-modal [class*="text-slate-500"] {
+  color: var(--q8-muted-dark) !important;
+}
+
+.qada-8k-modal [class*="text-amber-"] {
+  color: var(--q8-brass-300) !important;
+}
+
+.qada-8k-modal [class*="bg-amber-500"]:not([class*="/"]) {
+  color: var(--q8-ink-950) !important;
+  background: linear-gradient(135deg, var(--q8-brass-300), var(--q8-brass-500)) !important;
+}
+
+.qada-8k-modal :is(input,textarea,select) {
+  min-height: 44px;
+  color: #f6f7f5 !important;
+  background: rgba(2,10,7,.72) !important;
+  border-color: rgba(231,207,154,.14) !important;
+}
+
+.qada-8k-modal :is(input,textarea,select)::placeholder {
+  color: rgba(204,214,209,.46) !important;
+}
+
+.qada-8k-modal :is(input,textarea,select):focus {
+  border-color: rgba(231,207,154,.42) !important;
+  box-shadow: var(--q8-focus-dark) !important;
+}
+
+.qada-8k-modal button {
+  min-height: 36px;
+}
+
+.qada-8k-icon-button {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  display: inline-grid !important;
+  place-items: center;
+  border-radius: 14px !important;
+}
+
+.qada-8k-dossier aside,
+.qada-8k-repository [class*="lg:col-span-4"],
+.qada-8k-references aside {
+  background:
+    linear-gradient(180deg, rgba(10,29,22,.92), rgba(5,17,13,.92)) !important;
+}
+
+.qada-8k-upload [class*="border-dashed"] {
+  min-height: 170px;
+  display: grid;
+  place-items: center;
+  background: rgba(199,161,90,.025);
+  border-color: rgba(231,207,154,.22) !important;
+}
+
+.qada-8k-upload [class*="border-dashed"]:hover {
+  background: rgba(0,108,53,.07);
+  border-color: rgba(231,207,154,.40) !important;
+}
+
+/* ---------- Judicial review panels ---------- */
+
+.qada-8k-judge-panel {
+  overflow: hidden;
+  border-color: rgba(231,207,154,.17) !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(199,161,90,.06), transparent 28%),
+    linear-gradient(180deg, #0a1e17, #07140f) !important;
+  box-shadow: var(--q8-shadow-dark-1) !important;
+}
+
+.qada-8k-judge-panel [class*="bg-neutral-950"],
+.qada-8k-judge-panel [class*="bg-neutral-900"] {
+  background-color: rgba(4,14,10,.64) !important;
+}
+
+.qada-8k-judge-panel [class*="border-neutral-800"],
+.qada-8k-judge-panel [class*="border-neutral-700"] {
+  border-color: rgba(231,207,154,.10) !important;
+}
+
+/* ---------- Admin command center ---------- */
+
+.admin-shell .qada-8k-admin-view {
+  color: #eef3ef;
+}
+
+.admin-shell .qada-8k-admin-view > div:first-child {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(231,207,154,.16) !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(199,161,90,.09), transparent 28%),
+    linear-gradient(135deg, rgba(10,33,25,.98), rgba(5,18,14,.985)) !important;
+  box-shadow: 0 24px 74px rgba(0,0,0,.24), inset 0 1px rgba(255,255,255,.04) !important;
+}
+
+.admin-shell .qada-8k-admin-view > div:first-child::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, var(--q8-green-600), var(--q8-brass-500), transparent);
+  opacity: .8;
+}
+
+.admin-shell .qada-8k-admin-view [class*="from-violet"],
+.admin-shell .qada-8k-admin-view [class*="to-cyan"],
+.admin-shell .qada-8k-admin-view [class*="bg-violet-500/"] {
+  background-image: none !important;
+  background-color: rgba(199,161,90,.035) !important;
+}
+
+.admin-shell .qada-8k-admin-view [class*="text-violet-"],
+.admin-shell .qada-8k-admin-view [class*="text-cyan-"]:not([class*="text-cyan-300"]) {
+  color: var(--q8-brass-300) !important;
+}
+
+.admin-shell .qada-8k-admin-view [class*="border-violet-"],
+.admin-shell .qada-8k-admin-view [class*="border-cyan-"] {
+  border-color: rgba(231,207,154,.18) !important;
+}
+
+.admin-shell .qada-8k-admin-view [class*="bg-slate-950"],
+.admin-shell .qada-8k-admin-view [class*="bg-slate-900"] {
+  background-color: rgba(5,18,14,.78) !important;
+}
+
+.admin-shell .qada-8k-admin-view [class*="border-slate-800"],
+.admin-shell .qada-8k-admin-view [class*="border-slate-700"] {
+  border-color: rgba(231,207,154,.09) !important;
+}
+
+.admin-shell .qada-8k-admin-view :is(input,textarea,select) {
+  min-height: 44px;
+  color: #eef3ef !important;
+  background: rgba(3,12,9,.75) !important;
+  border-color: rgba(231,207,154,.12) !important;
+}
+
+.admin-shell .qada-8k-admin-view table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-shell .qada-8k-admin-view th {
+  color: #d9e3dc !important;
+  background: rgba(199,161,90,.035) !important;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+
+.admin-shell .qada-8k-admin-view tbody tr {
+  transition: background-color var(--q8-motion-fast) var(--q8-ease-out);
+}
+
+.admin-shell .qada-8k-admin-view tbody tr:hover {
+  background: rgba(199,161,90,.028);
+}
+
+/* Sentinel retains semantic severity; luxury shell must not mask risk. */
+.admin-shell .qada-8k-sentinel [class*="text-rose-"] {
+  color: #f5a8a3;
+}
+.admin-shell .qada-8k-sentinel [class*="text-amber-"] {
+  color: #e4c17c;
+}
+.admin-shell .qada-8k-sentinel [class*="text-emerald-"] {
+  color: #89d7ad;
+}
+
+/* ---------- Scrollbars ---------- */
+
+.qada-8k-modal *,
+.qada-8k-admin-view *,
+.qada-8k-editor *,
+.qada-8k-floating-chat * {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(199,161,90,.32) transparent;
+}
+
+.qada-8k-modal *::-webkit-scrollbar,
+.qada-8k-admin-view *::-webkit-scrollbar,
+.qada-8k-editor *::-webkit-scrollbar,
+.qada-8k-floating-chat *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.qada-8k-modal *::-webkit-scrollbar-thumb,
+.qada-8k-admin-view *::-webkit-scrollbar-thumb,
+.qada-8k-editor *::-webkit-scrollbar-thumb,
+.qada-8k-floating-chat *::-webkit-scrollbar-thumb {
+  background: rgba(199,161,90,.28);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+/* ---------- Responsive / safe touch ---------- */
+
+@media (max-width: 767px) {
+  .user-shell button,
+  .admin-shell button,
+  .qada-8k-modal button {
+    min-height: 44px;
+  }
+
+  .qada-8k-modal-overlay {
+    padding: 8px !important;
+    align-items: flex-end !important;
+  }
+
+  .qada-8k-modal {
+    width: 100% !important;
+    max-height: min(94dvh, 900px) !important;
+    border-radius: 24px 24px 18px 18px !important;
+  }
+
+  .qada-8k-modal > header,
+  .qada-8k-modal > div:first-child {
+    padding-inline: 16px !important;
+  }
+
+  .qada-8k-dossier,
+  .qada-8k-references {
+    height: 94dvh !important;
+  }
+
+  .user-shell .qada-8k-editor > div:first-child {
+    top: 0;
+    border-radius: 18px !important;
+  }
+
+  .qada-8k-floating-chat > div:first-child {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  .admin-shell .qada-8k-admin-view {
+    padding-inline: 0;
+  }
+}
+
+@media (min-width: 1440px) {
+  .user-shell .qada-case-workspace,
+  .user-shell .qada-8k-editor {
+    max-width: 1360px;
+  }
+
+  .qada-8k-modal.qada-8k-references {
+    max-width: 1540px !important;
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .user-shell *,
+  .admin-shell *,
+  .qada-8k-modal *,
+  .qada-8k-floating-chat * {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+
+  .user-shell button:active,
+  .admin-shell button:active,
+  .qada-8k-modal button:active {
+    transform: none !important;
+  }
+}
