@@ -114,7 +114,7 @@ export function CassationJudgesPanel({
   return (
     <div
       id="cassation-judges-audit-card"
-      className="my-3.5 rounded-2xl border border-neutral-750 bg-neutral-900/90 shadow-xl overflow-hidden text-right"
+      className="qada-8k-judge-panel my-3.5 rounded-2xl border border-neutral-750 bg-neutral-900/90 shadow-xl overflow-hidden text-right"
     >
       {/* Top Banner: Supreme Judicial Oversight Header */}
       <div className={`px-4 py-3 border-b flex flex-wrap items-center justify-between gap-2.5 ${banner.bg}`}>
