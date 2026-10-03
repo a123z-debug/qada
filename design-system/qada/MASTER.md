@@ -16,7 +16,7 @@ QADA combines those recommendations with Saudi judicial identity. The product mu
 - Category: Saudi legal AI / judicial professional services.
 - Primary experience: trust, clarity, authority, calm precision.
 - Visual direction: **Quiet Luxury + Accessible Swiss Legal-Tech**.
-- Arabic RTL and mobile-first by default.
+- **Mobile-first** Arabic RTL by default.
 - “8K” means maximum perceived fidelity and consistency, not oversized effects or raster-heavy decoration.
 
 ## Core principles
@@ -176,6 +176,9 @@ Also review mobile landscape where fixed/sticky UI exists.
 - Status uses icon + text, not color alone.
 
 ## Anti-patterns
+
+**Avoid neon** as a default product language; status colors are functional, not decorative.
+
 
 - AI-purple as the default brand language.
 - Mixed neon cyan/violet/rose decoration.
