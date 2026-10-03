@@ -241,7 +241,7 @@ export function FloatingChatBot({
       : 'right-3 sm:right-6 bottom-20 sm:bottom-6';
 
   return (
-    <div className={`fixed ${posClass} z-40 flex flex-col items-start select-none font-sans`}>
+    <div className={`qada-8k-floating-chat fixed ${posClass} z-40 flex flex-col items-start select-none font-sans`}>
       {/* 1. Open Chat Pop-up Window */}
       {isOpen && (
         <div
