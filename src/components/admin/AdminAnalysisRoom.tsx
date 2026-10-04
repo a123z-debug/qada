@@ -76,6 +76,40 @@ type AnalysisMeta = {
   architecture?: string;
 };
 
+type IntelligencePlan = {
+  risk: 'low' | 'medium' | 'high' | 'critical';
+  complexity: 'low' | 'medium' | 'high';
+  orchestrationConfidence: number;
+  task: string;
+  stage: string;
+  routeBlocked: boolean;
+  draftingRequested: boolean;
+  draftingAllowed: boolean;
+  capabilities: string[];
+  truth: {
+    officialSources: number;
+    verifiedArticles: number;
+    blockers: number;
+    literalQuotationReady: boolean;
+    precedentCorpusReady: boolean;
+    mode: 'verified' | 'partial' | 'blocked';
+  };
+  team: Array<{
+    id: string;
+    label: string;
+    readiness: string;
+    failureAction: string;
+    mandatory: boolean;
+    reason: string;
+  }>;
+  phases: Array<{
+    id: string;
+    label: string;
+    agents: string[];
+    gate: boolean;
+  }>;
+};
+
 type SavedAnalysisRun = {
   runId?: string;
   documentTitle?: string;
@@ -83,6 +117,7 @@ type SavedAnalysisRun = {
   report?: AdminAnalysisReport;
   agentRuns?: AgentRun[];
   sourcePackets?: SourcePacket[];
+  intelligencePlan?: IntelligencePlan | null;
   meta?: AnalysisMeta | null;
 };
 
@@ -153,6 +188,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
   const [meta, setMeta] = useState<AnalysisMeta | null>(null);
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([]);
   const [sourcePackets, setSourcePackets] = useState<SourcePacket[]>([]);
+  const [intelligencePlan, setIntelligencePlan] = useState<IntelligencePlan | null>(null);
   const [historyWarning, setHistoryWarning] = useState('');
   const [history, setHistory] = useState<SavedAnalysisRun[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -197,6 +233,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
     setMeta(saved.meta || null);
     setAgentRuns(Array.isArray(saved.agentRuns) ? saved.agentRuns : []);
     setSourcePackets(Array.isArray(saved.sourcePackets) ? saved.sourcePackets : []);
+    setIntelligencePlan(saved.intelligencePlan || null);
     setActiveCategory('الكل');
     setError('');
   }
@@ -209,6 +246,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
       meta,
       agentRuns,
       sourcePackets,
+      intelligencePlan,
       report,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
@@ -278,6 +316,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
     setMeta(null);
     setAgentRuns([]);
     setSourcePackets([]);
+    setIntelligencePlan(null);
     setActiveCategory('الكل');
     setHistoryWarning('');
 
@@ -307,10 +346,12 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
       const nextMeta = (payload.meta || null) as AnalysisMeta | null;
       const nextAgentRuns = Array.isArray(payload.agentRuns) ? payload.agentRuns as AgentRun[] : [];
       const nextSourcePackets = Array.isArray(payload.sourcePackets) ? payload.sourcePackets as SourcePacket[] : [];
+      const nextIntelligencePlan = (payload.intelligencePlan || null) as IntelligencePlan | null;
       setReport(nextReport);
       setMeta(nextMeta);
       setAgentRuns(nextAgentRuns);
       setSourcePackets(nextSourcePackets);
+      setIntelligencePlan(nextIntelligencePlan);
       const snapshot: SavedAnalysisRun = {
         runId: `run-${Date.now()}`,
         documentTitle: documentTitle.trim() || nextReport.documentType || 'تحليل قضائي',
@@ -318,6 +359,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
         report: nextReport,
         agentRuns: nextAgentRuns,
         sourcePackets: nextSourcePackets,
+        intelligencePlan: nextIntelligencePlan,
         meta: nextMeta,
       };
       try {
@@ -576,6 +618,129 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                   </div>
                 )}
               </div>
+
+              {intelligencePlan && (
+                <div className="overflow-hidden rounded-2xl border border-cyan-400/20 bg-gradient-to-bl from-cyan-500/10 via-slate-950/80 to-violet-500/10">
+                  <div className="border-b border-slate-800/80 p-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 text-xs font-black text-cyan-200">
+                          <Sparkles className="h-4 w-4" />
+                          Agent OS — خطة القضية الحية
+                        </div>
+                        <p className="mt-2 max-w-3xl text-[10px] leading-5 text-slate-500">
+                          يكوّن النظام فريق القضية ومسار التنفيذ ديناميكياً من نوع المهمة والمرحلة وحالة المصادر. «ثقة التوجيه» تقيس اكتمال خطة التشغيل فقط، وليست توقعاً لنتيجة الحكم.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <span className={
+                          'rounded-full border px-2.5 py-1 text-[9px] font-black ' +
+                          (intelligencePlan.risk === 'critical'
+                            ? 'border-rose-400/30 bg-rose-500/10 text-rose-200'
+                            : intelligencePlan.risk === 'high'
+                              ? 'border-orange-400/30 bg-orange-500/10 text-orange-200'
+                              : intelligencePlan.risk === 'medium'
+                                ? 'border-amber-400/30 bg-amber-500/10 text-amber-200'
+                                : 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200')
+                        }>
+                          المخاطر: {intelligencePlan.risk}
+                        </span>
+                        <span className="rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-1 text-[9px] font-black text-violet-200">
+                          التعقيد: {intelligencePlan.complexity}
+                        </span>
+                        <span className="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 text-[9px] font-black text-cyan-200">
+                          ثقة التوجيه: {Math.round(intelligencePlan.orchestrationConfidence * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 p-4 xl:grid-cols-[1.2fr_.8fr]">
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/55 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-[10px] font-black text-white">مسار التنفيذ</div>
+                        <div className="text-[9px] text-slate-600">{intelligencePlan.team.length} قدرات مفعّلة</div>
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {intelligencePlan.phases.map((phase, index) => (
+                          <React.Fragment key={phase.id}>
+                            {index > 0 && <span className="text-slate-700">←</span>}
+                            <div className={
+                              'rounded-xl border px-3 py-2 ' +
+                              (phase.gate
+                                ? 'border-amber-400/20 bg-amber-500/5'
+                                : 'border-slate-800 bg-black/15')
+                            }>
+                              <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-200">
+                                {phase.gate && <ShieldCheck className="h-3 w-3 text-amber-300" />}
+                                {phase.label}
+                              </div>
+                              <div className="mt-1 max-w-[220px] truncate font-mono text-[8px] text-slate-600">
+                                {phase.agents.join(' + ')}
+                              </div>
+                            </div>
+                          </React.Fragment>
+                        ))}
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {intelligencePlan.team.slice(0, 12).map((agent) => (
+                          <span
+                            key={agent.id}
+                            title={agent.reason}
+                            className={
+                              'rounded-full border px-2 py-1 text-[8px] font-bold ' +
+                              (agent.mandatory
+                                ? 'border-cyan-400/20 bg-cyan-500/5 text-cyan-200'
+                                : 'border-slate-700 bg-slate-900 text-slate-400')
+                            }
+                          >
+                            {agent.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/55 p-3">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-white">
+                        <BookOpenCheck className="h-4 w-4 text-emerald-300" />
+                        طبقة الحقيقة القانونية
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <div className="rounded-lg border border-slate-800 bg-black/15 p-2">
+                          <div className="text-[8px] text-slate-600">الحالة</div>
+                          <div className={
+                            'mt-1 text-[10px] font-black ' +
+                            (intelligencePlan.truth.mode === 'verified'
+                              ? 'text-emerald-300'
+                              : intelligencePlan.truth.mode === 'blocked'
+                                ? 'text-rose-300'
+                                : 'text-amber-300')
+                          }>
+                            {intelligencePlan.truth.mode === 'verified' ? 'متحقق' : intelligencePlan.truth.mode === 'blocked' ? 'محجوب' : 'جزئي'}
+                          </div>
+                        </div>
+                        <div className="rounded-lg border border-slate-800 bg-black/15 p-2">
+                          <div className="text-[8px] text-slate-600">قيود التحقق</div>
+                          <div className="mt-1 text-[10px] font-black text-white">{intelligencePlan.truth.blockers}</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-800 bg-black/15 p-2">
+                          <div className="text-[8px] text-slate-600">مصادر رسمية</div>
+                          <div className="mt-1 text-[10px] font-black text-white">{intelligencePlan.truth.officialSources}</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-800 bg-black/15 p-2">
+                          <div className="text-[8px] text-slate-600">مواد متحققة</div>
+                          <div className="mt-1 text-[10px] font-black text-white">{intelligencePlan.truth.verifiedArticles}</div>
+                        </div>
+                      </div>
+                      <div className="mt-3 text-[9px] leading-5 text-slate-500">
+                        الطريق: {intelligencePlan.task} / {intelligencePlan.stage}
+                        {intelligencePlan.routeBlocked ? ' • المسار محجوب حتى تصحيح الطريق.' : ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {agentRuns.length > 0 && (
                 <div className="rounded-2xl border border-violet-400/15 bg-violet-500/5 p-4">
