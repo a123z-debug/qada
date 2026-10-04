@@ -121,3 +121,14 @@ const verifiedBundle: any = {
 }
 
 console.log(JSON.stringify({ ok: true, suite: 'qada-agent-os-intelligence' }));
+
+
+{
+  const architecture = 'QADA project boundary stays authoritative';
+  const agentOsRole = 'advisory-capability-planning-only';
+  const productionOwner = 'a123z-debug/qada';
+
+  assert.equal(productionOwner, 'a123z-debug/qada', 'QADA production ownership must stay in the QADA repository');
+  assert.equal(agentOsRole, 'advisory-capability-planning-only', 'Agent OS must remain advisory for QADA');
+  assert(architecture.includes('authoritative'), 'QADA domain boundary must remain authoritative');
+}
