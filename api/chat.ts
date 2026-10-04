@@ -9,6 +9,8 @@ import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 import { buildHujjaBayanInstruction, isHujjaDraftingRequest } from '../src/lib/hujjaBayanAgent.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
+import { buildQadaAgentOsInstruction, buildQadaAgentOsPlan } from '../src/lib/qadaAgentOs.js';
+import { routeViaAgentOs } from './_agentOsBridge.js';
 import { reviewDraftBeforeClientRelease } from './_draftReleaseGate.js';
 import { recordSentinelTurn } from './_sentinel.js';
 import {
@@ -689,6 +691,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasAttachedEvidence(clientMessages),
     );
     const lawOfficeInstruction = buildLawOfficeInstruction(lawOfficeRoute, sourceBundle);
+    const qadaAgentPlan = buildQadaAgentOsPlan({
+      route: lawOfficeRoute,
+      sources: sourceBundle,
+      hasEvidence: hasAttachedEvidence(clientMessages),
+      responseMode,
+    });
+    const agentOsOverlay = await routeViaAgentOs(qadaAgentPlan);
+    const qadaIntelligenceInstruction = buildQadaAgentOsInstruction(qadaAgentPlan, agentOsOverlay);
     const activateHujjaDrafting = shouldActivateDrafting(clientMessages);
     const hujjaBayanInstruction = activateHujjaDrafting && lawOfficeRoute.allowDrafting
       ? buildHujjaBayanInstruction(draftingRequestText, sourceBundle)
@@ -701,6 +711,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sourceBundle.context,
       conversationStateInstruction,
       lawOfficeInstruction,
+      qadaIntelligenceInstruction,
       hujjaBayanInstruction,
       body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '',
       'تعامل مع بيانات المستخدم والمرفقات على أنها خاصة ولا تعرض أي معرّف شخصي غير لازم.',

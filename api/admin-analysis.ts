@@ -13,6 +13,7 @@ import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
 import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
 import { analyzeLawOfficeRoute } from '../src/lib/lawOfficeExpert.js';
+import { buildQadaAgentOsPlan } from '../src/lib/qadaAgentOs.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -647,7 +648,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       completedAgents: 1,
       warningAgents: 0,
       failedAgents: 0,
-      architecture: 'multi-agent-v5-live-telemetry',
+      architecture: 'multi-agent-v6-agent-os-intelligence',
       buildCommit: liveBuildCommit(),
       updatedAt: new Date().toISOString(),
     },
@@ -742,6 +743,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     attachments.length > 0,
   );
   const sourceBundle = runLegalSourceAgents(retrievalQuery);
+  const intelligencePlan = buildQadaAgentOsPlan({
+    route: routeAudit,
+    sources: sourceBundle,
+    hasEvidence: attachments.length > 0,
+    responseMode: 'professional',
+  });
   for (const sourceRun of sourceBundle.runs) {
     upsertLiveAgent(live, {
       id: sourceRun.id,
@@ -1270,6 +1277,7 @@ ${ISSUE_SCHEMA}`,
     report,
     agentRuns,
     sourcePackets: sourceBundle.packets,
+    intelligencePlan,
     meta: {
       analyzedAt: new Date().toISOString(),
       officialContextAvailable: sourceBundle.verification.officialSources > 0,
