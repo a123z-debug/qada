@@ -3,6 +3,7 @@ import { readActiveSession } from './session.js';
 import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
 import { enforceRateLimit } from './_rateLimit.js';
 import { protectJson, unprotectJson } from './_secureStore.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 type AdminRunSnapshot = {
   runId?: string;
@@ -32,6 +33,7 @@ function sanitizeSnapshot(input: unknown): AdminRunSnapshot {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
   const session = await readActiveSession(req.headers?.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
