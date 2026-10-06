@@ -33,6 +33,14 @@ interface JudgesSourceAudit {
   introducedMarkers?: string[];
   unsupportedMarkers?: string[];
   blockedRevision?: boolean;
+  evidenceGraph?: {
+    complete: boolean;
+    verifiedCount: number;
+    unverifiedCount: number;
+    materialUnverifiedCount: number;
+    warnings: string[];
+    blockers: string[];
+  };
 }
 
 interface JudgesCassationReviewPanelProps {
@@ -260,6 +268,24 @@ export function JudgesCassationReviewPanel({
                 {' • '}النص الحرفي: {sourceAudit.literalQuotationReady ? 'متحقق' : 'يحتاج مطابقة المصدر'}
                 {' • '}السوابق الكاملة: {sourceAudit.precedentCorpusReady ? 'جاهزة' : 'غير مكتملة'}
               </div>
+              {sourceAudit.evidenceGraph && (
+                <div className={
+                  'mt-2 rounded-xl border p-2 text-[11px] ' +
+                  (sourceAudit.evidenceGraph.complete
+                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-100'
+                    : 'border-amber-500/25 bg-amber-500/10 text-amber-100')
+                }>
+                  <div className="font-bold">خريطة الإثبات القضائي</div>
+                  <div className="mt-1 opacity-80">
+                    عناصر متحققة: {sourceAudit.evidenceGraph.verifiedCount}
+                    {' • '}غير متحققة: {sourceAudit.evidenceGraph.unverifiedCount}
+                    {' • '}جوهرية غير متحققة: {sourceAudit.evidenceGraph.materialUnverifiedCount}
+                  </div>
+                  {sourceAudit.evidenceGraph.blockers.slice(0, 3).map((item, index) => (
+                    <div key={`evidence-blocker-${index}`} className="mt-1">• {item}</div>
+                  ))}
+                </div>
+              )}
               {sourceAudit.blockers.length > 0 && (
                 <ul className="mt-2 space-y-1 text-[11px] text-amber-100/75">
                   {sourceAudit.blockers.slice(0, 4).map((item, index) => (
