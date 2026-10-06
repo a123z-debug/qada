@@ -12,11 +12,11 @@ import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/law
 import { reviewDraftBeforeClientRelease } from './_draftReleaseGate.js';
 import { recordSentinelTurn } from './_sentinel.js';
 import {
-import { enforceSameOriginMutation } from './_requestGuard.js';
   buildConversationStateInstruction,
   latestUserTurnText,
   shouldActivateDrafting,
 } from '../src/lib/conversationState.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
