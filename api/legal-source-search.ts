@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
+import { fetchVerifiedCorpusArticles } from '../src/lib/legalCorpusAdapter.js';
 
 type Court = 'administrative' | 'general' | 'criminal';
 
@@ -53,6 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const retrievalQuery = [COURT_HINTS[court], query].filter(Boolean).join('\n');
 
   const bundle = runLegalSourceAgents(retrievalQuery);
+  const externalCorpus = await fetchVerifiedCorpusArticles(retrievalQuery);
   const seen = new Set<string>();
   const references: Array<{
     id: string;
@@ -89,15 +91,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (references.length >= 24) break;
   }
 
-  const verifiedArticles = bundle.packets.flatMap((packet) =>
-    packet.verifiedArticles.map((article) => ({
-      agentId: packet.agentId,
-      system: article.system,
-      article: article.article,
-      sourceUrl: article.sourceUrl,
-      note: article.note,
-    }))
-  ).slice(0, 30);
+  const verifiedArticles = [
+    ...bundle.packets.flatMap((packet) =>
+      packet.verifiedArticles.map((article) => ({
+        agentId: packet.agentId,
+        system: article.system,
+        article: article.article,
+        sourceUrl: article.sourceUrl,
+        note: article.note,
+      }))
+    ),
+    ...externalCorpus.articles.map((article) => ({
+      agentId: 'saudi-legal-corpus',
+      system: article.system_id,
+      article: article.article_number,
+      sourceUrl: article.source_urls?.[0] || '',
+      note: [
+        'Saudi Legal Corpus: verified',
+        article.effective_date ? `effective_date=${article.effective_date}` : '',
+        article.verification.content_sha256 ? `sha256=${article.verification.content_sha256}` : '',
+      ].filter(Boolean).join(' • '),
+    })),
+  ].slice(0, 30);
 
   return res.status(200).json({
     references,
@@ -108,6 +123,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       verifiedArticles: bundle.verification.verifiedArticles,
       literalQuotationReady: bundle.verification.literalQuotationReady,
       precedentCorpusReady: bundle.verification.precedentCorpusReady,
+      externalCorpus: {
+        configured: externalCorpus.status.configured,
+        available: externalCorpus.status.available,
+        trusted: externalCorpus.status.trusted,
+        eligibleSystems: externalCorpus.status.eligibleSystems.map((system) => ({
+          id: system.id,
+          name: system.name_ar,
+        })),
+        blockedSystems: externalCorpus.status.blockedSystems.map((system) => ({
+          id: system.id,
+          name: system.name_ar,
+          verificationStatus: system.verification_status,
+          reason: system.reason_ar || '',
+        })),
+        blockers: externalCorpus.blockers,
+      },
     },
   });
 }
