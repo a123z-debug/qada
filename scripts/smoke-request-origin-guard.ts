@@ -38,6 +38,9 @@ assert(sameOriginMutationAllowed(req('POST', {
   host: 'qada.example',
 })), 'non-browser authenticated API clients without browser fetch headers must remain usable');
 
-assert(!sameOriginMutationAllowed(req('POST', {})), 'unsafe request without Host must fail closed');
+assert(sameOriginMutationAllowed(req('POST', {})), 'direct non-browser handler calls without browser metadata must remain usable');
+assert(!sameOriginMutationAllowed(req('POST', {
+  origin: 'https://evil.example',
+})), 'browser-like request without Host must fail closed');
 
 console.log(JSON.stringify({ ok: true, siblingDomainCsrfBlocked: true }, null, 2));
