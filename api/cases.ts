@@ -5,6 +5,7 @@ import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
 import { enforceRateLimit } from './_rateLimit.js';
 import { protectJson, unprotectJson } from './_secureStore.js';
 import { recordAuditEvent } from './_audit.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 type StoredCase = {
   ownerId: string;
@@ -301,6 +302,7 @@ async function loadMany(keys: string[]): Promise<StoredCase[]> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
   const session = await readActiveSession(req.headers?.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });
