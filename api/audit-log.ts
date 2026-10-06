@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
-import { listAuditEvents, recordAuditEvent } from './_audit.js';
+import { assessAuditIntegrity, listAuditEvents, recordAuditEvent } from './_audit.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
@@ -24,7 +24,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const requested = Number(req.query?.limit || 150);
     const events = await listAuditEvents(Number.isFinite(requested) ? requested : 150);
-    return res.status(200).json({ events, count: events.length });
+    const integrity = assessAuditIntegrity(events);
+    return res.status(200).json({ events, count: events.length, integrity });
   } catch (error) {
     console.error('Audit log read failed:', error instanceof Error ? error.message : error);
     return res.status(503).json({ error: 'AUDIT_STORE_UNAVAILABLE' });
