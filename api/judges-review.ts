@@ -16,6 +16,7 @@ import {
   assessJudicialEvidenceGraph,
   buildJudicialEvidenceGraphInstruction,
 } from '../src/lib/judicialEvidenceGraph.js';
+import { runIndependentOpposingCounsel } from './_opposingCounsel.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -155,6 +156,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ لا تنسب رقماً أو مبدأً إلى حكم غير موجود صراحة في حزمة المصدر.',
   ].join('\n\n');
 
+  const opposingCounsel = await runIndependentOpposingCounsel({
+    caseContext: [body.court || '', body.documentTitle || '', safeText, safeAttachmentsText, body.uploadedFileName || ''].join('\n'),
+    sourceContext: legalReferenceContext,
+    draft: safeText,
+    court: body.court,
+    documentTitle: body.documentTitle,
+  });
+
   const prompt = `${virtualJudgeContract}
 
 ${courtProfileInstruction}
@@ -196,9 +205,10 @@ E. EXCEPTION_TEST
 - لكل قاعدة أو حد مالي أو منع جمع أو شرط قبول: ابحث عن الاستثناءات والقيود والموانع.
 - إذا استند الخصم إلى قاعدة عامة وكان في النص استثناء خاص مؤثر، يجب إبرازه كمسألة مستقلة.
 
-F. OPPOSING_PARTY_RED_TEAM
-- استخرج أقوى دفع جوهري للطرف المقابل أو الجهة الإدارية، لا أضعف دفع.
-- افحص هل أجابت المذكرة عنه واقعياً ونظامياً، وهل يوجد تناقض بين دفع الخصم والنتيجة التي تبناها الحكم.
+F. INDEPENDENT_OPPOSING_COUNSEL_REVIEW
+- لا تولّد دفوع خصم جديدة في هذه المرحلة؛ محامي الخصم عمل في نداء AI مستقل قبل وصول الملف إليك.
+- افحص دفوعه المتحققة أدناه فقط، وهل أجابت المذكرة عنها واقعياً ونظامياً.
+- تجاهل أي دفع غير متحقق استبعدته طبقة grounding، ولا تعيده من الذاكرة.
 
 G. CASSATION_BOUNDARY
 - إذا كانت المهمة نقضاً، افصل بين:
@@ -226,6 +236,15 @@ K. CLAIM_LIBERATION_TEST
 - إذا نقص ركن من هذه الأركان أو كان مجهلاً، سجله في claimErrors ولا تمنح PASS.
 
 ${evidenceGraphInstruction}
+
+[تقرير محامي الخصم المستقل — مغلق بعد نداء منفصل]
+الحالة: ${opposingCounsel.available ? 'متاح' : 'غير متاح'}
+المزود: ${opposingCounsel.provider || 'غير متاح'}
+الملخص: ${opposingCounsel.summary || 'لا يوجد'}
+الدفوع المتحققة فقط:
+${JSON.stringify(opposingCounsel.groundedArguments, null, 2)}
+دفوع استبعدت لعدم التحقق: ${opposingCounsel.unverifiedArguments.length}
+ممنوع على القاضي إنشاء دفع خصمي بديل غير موجود في القائمة المتحققة أعلاه.
 
 حلل النص التالي، واكتب JSON فقط بالمفاتيح:
 documentType, overallStatus, gateDecision, primaryFatalDefect, judges, issueMatrix, elementMatrix, temporalErrors, hierarchyErrors, exceptionErrors, rebuttalErrors, cassationErrors, claimErrors, attachmentErrors, remedyErrors, contradictions, nodeFailures, revisedDocument, changeLog, synthesisAdvice.
@@ -305,6 +324,15 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });
     const report = JSON.parse(match[0]);
+    report.opposingCounsel = {
+      available: opposingCounsel.available,
+      provider: opposingCounsel.provider,
+      summary: opposingCounsel.summary,
+      groundedArguments: opposingCounsel.groundedArguments,
+      unverifiedArguments: opposingCounsel.unverifiedArguments,
+      unansweredMaterialArguments: opposingCounsel.unansweredMaterialArguments,
+      diagnosticBlockers: opposingCounsel.blockers,
+    };
     const revisedDocument = typeof report?.revisedDocument === 'string' ? report.revisedDocument : '';
     const citationGuard = revisedDocument
       ? guardIntroducedLegalCitations(safeText, revisedDocument, legalReferenceContext)
@@ -380,7 +408,9 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
       remedy: countFindings(report?.remedyErrors),
       contradiction: countFindings(report?.contradictions),
     };
-    const materialErrorCount = Object.values(findingCounts).reduce((sum, count) => sum + count, 0);
+    const opposingCounselUnansweredCount = opposingCounsel.unansweredMaterialArguments.length;
+    const materialErrorCount = Object.values(findingCounts).reduce((sum, count) => sum + count, 0)
+      + opposingCounselUnansweredCount;
 
     const caseProfileText = [
       body.court || '',
@@ -425,6 +455,7 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
       : [];
 
     const hardBlockers = [
+      ...(!opposingCounsel.available ? ['تعذر تشغيل محامي الخصم المستقل؛ لا يجوز منح PASS دون مراجعة خصمية مستقلة.'] : []),
       ...(routeAudit.blocking ? [routeAudit.reason] : []),
       ...(citationGuard.blocked ? ['تم إدخال إحالات قانونية غير متحققة في الصياغة.'] : []),
       ...(fatalDefect ? [fatalDefect] : []),
@@ -450,6 +481,8 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     readinessScore -= findingCounts.contradiction * 8;
     readinessScore -= Math.min(25, evidenceGraph.materialUnverifiedCount * 12);
     readinessScore -= Math.min(10, evidenceGraph.warnings.length * 3);
+    readinessScore -= Math.min(24, opposingCounselUnansweredCount * 8);
+    if (opposingCounsel.available && opposingCounsel.groundedArguments.length === 0) readinessScore -= 10;
     readinessScore = Math.max(0, Math.min(100, readinessScore));
 
     const readinessTarget = 95;
@@ -461,6 +494,8 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     } else if (
       readinessScore >= readinessTarget
       && materialErrorCount === 0
+      && opposingCounsel.available
+      && opposingCounsel.groundedArguments.length > 0
       && requestedGate === 'PASS'
     ) {
       serverGate = 'PASS';
@@ -477,6 +512,8 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     report.verifiedPersonnelArticles = verifiedPersonnelArticles;
     report.verifiedAdministrativeArticles = verifiedAdministrativeArticles;
     report.evidenceGraphComplete = evidenceGraph.complete;
+    report.opposingCounselReady = opposingCounsel.available && opposingCounsel.groundedArguments.length > 0;
+    report.opposingCounselUnansweredCount = opposingCounselUnansweredCount;
 
     if (serverGate === 'BLOCK') {
       report.revisedDocument = body.text;
@@ -514,6 +551,9 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
         hardBlockers: report.hardBlockers,
         claimLiberation: report.claimLiberation,
         evidenceGraph: report.evidenceGraph,
+        opposingCounsel: report.opposingCounsel,
+        opposingCounselReady: report.opposingCounselReady,
+        opposingCounselUnansweredCount: report.opposingCounselUnansweredCount,
       },
       sourcePackets: sourceBundle.packets,
     });
