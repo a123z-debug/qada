@@ -11,6 +11,10 @@ import {
 } from '../src/lib/judicialEvidenceGraph.js';
 import { withTimeout } from './_async.js';
 import {
+  runIndependentOpposingCounsel,
+  type OpposingCounselReport,
+} from './_opposingCounsel.js';
+import {
   USER_AI_MODELS,
   isModelCoolingDown,
   isQuotaError,
@@ -32,6 +36,7 @@ export type DraftReleaseGateResult = {
   provider?: string;
   claimLiberation: ClaimLiberationAssessment;
   evidenceGraph?: JudicialEvidenceGraphAssessment;
+  opposingCounsel?: OpposingCounselReport;
 };
 
 type ReviewShape = {
@@ -142,7 +147,18 @@ export async function reviewDraftBeforeClientRelease(args: {
   const personnelPacket = sourceBundle.packets.find((packet) => packet.agentId === 'src-personnel');
   const bogPacket = sourceBundle.packets.find((packet) => packet.agentId === 'src-bog');
 
+  const opposingCounsel = await runIndependentOpposingCounsel({
+    caseContext: [args.court || '', args.documentTitle || '', args.sourceInputText || ''].join('\n'),
+    sourceContext: sourceBundle.context,
+    draft,
+    court: args.court,
+    documentTitle: args.documentTitle,
+  });
+
   const hardBlockers: string[] = [];
+  if (!opposingCounsel.available) {
+    hardBlockers.push('تعذر تشغيل محامي الخصم المستقل؛ لا يجوز اعتماد المسودة دون مراجعة خصمية مستقلة.');
+  }
   if (claimLiberation.applicable && !claimLiberation.complete) {
     for (const pillar of claimLiberation.missingPillars) {
       hardBlockers.push(`الدعوى غير محررة: قسم ${pillar} مفقود أو غير مكتمل.`);
@@ -188,7 +204,7 @@ ${courtProfileInstruction}
 2) السريان الزمني ومرتبة المصدر.
 3) كل عنصر جوهري: الواقعة → الدليل → السند → الأثر.
 4) الاستثناءات والقيود، خصوصاً منع الجمع والحدود المالية والشروط الخاصة عند صلتها.
-5) أقوى دفع للخصم وهل عولج فعلاً.
+5) لا تنشئ دفع خصم من عندك. قيّم حصراً تقرير محامي الخصم المستقل أدناه، وحدد هل المسودة أجابت دفوعه المتحققة فعلاً.
 6) في النقض: الفرق بين إعادة وزن الدليل وبين التكييف/الإغفال/التسبيب/الخطأ النظامي.
 7) التناقضات بين الوقائع والدليل والدفع وأسباب الحكم.
 8) هل الأسباب تنتج الطلب النهائي فعلاً.
@@ -196,6 +212,15 @@ ${courtProfileInstruction}
 10) إذا كانت المهمة دعوى: افحص تحرير الدعوى إلزامياً وفق أربعة أركان مرتبة: البيانات → الوقائع → المستندات → الطلبات. لا يكفي وجود العناوين؛ يجب أن تكون البيانات معرفة بالأطراف والصفة، والوقائع محررة، والمستندات مرتبطة بما تثبته أو يصرح بنقصها، والطلبات جازمة ومتصلة بالوقائع والمستندات.
 
 ${evidenceGraphInstruction}
+
+[تقرير محامي الخصم المستقل — نداء AI سابق ومنفصل]
+الحالة: ${opposingCounsel.available ? 'متاح' : 'غير متاح'}
+المزود: ${opposingCounsel.provider || 'غير متاح'}
+الملخص: ${opposingCounsel.summary || 'لا يوجد'}
+الدفوع المتحققة فقط:
+${JSON.stringify(opposingCounsel.groundedArguments, null, 2)}
+ملاحظة: الدفوع غير المتحققة التي اخترعها/لم يثبتها محامي الخصم مستبعدة ولا يجوز استخدامها ضد المسودة.
+ممنوع توليد دفوع خصمية جديدة خارج هذه الحزمة أثناء دور القاضي.
 
 أعد JSON فقط:
 {
@@ -275,6 +300,13 @@ ${draft.slice(0, 30000)}
   });
   hardBlockers.push(...evidenceGraph.blockers);
 
+  const opponentFindings = opposingCounsel.unansweredMaterialArguments.map(
+    (item) => `دفع خصم متحقق لم يُجب بالكامل: ${item.title} — ${item.answerStatus}.`,
+  );
+  if (opposingCounsel.available && opposingCounsel.groundedArguments.length === 0) {
+    opponentFindings.push('محامي الخصم المستقل لم ينتج دفعاً متحققاً؛ يلزم مراجعة خصمية إضافية قبل PASS.');
+  }
+
   const materialFindings = [
     ...stringArray(review.fatalDefects),
     ...stringArray(review.temporalErrors),
@@ -286,6 +318,7 @@ ${draft.slice(0, 30000)}
     ...stringArray(review.contradictions),
     ...stringArray(review.liberationErrors),
     ...evidenceGraph.warnings,
+    ...opponentFindings,
   ];
 
   for (const fatal of stringArray(review.fatalDefects)) hardBlockers.push(fatal);
@@ -305,6 +338,8 @@ ${draft.slice(0, 30000)}
   readinessScore -= stringArray(review.liberationErrors).length * 12;
   readinessScore -= Math.min(20, evidenceGraph.materialUnverifiedCount * 10);
   readinessScore -= Math.min(10, evidenceGraph.warnings.length * 3);
+  readinessScore -= Math.min(18, opposingCounsel.unansweredMaterialArguments.length * 8);
+  if (opposingCounsel.available && opposingCounsel.groundedArguments.length === 0) readinessScore -= 10;
   readinessScore = Math.max(0, Math.min(100, readinessScore));
 
   const requested = String(review.gateDecision || '').toUpperCase();
@@ -328,5 +363,6 @@ ${draft.slice(0, 30000)}
     provider,
     claimLiberation,
     evidenceGraph,
+    opposingCounsel,
   };
 }
