@@ -11,6 +11,7 @@ import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
 import { clearRateLimit, enforceRateLimit } from './_rateLimit.js';
 import { protectJson, unprotectJson } from './_secureStore.js';
 import { recordAuditEvent } from './_audit.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 export type SessionRole = 'admin' | 'user';
 
@@ -491,6 +492,7 @@ function authError(error: unknown) {
 }
 
 export default async function handler(req: any, res: any) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method === 'GET') {
