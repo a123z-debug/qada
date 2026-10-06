@@ -21,19 +21,26 @@ export function sameOriginMutationAllowed(req: any): boolean {
   if (['GET', 'HEAD', 'OPTIONS'].includes(method)) return true;
 
   const host = requestHost(req);
-  if (!host) return false;
-
   const origin = firstHeader(req, 'origin');
+  const referer = firstHeader(req, 'referer');
+  const secFetchSite = firstHeader(req, 'sec-fetch-site').toLowerCase();
+
+  // Direct function invocations, trusted jobs, and non-browser clients may omit
+  // Host entirely. Only allow that shape when no browser-origin metadata is
+  // present; a browser-like request without Host fails closed.
+  if (!host) {
+    return !origin && !referer && !secFetchSite;
+  }
+
   if (origin) {
     return urlHost(origin) === host;
   }
 
-  const referer = firstHeader(req, 'referer');
+
   if (referer && urlHost(referer) !== host) {
     return false;
   }
 
-  const secFetchSite = firstHeader(req, 'sec-fetch-site').toLowerCase();
   if (secFetchSite === 'cross-site' || secFetchSite === 'same-site') {
     return false;
   }
