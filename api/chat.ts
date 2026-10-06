@@ -12,6 +12,7 @@ import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/law
 import { reviewDraftBeforeClientRelease } from './_draftReleaseGate.js';
 import { recordSentinelTurn } from './_sentinel.js';
 import {
+import { enforceSameOriginMutation } from './_requestGuard.js';
   buildConversationStateInstruction,
   latestUserTurnText,
   shouldActivateDrafting,
@@ -630,6 +631,7 @@ async function streamHujjaViaGemini(args: {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ error: 'Method Not Allowed' }); }
 
