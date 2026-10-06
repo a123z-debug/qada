@@ -84,6 +84,14 @@ interface JudgesSourceAudit {
   verifiedPersonnelArticles?: number;
   verifiedAdministrativeArticles?: number;
   hardBlockers?: string[];
+  evidenceGraph?: {
+    complete: boolean;
+    verifiedCount: number;
+    unverifiedCount: number;
+    materialUnverifiedCount: number;
+    warnings: string[];
+    blockers: string[];
+  };
 }
 
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
@@ -990,6 +998,9 @@ export function LegalReviewEditor({
                 ) : !virtualJudgePassed ? (
                   <span className="text-amber-300">
                     بوابة القاضي: {judgesSourceAudit.gateDecision || 'RETURN'} • الجاهزية {readinessScore}/100 • الحد الأدنى {readinessTarget}/100
+                    {judgesSourceAudit.evidenceGraph
+                      ? ` • الإثبات: ${judgesSourceAudit.evidenceGraph.verifiedCount} متحقق / ${judgesSourceAudit.evidenceGraph.materialUnverifiedCount} جوهري غير متحقق`
+                      : ''}
                   </span>
                 ) : !auditMatchesCurrentContent ? (
                   <span className="text-amber-300">تم تعديل النص بعد المراجعة؛ أعد تشغيل القاضي الافتراضي.</span>

@@ -24,7 +24,7 @@
     "test:ai-runtime": "tsx scripts/smoke-ai-runtime.ts",
     "audit:prod": "npm audit --omit=dev --audit-level=low",
     "release:check": "tsx scripts/check-launch-blockers.ts",
-    "verify": "npm run lint && npm run test:legal-sources && npm run test:legal-guard && npm run test:legal-ui-safety && npm run test:api-auth && npm run test:auth-consistency && npm run test:privacy-storage && npm run test:multimodal-evidence && npm run test:production-readiness && npm run test:blueprint-map && npm run test:interaction-wiring && npm run test:ui-luxury && npm run test:ui-8k && npm run test:sentinel && npm run test:claim-liberation && npm run test:conversation-state && npm run test:release-gate-grounding && npm run test:serverless-runtime && npm run test:security-hardening && npm run test:security-007 && npm run test:virtual-judge-gate && npm run test:agent-contracts && npm run test:agent-scenarios && npm run test:stress-agent-contracts && npm run test:stress-legal-workflows && npm run test:stress-source-agents && npm run test:turki-case",
+    "verify": "npm run lint && npm run test:legal-sources && npm run test:legal-guard && npm run test:legal-ui-safety && npm run test:api-auth && npm run test:auth-consistency && npm run test:privacy-storage && npm run test:multimodal-evidence && npm run test:production-readiness && npm run test:blueprint-map && npm run test:interaction-wiring && npm run test:ui-luxury && npm run test:ui-8k && npm run test:sentinel && npm run test:claim-liberation && npm run test:judicial-evidence-graph && npm run test:conversation-state && npm run test:release-gate-grounding && npm run test:serverless-runtime && npm run test:security-hardening && npm run test:security-007 && npm run test:virtual-judge-gate && npm run test:agent-contracts && npm run test:agent-scenarios && npm run test:stress-agent-contracts && npm run test:stress-legal-workflows && npm run test:stress-source-agents && npm run test:turki-case",
     "test:turki-case": "tsx scripts/smoke-turki-case.ts",
     "test:security-hardening": "tsx scripts/smoke-security-hardening.ts",
     "test:security-007": "tsx scripts/security-007-audit.ts",
@@ -38,6 +38,7 @@
     "test:stress-source-agents": "tsx scripts/stress-source-agents-1000.ts",
     "test:sentinel": "tsx scripts/smoke-sentinel.ts",
     "test:claim-liberation": "tsx scripts/smoke-claim-liberation.ts",
+    "test:judicial-evidence-graph": "tsx scripts/smoke-judicial-evidence-graph.ts",
     "test:ui-luxury": "tsx scripts/smoke-ui-luxury.ts",
     "test:ui-8k": "tsx scripts/smoke-ui-8k.ts"
   },

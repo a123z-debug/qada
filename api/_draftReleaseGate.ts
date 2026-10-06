@@ -4,6 +4,11 @@ import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.js'
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { assessClaimLiberation, type ClaimLiberationAssessment } from '../src/lib/claimLiberationGate.js';
+import {
+  assessJudicialEvidenceGraph,
+  buildJudicialEvidenceGraphInstruction,
+  type JudicialEvidenceGraphAssessment,
+} from '../src/lib/judicialEvidenceGraph.js';
 import { withTimeout } from './_async.js';
 import {
   USER_AI_MODELS,
@@ -26,6 +31,7 @@ export type DraftReleaseGateResult = {
   officialSources: number;
   provider?: string;
   claimLiberation: ClaimLiberationAssessment;
+  evidenceGraph?: JudicialEvidenceGraphAssessment;
 };
 
 type ReviewShape = {
@@ -39,6 +45,7 @@ type ReviewShape = {
   remedyErrors?: string[];
   contradictions?: string[];
   liberationErrors?: string[];
+  elementMatrix?: unknown[];
 };
 
 function geminiClients(): GoogleGenAI[] {
@@ -111,6 +118,7 @@ export async function reviewDraftBeforeClientRelease(args: {
     sourceInputText: args.sourceInputText || '',
   });
   const lawOfficeInstruction = buildLawOfficeInstruction(route, sourceBundle);
+  const evidenceGraphInstruction = buildJudicialEvidenceGraphInstruction();
   const courtProfileInstruction = buildCourtProfileInstruction(
     [args.court || '', args.documentTitle || '', draft].join('\n'),
   );
@@ -187,6 +195,8 @@ ${courtProfileInstruction}
 9) لا تنسب توجهاً لمحكمة أو قاضٍ إلا من سابقة رسمية متحققة.
 10) إذا كانت المهمة دعوى: افحص تحرير الدعوى إلزامياً وفق أربعة أركان مرتبة: البيانات → الوقائع → المستندات → الطلبات. لا يكفي وجود العناوين؛ يجب أن تكون البيانات معرفة بالأطراف والصفة، والوقائع محررة، والمستندات مرتبطة بما تثبته أو يصرح بنقصها، والطلبات جازمة ومتصلة بالوقائع والمستندات.
 
+${evidenceGraphInstruction}
+
 أعد JSON فقط:
 {
   "gateDecision": "PASS|RETURN|BLOCK",
@@ -198,7 +208,8 @@ ${courtProfileInstruction}
   "evidenceErrors": [],
   "remedyErrors": [],
   "contradictions": [],
-  "liberationErrors": []
+  "liberationErrors": [],
+  "elementMatrix": []
 }
 
 حزمة المصادر:
@@ -257,6 +268,13 @@ ${draft.slice(0, 30000)}
     };
   }
 
+  const evidenceGraph = assessJudicialEvidenceGraph({
+    raw: review.elementMatrix,
+    factContext: [args.sourceInputText || '', draft, args.documentTitle || ''].join('\n'),
+    sourceContext: sourceBundle.context,
+  });
+  hardBlockers.push(...evidenceGraph.blockers);
+
   const materialFindings = [
     ...stringArray(review.fatalDefects),
     ...stringArray(review.temporalErrors),
@@ -267,6 +285,7 @@ ${draft.slice(0, 30000)}
     ...stringArray(review.remedyErrors),
     ...stringArray(review.contradictions),
     ...stringArray(review.liberationErrors),
+    ...evidenceGraph.warnings,
   ];
 
   for (const fatal of stringArray(review.fatalDefects)) hardBlockers.push(fatal);
@@ -284,6 +303,8 @@ ${draft.slice(0, 30000)}
   readinessScore -= stringArray(review.remedyErrors).length * 8;
   readinessScore -= stringArray(review.contradictions).length * 8;
   readinessScore -= stringArray(review.liberationErrors).length * 12;
+  readinessScore -= Math.min(20, evidenceGraph.materialUnverifiedCount * 10);
+  readinessScore -= Math.min(10, evidenceGraph.warnings.length * 3);
   readinessScore = Math.max(0, Math.min(100, readinessScore));
 
   const requested = String(review.gateDecision || '').toUpperCase();
@@ -306,5 +327,6 @@ ${draft.slice(0, 30000)}
     officialSources: sourceBundle.verification.officialSources,
     provider,
     claimLiberation,
+    evidenceGraph,
   };
 }
