@@ -12,6 +12,10 @@ import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
 import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
 import { assessClaimLiberation } from '../src/lib/claimLiberationGate.js';
+import {
+  assessJudicialEvidenceGraph,
+  buildJudicialEvidenceGraphInstruction,
+} from '../src/lib/judicialEvidenceGraph.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -141,6 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const courtProfileInstruction = buildCourtProfileInstruction(reviewProfileInput);
   const caseStrategyInstruction = buildCaseStrategyInstruction(reviewProfileInput);
   const virtualJudgeContract = buildAgentContractInstruction('virtual-judge');
+  const evidenceGraphInstruction = buildJudicialEvidenceGraphInstruction();
 
   const legalReferenceContext = [
     sourceBundle.context,
@@ -220,8 +225,10 @@ K. CLAIM_LIBERATION_TEST
 - لا يكفي وجود العناوين؛ افحص أن البيانات تعرّف أطراف النزاع وصفاتهم، وأن الوقائع تحرر أصل النزاع، وأن المستندات مرتبطة بما تثبته أو يصرح بنقصها، وأن الطلبات جازمة ومحددة ومتصلة بالوقائع والمستندات.
 - إذا نقص ركن من هذه الأركان أو كان مجهلاً، سجله في claimErrors ولا تمنح PASS.
 
+${evidenceGraphInstruction}
+
 حلل النص التالي، واكتب JSON فقط بالمفاتيح:
-documentType, overallStatus, gateDecision, primaryFatalDefect, judges, issueMatrix, temporalErrors, hierarchyErrors, exceptionErrors, rebuttalErrors, cassationErrors, claimErrors, attachmentErrors, remedyErrors, contradictions, nodeFailures, revisedDocument, changeLog, synthesisAdvice.
+documentType, overallStatus, gateDecision, primaryFatalDefect, judges, issueMatrix, elementMatrix, temporalErrors, hierarchyErrors, exceptionErrors, rebuttalErrors, cassationErrors, claimErrors, attachmentErrors, remedyErrors, contradictions, nodeFailures, revisedDocument, changeLog, synthesisAdvice.
 
 قواعد gateDecision:
 - PASS فقط إذا لم توجد فجوة جوهرية، والمصادر اللازمة متحققة، ولا يوجد استثناء غير مفحوص أو دفاع جوهري بلا جواب.
@@ -329,6 +336,25 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
       ].filter(Boolean).join('\n');
     }
 
+    const evidenceGraph = assessJudicialEvidenceGraph({
+      raw: report?.elementMatrix,
+      factContext: [
+        safeText,
+        safeAttachmentsText,
+        body.uploadedFileName || '',
+      ].join('\n'),
+      sourceContext: legalReferenceContext,
+    });
+    report.elementMatrix = evidenceGraph.links;
+    report.evidenceGraph = {
+      complete: evidenceGraph.complete,
+      verifiedCount: evidenceGraph.verifiedCount,
+      unverifiedCount: evidenceGraph.unverifiedCount,
+      materialUnverifiedCount: evidenceGraph.materialUnverifiedCount,
+      warnings: evidenceGraph.warnings,
+      blockers: evidenceGraph.blockers,
+    };
+
     const sourceBlockers = Array.isArray(sourceBundle.verification.blockers)
       ? sourceBundle.verification.blockers.filter(Boolean)
       : [];
@@ -404,6 +430,7 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
       ...(fatalDefect ? [fatalDefect] : []),
       ...claimLiberationBlockers,
       ...criticalSourceBlockers,
+      ...evidenceGraph.blockers,
     ];
 
     let readinessScore = 100;
@@ -421,6 +448,8 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     readinessScore -= findingCounts.attachment * 5;
     readinessScore -= findingCounts.remedy * 8;
     readinessScore -= findingCounts.contradiction * 8;
+    readinessScore -= Math.min(25, evidenceGraph.materialUnverifiedCount * 12);
+    readinessScore -= Math.min(10, evidenceGraph.warnings.length * 3);
     readinessScore = Math.max(0, Math.min(100, readinessScore));
 
     const readinessTarget = 95;
@@ -447,6 +476,7 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     report.claimLiberation = claimLiberation;
     report.verifiedPersonnelArticles = verifiedPersonnelArticles;
     report.verifiedAdministrativeArticles = verifiedAdministrativeArticles;
+    report.evidenceGraphComplete = evidenceGraph.complete;
 
     if (serverGate === 'BLOCK') {
       report.revisedDocument = body.text;
@@ -483,6 +513,7 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
         verifiedAdministrativeArticles: report.verifiedAdministrativeArticles,
         hardBlockers: report.hardBlockers,
         claimLiberation: report.claimLiberation,
+        evidenceGraph: report.evidenceGraph,
       },
       sourcePackets: sourceBundle.packets,
     });
