@@ -64,6 +64,14 @@ interface ReferenceSearchMeta {
   verifiedArticles: number;
   literalQuotationReady: boolean;
   precedentCorpusReady: boolean;
+  externalCorpus?: {
+    configured: boolean;
+    available: boolean;
+    trusted: boolean;
+    eligibleSystems: Array<{ id: string; name: string }>;
+    blockedSystems: Array<{ id: string; name: string; verificationStatus: string; reason: string }>;
+    blockers: string[];
+  };
 }
 
 interface JudgesSourceAudit {
@@ -725,6 +733,28 @@ export function LegalReviewEditor({
                 <div className="rounded-xl border border-cyan-500/15 bg-cyan-500/5 px-2.5 py-2 text-neutral-400">
                   مواد مفهرسة: <span className="font-bold text-cyan-300">{referenceMeta.verifiedArticles}</span>
                 </div>
+              </div>
+            )}
+
+            {referenceMeta?.externalCorpus && (
+              <div className={
+                'rounded-xl border px-3 py-2.5 text-[10px] ' +
+                (referenceMeta.externalCorpus.trusted
+                  ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-100'
+                  : 'border-neutral-700 bg-neutral-950 text-neutral-400')
+              }>
+                <div className="font-bold">
+                  Saudi Legal Corpus: {referenceMeta.externalCorpus.trusted
+                    ? 'متصل بسياسة تحقق صارمة'
+                    : referenceMeta.externalCorpus.configured
+                      ? 'غير مؤهل للاحتجاج حالياً'
+                      : 'الجسر الخارجي غير مهيأ'}
+                </div>
+                {referenceMeta.externalCorpus.blockedSystems.slice(0, 2).map((system) => (
+                  <div key={system.id} className="mt-1 leading-5 opacity-80">
+                    • {system.name}: {system.verificationStatus}{system.reason ? ` — ${system.reason}` : ''}
+                  </div>
+                ))}
               </div>
             )}
 
