@@ -26,6 +26,9 @@ for (const header of [
   assert(server.includes(header), 'server missing security header: ' + header);
 }
 assert(server.includes("object-src 'none'") && server.includes("frame-ancestors 'none'"), 'CSP baseline is incomplete');
+assert(server.includes('SENSITIVE_PROBE_PATHS'), 'sensitive-path reconnaissance guard is missing');
+assert(server.includes('looksLikeSensitiveProbePath'), 'sensitive-path reconnaissance matcher is missing');
+assert(server.includes("return res.status(404).type('text/plain').send('Not Found')"), 'sensitive probes must fail closed with 404');
 assert(server.includes("process.env.RAILWAY_ENVIRONMENT === 'production'"), 'Railway must be recognized as production for HSTS');
 assert(session.includes("process.env.RAILWAY_ENVIRONMENT === 'production'"), 'Railway must be recognized as production for auth/test-mode gating');
 
