@@ -12,6 +12,8 @@ const cases = fs.readFileSync('api/cases.ts', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/build-check.yml', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 const printMemo = fs.readFileSync('src/utils/printMemo.ts', 'utf8');
+const audit = fs.readFileSync('api/_audit.ts', 'utf8');
+const secureStore = fs.readFileSync('api/_secureStore.ts', 'utf8');
 
 for (const header of [
   'Content-Security-Policy',
@@ -57,6 +59,10 @@ assert(cases.includes('excludeFromLegalCorpus: isCaseOnlySecret ? true'), 'case-
 assert(cases.includes('stripCrossCaseKnowledge'), 'aggregate case views do not strip case-only knowledge');
 assert(cases.includes('hasExplicitDossierLinkEvidence'), 'dossier auto-link still lacks explicit judicial linkage evidence');
 
+assert(audit.includes('auditSequenceKey') && audit.includes("redisCommand(['INCR', auditSequenceKey()])"), 'audit sequence allocation is missing');
+assert(audit.includes('integritySignature') && audit.includes('assessAuditIntegrity'), 'audit integrity verification is missing');
+assert(secureStore.includes('signIntegrityPayload') && secureStore.includes('timingSafeEqual'), 'keyed audit integrity signature support is missing');
+
 console.log(JSON.stringify({
   ok: true,
   csp: true,
@@ -68,4 +74,5 @@ console.log(JSON.stringify({
   nationalIdMasked: true,
   caseOnlyKnowledgeEnforced: true,
   dossierAutoLinkRequiresExplicitEvidence: true,
+  auditSequenceIntegrity: true,
 }, null, 2));
