@@ -2,8 +2,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { listUserAccounts, readActiveSession, setUserAccountDisabled } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
 import { recordAuditEvent } from './_audit.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
   const session = await readActiveSession(req.headers?.cookie);
   if (!session) return res.status(401).json({ error: 'AUTH_REQUIRED' });

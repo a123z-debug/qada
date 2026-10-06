@@ -16,9 +16,13 @@ assert(session.includes("const GUEST_ACCESS_ENABLED = process.env.QADA_GUEST_ACC
 assert(session.includes('if (!GUEST_ACCESS_ENABLED)'), 'guest login must reject when not explicitly enabled');
 
 const redis = fs.readFileSync('api/_redis.ts', 'utf8');
+const rateLimit = fs.readFileSync('api/_rateLimit.ts', 'utf8');
 assert(redis.includes('process.env.REDIS_URL'), 'Redis adapter must support Railway/native Redis');
 assert(redis.includes("from 'node:net'"), 'native Redis adapter must use Node TCP without extra runtime dependency');
 assert(redis.includes('UPSTASH_REDIS_REST_URL'), 'Redis adapter must preserve Upstash REST compatibility');
+assert(rateLimit.includes('isProductionRuntime()'), 'rate limiter must detect production runtime');
+assert(rateLimit.includes("throw rateLimitStoreUnavailable(error)"), 'production Redis errors must fail closed');
+assert(rateLimit.includes("if (isProductionRuntime()) throw rateLimitStoreUnavailable();"), 'production without Redis must fail closed');
 
 const health = fs.readFileSync('api/health.ts', 'utf8');
 assert(health.includes("hasLongSecret('AUTH_SECRET')"), 'health must require AUTH_SECRET');

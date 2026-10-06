@@ -12,6 +12,7 @@ import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
 import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
 import { assessClaimLiberation } from '../src/lib/claimLiberationGate.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -84,6 +85,7 @@ async function generateReviewViaGateway(prompt: string): Promise<string> {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 

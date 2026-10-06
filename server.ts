@@ -47,10 +47,42 @@ const RETIRED_PUBLIC_HOSTS = new Set([
   'qada-v2-production.up.railway.app',
 ]);
 
+const SENSITIVE_PROBE_PATHS = [
+  /(?:^|\/)\.(?:env|git|svn|hg|bzr|ssh)(?:\/|$)/i,
+  /(?:^|\/)(?:id_rsa|id_dsa|server\.key|privatekey\.key|key\.pem|adminer\.php|phpinfo\.php|info\.php|test\.php)(?:$|[/?#])/i,
+  /(?:^|\/)composer\.(?:json|lock)(?:$|[/?#])/i,
+  /(?:^|\/)(?:filezilla\.xml|sitemanager\.xml|winscp\.ini|deadjoe|\.ds_store)(?:$|[/?#])/i,
+  /(?:^|\/)app\/etc\/local\.xml(?:$|[/?#])/i,
+  /(?:^|\/)sites\/default\/private\/files\/backup_migrate(?:\/|$)/i,
+];
+
+function looksLikeSensitiveProbePath(value: string): boolean {
+  let candidate = String(value || '').split('?')[0];
+  try {
+    candidate = decodeURIComponent(candidate);
+  } catch {
+    // Malformed encoding is not a reason to relax the probe guard.
+  }
+  return SENSITIVE_PROBE_PATHS.some((pattern) => pattern.test(candidate));
+}
+
 async function startServer() {
   const app = express();
 
   app.disable('x-powered-by');
+
+  // Drop common secret/configuration reconnaissance before redirects or SPA
+  // fallback. This avoids turning retired public hosts into useful scanners'
+  // oracles and keeps obviously sensitive paths out of the application shell.
+  app.use((req, res, next) => {
+    if (looksLikeSensitiveProbePath(req.originalUrl || req.url || '')) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+      return res.status(404).type('text/plain').send('Not Found');
+    }
+    next();
+  });
 
   // Retire legacy Railway public domains without breaking old bookmarks.
   // Requests to the retired hosts are permanently redirected to the single

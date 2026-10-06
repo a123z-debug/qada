@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 type Court = 'administrative' | 'general' | 'criminal';
 
@@ -22,6 +23,7 @@ function categoryForAgent(agentId: string): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
 
   if (req.method !== 'POST') {

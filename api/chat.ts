@@ -16,6 +16,7 @@ import {
   latestUserTurnText,
   shouldActivateDrafting,
 } from '../src/lib/conversationState.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -630,6 +631,7 @@ async function streamHujjaViaGemini(args: {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return res.status(405).json({ error: 'Method Not Allowed' }); }
 

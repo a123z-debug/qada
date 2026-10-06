@@ -13,6 +13,7 @@ import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
 import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
 import { analyzeLawOfficeRoute } from '../src/lib/lawOfficeExpert.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -588,6 +589,7 @@ const ISSUE_SCHEMA = `كل issue يجب أن يكون بهذا الشكل:
 }`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');

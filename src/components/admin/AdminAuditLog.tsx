@@ -11,6 +11,20 @@ type AuditEvent = {
   targetRef?: string;
   outcome: 'success' | 'warning' | 'denied' | 'error';
   metadata?: Record<string, string | number | boolean | null>;
+  sequence?: number;
+  integritySignature?: string;
+};
+
+type AuditIntegrity = {
+  status: 'ok' | 'warning' | 'failed';
+  checkedEvents: number;
+  signedEvents: number;
+  legacyEvents: number;
+  invalidSignatures: number;
+  duplicateSequences: number;
+  sequenceGaps: number;
+  newestSequence: number | null;
+  oldestSequence: number | null;
 };
 
 function outcomeClass(outcome: AuditEvent['outcome']) {
@@ -32,6 +46,7 @@ export function AdminAuditLog({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | AuditEvent['outcome']>('all');
+  const [integrity, setIntegrity] = useState<AuditIntegrity | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -45,7 +60,9 @@ export function AdminAuditLog({ onBack }: { onBack: () => void }) {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload?.error || 'تعذر تحميل سجل التدقيق.');
       setEvents(Array.isArray(payload?.events) ? payload.events : []);
+      setIntegrity(payload?.integrity || null);
     } catch (err) {
+      setIntegrity(null);
       setError(err instanceof Error ? err.message : 'تعذر تحميل سجل التدقيق.');
     } finally {
       setLoading(false);
@@ -86,6 +103,24 @@ export function AdminAuditLog({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
+      {integrity && (
+        <div className={
+          'rounded-2xl border px-4 py-3 text-xs font-bold ' +
+          (integrity.status === 'ok'
+            ? 'border-emerald-400/20 bg-emerald-500/5 text-emerald-200'
+            : integrity.status === 'warning'
+              ? 'border-amber-400/25 bg-amber-500/10 text-amber-200'
+              : 'border-rose-400/30 bg-rose-500/10 text-rose-200')
+        }>
+          سلامة تسلسل السجل: {integrity.status === 'ok' ? 'سليم' : integrity.status === 'warning' ? 'يحتاج مراجعة' : 'فشل تحقق'}
+          {' • '}موقّع: {integrity.signedEvents}/{integrity.checkedEvents}
+          {' • '}فجوات: {integrity.sequenceGaps}
+          {' • '}توقيعات غير صالحة: {integrity.invalidSignatures}
+          {' • '}تكرارات: {integrity.duplicateSequences}
+          {integrity.legacyEvents > 0 ? ` • سجلات قديمة بلا sequence: ${integrity.legacyEvents}` : ''}
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4"><div className="text-2xl font-black text-white">{events.length}</div><div className="mt-1 text-[10px] font-bold text-slate-500">الأحداث المحملة</div></div>
         <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/5 p-4"><div className="text-2xl font-black text-emerald-300">{events.filter((event) => event.outcome === 'success').length}</div><div className="mt-1 text-[10px] font-bold text-slate-500">عمليات ناجحة</div></div>
@@ -125,6 +160,7 @@ export function AdminAuditLog({ onBack }: { onBack: () => void }) {
                   <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-slate-600">
                     <span>الممثل: {event.actorRole}</span>
                     <span>#{event.actorId}</span>
+                    {event.sequence ? <span>seq: {event.sequence}</span> : null}
                     {event.targetType && <span>الهدف: {event.targetType}</span>}
                     {event.targetRef && <span>مرجع: #{event.targetRef}</span>}
                   </div>

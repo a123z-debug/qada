@@ -15,6 +15,19 @@ function digest(value: string): string {
   return createHash('sha256').update(value).digest('hex').slice(0, 32);
 }
 
+function isProductionRuntime(): boolean {
+  return process.env.NODE_ENV === 'production'
+    || process.env.VERCEL === '1'
+    || process.env.RAILWAY_ENVIRONMENT === 'production'
+    || process.env.RAILWAY_ENVIRONMENT_NAME === 'production';
+}
+
+function rateLimitStoreUnavailable(cause?: unknown): Error {
+  const error = new Error('RATE_LIMIT_STORE_UNAVAILABLE');
+  if (cause !== undefined) (error as Error & { cause?: unknown }).cause = cause;
+  return error;
+}
+
 function localLimit(key: string, limit: number, windowSeconds: number): RateLimitResult {
   const now = Date.now();
   const current = localLimits.get(key);
@@ -60,11 +73,16 @@ export async function enforceRateLimit(
         retryAfterSeconds: count <= safeLimit ? 0 : retryAfterSeconds,
         backend: 'redis',
       };
-    } catch {
+    } catch (error) {
+      // A per-process fallback is acceptable for local development only.
+      // In production it would let an attacker bypass a distributed limit by
+      // spreading requests across replicas or waiting for a process restart.
+      if (isProductionRuntime()) throw rateLimitStoreUnavailable(error);
       return localLimit(key, safeLimit, safeWindow);
     }
   }
 
+  if (isProductionRuntime()) throw rateLimitStoreUnavailable();
   return localLimit(key, safeLimit, safeWindow);
 }
 

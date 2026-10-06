@@ -5,6 +5,7 @@ import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
 import { withTimeout } from './_async.js';
 import { ECONOMY_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
+import { enforceSameOriginMutation } from './_requestGuard.js';
 
 type Court = 'administrative' | 'general' | 'criminal';
 function getGeminiClients(): GoogleGenAI[] {
@@ -116,6 +117,7 @@ function courtLabel(court: Court): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!enforceSameOriginMutation(req, res)) return;
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');

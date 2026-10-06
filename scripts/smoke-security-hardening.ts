@@ -12,6 +12,8 @@ const cases = fs.readFileSync('api/cases.ts', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/build-check.yml', 'utf8');
 const html = fs.readFileSync('index.html', 'utf8');
 const printMemo = fs.readFileSync('src/utils/printMemo.ts', 'utf8');
+const audit = fs.readFileSync('api/_audit.ts', 'utf8');
+const secureStore = fs.readFileSync('api/_secureStore.ts', 'utf8');
 
 for (const header of [
   'Content-Security-Policy',
@@ -26,6 +28,9 @@ for (const header of [
   assert(server.includes(header), 'server missing security header: ' + header);
 }
 assert(server.includes("object-src 'none'") && server.includes("frame-ancestors 'none'"), 'CSP baseline is incomplete');
+assert(server.includes('SENSITIVE_PROBE_PATHS'), 'sensitive-path reconnaissance guard is missing');
+assert(server.includes('looksLikeSensitiveProbePath'), 'sensitive-path reconnaissance matcher is missing');
+assert(server.includes("return res.status(404).type('text/plain').send('Not Found')"), 'sensitive probes must fail closed with 404');
 assert(server.includes("process.env.RAILWAY_ENVIRONMENT === 'production'"), 'Railway must be recognized as production for HSTS');
 assert(session.includes("process.env.RAILWAY_ENVIRONMENT === 'production'"), 'Railway must be recognized as production for auth/test-mode gating');
 
@@ -54,6 +59,28 @@ assert(cases.includes('excludeFromLegalCorpus: isCaseOnlySecret ? true'), 'case-
 assert(cases.includes('stripCrossCaseKnowledge'), 'aggregate case views do not strip case-only knowledge');
 assert(cases.includes('hasExplicitDossierLinkEvidence'), 'dossier auto-link still lacks explicit judicial linkage evidence');
 
+assert(audit.includes('auditSequenceKey') && audit.includes("redisCommand(['INCR', auditSequenceKey()])"), 'audit sequence allocation is missing');
+assert(audit.includes('integritySignature') && audit.includes('assessAuditIntegrity'), 'audit integrity verification is missing');
+assert(secureStore.includes('signIntegrityPayload') && secureStore.includes('timingSafeEqual'), 'keyed audit integrity signature support is missing');
+
+const mutationApiFiles = [
+  'session.ts',
+  'ai.ts',
+  'chat.ts',
+  'convert-story.ts',
+  'legal-source-search.ts',
+  'admin-analysis.ts',
+  'judges-review.ts',
+  'cases.ts',
+  'admin-runs.ts',
+  'admin-users.ts',
+];
+for (const name of mutationApiFiles) {
+  const source = fs.readFileSync('api/' + name, 'utf8');
+  assert(source.includes("from './_requestGuard.js'"), name + ': same-origin request guard import missing');
+  assert(source.includes('if (!enforceSameOriginMutation(req, res)) return;'), name + ': mutation route is not guarded');
+}
+
 console.log(JSON.stringify({
   ok: true,
   csp: true,
@@ -65,4 +92,6 @@ console.log(JSON.stringify({
   nationalIdMasked: true,
   caseOnlyKnowledgeEnforced: true,
   dossierAutoLinkRequiresExplicitEvidence: true,
+  auditSequenceIntegrity: true,
+  siblingDomainCsrfGuard: true,
 }, null, 2));
