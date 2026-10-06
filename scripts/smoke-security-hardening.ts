@@ -63,6 +63,24 @@ assert(audit.includes('auditSequenceKey') && audit.includes("redisCommand(['INCR
 assert(audit.includes('integritySignature') && audit.includes('assessAuditIntegrity'), 'audit integrity verification is missing');
 assert(secureStore.includes('signIntegrityPayload') && secureStore.includes('timingSafeEqual'), 'keyed audit integrity signature support is missing');
 
+const mutationApiFiles = [
+  'session.ts',
+  'ai.ts',
+  'chat.ts',
+  'convert-story.ts',
+  'legal-source-search.ts',
+  'admin-analysis.ts',
+  'judges-review.ts',
+  'cases.ts',
+  'admin-runs.ts',
+  'admin-users.ts',
+];
+for (const name of mutationApiFiles) {
+  const source = fs.readFileSync('api/' + name, 'utf8');
+  assert(source.includes("from './_requestGuard.js'"), name + ': same-origin request guard import missing');
+  assert(source.includes('if (!enforceSameOriginMutation(req, res)) return;'), name + ': mutation route is not guarded');
+}
+
 console.log(JSON.stringify({
   ok: true,
   csp: true,
@@ -75,4 +93,5 @@ console.log(JSON.stringify({
   caseOnlyKnowledgeEnforced: true,
   dossierAutoLinkRequiresExplicitEvidence: true,
   auditSequenceIntegrity: true,
+  siblingDomainCsrfGuard: true,
 }, null, 2));
