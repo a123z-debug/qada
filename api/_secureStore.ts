@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 function dataRootSecret(): Buffer {
   const source = (process.env.DATA_SECRET || '').trim();
@@ -29,5 +29,21 @@ export function unprotectJson<T>(token: string | null | undefined, purpose: stri
     return JSON.parse(decrypted.toString('utf8')) as T;
   } catch {
     return null;
+  }
+}
+
+export function signIntegrityPayload(value: string, purpose: string): string {
+  return createHmac('sha256', keyFor(`integrity:${purpose}`))
+    .update(String(value || ''), 'utf8')
+    .digest('base64url');
+}
+
+export function verifyIntegrityPayload(value: string, signature: string, purpose: string): boolean {
+  try {
+    const expected = Buffer.from(signIntegrityPayload(value, purpose), 'base64url');
+    const actual = Buffer.from(String(signature || ''), 'base64url');
+    return actual.length === expected.length && timingSafeEqual(actual, expected);
+  } catch {
+    return false;
   }
 }
