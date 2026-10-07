@@ -17,6 +17,9 @@ assert(administrativeIds.has('src-bog'), 'BOG source agent must run for administ
 assert(administrativeIds.has('exact-text'), 'exact-text agent missing');
 assert(administrative.verification.officialSources > 0, 'administrative query should retrieve official sources');
 assert(administrative.verification.literalQuotationReady === false, 'literal quotation must remain gated');
+assert(administrative.verification.verificationSemantics === 'presence-source-not-effective-text', 'verification semantics must be explicit');
+assert(administrative.verification.articlePresenceVerified === administrative.verification.verifiedArticles, 'legacy verifiedArticles counter must mean article presence only');
+assert(administrative.verification.effectiveTextReady === false, 'effective text must remain gated until amendment/currentness reconstruction is complete');
 
 const military = runLegalSourceAgents('حقوق عسكري في نظام خدمة الأفراد وبدل الترحيل');
 const militaryIds = new Set(military.packets.map((packet) => packet.agentId));
@@ -24,11 +27,13 @@ assert(militaryIds.has('src-personnel'), 'personnel source agent must run for mi
 const personnel = military.packets.find((packet) => packet.agentId === 'src-personnel');
 assert(personnel?.status === 'success' || personnel?.status === 'warning', 'personnel agent must report an explicit verification state');
 assert((personnel?.references.length || 0) > 0, 'personnel agent should expose verified right/source records');
-assert((personnel?.verifiedArticles.length || 0) > 0, 'personnel agent should expose verified personnel-service articles when relevant');
+assert((personnel?.verifiedArticles.length || 0) > 0, 'personnel agent should expose personnel-service article-presence records when relevant');
+assert(personnel?.verifiedArticles.every((article) => article.verificationScope === 'source-and-existence' || article.verificationScope === 'full-text-source'), 'every article must declare verification scope');
 assert((personnel?.reviewMaterials?.length || 0) > 0, 'personnel agent should expose user-supplied review material without treating it as official');
 assert(military.context.includes('مواد مراجعة داخلية غير رسمية'), 'source context should label the user transcript as review-only');
 assert(military.context.includes('review-only-unverified'), 'source context should preserve the non-official review status');
 assert(military.verification.literalQuotationReady === false, 'user review transcript must never unlock literal quotation');
+assert(military.context.includes('ثبوت هوية المصدر ووجود المادة'), 'context must explain article-presence semantics');
 
 const royal = runLegalSourceAgents('مرسوم ملكي وقرار مجلس الوزراء وتعديل نظام');
 const royalIds = new Set(royal.packets.map((packet) => packet.agentId));
