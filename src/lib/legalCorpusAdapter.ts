@@ -11,6 +11,14 @@ export type CorpusSystemManifest = {
   reason_ar?: string;
 };
 
+export type CorpusPrecedentManifest = {
+  id: string;
+  path: string;
+  record_dataset_path?: string | null;
+  verification_status: CorpusVerificationStatus;
+  qada_eligible: boolean;
+};
+
 export type SaudiLegalCorpusManifest = {
   version: 1;
   generated_at: string;
@@ -24,12 +32,7 @@ export type SaudiLegalCorpusManifest = {
     note_ar?: string;
   };
   systems: CorpusSystemManifest[];
-  judgments_principles: Array<{
-    id: string;
-    path: string;
-    verification_status: CorpusVerificationStatus;
-    qada_eligible: boolean;
-  }>;
+  judgments_principles: CorpusPrecedentManifest[];
 };
 
 export type CorpusBridgeStatus = {
@@ -39,8 +42,41 @@ export type CorpusBridgeStatus = {
   baseUrl: string;
   eligibleSystems: CorpusSystemManifest[];
   blockedSystems: CorpusSystemManifest[];
+  eligiblePrecedentCorpora: CorpusPrecedentManifest[];
+  blockedPrecedentCorpora: CorpusPrecedentManifest[];
   blockers: string[];
   manifest?: SaudiLegalCorpusManifest;
+};
+
+export type VerifiedCorpusPrecedent = {
+  record_id: string;
+  court_system: string;
+  court_name: string;
+  court_level?: string | null;
+  circuit?: string | null;
+  case_number: string;
+  judgment_number?: string | null;
+  judgment_date: { hijri: string; gregorian?: string | null };
+  source_title?: string | null;
+  source_url: string;
+  publication_authority?: string | null;
+  facts_summary?: string | null;
+  legal_issues?: string[];
+  cited_provisions?: Array<{ instrument: string; provision: string; source_url?: string | null }>;
+  holding_summary?: string | null;
+  outcome?: string | null;
+  principle: {
+    text: string;
+    kind: 'verbatim-official';
+    citation_ready: true;
+    source_locator?: string | null;
+  };
+  verification: {
+    status: 'verified';
+    verified_at?: string | null;
+    content_sha256?: string | null;
+    source_sha256?: string | null;
+  };
 };
 
 export type VerifiedCorpusArticle = {
@@ -78,6 +114,28 @@ function isVerificationStatus(value: unknown): value is CorpusVerificationStatus
     || value === 'needs_review';
 }
 
+function normalizePrecedentCorpus(input: unknown): CorpusPrecedentManifest | null {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
+  const raw = input as Record<string, unknown>;
+  if (
+    typeof raw.id !== 'string'
+    || typeof raw.path !== 'string'
+    || !isVerificationStatus(raw.verification_status)
+    || typeof raw.qada_eligible !== 'boolean'
+  ) {
+    return null;
+  }
+  return {
+    id: raw.id.trim().slice(0, 160),
+    path: raw.path.trim().slice(0, 500),
+    record_dataset_path: typeof raw.record_dataset_path === 'string'
+      ? raw.record_dataset_path.trim().slice(0, 500)
+      : null,
+    verification_status: raw.verification_status,
+    qada_eligible: raw.qada_eligible,
+  };
+}
+
 function normalizeSystem(input: unknown): CorpusSystemManifest | null {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
   const raw = input as Record<string, unknown>;
@@ -113,6 +171,8 @@ export function evaluateSaudiLegalCorpusManifest(payload: unknown, baseUrl = '')
       baseUrl,
       eligibleSystems: [],
       blockedSystems: [],
+      eligiblePrecedentCorpora: [],
+      blockedPrecedentCorpora: [],
       blockers: ['Saudi Legal Corpus manifest غير صالح أو غير قابل للقراءة.'],
     };
   }
@@ -152,6 +212,32 @@ export function evaluateSaudiLegalCorpusManifest(payload: unknown, baseUrl = '')
     }
   }
 
+  const precedentRaw = Array.isArray(raw.judgments_principles) ? raw.judgments_principles : [];
+  const precedentCorpora = precedentRaw
+    .map(normalizePrecedentCorpus)
+    .filter((item): item is CorpusPrecedentManifest => Boolean(item));
+  if (precedentCorpora.length !== precedentRaw.length) blockers.push('manifest يحتوي سجلات سوابق قضائية غير صالحة.');
+
+  const eligiblePrecedentCorpora: CorpusPrecedentManifest[] = [];
+  const blockedPrecedentCorpora: CorpusPrecedentManifest[] = [];
+  for (const corpus of precedentCorpora) {
+    if (
+      corpus.qada_eligible
+      && corpus.verification_status === 'verified'
+      && corpus.record_dataset_path
+    ) {
+      eligiblePrecedentCorpora.push(corpus);
+      continue;
+    }
+    blockedPrecedentCorpora.push(corpus);
+    if (corpus.qada_eligible && corpus.verification_status !== 'verified') {
+      blockers.push(`مجموعة السوابق ${corpus.id} معلّمة qada_eligible دون حالة verified.`);
+    }
+    if (corpus.qada_eligible && !corpus.record_dataset_path) {
+      blockers.push(`مجموعة السوابق ${corpus.id} مؤهلة دون record_dataset_path.`);
+    }
+  }
+
   const manifest = blockers.length === 0
     ? payload as SaudiLegalCorpusManifest
     : undefined;
@@ -163,6 +249,8 @@ export function evaluateSaudiLegalCorpusManifest(payload: unknown, baseUrl = '')
     baseUrl,
     eligibleSystems,
     blockedSystems,
+    eligiblePrecedentCorpora,
+    blockedPrecedentCorpora,
     blockers: Array.from(new Set(blockers)),
     ...(manifest ? { manifest } : {}),
   };
@@ -178,6 +266,8 @@ export async function loadSaudiLegalCorpusManifest(): Promise<CorpusBridgeStatus
       baseUrl: '',
       eligibleSystems: [],
       blockedSystems: [],
+      eligiblePrecedentCorpora: [],
+      blockedPrecedentCorpora: [],
       blockers: ['SAUDI_LEGAL_CORPUS_BASE_URL غير مهيأ؛ الجسر الخارجي معطل دون تأثير على الفهارس الداخلية.'],
     };
   }
@@ -191,6 +281,8 @@ export async function loadSaudiLegalCorpusManifest(): Promise<CorpusBridgeStatus
       baseUrl: '',
       eligibleSystems: [],
       blockedSystems: [],
+      eligiblePrecedentCorpora: [],
+      blockedPrecedentCorpora: [],
       blockers: ['SAUDI_LEGAL_CORPUS_BASE_URL يجب أن يكون رابط HTTPS صالحاً بلا بيانات اعتماد مضمّنة.'],
     };
   }
@@ -223,6 +315,8 @@ export async function loadSaudiLegalCorpusManifest(): Promise<CorpusBridgeStatus
       baseUrl,
       eligibleSystems: [],
       blockedSystems: [],
+      eligiblePrecedentCorpora: [],
+      blockedPrecedentCorpora: [],
       blockers: [`تعذر الاتصال بـ Saudi Legal Corpus: ${error instanceof Error ? error.message : 'unknown error'}`],
     };
   }
@@ -315,6 +409,117 @@ export async function fetchVerifiedCorpusArticles(query: string): Promise<{
   return {
     status,
     articles: articles.slice(0, 40),
+    blockers: Array.from(new Set(blockers)),
+  };
+}
+
+
+function normalizeCorpusSearchText(value: string): string {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/[ًٌٍَُِّْـ]/g, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function corpusQueryTokens(query: string): string[] {
+  return Array.from(new Set(
+    normalizeCorpusSearchText(query)
+      .split(' ')
+      .filter((token) => token.length >= 3)
+      .slice(0, 60),
+  ));
+}
+
+export async function fetchVerifiedCorpusPrecedents(query: string): Promise<{
+  status: CorpusBridgeStatus;
+  precedents: VerifiedCorpusPrecedent[];
+  blockers: string[];
+}> {
+  const status = await loadSaudiLegalCorpusManifest();
+  if (!status.configured || !status.available || !status.trusted || !status.manifest) {
+    return { status, precedents: [], blockers: status.blockers };
+  }
+
+  if (status.eligiblePrecedentCorpora.length === 0) {
+    return {
+      status,
+      precedents: [],
+      blockers: ['لا توجد حالياً مجموعة سوابق قضائية verified ومؤهلة لـ QADA في Saudi Legal Corpus.'],
+    };
+  }
+
+  const tokens = corpusQueryTokens(query);
+  const candidates: Array<{ score: number; record: VerifiedCorpusPrecedent }> = [];
+  const blockers: string[] = [];
+
+  for (const corpus of status.eligiblePrecedentCorpora.slice(0, 6)) {
+    if (!corpus.record_dataset_path) continue;
+    try {
+      const response = await fetch(`${status.baseUrl}/${corpus.record_dataset_path}`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(3500),
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        blockers.push(`تعذر قراءة مجموعة السوابق ${corpus.id} (HTTP ${response.status}).`);
+        continue;
+      }
+
+      const payload = await response.json() as { records?: unknown[] };
+      for (const item of Array.isArray(payload.records) ? payload.records : []) {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+        const raw = item as Record<string, any>;
+        if (
+          raw.verification?.status !== 'verified'
+          || raw.principle?.kind !== 'verbatim-official'
+          || raw.principle?.citation_ready !== true
+          || typeof raw.source_url !== 'string'
+          || typeof raw.record_id !== 'string'
+          || typeof raw.case_number !== 'string'
+          || typeof raw.court_name !== 'string'
+          || typeof raw.principle?.text !== 'string'
+        ) {
+          blockers.push(`رفض سجل سابقة من ${corpus.id}: السجل ليس verified + verbatim-official + citation_ready.`);
+          continue;
+        }
+
+        const haystack = normalizeCorpusSearchText([
+          raw.court_name,
+          raw.case_number,
+          raw.judgment_number || '',
+          raw.facts_summary || '',
+          ...(Array.isArray(raw.legal_issues) ? raw.legal_issues : []),
+          raw.holding_summary || '',
+          raw.outcome || '',
+          raw.principle.text,
+        ].join(' '));
+        const score = tokens.length === 0
+          ? 1
+          : tokens.reduce((sum, token) => sum + (haystack.includes(token) ? 1 : 0), 0);
+        if (score <= 0) continue;
+
+        candidates.push({
+          score,
+          record: raw as VerifiedCorpusPrecedent,
+        });
+      }
+    } catch (error) {
+      blockers.push(`تعذر قراءة مجموعة السوابق ${corpus.id}: ${error instanceof Error ? error.message : 'unknown error'}`);
+    }
+  }
+
+  return {
+    status,
+    precedents: candidates
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 12)
+      .map((item) => item.record),
     blockers: Array.from(new Set(blockers)),
   };
 }
