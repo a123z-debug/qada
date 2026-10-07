@@ -18,7 +18,8 @@ assert(!release.includes('${lawOfficeInstruction}'), 'draft release judge must n
 
 assert(judges.includes('buildBlindJudicialReviewInstruction'), 'judges-review independence protocol missing');
 assert(release.includes('buildBlindJudicialReviewInstruction'), 'draft release independence protocol missing');
-assert(judges.includes('systemInstruction: reviewSystemInstruction'), 'judges-review must place judicial rules in system instruction');
+assert(judges.includes('systemInstruction: finalReviewSystemInstruction'), 'judges-review must place final judicial synthesis rules in system instruction');
+assert(judges.includes('const finalReviewSystemInstruction = ['), 'judges-review must synthesize blind rules and independent panel only inside system context');
 assert(judges.includes("{ role: 'system', content: `${systemInstruction}"), 'AI Gateway must preserve system-role separation');
 assert(judges.includes("{ role: 'user', content: userContent }"), 'AI Gateway must send document text only as user content');
 assert(judges.includes('contents: reviewUserPayload'), 'judges-review must send case text as user content');
