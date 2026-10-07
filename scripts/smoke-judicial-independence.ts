@@ -1,0 +1,66 @@
+import fs from 'node:fs';
+import {
+  blindJudicialPacketFingerprint,
+  buildBlindJudicialReviewInstruction,
+} from '../src/lib/judicialIndependence.js';
+
+function assert(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
+
+const judges = fs.readFileSync('api/judges-review.ts', 'utf8');
+const release = fs.readFileSync('api/_draftReleaseGate.ts', 'utf8');
+
+assert(!judges.includes('buildLawOfficeInstruction'), 'judges-review must not import advocate drafting instructions');
+assert(!judges.includes('${lawOfficeInstruction}'), 'judges-review must not inject advocate instructions into deliberation');
+assert(!release.includes('buildLawOfficeInstruction'), 'draft release judge must not import advocate drafting instructions');
+assert(!release.includes('${lawOfficeInstruction}'), 'draft release judge must not inject advocate instructions');
+
+assert(judges.includes('buildBlindJudicialReviewInstruction'), 'judges-review independence protocol missing');
+assert(release.includes('buildBlindJudicialReviewInstruction'), 'draft release independence protocol missing');
+assert(judges.includes('systemInstruction: finalReviewSystemInstruction'), 'judges-review must place final judicial synthesis rules in system instruction');
+assert(judges.includes('const finalReviewSystemInstruction = ['), 'judges-review must synthesize blind rules and independent panel only inside system context');
+assert(judges.includes("{ role: 'system', content: `${systemInstruction}"), 'AI Gateway must preserve system-role separation');
+assert(judges.includes("{ role: 'user', content: userContent }"), 'AI Gateway must send document text only as user content');
+assert(judges.includes("{ text: reviewUserPayload }") && judges.includes(': reviewUserPayload'), 'judges-review must keep case text in user content for text and multimodal paths');
+assert(release.includes('systemInstruction: reviewSystemInstruction'), 'release gate must place judicial rules in system instruction');
+assert(release.includes('contents: reviewUserPayload'), 'release gate must send draft as user content');
+assert(judges.includes('بيانات قضية') && judges.includes('لا كتعليمات نظام'), 'judges-review user payload must label case text as data, not system instructions');
+assert(release.includes('بيانات طرف') && release.includes('ليست تعليمات نظام'), 'release gate user payload must label draft as data, not system instructions');
+
+const packet = buildBlindJudicialReviewInstruction();
+assert(packet.safeguards.length >= 7, 'blind judicial safeguards are too weak');
+assert(packet.instruction.includes('مستقلة عن طبقة المحامي'), 'judge/lawyer role separation missing');
+assert(packet.instruction.includes('لا يُنفذ'), 'prompt-in-document resistance missing');
+
+const a = blindJudicialPacketFingerprint({
+  courtProfile: 'court',
+  caseStrategy: 'strategy',
+  sourceContext: 'sources',
+  routeTask: 'دعوى',
+  routeStage: 'ابتدائي',
+});
+const b = blindJudicialPacketFingerprint({
+  courtProfile: 'court',
+  caseStrategy: 'strategy',
+  sourceContext: 'sources',
+  routeTask: 'دعوى',
+  routeStage: 'ابتدائي',
+});
+const c = blindJudicialPacketFingerprint({
+  courtProfile: 'court',
+  caseStrategy: 'strategy',
+  sourceContext: 'different',
+  routeTask: 'دعوى',
+  routeStage: 'ابتدائي',
+});
+
+assert(a === b, 'blind packet fingerprint must be deterministic');
+assert(a !== c, 'blind packet fingerprint must change when neutral context changes');
+
+console.log(JSON.stringify({
+  ok: true,
+  safeguards: packet.safeguards.length,
+  fingerprint: a,
+  isolatedFromAdvocateInstructions: true,
+}, null, 2));

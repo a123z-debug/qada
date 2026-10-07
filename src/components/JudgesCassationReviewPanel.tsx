@@ -41,6 +41,25 @@ interface JudgesSourceAudit {
     warnings: string[];
     blockers: string[];
   };
+  judicialIndependence?: {
+    isolatedFromAdvocateInstructions: boolean;
+    packetFingerprint: string;
+    protocol: string;
+  };
+  independentPanel?: {
+    mode: string;
+    completed: number;
+    opinions: Array<{
+      role: string;
+      label: string;
+      status: 'CLEAR' | 'CONCERN' | 'BLOCK' | 'UNAVAILABLE';
+      findings: string[];
+      strongestCounterpoint: string;
+      unresolved: string[];
+      model?: string;
+    }>;
+    disagreements: string[];
+  };
 }
 
 interface JudgesCassationReviewPanelProps {
@@ -268,6 +287,28 @@ export function JudgesCassationReviewPanel({
                 {' • '}النص الحرفي: {sourceAudit.literalQuotationReady ? 'متحقق' : 'يحتاج مطابقة المصدر'}
                 {' • '}السوابق الكاملة: {sourceAudit.precedentCorpusReady ? 'جاهزة' : 'غير مكتملة'}
               </div>
+              {sourceAudit.independentPanel && (
+                <div className="mt-2 rounded-xl border border-violet-500/20 bg-violet-500/5 p-2 text-[11px] text-violet-100">
+                  <div className="font-bold">مجلس المراجعين المستقلين</div>
+                  <div className="mt-1 opacity-80">اكتمل {sourceAudit.independentPanel.completed}/2 مراجعين مستقلين قبل المراجع النهائي.</div>
+                  {sourceAudit.independentPanel.opinions.map((opinion) => (
+                    <div key={opinion.role} className="mt-1 flex flex-wrap gap-1.5">
+                      <span>{opinion.label}:</span>
+                      <span className="font-mono">{opinion.status}</span>
+                      {opinion.unresolved.length > 0 ? <span>• غير محسوم {opinion.unresolved.length}</span> : null}
+                    </div>
+                  ))}
+                  {sourceAudit.independentPanel.disagreements.slice(0, 2).map((item, index) => (
+                    <div key={`panel-disagreement-${index}`} className="mt-1 text-violet-100/70">• اختلاف: {item}</div>
+                  ))}
+                </div>
+              )}
+              {sourceAudit.judicialIndependence?.isolatedFromAdvocateInstructions && (
+                <div className="mt-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-2 text-[11px] text-cyan-100">
+                  <span className="font-bold">استقلال المداولة:</span> القاضي الافتراضي معزول عن تعليمات وكيل الصياغة
+                  <span className="mr-1 font-mono text-cyan-200/60">{sourceAudit.judicialIndependence.protocol}</span>
+                </div>
+              )}
               {sourceAudit.evidenceGraph && (
                 <div className={
                   'mt-2 rounded-xl border p-2 text-[11px] ' +

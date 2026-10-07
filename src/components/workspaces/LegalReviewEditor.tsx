@@ -92,6 +92,25 @@ interface JudgesSourceAudit {
     warnings: string[];
     blockers: string[];
   };
+  judicialIndependence?: {
+    isolatedFromAdvocateInstructions: boolean;
+    packetFingerprint: string;
+    protocol: string;
+  };
+  independentPanel?: {
+    mode: string;
+    completed: number;
+    opinions: Array<{
+      role: string;
+      label: string;
+      status: 'CLEAR' | 'CONCERN' | 'BLOCK' | 'UNAVAILABLE';
+      findings: string[];
+      strongestCounterpoint: string;
+      unresolved: string[];
+      model?: string;
+    }>;
+    disagreements: string[];
+  };
 }
 
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
