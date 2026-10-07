@@ -27,6 +27,10 @@ import { printLegalMemo } from '../utils/printMemo';
 interface JudgesSourceAudit {
   officialSources: number;
   verifiedArticles: number;
+  articlePresenceVerified?: number;
+  fullTextSourceVerifiedArticles?: number;
+  effectiveTextReady?: boolean;
+  verificationSemantics?: 'presence-source-not-effective-text';
   blockers: string[];
   literalQuotationReady: boolean;
   precedentCorpusReady: boolean;
@@ -256,7 +260,9 @@ export function JudgesCassationReviewPanel({
             <div className="min-w-0 text-xs leading-relaxed">
               <div className="font-bold text-neutral-200">حالة التحقق المرجعي</div>
               <div className="mt-1 text-neutral-400">
-                مصادر رسمية: {sourceAudit.officialSources} • مواد مفهرسة: {sourceAudit.verifiedArticles}
+                مصادر رسمية: {sourceAudit.officialSources} • وجود مواد مثبت: {sourceAudit.articlePresenceVerified ?? sourceAudit.verifiedArticles}
+                {' • '}تغطية نصية كاملة: {sourceAudit.fullTextSourceVerifiedArticles ?? 0}
+                {' • '}السريان الزمني: {sourceAudit.effectiveTextReady ? 'متحقق' : 'يحتاج فحص'}
                 {' • '}النص الحرفي: {sourceAudit.literalQuotationReady ? 'متحقق' : 'يحتاج مطابقة المصدر'}
                 {' • '}السوابق الكاملة: {sourceAudit.precedentCorpusReady ? 'جاهزة' : 'غير مكتملة'}
               </div>
