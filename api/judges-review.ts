@@ -20,6 +20,10 @@ import {
   blindJudicialPacketFingerprint,
   buildBlindJudicialReviewInstruction,
 } from '../src/lib/judicialIndependence.js';
+import {
+  independentPanelContext,
+  runIndependentJudicialPanel,
+} from './_judicialPanel.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -240,7 +244,7 @@ K. CLAIM_LIBERATION_TEST
 ${evidenceGraphInstruction}
 
 حلل النص التالي، واكتب JSON فقط بالمفاتيح:
-documentType, overallStatus, gateDecision, primaryFatalDefect, judges, issueMatrix, elementMatrix, temporalErrors, hierarchyErrors, exceptionErrors, rebuttalErrors, cassationErrors, claimErrors, attachmentErrors, remedyErrors, contradictions, nodeFailures, revisedDocument, changeLog, synthesisAdvice.
+documentType, overallStatus, gateDecision, primaryFatalDefect, judges, issueMatrix, elementMatrix, temporalErrors, hierarchyErrors, exceptionErrors, rebuttalErrors, cassationErrors, claimErrors, attachmentErrors, remedyErrors, contradictions, nodeFailures, panelResolution, revisedDocument, changeLog, synthesisAdvice.
 
 قواعد gateDecision:
 - PASS فقط إذا لم توجد فجوة جوهرية، والمصادر اللازمة متحققة، ولا يوجد استثناء غير مفحوص أو دفاع جوهري بلا جواب.
@@ -264,6 +268,32 @@ ${legalReferenceContext}`;
     safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات مستقلة',
   ].join('\n\n');
 
+  const clients = getGeminiClients();
+  const panelSystemInstruction = [
+    virtualJudgeContract,
+    courtProfileInstruction,
+    blindJudicial.instruction,
+    `المهمة: ${routeAudit.task}`,
+    `المرحلة: ${routeAudit.stage}`,
+    legalReferenceContext,
+  ].join('\n\n');
+  const panelUserContent = [
+    reviewUserPayload,
+    attachmentParts.length > 0
+      ? 'تنبيه للمراجعين المستقلين: توجد مرفقات ثنائية (PDF/صور) يقرأها المراجع النهائي مباشرة؛ لا تفترضوا محتواها إذا لم يظهر في النص المستخرج.'
+      : '',
+  ].filter(Boolean).join('\n\n');
+  const independentPanel = await runIndependentJudicialPanel({
+    clients,
+    neutralSystemInstruction: panelSystemInstruction,
+    userContent: panelUserContent,
+  });
+  const finalReviewSystemInstruction = [
+    reviewSystemInstruction,
+    independentPanelContext(independentPanel),
+    'قاعدة المداولة النهائية: آراء المجلس المستقل ليست حقائق. افحص كل ملاحظة مقابل الملف والمصدر، وبيّن في panelResolution ما تم اعتماده أو رفضه وسبب ذلك.',
+  ].join('\n\n');
+
   let raw = '';
   let lastError: unknown;
 
@@ -271,7 +301,7 @@ ${legalReferenceContext}`;
     // The gateway request is text-only here. If binary evidence exists, use Gemini
     // directly so the review agent actually reads the PDF/image bytes.
     raw = attachmentParts.length === 0
-      ? await generateReviewViaGateway(reviewSystemInstruction, reviewUserPayload)
+      ? await generateReviewViaGateway(finalReviewSystemInstruction, reviewUserPayload)
       : '';
   } catch (error) {
     lastError = error;
@@ -279,7 +309,6 @@ ${legalReferenceContext}`;
   }
 
   if (!raw) {
-    const clients = getGeminiClients();
     const models = USER_AI_MODELS;
 
     let attempts = 0;
@@ -295,7 +324,7 @@ ${legalReferenceContext}`;
               ? [{ role: 'user', parts: [...attachmentParts, { text: reviewUserPayload }] }]
               : reviewUserPayload,
             config: {
-              systemInstruction: reviewSystemInstruction,
+              systemInstruction: finalReviewSystemInstruction,
               temperature: 0.05,
               responseMimeType: 'application/json',
             },
@@ -322,6 +351,9 @@ ${legalReferenceContext}`;
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });
     const report = JSON.parse(match[0]);
+    report.independentPanel = independentPanel;
+    report.panelDisagreements = independentPanel.disagreements;
+    report.panelResolution = Array.isArray(report.panelResolution) ? report.panelResolution : [];
     const revisedDocument = typeof report?.revisedDocument === 'string' ? report.revisedDocument : '';
     const citationGuard = revisedDocument
       ? guardIntroducedLegalCitations(safeText, revisedDocument, legalReferenceContext)
@@ -398,6 +430,8 @@ ${legalReferenceContext}`;
       contradiction: countFindings(report?.contradictions),
     };
     const materialErrorCount = Object.values(findingCounts).reduce((sum, count) => sum + count, 0);
+    const panelConcernCount = independentPanel.opinions.filter((opinion) => opinion.status === 'CONCERN' || opinion.status === 'BLOCK').length;
+    const panelUnavailableCount = independentPanel.opinions.filter((opinion) => opinion.status === 'UNAVAILABLE').length;
 
     const caseProfileText = [
       body.court || '',
@@ -465,6 +499,8 @@ ${legalReferenceContext}`;
     readinessScore -= findingCounts.attachment * 5;
     readinessScore -= findingCounts.remedy * 8;
     readinessScore -= findingCounts.contradiction * 8;
+    readinessScore -= Math.min(8, panelConcernCount * 2 + independentPanel.disagreements.length * 2);
+    readinessScore -= Math.min(4, panelUnavailableCount * 2);
     readinessScore -= Math.min(25, evidenceGraph.materialUnverifiedCount * 12);
     readinessScore -= Math.min(10, evidenceGraph.warnings.length * 3);
     readinessScore = Math.max(0, Math.min(100, readinessScore));
@@ -536,6 +572,7 @@ ${legalReferenceContext}`;
           packetFingerprint: blindPacketFingerprint,
           protocol: 'blind-v1',
         },
+        independentPanel,
       },
       sourcePackets: sourceBundle.packets,
     });
