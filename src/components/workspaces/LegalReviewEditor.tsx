@@ -92,6 +92,11 @@ interface JudgesSourceAudit {
     warnings: string[];
     blockers: string[];
   };
+  judicialIndependence?: {
+    isolatedFromAdvocateInstructions: boolean;
+    packetFingerprint: string;
+    protocol: string;
+  };
 }
 
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
