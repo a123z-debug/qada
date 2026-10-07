@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.js';
-import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
+import { analyzeLawOfficeRoute } from '../src/lib/lawOfficeExpert.js';
 import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { assessClaimLiberation, type ClaimLiberationAssessment } from '../src/lib/claimLiberationGate.js';
 import {
@@ -9,6 +9,10 @@ import {
   buildJudicialEvidenceGraphInstruction,
   type JudicialEvidenceGraphAssessment,
 } from '../src/lib/judicialEvidenceGraph.js';
+import {
+  blindJudicialPacketFingerprint,
+  buildBlindJudicialReviewInstruction,
+} from '../src/lib/judicialIndependence.js';
 import { withTimeout } from './_async.js';
 import {
   USER_AI_MODELS,
@@ -32,6 +36,11 @@ export type DraftReleaseGateResult = {
   provider?: string;
   claimLiberation: ClaimLiberationAssessment;
   evidenceGraph?: JudicialEvidenceGraphAssessment;
+  judicialIndependence?: {
+    isolatedFromAdvocateInstructions: true;
+    packetFingerprint: string;
+    protocol: 'blind-v1';
+  };
 };
 
 type ReviewShape = {
@@ -117,8 +126,8 @@ export async function reviewDraftBeforeClientRelease(args: {
     task: route.task,
     sourceInputText: args.sourceInputText || '',
   });
-  const lawOfficeInstruction = buildLawOfficeInstruction(route, sourceBundle);
   const evidenceGraphInstruction = buildJudicialEvidenceGraphInstruction();
+  const blindJudicial = buildBlindJudicialReviewInstruction();
   const courtProfileInstruction = buildCourtProfileInstruction(
     [args.court || '', args.documentTitle || '', draft].join('\n'),
   );
@@ -172,9 +181,17 @@ export async function reviewDraftBeforeClientRelease(args: {
     }
   }
 
-  const prompt = `${lawOfficeInstruction}
+  const blindPacketFingerprint = blindJudicialPacketFingerprint({
+    courtProfile: courtProfileInstruction,
+    caseStrategy: '',
+    sourceContext: sourceBundle.context,
+    routeTask: route.task,
+    routeStage: route.stage,
+  });
 
-${courtProfileInstruction}
+  const prompt = `${courtProfileInstruction}
+
+${blindJudicial.instruction}
 
 [بوابة اعتماد المسودة قبل إظهارها للعميل]
 هذه ليست مهمة صياغة جديدة. افحص المسودة الحالية فقط، ولا تحسنها ولا تعيد كتابتها.
@@ -328,5 +345,10 @@ ${draft.slice(0, 30000)}
     provider,
     claimLiberation,
     evidenceGraph,
+    judicialIndependence: {
+      isolatedFromAdvocateInstructions: true,
+      packetFingerprint: blindPacketFingerprint,
+      protocol: 'blind-v1',
+    },
   };
 }
