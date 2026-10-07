@@ -41,6 +41,11 @@ interface JudgesSourceAudit {
     warnings: string[];
     blockers: string[];
   };
+  judicialIndependence?: {
+    isolatedFromAdvocateInstructions: boolean;
+    packetFingerprint: string;
+    protocol: string;
+  };
 }
 
 interface JudgesCassationReviewPanelProps {
@@ -268,6 +273,12 @@ export function JudgesCassationReviewPanel({
                 {' • '}النص الحرفي: {sourceAudit.literalQuotationReady ? 'متحقق' : 'يحتاج مطابقة المصدر'}
                 {' • '}السوابق الكاملة: {sourceAudit.precedentCorpusReady ? 'جاهزة' : 'غير مكتملة'}
               </div>
+              {sourceAudit.judicialIndependence?.isolatedFromAdvocateInstructions && (
+                <div className="mt-2 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-2 text-[11px] text-cyan-100">
+                  <span className="font-bold">استقلال المداولة:</span> القاضي الافتراضي معزول عن تعليمات وكيل الصياغة
+                  <span className="mr-1 font-mono text-cyan-200/60">{sourceAudit.judicialIndependence.protocol}</span>
+                </div>
+              )}
               {sourceAudit.evidenceGraph && (
                 <div className={
                   'mt-2 rounded-xl border p-2 text-[11px] ' +
