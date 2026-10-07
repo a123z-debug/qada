@@ -35,12 +35,29 @@ const good = evaluateSaudiLegalCorpusManifest({
       qada_eligible: false,
     },
   ],
-  judgments_principles: [],
+  judgments_principles: [
+    {
+      id: 'verified-precedents',
+      path: 'judgments-principles/verified',
+      record_dataset_path: 'judgments-principles/verified/records.json',
+      verification_status: 'verified',
+      qada_eligible: true,
+    },
+    {
+      id: 'draft-precedents',
+      path: 'judgments-principles/draft',
+      record_dataset_path: 'judgments-principles/draft/records.json',
+      verification_status: 'unverified',
+      qada_eligible: false,
+    },
+  ],
 }, 'https://example.test/corpus');
 
 assert(good.trusted, 'strict valid manifest must be trusted');
 assert(good.eligibleSystems.length === 1, 'only verified eligible system should pass');
 assert(good.blockedSystems.length === 1, 'needs_review system must stay blocked');
+assert(good.eligiblePrecedentCorpora.length === 1, 'only verified eligible precedent corpus should pass');
+assert(good.blockedPrecedentCorpora.length === 1, 'unverified precedent corpus must stay blocked');
 
 const badPolicy = evaluateSaudiLegalCorpusManifest({
   version: 1,
@@ -59,6 +76,29 @@ const badPolicy = evaluateSaudiLegalCorpusManifest({
 
 assert(!badPolicy.trusted, 'relaxed manifest policy must fail closed');
 assert(badPolicy.blockers.length > 0, 'relaxed manifest policy must explain blocker');
+
+const unsafePrecedent = evaluateSaudiLegalCorpusManifest({
+  version: 1,
+  generated_at: '2026-10-07',
+  jurisdiction: 'Saudi Arabia',
+  repository: 'agent-os-lab/saudi-legal-corpus',
+  consumption_policy: {
+    qada_minimum_verification_status: 'verified',
+    allow_needs_review_in_argument_generation: false,
+    allow_partial_in_argument_generation: false,
+    fail_closed_on_unknown_status: true,
+  },
+  systems: [],
+  judgments_principles: [{
+    id: 'unsafe-precedents',
+    path: 'judgments-principles/unsafe',
+    record_dataset_path: 'judgments-principles/unsafe/records.json',
+    verification_status: 'partial',
+    qada_eligible: true,
+  }],
+}, 'https://example.test/corpus');
+
+assert(!unsafePrecedent.trusted, 'precedent eligibility must never override non-verified status');
 
 const lyingEligibility = evaluateSaudiLegalCorpusManifest({
   version: 1,
@@ -90,4 +130,6 @@ console.log(JSON.stringify({
   blocked: good.blockedSystems.length,
   failClosedPolicy: badPolicy.blockers.length,
   failClosedEligibility: lyingEligibility.blockers.length,
+  eligiblePrecedentCorpora: good.eligiblePrecedentCorpora.length,
+  failClosedPrecedent: unsafePrecedent.blockers.length,
 }, null, 2));
