@@ -2,7 +2,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
-import { fetchVerifiedCorpusArticles } from '../src/lib/legalCorpusAdapter.js';
+import {
+  fetchVerifiedCorpusArticles,
+  fetchVerifiedCorpusPrecedents,
+} from '../src/lib/legalCorpusAdapter.js';
 
 type Court = 'administrative' | 'general' | 'criminal';
 
@@ -54,7 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const retrievalQuery = [COURT_HINTS[court], query].filter(Boolean).join('\n');
 
   const bundle = runLegalSourceAgents(retrievalQuery);
-  const externalCorpus = await fetchVerifiedCorpusArticles(retrievalQuery);
+  const [externalCorpus, externalPrecedents] = await Promise.all([
+    fetchVerifiedCorpusArticles(retrievalQuery),
+    fetchVerifiedCorpusPrecedents(retrievalQuery),
+  ]);
   const seen = new Set<string>();
   const references: Array<{
     id: string;
@@ -117,12 +123,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   return res.status(200).json({
     references,
     verifiedArticles,
-    blockers: bundle.verification.blockers,
+    verifiedPrecedents: externalPrecedents.precedents.map((record) => ({
+      recordId: record.record_id,
+      court: record.court_name,
+      caseNumber: record.case_number,
+      judgmentNumber: record.judgment_number || '',
+      judgmentDate: record.judgment_date,
+      principle: record.principle.text,
+      sourceUrl: record.source_url,
+      sourceLocator: record.principle.source_locator || '',
+      contentSha256: record.verification.content_sha256 || '',
+    })),
+    blockers: Array.from(new Set([
+      ...bundle.verification.blockers,
+      ...externalPrecedents.blockers,
+    ])),
     meta: {
       officialSources: bundle.verification.officialSources,
       verifiedArticles: bundle.verification.verifiedArticles,
       literalQuotationReady: bundle.verification.literalQuotationReady,
-      precedentCorpusReady: bundle.verification.precedentCorpusReady,
+      precedentCorpusReady: bundle.verification.precedentCorpusReady
+        || (externalPrecedents.status.trusted && externalPrecedents.status.eligiblePrecedentCorpora.length > 0),
       externalCorpus: {
         configured: externalCorpus.status.configured,
         available: externalCorpus.status.available,
@@ -137,7 +158,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           verificationStatus: system.verification_status,
           reason: system.reason_ar || '',
         })),
-        blockers: externalCorpus.blockers,
+        eligiblePrecedentCorpora: externalPrecedents.status.eligiblePrecedentCorpora.map((corpus) => ({
+          id: corpus.id,
+          dataset: corpus.record_dataset_path || '',
+        })),
+        blockedPrecedentCorpora: externalPrecedents.status.blockedPrecedentCorpora.map((corpus) => ({
+          id: corpus.id,
+          verificationStatus: corpus.verification_status,
+        })),
+        blockers: Array.from(new Set([...externalCorpus.blockers, ...externalPrecedents.blockers])),
       },
     },
   });
