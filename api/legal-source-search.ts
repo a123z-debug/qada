@@ -2,6 +2,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
+import {
+  fetchVerifiedCorpusArticles,
+  fetchVerifiedCorpusPrecedents,
+} from '../src/lib/legalCorpusAdapter.js';
 
 type Court = 'administrative' | 'general' | 'criminal';
 
@@ -53,6 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const retrievalQuery = [COURT_HINTS[court], query].filter(Boolean).join('\n');
 
   const bundle = runLegalSourceAgents(retrievalQuery);
+  const [externalCorpus, externalPrecedents] = await Promise.all([
+    fetchVerifiedCorpusArticles(retrievalQuery),
+    fetchVerifiedCorpusPrecedents(retrievalQuery),
+  ]);
   const seen = new Set<string>();
   const references: Array<{
     id: string;
@@ -89,25 +97,77 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (references.length >= 24) break;
   }
 
-  const verifiedArticles = bundle.packets.flatMap((packet) =>
-    packet.verifiedArticles.map((article) => ({
-      agentId: packet.agentId,
-      system: article.system,
-      article: article.article,
-      sourceUrl: article.sourceUrl,
-      note: article.note,
-    }))
-  ).slice(0, 30);
+  const verifiedArticles = [
+    ...bundle.packets.flatMap((packet) =>
+      packet.verifiedArticles.map((article) => ({
+        agentId: packet.agentId,
+        system: article.system,
+        article: article.article,
+        sourceUrl: article.sourceUrl,
+        note: article.note,
+      }))
+    ),
+    ...externalCorpus.articles.map((article) => ({
+      agentId: 'saudi-legal-corpus',
+      system: article.system_id,
+      article: article.article_number,
+      sourceUrl: article.source_urls?.[0] || '',
+      note: [
+        'Saudi Legal Corpus: verified',
+        article.effective_date ? `effective_date=${article.effective_date}` : '',
+        article.verification.content_sha256 ? `sha256=${article.verification.content_sha256}` : '',
+      ].filter(Boolean).join(' • '),
+    })),
+  ].slice(0, 30);
 
   return res.status(200).json({
     references,
     verifiedArticles,
-    blockers: bundle.verification.blockers,
+    verifiedPrecedents: externalPrecedents.precedents.map((record) => ({
+      recordId: record.record_id,
+      court: record.court_name,
+      caseNumber: record.case_number,
+      judgmentNumber: record.judgment_number || '',
+      judgmentDate: record.judgment_date,
+      principle: record.principle.text,
+      sourceUrl: record.source_url,
+      sourceLocator: record.principle.source_locator || '',
+      contentSha256: record.verification.content_sha256 || '',
+    })),
+    blockers: Array.from(new Set([
+      ...bundle.verification.blockers,
+      ...externalPrecedents.blockers,
+    ])),
     meta: {
       officialSources: bundle.verification.officialSources,
       verifiedArticles: bundle.verification.verifiedArticles,
       literalQuotationReady: bundle.verification.literalQuotationReady,
-      precedentCorpusReady: bundle.verification.precedentCorpusReady,
+      precedentCorpusReady: bundle.verification.precedentCorpusReady
+        || (externalPrecedents.status.trusted && externalPrecedents.status.eligiblePrecedentCorpora.length > 0),
+      externalCorpus: {
+        configured: externalCorpus.status.configured,
+        available: externalCorpus.status.available,
+        trusted: externalCorpus.status.trusted,
+        eligibleSystems: externalCorpus.status.eligibleSystems.map((system) => ({
+          id: system.id,
+          name: system.name_ar,
+        })),
+        blockedSystems: externalCorpus.status.blockedSystems.map((system) => ({
+          id: system.id,
+          name: system.name_ar,
+          verificationStatus: system.verification_status,
+          reason: system.reason_ar || '',
+        })),
+        eligiblePrecedentCorpora: externalPrecedents.status.eligiblePrecedentCorpora.map((corpus) => ({
+          id: corpus.id,
+          dataset: corpus.record_dataset_path || '',
+        })),
+        blockedPrecedentCorpora: externalPrecedents.status.blockedPrecedentCorpora.map((corpus) => ({
+          id: corpus.id,
+          verificationStatus: corpus.verification_status,
+        })),
+        blockers: Array.from(new Set([...externalCorpus.blockers, ...externalPrecedents.blockers])),
+      },
     },
   });
 }
