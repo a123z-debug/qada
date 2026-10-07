@@ -12,6 +12,7 @@ import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
 import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
 import { assessClaimLiberation } from '../src/lib/claimLiberationGate.js';
+import { assessTemporalLaw, temporalLawInstruction } from '../src/lib/temporalLawGate.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -127,6 +128,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sourceBundle = runLegalSourceAgents(
     `${body.court || ''}\n${body.documentTitle || ''}\n${safeText.slice(0, 16000)}`,
   );
+  const temporalAssessment = assessTemporalLaw({
+    query: [body.court || '', body.documentTitle || '', safeText, safeAttachmentsText].join('\n'),
+    articlePresenceVerified: sourceBundle.verification.articlePresenceVerified,
+    effectiveTextReady: sourceBundle.verification.effectiveTextReady,
+  });
+  const temporalInstruction = temporalLawInstruction(temporalAssessment);
+
   const routeAudit = analyzeLawOfficeRoute(
     [body.court || '', body.documentTitle || '', safeText, safeAttachmentsText].join('\n'),
     attachmentParts.length > 0 || Boolean(safeAttachmentsText.trim()),
@@ -151,6 +159,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'مهم: ثبوت وجود المادة لا يساوي تحقق النص الحرفي أو النسخة النافذة بتاريخ الواقعة.',
     'النص الحرفي الكامل غير معتمد من المستودع؛ أي اقتباس حرفي يحتاج مطابقة المصدر الرسمي.',
     'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ لا تنسب رقماً أو مبدأً إلى حكم غير موجود صراحة في حزمة المصدر.',
+    temporalInstruction,
   ].join('\n\n');
 
   const prompt = `${virtualJudgeContract}
@@ -415,6 +424,7 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
     if (fatalDefect) readinessScore -= 35;
     if (claimLiberationBlockers.length > 0) readinessScore -= Math.min(45, claimLiberationBlockers.length * 15);
     readinessScore -= Math.min(35, criticalSourceBlockers.length * 12);
+    readinessScore -= temporalAssessment.status === 'UNRESOLVED' ? 25 : 0;
     readinessScore -= findingCounts.temporal * 12;
     readinessScore -= findingCounts.hierarchy * 10;
     readinessScore -= findingCounts.exception * 12;
