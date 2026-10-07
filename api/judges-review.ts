@@ -145,7 +145,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const legalReferenceContext = [
     sourceBundle.context,
     `المصادر الرسمية الفريدة: ${sourceBundle.verification.officialSources}`,
-    `المواد المفهرسة المتحقق من وجودها: ${sourceBundle.verification.verifiedArticles}`,
+    `المواد التي ثبت وجودها في مصدر رسمي: ${sourceBundle.verification.articlePresenceVerified}`,
+    `المواد ذات تغطية نصية كاملة في المصدر: ${sourceBundle.verification.fullTextSourceVerifiedArticles}`,
+    `تحقق النسخة النافذة زمنياً للحزمة: ${sourceBundle.verification.effectiveTextReady ? 'نعم' : 'لا'}`,
+    'مهم: ثبوت وجود المادة لا يساوي تحقق النص الحرفي أو النسخة النافذة بتاريخ الواقعة.',
     'النص الحرفي الكامل غير معتمد من المستودع؛ أي اقتباس حرفي يحتاج مطابقة المصدر الرسمي.',
     'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ لا تنسب رقماً أو مبدأً إلى حكم غير موجود صراحة في حزمة المصدر.',
   ].join('\n\n');
@@ -464,6 +467,10 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
       sourceAudit: {
         officialSources: sourceBundle.verification.officialSources,
         verifiedArticles: sourceBundle.verification.verifiedArticles,
+        articlePresenceVerified: sourceBundle.verification.articlePresenceVerified,
+        fullTextSourceVerifiedArticles: sourceBundle.verification.fullTextSourceVerifiedArticles,
+        effectiveTextReady: sourceBundle.verification.effectiveTextReady,
+        verificationSemantics: sourceBundle.verification.verificationSemantics,
         blockers: sourceBundle.verification.blockers,
         literalQuotationReady: sourceBundle.verification.literalQuotationReady,
         precedentCorpusReady: sourceBundle.verification.precedentCorpusReady,

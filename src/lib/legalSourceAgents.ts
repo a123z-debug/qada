@@ -50,6 +50,7 @@ export type LegalSourcePacket = {
     article: string;
     sourceUrl: string;
     note: string;
+    verificationScope: 'source-and-existence' | 'full-text-source';
   }>;
   reviewMaterials?: Array<{
     title: string;
@@ -68,6 +69,10 @@ export type LegalSourceAgentBundle = {
   verification: {
     officialSources: number;
     verifiedArticles: number;
+    articlePresenceVerified: number;
+    fullTextSourceVerifiedArticles: number;
+    effectiveTextReady: boolean;
+    verificationSemantics: 'presence-source-not-effective-text';
     blockers: string[];
     literalQuotationReady: boolean;
     precedentCorpusReady: boolean;
@@ -165,6 +170,7 @@ function packetToContext(packet: LegalSourcePacket): string {
       lines.push(
         `- ${article.system} — المادة ${article.article}`,
         `  المصدر: ${article.sourceUrl}`,
+        `  نطاق التحقق: ${article.verificationScope === 'full-text-source' ? 'تغطية نصية في المصدر' : 'هوية المصدر ووجود المادة فقط'}`,
         `  ملاحظة: ${article.note}`,
       );
     }
@@ -269,6 +275,7 @@ function buildBogPacket(query: string): LegalSourcePacket {
         article: article.number,
         sourceUrl: article.sourceUrl,
         note: article.note,
+        verificationScope: 'source-and-existence' as const,
       }))
   ).slice(0, 20);
 
@@ -337,6 +344,7 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
       article: article.number,
       sourceUrl: article.sourceUrl,
       note: article.note,
+      verificationScope: 'source-and-existence' as const,
     }))
     .slice(0, 24);
 
@@ -468,6 +476,7 @@ function buildExactTextPacket(query: string): LegalSourcePacket {
         article: article.number,
         sourceUrl: article.sourceUrl,
         note: article.note,
+        verificationScope: 'source-and-existence' as const,
       }))
   ).slice(0, 24);
 
@@ -538,11 +547,14 @@ function buildOfficialSourcePacket(query: string): LegalSourcePacket {
           article,
           sourceUrl: ref.officialSourceUrl,
           note: ref.textCoverage === 'full-verified'
-            ? 'المادة مفهرسة ضمن مصدر رسمي بتغطية نصية كاملة.'
-            : 'المادة مثبتة في الفهرس الرسمي؛ يعرض QADA رقمها ومضمون التحليل المتحقق، ويحتفظ بالرابط للتحقق دون طباعته في متن الإجابة.',
+            ? 'المادة مفهرسة ضمن مصدر رسمي بتغطية نصية كاملة في هذا المصدر؛ لا يثبت ذلك وحده أنها النسخة النافذة تاريخياً لكل واقعة.'
+            : 'المادة مثبتة في الفهرس الرسمي من حيث الهوية والوجود فقط؛ لا يعني ذلك تحقق النص الحرفي أو النسخة النافذة زمنياً.',
+          verificationScope: ref.textCoverage === 'full-verified'
+            ? 'full-text-source' as const
+            : 'source-and-existence' as const,
         };
       })
-      .filter((item): item is { system: string; article: string; sourceUrl: string; note: string } => Boolean(item))
+      .filter((item): item is { system: string; article: string; sourceUrl: string; note: string; verificationScope: 'source-and-existence' | 'full-text-source' } => Boolean(item))
   ).slice(0, 24);
 
   const blockers = references.length
@@ -668,10 +680,16 @@ export function runLegalSourceAgents(query: string): LegalSourceAgentBundle {
     packets.flatMap((packet) => packet.references.map((reference) => reference.sourceUrl)).filter(Boolean),
   ).size;
   const verifiedArticles = packets.reduce((sum, packet) => sum + packet.verifiedArticles.length, 0);
+  const articlePresenceVerified = verifiedArticles;
+  const fullTextSourceVerifiedArticles = packets.reduce(
+    (sum, packet) => sum + packet.verifiedArticles.filter((article) => article.verificationScope === 'full-text-source').length,
+    0,
+  );
 
   const context = [
     '[حزمة وكلاء المراجع القانونية — QADA]',
     'هذه الحزمة تحدد ما تم العثور عليه فعلياً في الفهارس الرسمية الداخلية وما بقي غير متحقق.',
+    'قاعدة دلالية: عداد verifiedArticles يعني ثبوت هوية المصدر ووجود المادة في الفهرس، ولا يعني بذاته تحقق النص الحرفي أو النسخة النافذة زمنياً.',
     'ممنوع تحويل حالة warning إلى سند قطعي، وممنوع الاقتباس الحرفي من مجرد ملاحظة فهرسة.',
     ...packets.map(packetToContext),
   ].join('\n\n');
@@ -683,6 +701,10 @@ export function runLegalSourceAgents(query: string): LegalSourceAgentBundle {
     verification: {
       officialSources,
       verifiedArticles,
+      articlePresenceVerified,
+      fullTextSourceVerifiedArticles,
+      effectiveTextReady: false,
+      verificationSemantics: 'presence-source-not-effective-text',
       blockers,
       literalQuotationReady: false,
       precedentCorpusReady: false,

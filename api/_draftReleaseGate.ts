@@ -23,6 +23,9 @@ export type DraftReleaseGateResult = {
   materialFindings: string[];
   sourceBlockers: string[];
   verifiedArticles: number;
+  articlePresenceVerified: number;
+  fullTextSourceVerifiedArticles: number;
+  effectiveTextReady: boolean;
   officialSources: number;
   provider?: string;
   claimLiberation: ClaimLiberationAssessment;
@@ -89,6 +92,9 @@ export async function reviewDraftBeforeClientRelease(args: {
       materialFindings: [],
       sourceBlockers: [],
       verifiedArticles: 0,
+      articlePresenceVerified: 0,
+      fullTextSourceVerifiedArticles: 0,
+      effectiveTextReady: false,
       officialSources: 0,
       claimLiberation: { applicable: false, complete: true, missingPillars: [], linkageIssues: [], sectionOrderValid: true },
     };
@@ -204,6 +210,8 @@ ${courtProfileInstruction}
 حزمة المصادر:
 ${sourceBundle.context}
 
+قاعدة تحقق: verifiedArticles/Article Presence يثبت وجود المادة في المصدر فقط، ولا يثبت النص الحرفي أو النسخة النافذة زمنياً.
+
 المسودة:
 ${draft.slice(0, 30000)}
 `;
@@ -252,6 +260,9 @@ ${draft.slice(0, 30000)}
       materialFindings: [],
       sourceBlockers: sourceBundle.verification.blockers,
       verifiedArticles: sourceBundle.verification.verifiedArticles,
+      articlePresenceVerified: sourceBundle.verification.articlePresenceVerified,
+      fullTextSourceVerifiedArticles: sourceBundle.verification.fullTextSourceVerifiedArticles,
+      effectiveTextReady: sourceBundle.verification.effectiveTextReady,
       officialSources: sourceBundle.verification.officialSources,
       claimLiberation,
     };
@@ -305,6 +316,9 @@ ${draft.slice(0, 30000)}
     verifiedArticles: sourceBundle.verification.verifiedArticles,
     officialSources: sourceBundle.verification.officialSources,
     provider,
+    articlePresenceVerified: sourceBundle.verification.articlePresenceVerified,
+    fullTextSourceVerifiedArticles: sourceBundle.verification.fullTextSourceVerifiedArticles,
+    effectiveTextReady: sourceBundle.verification.effectiveTextReady,
     claimLiberation,
   };
 }

@@ -201,6 +201,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     verification: {
       officialSources: sourceBundle.verification.officialSources,
       verifiedArticles: sourceBundle.verification.verifiedArticles,
+      articlePresenceVerified: sourceBundle.verification.articlePresenceVerified,
+      fullTextSourceVerifiedArticles: sourceBundle.verification.fullTextSourceVerifiedArticles,
+      effectiveTextReady: sourceBundle.verification.effectiveTextReady,
+      verificationSemantics: sourceBundle.verification.verificationSemantics,
       blockers: sourceBundle.verification.blockers,
       literalQuotationReady: sourceBundle.verification.literalQuotationReady,
       precedentCorpusReady: sourceBundle.verification.precedentCorpusReady,

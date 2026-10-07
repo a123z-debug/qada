@@ -96,6 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       article: article.article,
       sourceUrl: article.sourceUrl,
       note: article.note,
+      verificationScope: article.verificationScope,
     }))
   ).slice(0, 30);
 
@@ -106,6 +107,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     meta: {
       officialSources: bundle.verification.officialSources,
       verifiedArticles: bundle.verification.verifiedArticles,
+      articlePresenceVerified: bundle.verification.articlePresenceVerified,
+      fullTextSourceVerifiedArticles: bundle.verification.fullTextSourceVerifiedArticles,
+      effectiveTextReady: bundle.verification.effectiveTextReady,
+      verificationSemantics: bundle.verification.verificationSemantics,
       literalQuotationReady: bundle.verification.literalQuotationReady,
       precedentCorpusReady: bundle.verification.precedentCorpusReady,
     },
