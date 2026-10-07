@@ -12,8 +12,9 @@ assert(chat.includes('inlineData'), 'chat must retain Gemini inlineData path');
 const review = fs.readFileSync('api/judges-review.ts', 'utf8');
 assert(review.includes('attachments?: IncomingAttachment[]'), 'review API attachment contract missing');
 assert(review.includes('attachmentParts'), 'review API must normalize binary evidence');
-assert(review.includes("attachmentParts.length === 0 ? await generateReviewViaGateway(prompt) : ''"), 'review must bypass gateway when evidence exists');
-assert(review.includes("parts: [...attachmentParts, { text: prompt }]"), 'review must send evidence bytes to Gemini');
+assert(review.includes('attachmentParts.length === 0') && review.includes('generateReviewViaGateway(reviewSystemInstruction, reviewUserPayload)'), 'review must bypass text-only gateway when evidence exists');
+assert(review.includes("parts: [...attachmentParts, { text: reviewUserPayload }]"), 'review must send evidence bytes to Gemini');
+assert(review.includes('systemInstruction: reviewSystemInstruction'), 'review must preserve system/user separation for multimodal evidence');
 
 const editor = fs.readFileSync('src/components/workspaces/LegalReviewEditor.tsx', 'utf8');
 assert(editor.includes('uploadedAttachments?: Attachment[]'), 'editor attachment prop missing');
