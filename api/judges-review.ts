@@ -7,7 +7,7 @@ import { enforceRateLimit } from './_rateLimit.js';
 import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
-import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
+import { analyzeLawOfficeRoute } from '../src/lib/lawOfficeExpert.js';
 import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { buildCaseStrategyInstruction } from '../src/lib/caseStrategyProfiles.js';
 import { buildAgentContractInstruction } from '../src/lib/agentContracts.js';
@@ -16,6 +16,10 @@ import {
   assessJudicialEvidenceGraph,
   buildJudicialEvidenceGraphInstruction,
 } from '../src/lib/judicialEvidenceGraph.js';
+import {
+  blindJudicialPacketFingerprint,
+  buildBlindJudicialReviewInstruction,
+} from '../src/lib/judicialIndependence.js';
 
 type IncomingAttachment = {
   name?: string;
@@ -140,12 +144,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     task: routeAudit.task,
     sourceInputText: [body.court || '', body.documentTitle || '', safeAttachmentsText].join('\n'),
   });
-  const lawOfficeInstruction = buildLawOfficeInstruction(routeAudit, sourceBundle);
   const reviewProfileInput = [body.court || '', body.documentTitle || '', safeText, safeAttachmentsText].join('\n');
   const courtProfileInstruction = buildCourtProfileInstruction(reviewProfileInput);
   const caseStrategyInstruction = buildCaseStrategyInstruction(reviewProfileInput);
   const virtualJudgeContract = buildAgentContractInstruction('virtual-judge');
   const evidenceGraphInstruction = buildJudicialEvidenceGraphInstruction();
+  const blindJudicial = buildBlindJudicialReviewInstruction();
 
   const legalReferenceContext = [
     sourceBundle.context,
@@ -155,15 +159,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'قاعدة السوابق القضائية الرسمية الكاملة غير جاهزة؛ لا تنسب رقماً أو مبدأً إلى حكم غير موجود صراحة في حزمة المصدر.',
   ].join('\n\n');
 
+  const blindPacketFingerprint = blindJudicialPacketFingerprint({
+    courtProfile: courtProfileInstruction,
+    caseStrategy: caseStrategyInstruction,
+    sourceContext: legalReferenceContext,
+    routeTask: routeAudit.task,
+    routeStage: routeAudit.stage,
+  });
+
   const prompt = `${virtualJudgeContract}
 
 ${courtProfileInstruction}
 
 ${caseStrategyInstruction}
 
-${lawOfficeInstruction}
+${blindJudicial.instruction}
 
-أنت فريق مراجعة قانونية آلي داخل مكتب محاماة رقمي. لديك ثلاثة أدوار تحليلية، لكن لا تفترض أن كل محرر استئناف أو نقض.
+أنت فريق مراجعة قانونية آلي مستقل عن فريق الصياغة. لديك ثلاثة أدوار تحليلية، لكن لا تفترض أن كل محرر استئناف أو نقض.
 المهمة التي حددتها بوابة المكتب: ${routeAudit.task}.
 مرحلة الحكم التي حددتها البوابة: ${routeAudit.stage}.
 
@@ -514,6 +526,11 @@ ${safeAttachmentsText || body.uploadedFileName || 'لا توجد مرفقات م
         hardBlockers: report.hardBlockers,
         claimLiberation: report.claimLiberation,
         evidenceGraph: report.evidenceGraph,
+        judicialIndependence: {
+          isolatedFromAdvocateInstructions: true,
+          packetFingerprint: blindPacketFingerprint,
+          protocol: 'blind-v1',
+        },
       },
       sourcePackets: sourceBundle.packets,
     });
