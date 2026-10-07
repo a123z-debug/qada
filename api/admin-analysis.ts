@@ -788,7 +788,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     'نتيجة وكلاء المراجع القانونية لهذه العملية:',
     sourceBundle.context,
     `إجمالي المصادر الرسمية الفريدة: ${sourceBundle.verification.officialSources}`,
-    `المواد المفهرسة المتحقق من وجودها: ${sourceBundle.verification.verifiedArticles}`,
+    `المواد التي ثبت وجودها في مصدر رسمي: ${sourceBundle.verification.articlePresenceVerified}`,
+    `المواد ذات تغطية نصية كاملة في المصدر: ${sourceBundle.verification.fullTextSourceVerifiedArticles}`,
+    `النسخة النافذة زمنياً متحققة للحزمة: ${sourceBundle.verification.effectiveTextReady ? 'نعم' : 'لا'}`,
+    'ثبوت وجود المادة لا يعني بذاته تحقق النص الحرفي أو النسخة النافذة تاريخياً.',
     'الاقتباس الحرفي الجاهز من داخل المستودع: لا؛ يجب الرجوع للمصدر الرسمي للنص الحرفي.',
     'قاعدة السوابق القضائية الكاملة: غير مكتملة؛ لا يجوز اختراع رقم حكم أو مبدأ.',
   ].join('\n\n');
