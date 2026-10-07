@@ -62,6 +62,10 @@ interface RagReference {
 interface ReferenceSearchMeta {
   officialSources: number;
   verifiedArticles: number;
+  articlePresenceVerified?: number;
+  fullTextSourceVerifiedArticles?: number;
+  effectiveTextReady?: boolean;
+  verificationSemantics?: 'presence-source-not-effective-text';
   literalQuotationReady: boolean;
   precedentCorpusReady: boolean;
 }
@@ -723,8 +727,16 @@ export function LegalReviewEditor({
                   مصادر رسمية: <span className="font-bold text-emerald-300">{referenceMeta.officialSources}</span>
                 </div>
                 <div className="rounded-xl border border-cyan-500/15 bg-cyan-500/5 px-2.5 py-2 text-neutral-400">
-                  مواد مفهرسة: <span className="font-bold text-cyan-300">{referenceMeta.verifiedArticles}</span>
+                  وجود المادة مثبت: <span className="font-bold text-cyan-300">{referenceMeta.articlePresenceVerified ?? referenceMeta.verifiedArticles}</span>
                 </div>
+              </div>
+            )}
+
+            {referenceMeta && (
+              <div className="rounded-xl border border-cyan-500/15 bg-cyan-500/5 px-3 py-2.5 text-[10px] leading-5 text-cyan-100/80">
+                تغطية نصية كاملة بالمصدر: <span className="font-bold">{referenceMeta.fullTextSourceVerifiedArticles ?? 0}</span>
+                {' • '}النسخة النافذة زمنياً: <span className="font-bold">{referenceMeta.effectiveTextReady ? 'متحققة' : 'تحتاج فحص السريان والتعديلات'}</span>
+                <div className="mt-1 text-cyan-100/60">ثبوت رقم المادة ووجودها لا يعني وحده أن النص الحرفي أو النسخة التاريخية النافذة قد تم التحقق منهما.</div>
               </div>
             )}
 
