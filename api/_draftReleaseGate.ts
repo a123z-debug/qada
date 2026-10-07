@@ -4,6 +4,7 @@ import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.js'
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
 import { assessClaimLiberation, type ClaimLiberationAssessment } from '../src/lib/claimLiberationGate.js';
+import { assessTemporalLaw, type TemporalLawAssessment, temporalLawInstruction } from '../src/lib/temporalLawGate.js';
 import { withTimeout } from './_async.js';
 import {
   USER_AI_MODELS,
@@ -107,6 +108,13 @@ export async function reviewDraftBeforeClientRelease(args: {
   ].filter(Boolean).join('\n').slice(0, 30000);
 
   const sourceBundle = runLegalSourceAgents(sourceQuery);
+  const temporalAssessment = assessTemporalLaw({
+    query: sourceQuery,
+    articlePresenceVerified: sourceBundle.verification.articlePresenceVerified,
+    effectiveTextReady: sourceBundle.verification.effectiveTextReady,
+  });
+  const temporalInstruction = temporalLawInstruction(temporalAssessment);
+
   const route = analyzeLawOfficeRoute(
     [args.court || '', args.documentTitle || '', args.sourceInputText || '', draft].join('\n'),
     Boolean(args.hasEvidence),
@@ -210,6 +218,8 @@ ${courtProfileInstruction}
 حزمة المصادر:
 ${sourceBundle.context}
 
+${temporalInstruction}
+
 قاعدة تحقق: verifiedArticles/Article Presence يثبت وجود المادة في المصدر فقط، ولا يثبت النص الحرفي أو النسخة النافذة زمنياً.
 
 المسودة:
@@ -295,6 +305,7 @@ ${draft.slice(0, 30000)}
   readinessScore -= stringArray(review.remedyErrors).length * 8;
   readinessScore -= stringArray(review.contradictions).length * 8;
   readinessScore -= stringArray(review.liberationErrors).length * 12;
+  readinessScore -= temporalAssessment.status === 'UNRESOLVED' ? 25 : 0;
   readinessScore = Math.max(0, Math.min(100, readinessScore));
 
   const requested = String(review.gateDecision || '').toUpperCase();
