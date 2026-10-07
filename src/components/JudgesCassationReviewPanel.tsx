@@ -37,6 +37,14 @@ interface JudgesSourceAudit {
   introducedMarkers?: string[];
   unsupportedMarkers?: string[];
   blockedRevision?: boolean;
+  temporalLaw?: {
+    status: 'NOT_APPLICABLE' | 'READY' | 'UNRESOLVED';
+    requiresTemporalResolution: boolean;
+    eventDateCandidates: string[];
+    temporalSignals: string[];
+    blockers: string[];
+    warnings: string[];
+  };
 }
 
 interface JudgesCassationReviewPanelProps {
@@ -266,6 +274,22 @@ export function JudgesCassationReviewPanel({
                 {' • '}النص الحرفي: {sourceAudit.literalQuotationReady ? 'متحقق' : 'يحتاج مطابقة المصدر'}
                 {' • '}السوابق الكاملة: {sourceAudit.precedentCorpusReady ? 'جاهزة' : 'غير مكتملة'}
               </div>
+              {sourceAudit.temporalLaw?.requiresTemporalResolution && (
+                <div className={
+                  'mt-2 rounded-xl border p-2 text-[11px] ' +
+                  (sourceAudit.temporalLaw.status === 'READY'
+                    ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-100'
+                    : 'border-rose-500/25 bg-rose-500/10 text-rose-100')
+                }>
+                  <div className="font-bold">فحص السريان الزمني: {sourceAudit.temporalLaw.status}</div>
+                  {sourceAudit.temporalLaw.eventDateCandidates.length > 0 && (
+                    <div className="mt-1 opacity-80">التواريخ المرصودة: {sourceAudit.temporalLaw.eventDateCandidates.join(' • ')}</div>
+                  )}
+                  {sourceAudit.temporalLaw.blockers.slice(0, 2).map((item, index) => (
+                    <div key={`temporal-blocker-${index}`} className="mt-1">• {item}</div>
+                  ))}
+                </div>
+              )}
               {sourceAudit.blockers.length > 0 && (
                 <ul className="mt-2 space-y-1 text-[11px] text-amber-100/75">
                   {sourceAudit.blockers.slice(0, 4).map((item, index) => (
