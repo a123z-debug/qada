@@ -88,6 +88,14 @@ interface JudgesSourceAudit {
   verifiedPersonnelArticles?: number;
   verifiedAdministrativeArticles?: number;
   hardBlockers?: string[];
+  temporalLaw?: {
+    status: 'NOT_APPLICABLE' | 'READY' | 'UNRESOLVED';
+    requiresTemporalResolution: boolean;
+    eventDateCandidates: string[];
+    temporalSignals: string[];
+    blockers: string[];
+    warnings: string[];
+  };
 }
 
 function normalizeJudgesReport(raw: any, originalText: string): DetailedJudgesReviewReport {
@@ -1002,6 +1010,9 @@ export function LegalReviewEditor({
                 ) : !virtualJudgePassed ? (
                   <span className="text-amber-300">
                     بوابة القاضي: {judgesSourceAudit.gateDecision || 'RETURN'} • الجاهزية {readinessScore}/100 • الحد الأدنى {readinessTarget}/100
+                    {judgesSourceAudit.temporalLaw?.requiresTemporalResolution
+                      ? ` • السريان: ${judgesSourceAudit.temporalLaw.status}`
+                      : ''}
                   </span>
                 ) : !auditMatchesCurrentContent ? (
                   <span className="text-amber-300">تم تعديل النص بعد المراجعة؛ أعد تشغيل القاضي الافتراضي.</span>
