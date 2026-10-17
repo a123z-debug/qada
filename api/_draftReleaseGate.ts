@@ -77,6 +77,8 @@ export async function reviewDraftBeforeClientRelease(args: {
   court?: string;
   documentTitle?: string;
   hasEvidence?: boolean;
+  /** السياق المتحقق الذي رآه كاتب المسودة (مثل كتلة المدد)؛ يُفحص عليه أيضاً حتى لا تُحجب مادة أُعطيت له. */
+  verifiedContext?: string;
 }): Promise<DraftReleaseGateResult> {
   const draft = String(args.draft || '').trim();
   if (!draft) {
@@ -101,15 +103,32 @@ export async function reviewDraftBeforeClientRelease(args: {
   ].filter(Boolean).join('\n').slice(0, 30000);
 
   const sourceBundle = runLegalSourceAgents(sourceQuery);
+  // مرحلة الحكم وطريق الطعن تُستخرج من مواد صاحب الشأن لا من المسودة: لائحة الاعتراض تخاطب بطبيعتها
+  // «محكمة الاستئناف… الحكم»، فكانت قراءتها تُظهر الحكم استئنافياً وتحجب اعتراضاً مشروعاً على حكم ابتدائي.
   const route = analyzeLawOfficeRoute(
+    [args.court || '', args.documentTitle || '', args.sourceInputText || ''].join('\n'),
+    Boolean(args.hasEvidence),
+  );
+  // نوع المحرر (دعوى أو غيرها) يُقرأ من المسودة أيضاً حتى تنطبق أركان التحرير على اللائحة الفعلية.
+  const draftRoute = analyzeLawOfficeRoute(
     [args.court || '', args.documentTitle || '', args.sourceInputText || '', draft].join('\n'),
     Boolean(args.hasEvidence),
   );
-  const claimLiberation = assessClaimLiberation({
+  const claimAssessment = assessClaimLiberation({
     draft,
-    task: route.task,
+    task: draftRoute.task === 'claim' ? 'claim' : route.task,
     sourceInputText: args.sourceInputText || '',
   });
+  const verifiedContext = [sourceBundle.context, args.verifiedContext || ''].filter(Boolean).join('\n\n');
+  // ردّ يطلب المعلومات الناقصة (أسئلة بلا أي قسم من أقسام الدعوى) ليس مسودة: لا تُطبَّق عليه أركان التحرير،
+  // وإلا حُجبت أسئلة المحامي نفسها واستُبدلت برسالة عامة لا تخبر صاحب الشأن بما ينقصه.
+  const clarificationTurn = claimAssessment.applicable
+    && claimAssessment.missingPillars.length === 4
+    && /[؟?]/.test(draft)
+    && draft.length < 3000;
+  const claimLiberation = clarificationTurn
+    ? { ...claimAssessment, applicable: false, complete: true, missingPillars: [], linkageIssues: [] }
+    : claimAssessment;
   const lawOfficeInstruction = buildLawOfficeInstruction(route, sourceBundle);
   const courtProfileInstruction = buildCourtProfileInstruction(
     [args.court || '', args.documentTitle || '', draft].join('\n'),
@@ -118,7 +137,7 @@ export async function reviewDraftBeforeClientRelease(args: {
   const citationGuard = guardIntroducedLegalCitations(
     String(args.sourceInputText || ''),
     draft,
-    sourceBundle.context,
+    verifiedContext,
   );
 
   const profileText = [args.court || '', args.documentTitle || '', args.sourceInputText || '', draft]
@@ -202,7 +221,7 @@ ${courtProfileInstruction}
 }
 
 حزمة المصادر:
-${sourceBundle.context}
+${verifiedContext}
 
 المسودة:
 ${draft.slice(0, 30000)}

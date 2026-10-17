@@ -106,6 +106,12 @@ function containsAny(value: string, terms: string[]): boolean {
   return terms.some((term) => normalized.includes(normalizeArabic(term)));
 }
 
+/** مطابقة كلمة أو عبارة كاملة (لا تعمل \b مع العربية): «عريف» لا تتطابق داخل «تعريف». */
+function containsWord(value: string, terms: string[]): boolean {
+  const normalized = normalizeArabic(value);
+  return terms.some((term) => new RegExp(`(?:^|\\s)${normalizeArabic(term)}(?=\\s|$)`).test(normalized));
+}
+
 function sourceRelevantToQuery(sourceLabel: string, query: string): boolean {
   const q = normalizeArabic(query);
   const label = normalizeArabic(sourceLabel);
@@ -123,8 +129,40 @@ function sourceRelevantToQuery(sourceLabel: string, query: string): boolean {
   return true;
 }
 
-function articleNumbers(query: string): string[] {
+/** هل يشير الاستفسار (مطبَّعاً) إلى أداة التعديل الموصوفة في العنوان: رقم مرسومها أو المادة التي تعدلها؟ */
+function referencesAmendment(normalizedQuery: string, label: string): boolean {
+  const query = normalizedQuery.replace(/\s*\/\s*/g, '/');
+  const decrees = Array.from(label.matchAll(/م\s*\/\s*(\d+)/g)).map((match) => match[1]);
+  if (decrees.some((number) => new RegExp(`(?:^|[^\\p{L}\\p{N}])م\\s*/?\\s*${number}(?![0-9])`, 'u').test(query))) return true;
+  const amendedArticles = Array.from(label.matchAll(/الماد(?:ة|ه)\s*\((\d+)\s*\/\s*([ء-ي])\)/g));
+  return amendedArticles.some((match) => new RegExp(`(?:^|\\s)${match[1]}\\s*/?\\s*${normalizeArabic(match[2])}(?=\\s|$)`).test(query));
+}
+
+type ArticleOwner = 'personnel' | 'bog-law' | 'bog-procedure' | 'bog-execution' | 'other';
+
+/** «المادة 16 من نظام خدمة الأفراد»: رقم المادة منسوباً إلى نظامه، حتى لا يُجلب الرقم نفسه من نظام آخر. */
+function articleOwners(query: string): Map<string, Set<ArticleOwner>> {
+  const owners = new Map<string, Set<ArticleOwner>>();
+  const text = normalizeArabic(latinDigits(query));
+  for (const match of text.matchAll(/الماده\s*\(?\s*(\d{1,3})\s*\)?(?:\s*\/\s*\S{1,3})?\s+(?:من\s+)?((?:ال)?نظام[^\n]{0,50}|اللائحه[^\n]{0,50})/g)) {
+    const law = match[2];
+    const owner: ArticleOwner = /الافراد|خدمه الضباط/.test(law) ? 'personnel'
+      : /المرافعات امام ديوان المظالم/.test(law) ? 'bog-procedure'
+        : /التنفيذ امام ديوان المظالم/.test(law) ? 'bog-execution'
+          : /ديوان المظالم/.test(law) ? 'bog-law' : 'other';
+    if (!owners.has(match[1])) owners.set(match[1], new Set());
+    owners.get(match[1])!.add(owner);
+  }
+  return owners;
+}
+
+/**
+ * أرقام المواد المطلوبة في الاستفسار. مع forSystem تُستبعد الأرقام المنسوبة صراحة إلى نظام آخر:
+ * «المادة 16 من نظام خدمة الأفراد» لا تجلب المادة 16 من نظام ديوان المظالم (درجات القضاة).
+ */
+function articleNumbers(query: string, forSystem?: ArticleOwner): string[] {
   const values = new Set<string>();
+  const text = latinDigits(query);
   const patterns = [
     /الماد(?:ة|ه)\s*\(?\s*(\d{1,3})(?:\s*\/\s*(\d{1,3}))?\s*\)?/g,
     /ماد(?:ة|ه)\s*\(?\s*(\d{1,3})(?:\s*\/\s*(\d{1,3}))?\s*\)?/g,
@@ -132,12 +170,18 @@ function articleNumbers(query: string): string[] {
 
   for (const pattern of patterns) {
     let match: RegExpExecArray | null;
-    while ((match = pattern.exec(query)) !== null) {
+    while ((match = pattern.exec(text)) !== null) {
       values.add(match[2] ? `${match[1]}/${match[2]}` : match[1]);
     }
   }
 
-  return Array.from(values).slice(0, 20);
+  const list = Array.from(values).slice(0, 20);
+  if (!forSystem) return list;
+  const owners = articleOwners(query);
+  return list.filter((value) => {
+    const owner = owners.get(value.split('/')[0]);
+    return !owner || owner.has(forSystem);
+  });
 }
 
 function packetToContext(packet: LegalSourcePacket): string {
@@ -242,7 +286,13 @@ function buildBogPacket(query: string): LegalSourcePacket {
     BOARD_OF_GRIEVANCES_EXECUTION_LAW_1443,
   ];
 
-  const requestedArticles = new Set(articleNumbers(query));
+  // أرقام المواد لكل نظام من أنظمة الديوان الثلاثة على حدة؛ وإن ذكر المستخدم مواد (من أي نظام) فلا تُسرد كل
+  // مواد الديوان، بل المطلوب منها مع مواد الاختصاص والتظلم والطعن الحاكمة.
+  const ownerOf = (systemId: string): ArticleOwner => systemId === BOARD_OF_GRIEVANCES_PROCEDURE_LAW_1435.id
+    ? 'bog-procedure'
+    : systemId === BOARD_OF_GRIEVANCES_EXECUTION_LAW_1443.id ? 'bog-execution' : 'bog-law';
+  const requestedBySystem = new Map(details.map((system) => [system.id, new Set(articleNumbers(query, ownerOf(system.id)))]));
+  const anyArticleRequested = articleNumbers(query).length > 0;
   const normalized = normalizeArabic(query);
   const supremeReview = containsAny(normalized, [
     'المحكمه الاداريه العليا', 'طعن', 'نقض', 'اعتراض', 'ميعاد', 'ثلاثين يوما', 'ثلاثين يوم',
@@ -255,10 +305,12 @@ function buildBogPacket(query: string): LegalSourcePacket {
     system.articles
       .filter((article) => article.status === 'verified')
       .filter((article) => {
-        if (requestedArticles.size === 0) return true;
-        if (requestedArticles.has(article.number)) return true;
+        if (!anyArticleRequested) return true;
+        if (requestedBySystem.get(system.id)!.has(article.number)) return true;
         if (supremeReview && system.id === BOARD_OF_GRIEVANCES_LAW_1428.id && ['11'].includes(article.number)) return true;
         if (militaryServiceDispute && system.id === BOARD_OF_GRIEVANCES_LAW_1428.id && article.number === '13') return true;
+        // دعاوى الحقوق العسكرية: المادة (8) من نظام المرافعات تحكم التظلم السابق ومدته.
+        if (militaryServiceDispute && system.id === BOARD_OF_GRIEVANCES_PROCEDURE_LAW_1435.id && article.number === '8') return true;
         if (
           supremeReview
           && system.id === BOARD_OF_GRIEVANCES_PROCEDURE_LAW_1435.id
@@ -322,18 +374,20 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
 
   const reviewMaterials = retrievePersonnelUserReviewExcerpts(query, 6);
 
-  const requestedArticles = new Set(articleNumbers(query));
+  const requestedArticles = new Set(articleNumbers(query, 'personnel'));
   const personnelQuery = normalizeArabic(query);
   const allowanceDispute = containsAny(personnelQuery, [
     'علاوه', 'بدل', 'مكافاه', 'حاسب', 'فني', 'ممارسه', 'مزاوله', 'جمع', '50', 'م 37', '1430',
   ]);
+  // في نزاع العلاوات تكفي مواد الاستحقاق (2، 16، 17، 19) مع ما طلبه المستخدم؛ إرسال كل مواد النظام
+  // (21 مادة) يشتت النموذج عن المواد الحاكمة. بلا نزاع علاوة ولا مادة مطلوبة تبقى كل المواد كما كانت.
   const verifiedArticles = PERSONNEL_SERVICE_LAW_1397.articles
     .filter((article) => article.status === 'verified')
-    .filter((article) =>
-      requestedArticles.size === 0
-      || requestedArticles.has(article.number)
-      || (allowanceDispute && ['2', '16', '17', '19'].includes(article.number))
-    )
+    .filter((article) => {
+      if (requestedArticles.has(article.number)) return true;
+      if (allowanceDispute) return ['2', '16', '17', '19'].includes(article.number);
+      return requestedArticles.size === 0;
+    })
     .map((article) => ({
       system: PERSONNEL_SERVICE_LAW_1397.name,
       article: article.number,
@@ -352,13 +406,10 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
       .map((regulation) => `${regulation.name}: ${regulation.note}`),
     ...PERSONNEL_SERVICE_LAW_1397.amendments
       .filter((amendment) => amendment.status !== 'verified')
-      .filter((amendment) => {
-        const amendmentText = normalizeArabic(`${amendment.label} ${amendment.note}`);
-        return queryNormalized.includes('م 37')
-          || queryNormalized.includes('1430')
-          || queryNormalized.includes('17 ب')
-          || amendmentText.split(' ').some((token) => token.length >= 6 && queryNormalized.includes(token));
-      })
+      // يظهر قيد التعديل غير المتحقق فقط حين يشير المستخدم إلى الأداة نفسها (رقم المرسوم أو المادة المعدلة).
+      // كانت المطابقة بأي كلمة طويلة مشتركة («المادة»، «المرسوم»، «الصياغة»)، فيظهر قيد م/37 لمن لم يذكره،
+      // وتحوله بوابة الاعتماد إلى منع قاطع لكل مسودة في قضايا العلاوات.
+      .filter((amendment) => referencesAmendment(queryNormalized, amendment.label))
       .map((amendment) => `${amendment.label}: ${amendment.note}`),
   ];
 
@@ -629,6 +680,49 @@ export type LegalSourceAgentOptions = {
   courtSystem?: CourtSystemId | null;
 };
 
+// تصريح دالة (لا ثابت) حتى تُرفع إلى أعلى الملف: تستخدمها articleNumbers المعرّفة قبل هذا الموضع.
+function latinDigits(value: string): string {
+  return value.replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+}
+
+type CitedInstrument = { kind: 'decree' | 'cabinet'; number: string; year: string; raw: string };
+
+/** المراسيم الملكية وقرارات مجلس الوزراء التي يستشهد بها المستخدم، برقمها وسنتها إن وردت. */
+function citedInstruments(query: string): CitedInstrument[] {
+  const text = latinDigits(query);
+  const yearPart = '(?:\\s*\\)?\\s*(?:و?تاريخ|بتاريخ|لعام|عام|في|لسنه|لسنة)\\s*(?:\\d{1,2}\\s*/\\s*\\d{1,2}\\s*/\\s*)?(\\d{4}))?';
+  const found: CitedInstrument[] = [];
+  for (const match of text.matchAll(new RegExp(`(?:المرسوم الملكي|مرسوم ملكي)\\s*(?:رقم)?\\s*\\(?\\s*م\\s*/?\\s*(\\d{1,4})(?:\\s*\\))?${yearPart}`, 'g'))) {
+    found.push({ kind: 'decree', number: match[1], year: match[2] || '', raw: match[0].trim() });
+  }
+  for (const match of text.matchAll(new RegExp(`قرار\\s+مجلس\\s+الوزراء\\s*(?:رقم)?\\s*\\(?\\s*(\\d{1,4})(?:\\s*\\))?${yearPart}`, 'g'))) {
+    found.push({ kind: 'cabinet', number: match[1], year: match[2] || '', raw: match[0].trim() });
+  }
+  return found.slice(0, 8);
+}
+
+/**
+ * تنبيه صريح لكل أداة يذكرها المستخدم ولا يعرفها الفهرس (أو يعرف رقمها بتاريخ آخر)، حتى لا يُنسب إليها
+ * مضمون من الذاكرة ولا تُخلط بأداة مفهرسة تحمل الرقم نفسه. الصياغة متعمدة: تنبيه لا منع.
+ */
+function unindexedInstrumentNotes(query: string, packets: LegalSourcePacket[]): string[] {
+  const haystack = latinDigits(normalizeArabic(packets.flatMap((packet) => [
+    ...packet.references.flatMap((reference) => [reference.name, reference.issueInstrument || '', reference.note]),
+    ...packet.blockers,
+  ]).join('\n'))).replace(/\s*\/\s*/g, '/');
+  const notes: string[] = [];
+  for (const instrument of citedInstruments(query)) {
+    const head = instrument.kind === 'decree' ? `م/?\\s*${instrument.number}(?![0-9])` : `مجلس الوزراء(?: رقم)?\\s*\\(?${instrument.number}(?![0-9])`;
+    const sameNumber = new RegExp(head).test(haystack);
+    const exact = instrument.year ? new RegExp(`${head}[^\\n]{0,40}${instrument.year}`).test(haystack) : sameNumber;
+    if (exact) continue;
+    notes.push(sameNumber
+      ? `يذكر المستخدم «${instrument.raw}»، والمفهرس في المنصة بالرقم نفسه مؤرخ بغير ذلك أو لموضوع آخر؛ تحقق من رقم الأداة وتاريخها وموضوعها قبل الاستناد إليها.`
+      : `أداة يذكرها المستخدم ولم تُفهرس في المنصة بعد: «${instrument.raw}». تُذكر كما أوردها المستخدم، ولا يُنسب إليها مضمون أو يُبنى عليها استحقاق قبل مطابقة نصها الرسمي من هيئة الخبراء أو أم القرى.`);
+  }
+  return notes;
+}
+
 export function runLegalSourceAgents(query: string, options: LegalSourceAgentOptions = {}): LegalSourceAgentBundle {
   const started = Date.now();
   const normalizedQuery = normalizeArabic(query);
@@ -642,8 +736,9 @@ export function runLegalSourceAgents(query: string, options: LegalSourceAgentOpt
     buildExactTextPacket(query),
   ];
 
-  const personnelSignals = containsAny(normalizedQuery, [
+  const personnelCore = containsAny(normalizedQuery, [
     'خدمه الافراد',
+    'نظام الافراد',
     'عسكري',
     'عسكريين',
     'فرد عسكري',
@@ -655,6 +750,16 @@ export function runLegalSourceAgents(query: string, options: LegalSourceAgentOpt
     'وزاره الدفاع',
     'القوات البريه',
   ]);
+  // جهات وقطاعات ورتب يخضع منسوبوها من الأفراد لنظام خدمة الأفراد، لكنها تُذكر أيضاً في سياقات أخرى
+  // (بلاغ للأمن العام، معاملة جوازات)، فلا تكفي وحدها: يلزم معها حق مالي أو وظيفي محل مطالبة.
+  const militaryBodyOrRank = containsAny(normalizedQuery, [
+    'الحرس الوطني', 'الحرس الملكي', 'وزاره الداخليه', 'الامن العام', 'الدفاع المدني', 'حرس الحدود',
+    'امن الدوله', 'القوات الجويه', 'القوات البحريه', 'الدفاع الجوي', 'المديريه العامه للسجون', 'الجوازات',
+  ]) || containsWord(normalizedQuery, ['جندي', 'جندي اول', 'عريف', 'وكيل رقيب', 'رقيب', 'رقيب اول', 'رئيس رقباء']);
+  const entitlementSignals = containsAny(normalizedQuery, [
+    'علاوه', 'بدل', 'مكافاه', 'الحاسب', 'حاسب الي', 'نهايه طرفيه', 'نهايات طرفيه', 'النهايات الطرفيه', 'مستحقات', 'ترقيه', 'رتبه', 'التقاعد',
+  ]);
+  const personnelSignals = personnelCore || (militaryBodyOrRank && entitlementSignals);
   const disputeSignals = containsAny(normalizedQuery, [
     'دعوى',
     'مطالبه',
@@ -667,6 +772,13 @@ export function runLegalSourceAgents(query: string, options: LegalSourceAgentOpt
     'قرار',
     'صرف',
     'استحقاق',
+    'يطالب',
+    'اطالب',
+    'طالبت',
+    'مستحق',
+    'حرموني',
+    'اوقفوا',
+    'وقفوا',
   ]);
   const administrativeSignals = containsAny(normalizedQuery, [
     'ديوان المظالم',
@@ -691,6 +803,15 @@ export function runLegalSourceAgents(query: string, options: LegalSourceAgentOpt
 
   if (containsAny(normalizedQuery, ['مبدأ قضائي', 'مبادئ قضائيه', 'سابقه قضائيه', 'حكم رقم', 'المحكمه العليا', 'نقض', 'استئناف'])) {
     packets.push(buildPrecedentPacket());
+  }
+
+  const instrumentNotes = unindexedInstrumentNotes(query, packets);
+  if (instrumentNotes.length) {
+    const officialPacket = packets.find((packet) => packet.agentId === 'official-source');
+    if (officialPacket) {
+      officialPacket.blockers.push(...instrumentNotes);
+      officialPacket.status = 'warning';
+    }
   }
 
   if (courtSystem) {

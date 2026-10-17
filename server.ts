@@ -1,6 +1,8 @@
+// يجب أن يكون أول استيراد: ملفات api/* تقرأ بعض الإعدادات عند تحميلها (مثل QADA_OPEN_TEST_MODE)،
+// فإن حُمّل .env بعدها قرأتها فارغة محلياً. على Vercel تُحقن المتغيرات قبل التشغيل فلا يظهر الفرق.
+import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
-import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 
 import sessionHandler from './api/session';
@@ -18,7 +20,6 @@ import adminUsersHandler from './api/admin-users';
 import auditLogHandler from './api/audit-log';
 import adminSentinelHandler from './api/admin-sentinel';
 
-dotenv.config();
 
 const PORT = Number(process.env.PORT || 3000);
 

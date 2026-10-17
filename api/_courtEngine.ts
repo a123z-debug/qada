@@ -279,6 +279,12 @@ export function assessDefenseFindings(
   };
 }
 
+/** علامات غير متحققة في نص صادر عن أي دور في الجلسة، مقارنةً بملف القضية وحزمة المصادر. */
+function guardMarkers(input: CourtStageInput, value: string, sourceContext: string): string[] {
+  if (!value) return [];
+  return guardIntroducedLegalCitations(caseOriginalText(input.caseFile), value, sourceContext).unsupportedMarkers.map(markerKey);
+}
+
 function annotateUnsupported(value: string, markers: string[]): string {
   let output = value;
   for (const marker of markers) {
@@ -601,6 +607,7 @@ export async function runCourtStage(
     brief.authorities = brief.authorities.filter((authority) => !droppedAuthorities.includes(authority));
     brief.pleading = annotateUnsupported(brief.pleading, findings.unsupportedCitations);
     brief.oralArguments = brief.oralArguments.map((item) => annotateUnsupported(item, findings.unsupportedCitations));
+    brief.theory = annotateUnsupported(brief.theory, guardMarkers(input, brief.theory, context));
 
     return {
       stage: 'defense',
@@ -616,6 +623,11 @@ export async function runCourtStage(
   if (input.stage === 'prosecution') {
     const brief = normalizeProsecutionBrief(await ask(buildProsecutionPrompt(input, context), 0.3));
     if (!brief.strongestAttack && brief.attacks.length === 0) throw new CourtStageError('AI_INVALID_RESPONSE', 502);
+    // المدعي العام يخضع لحارس الاستشهادات كالدفاع: مادة أو قرار أو «استقرار قضاء» بلا سند يوسم.
+    const tag = (value: string) => annotateUnsupported(value, guardMarkers(input, value, context));
+    brief.strongestAttack = tag(brief.strongestAttack);
+    brief.attacks = brief.attacks.map((attack) => ({ ...attack, point: tag(attack.point) }));
+    brief.demands = tag(brief.demands);
     return { stage: 'prosecution', round: input.round, brief, redactions: counter.count };
   }
 
@@ -626,6 +638,10 @@ export async function runCourtStage(
   if (ruling.opinions.every((opinion) => !opinion.delivered) && !ruling.finalJudgment.operative) {
     throw new CourtStageError('AI_INVALID_RESPONSE', 502);
   }
+  // أسباب القضاة ومنطوقهم: ما يُسند إلى مادة أو سابقة غير متحققة يوسم قبل العرض.
+  const tag = (value: string) => annotateUnsupported(value, guardMarkers(input, value, context));
+  ruling.opinions = ruling.opinions.map((opinion) => ({ ...opinion, reasoning: tag(opinion.reasoning) }));
+  ruling.finalJudgment = { ...ruling.finalJudgment, operative: tag(ruling.finalJudgment.operative), reasons: ruling.finalJudgment.reasons.map(tag) };
   const resolved = resolveSessionDecision(ruling, input.levelId, input.round, findings);
   return {
     stage: 'bench',

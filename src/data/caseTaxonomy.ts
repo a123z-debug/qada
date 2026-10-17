@@ -709,6 +709,123 @@ function noteFor(path: string[], inherited?: string): string | undefined {
   return JURISDICTION_NOTES[path.join('/')] || inherited;
 }
 
+/**
+ * كلمات الناس اليومية (للبحث فقط): ما يكتبه المتضرر فعلاً لا المصطلح القانوني.
+ * مفتاحها مسار العقدة؛ كلمات القطاع تخدم كل ما تحته عبر مطابقة «الآباء» بوزن أقل.
+ */
+const COLLOQUIAL_KEYWORDS: Record<string, string> = {
+  civil: 'فلوس فلوسي مبلغ ريال حقي تعويض',
+  commercial: 'مؤسسه مؤسستي شركتي شركتنا تجاري تاجر محلي متجر',
+  realestate: 'شقه فيلا عماره بيت بيتي ارض ارضي صك عقاري',
+  labor: 'شغل الشغل دوام الدوام وظيفه وظيفتي راتب رواتب راتبي رواتبي كفيل كفيلي موظف موظفه الشركه',
+  family: 'زوجي زوجتي طليقي طليقتي عيال عيالي اطفال اطفالي اولاد اولادي ورث الورث',
+  criminal: 'شرطه بلاغ بلغت اشتكي جنائي',
+  admin: 'حكومي حكوميه الحكومه وزاره البلديه الامانه',
+  execution: 'محكمه قضيه حكم',
+  'civil/contracts/loan-guarantee/loan': 'سلفت سلفته سلفه فلوس رجع يرجع رجعها',
+  'civil/debts/claims/debt-claim': 'ماخذ اخذ فلوسي ما رجع يماطل',
+  'civil/obligations/tort/traffic-civil': 'حادث سياره سيارتي نجم صدم',
+  'civil/contracts/sale/defects': 'خربان خراب مغشوش معرض اشتريت شريت',
+  'civil/contracts/sale/movable': 'سياره جوال اشتريت شريت',
+  'civil/debts/instruments/cheque-civil': 'شيك راجع رصيد',
+  'civil/debts/banking/bank-fraud-claim': 'سحبوا حسابي رمز التحقق اتصال البنك',
+  'civil/insurance/insurance-claims/vehicle-insurance': 'التامين يعوض يعوضني رفض',
+  'civil/insurance/medical-liability/medical-error': 'الدكتور المستشفى عمليه مضاعفات',
+  'civil/contracts/agency/service-contract': 'مكتب دفعت سلم الشغل ناقص',
+  'civil/obligations/tort/property-harm': 'كسروا خربوا اتلفوا الجيران',
+  'realestate/real-lease/residential/res-deposit': 'التامين المؤجر رجع يرجع',
+  'realestate/real-lease/residential/res-arrears': 'مستاجر يدفع الايجار متاخر',
+  'realestate/real-lease/residential/res-eviction': 'اطلعه اخراج المستاجر',
+  'realestate/ownership/boundaries/encroachment': 'جاري تعدي سور اخذ ارضي',
+  'realestate/ownership/co-ownership/partition': 'نقسم قسمه شريكي نصيبي نصيب',
+  'realestate/construction/contracting/contractor-delay': 'المقاول تاخر هرب وقف سحب العمال',
+  'realestate/construction/defects/building-defects': 'تسريب شروخ تشققات المقاول',
+  'realestate/construction/off-plan/off-plan-delay': 'الخارطه تاخر التسليم المطور',
+  'realestate/ownership/title/sale-promise': 'عربون تراجع',
+  'labor/termination/dismissal/unjust-dismissal': 'فصلوني طردوني فصلني فصل انهاء خدمتي سبب',
+  'labor/wages/pay/unpaid-wages': 'رواتبي راتبي عطوني صرفوا متاخره متاخر',
+  'labor/termination/end-of-service/eos-reward': 'نهايه الخدمه مكافاه',
+  'labor/wages/pay/overtime': 'ساعات اضافيه اوفرتايم',
+  'labor/wages/pay/deductions': 'يخصم يخصمون خصم راتبي',
+  'labor/contract/formation/probation': 'تجربه',
+  'labor/injuries/safety/work-injury': 'اصابه انكسر طحت حادث',
+  'labor/injuries/special/domestic-worker': 'عامله منزليه شغاله هربت استقدام',
+  'labor/termination/dismissal/constructive': 'غصب اجبروني استقيل استقلت',
+  'labor/wages/leave/annual-leave': 'اجازه اجازات رصيد',
+  'labor/termination/end-of-service/clearance': 'مخالصه وقعت',
+  'labor/wages/pay/allowances': 'بدل سكن نقل',
+  'labor/injuries/labor-office/amicable': 'مكتب العمل ودي تسويه شكوي',
+  'labor/contract/transfer/role-change': 'نقلوني غيروا وظيفتي',
+  'labor/termination/dismissal/disciplinary': 'غياب غبت انذار',
+  'family/children/custody/custody-claim': 'حضانتهم عيالي اطفالي',
+  'family/children/support/child-support': 'نفقه يصرف العيال',
+  'family/children/custody/visitation': 'اشوف عيالي مانعتني يمنعني',
+  'family/marriage/separation/khul': 'اتطلق انفصل يطلقني رافض',
+  'family/inheritance/estates/estate-division': 'الورث ورث يقسم ماسك اخوي',
+  'family/children/support/spouse-support': 'يصرف هاجرني',
+  'family/marriage/marriage-contract/dowry': 'المهر المؤخر',
+  'family/children/custody/travel-child': 'تسافر بالعيال سفر',
+  'family/inheritance/wills/will-dispute': 'وصيه الثلث',
+  'family/children/paternity/paternity-proof': 'يعترف بنتي ولدي',
+  'family/marriage/separation/divorce': 'طلقني طلاق بالواتساب',
+  'family/children/support/support-arrears': 'يدفع النفقه',
+  'family/children/paternity/guardianship': 'ايتام يتيم اموال القاصر',
+  'family/inheritance/estates/heirs-proof': 'صك حصر',
+  'family/children/custody/custody-transfer': 'انقل الحضانه',
+  'commercial/commercial-contracts/supply/payment-delay': 'دفعت قيمه البضاعه فواتير سددت',
+  'commercial/companies/partner-disputes/profit-dispute': 'شريكي الارباح ماكل نصيبي',
+  'commercial/companies/partner-disputes/partner-exit': 'اطلع الشراكه حصتي',
+  'commercial/bankruptcy/creditors/creditor-claims': 'مفلسه افلاس ديون',
+  'commercial/intellectual/trademarks/trademark-infringement': 'قلدوا اسم محلي الشعار',
+  'commercial/commercial-contracts/supply/franchise': 'فرنشايز امتياز',
+  'commercial/companies/governance/manager-liability': 'المدير فلوس الشركه',
+  'commercial/intellectual/ecommerce/online-store-dispute': 'متجر الكتروني مقلده',
+  'commercial/commercial-contracts/supply/distribution': 'موزع حصري',
+  'commercial/companies/formation/share-transfer': 'باع حصته',
+  'commercial/bankruptcy/procedures/preventive-settlement': 'متعثره ديون الموردين',
+  'commercial/commercial-contracts/commerce-misc/unfair-competition': 'العملاء منافس',
+  'admin/civil-service/career/promotion': 'رقوني ترقيه زملائي',
+  'admin/decisions/annulment/licence': 'سحبوا رخصه محلي قفلوه',
+  'admin/civil-service/termination-admin/service-termination': 'فصلوني الوظيفه الحكوميه الجامعه',
+  'admin/admin-contracts/contracts/gov-payments': 'مستخلصات متاخره مشروع حكومي',
+  'admin/civil-service/termination-admin/retirement': 'راتب التقاعد',
+  'admin/decisions/annulment/decision-annulment': 'رفضوا قرار الجوازات',
+  'admin/admin-contracts/compensation/expropriation': 'نزعوا ارضي نزع',
+  'admin/civil-service/discipline/disciplinary-penalty': 'حسم راتبي عقوبه',
+  'admin/admin-contracts/regulatory/municipal': 'هدموا البلديه الامانه مخالف',
+  'admin/civil-service/career/grade-allowance': 'بدل منطقه نائيه معلمه',
+  'admin/decisions/grievance/grievance-reply': 'تظلم ردوا',
+  'admin/admin-contracts/compensation/admin-liability': 'حفره الشارع البلديه',
+  'admin/admin-contracts/regulatory/customs-tax': 'غرامه جمارك ضريبه',
+  'admin/military/personnel/military-rights': 'مستحقاتي العسكريه علاوه',
+  'admin/military/personnel/military-discharge': 'احالوني للتقاعد عسكري',
+  'admin/military/injury/military-injury': 'اصابه الخدمه العسكريه',
+  'criminal/cyber/online/blackmail': 'يبتزني ابتزني صور ينشرها',
+  'criminal/property-crimes/fraud/fraud-crime': 'نصب نصاب احتال',
+  'criminal/persons/life/assault': 'ضربني اعتدي',
+  'criminal/property-crimes/theft/theft-crime': 'سرقوا سرق بيتي',
+  'criminal/cyber/online/illegal-access': 'اخترق حسابي هكر',
+  'criminal/persons/honor/defamation': 'يسبني تسبني قذف شتم',
+  'criminal/criminal-procedure/arrest/arrest-legality': 'قبضوا انمسك موقوف',
+  'criminal/persons/honor/harassment': 'يتحرش تحرش',
+  'criminal/property-crimes/theft/breach-trust': 'امانه انكر',
+  'criminal/persons/life/threat': 'يهددني تهديد بالقتل',
+  'criminal/property-crimes/fraud/forgery': 'زور توقيعي',
+  'criminal/criminal-procedure/judgment-review/criminal-appeal-grounds': 'اعترض حكم السجن',
+  'criminal/persons/honor/family-violence': 'يضربنا عنف',
+  'criminal/property-crimes/fraud/cheque-crime': 'شيك رصيد جنائي',
+  'criminal/cyber/data/privacy-violation': 'صورني نشر مقطع',
+  'criminal/public-order/drugs/possession': 'حشيش مخدرات انمسك',
+  'execution/enforcement/titles/judgment-enforcement-civil': 'حكم نفذ تنفيذ',
+  'execution/enforcement/objections/execution-objection': 'وقفوا خدماتي ايقاف حاجز حسابي',
+  'execution/review/ordinary/appeal-grounds': 'اعترض حكم',
+  'execution/procedure/filing/limitation': 'سقط حقي سنين',
+};
+
+function keywordsFor(path: string[], own?: string): string[] {
+  return [...words(own), ...words(COLLOQUIAL_KEYWORDS[path.join('/')])];
+}
+
 function buildTree(): TaxonomyNode[] {
   return SECTORS.map((sector) => {
     const base = { workspace: sector.workspace, system: sector.system };
@@ -721,23 +838,23 @@ function buildTree(): TaxonomyNode[] {
       level: 1 as const,
       note: sectorNote,
       path: sectorPath,
-      keywords: words(sector.keywords),
+      keywords: keywordsFor(sectorPath, sector.keywords),
       description: sector.description,
       children: sector.branches.map(([bKey, bLabel, cats]) => {
         const bPath = [...sectorPath, bKey];
         const bNote = noteFor(bPath, sectorNote);
         return {
-          ...base, key: bKey, label: bLabel, level: 2 as const, note: bNote, path: bPath, keywords: [],
+          ...base, key: bKey, label: bLabel, level: 2 as const, note: bNote, path: bPath, keywords: keywordsFor(bPath),
           children: cats.map(([cKey, cLabel, leaves]) => {
             const cPath = [...bPath, cKey];
             const cNote = noteFor(cPath, bNote);
             return {
-              ...base, key: cKey, label: cLabel, level: 3 as const, note: cNote, path: cPath, keywords: [],
+              ...base, key: cKey, label: cLabel, level: 3 as const, note: cNote, path: cPath, keywords: keywordsFor(cPath),
               children: leaves.map(([lKey, lLabel, lKw]) => {
                 const lPath = [...cPath, lKey];
                 return {
                   ...base, key: lKey, label: lLabel, level: 4 as const, note: noteFor(lPath, cNote),
-                  path: lPath, keywords: words(lKw), children: [],
+                  path: lPath, keywords: keywordsFor(lPath, lKw), children: [],
                 };
               }),
             };
@@ -818,32 +935,82 @@ export interface TaxonomySearchHit {
   trail: TaxonomyNode[];
 }
 
+// كلمات لا تميّز نوع القضية (حروف، ضمائر، أفعال عامة في كلام الناس). على النص بعد normalizeArabic.
+const SEARCH_STOPWORDS = new Set([
+  'ما', 'لا', 'من', 'في', 'علي', 'عن', 'مع', 'الي', 'او', 'و', 'يا', 'وش', 'ايش', 'شو', 'ابي', 'ابغي', 'ابغا', 'اريد',
+  'ودي', 'عندي', 'لي', 'انا', 'انت', 'هو', 'هي', 'هم', 'واحد', 'وحده', 'صار', 'قبل', 'بعد', 'كل', 'بس', 'حق', 'اللي',
+  'هذا', 'هذي', 'ذا', 'عشان', 'لان', 'لما', 'كيف', 'وين', 'متي', 'ليش', 'يعني', 'مره', 'شي', 'شيء', 'حتي', 'ولا', 'وما',
+  'فيه', 'فيها', 'له', 'لها', 'لهم', 'مو', 'مب', 'ام', 'اذا', 'لو', 'قد', 'الحين', 'تو', 'يوم', 'قال', 'قالوا', 'يقول',
+  'لكن', 'بدون', 'غير', 'اسوي', 'سويت', 'يسوي', 'هل', 'لين', 'عليه', 'عليها', 'منه', 'منها', 'فيني',
+]);
+const STEM_PREFIXES = ['وبال', 'وال', 'فال', 'بال', 'كال', 'لل', 'ال'];
+const STEM_SUFFIXES = ['يتها', 'اتها', 'تهم', 'تها', 'ونا', 'وني', 'وها', 'كم', 'هم', 'ها', 'نا', 'ني', 'وا', 'ون', 'ين', 'ات', 'تي', 'ته', 'ه', 'ي', 'ك'];
+
+/** تجريد خفيف: «فصلوني»→«فصل»، «الحضانة»→«حضان»، «رواتبي»→«رواتب». يبقى جذر من 3 أحرف على الأقل. */
+function stemToken(token: string): string {
+  let value = token;
+  for (const prefix of STEM_PREFIXES) {
+    if (value.startsWith(prefix) && value.length - prefix.length >= 3) { value = value.slice(prefix.length); break; }
+  }
+  for (const suffix of STEM_SUFFIXES) {
+    if (value.endsWith(suffix) && value.length - suffix.length >= 3) { value = value.slice(0, -suffix.length); break; }
+  }
+  return value;
+}
+
+function searchStems(text: string): string[] {
+  return normalizeArabic(text).split(' ').filter((token) => token.length >= 2 && !SEARCH_STOPWORDS.has(token)).map(stemToken);
+}
+
+function stemsMatch(query: string, candidate: string): boolean {
+  if (query === candidate) return true;
+  return Math.min(query.length, candidate.length) >= 3 && (query.startsWith(candidate) || candidate.startsWith(query));
+}
+
+type SearchIndexEntry = { node: TaxonomyNode; trail: TaxonomyNode[]; label: string; labelStems: string[]; keywordStems: string[]; ancestorStems: string[] };
+let searchIndex: SearchIndexEntry[] | null = null;
+
+function getSearchIndex(): SearchIndexEntry[] {
+  if (searchIndex) return searchIndex;
+  searchIndex = flattenAll().map((node) => {
+    const trail = getTrail(node.path);
+    const ancestors = trail.slice(0, -1);
+    return {
+      node,
+      trail,
+      label: normalizeArabic(node.label),
+      labelStems: searchStems(node.label),
+      keywordStems: searchStems(node.keywords.join(' ')),
+      ancestorStems: searchStems(ancestors.map((item) => `${item.label} ${item.keywords.join(' ')}`).join(' ')),
+    };
+  });
+  return searchIndex;
+}
+
 /**
- * بحث بسيط ومحدد: كل كلمة في الاستعلام يجب أن تظهر في العنوان أو المرادفات أو عناوين الآباء.
- * الترتيب: تطابق العنوان الكامل ثم بداية العنوان ثم العنوان ثم المرادفات ثم الآباء. الأوراق أولاً عند التساوي.
+ * بحث متسامح مع لغة الناس: يتجاهل الكلمات العامة، ويجرّد اللواحق، ولا يشترط تطابق كل الكلمات.
+ * كل كلمة تُحسب مرة: في العنوان (6) أو في مرادفات العقدة (5) أو في عناوين/مرادفات الآباء (1.5).
+ * لا تظهر عقدة إلا بتطابق في عنوانها أو مرادفاتها هي؛ والترتيب بالدرجة ثم نسبة الكلمات المغطاة، والأوراق أولاً.
  */
 export function searchTaxonomy(query: string, limit = 60): TaxonomySearchHit[] {
-  const terms = normalizeArabic(query).split(' ').filter(Boolean);
+  const terms = Array.from(new Set(searchStems(query)));
   if (!terms.length) return [];
+  const normalizedQuery = normalizeArabic(query);
   const hits: TaxonomySearchHit[] = [];
-  for (const node of flattenAll()) {
-    const trail = getTrail(node.path);
-    const label = normalizeArabic(node.label);
-    const keywords = normalizeArabic(node.keywords.join(' '));
-    const ancestors = normalizeArabic(trail.slice(0, -1).map((item) => item.label).join(' '));
+  for (const entry of getSearchIndex()) {
     let score = 0;
-    let matched = true;
+    let own = 0;
+    let covered = 0;
     for (const term of terms) {
-      if (label === term) score += 12;
-      else if (label.startsWith(term)) score += 9;
-      else if (label.includes(term)) score += 6;
-      else if (keywords.includes(term)) score += 5;
-      else if (ancestors.includes(term)) score += 2;
-      else { matched = false; break; }
+      if (entry.labelStems.some((stem) => stemsMatch(term, stem))) { score += 6; own += 1; covered += 1; }
+      else if (entry.keywordStems.some((stem) => stemsMatch(term, stem))) { score += 5; own += 1; covered += 1; }
+      else if (entry.ancestorStems.some((stem) => stemsMatch(term, stem))) { score += 1.5; covered += 1; }
     }
-    if (!matched) continue;
-    if (node.level === 4) score += 1;
-    hits.push({ node, score, trail });
+    if (!own) continue;
+    score += (covered / terms.length) * 6;
+    if (entry.label === normalizedQuery) score += 10;
+    if (entry.node.level === 4) score += 1;
+    hits.push({ node: entry.node, score, trail: entry.trail });
   }
   hits.sort((a, b) => b.score - a.score || b.node.level - a.node.level || a.node.label.localeCompare(b.node.label, 'ar'));
   return hits.slice(0, limit);
