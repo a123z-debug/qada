@@ -15,10 +15,13 @@ import { LegalReviewEditor } from './LegalReviewEditor';
 import { LegalAdaptationResult, PlainStoryInput } from './PlainStoryInput';
 import { readFileAsAttachment } from '../../lib/clientAttachments';
 import { readSseTextResponse } from '../../lib/readSseTextResponse';
+import { withCaseType } from '../../data/caseTaxonomy';
 
 interface CommercialWorkspaceProps {
   service: string | null;
   userSession?: UserSession | null;
+  /** مسار نوع القضية المختار من الفهرس؛ يُضاف سياقه إلى الطلب. */
+  caseTypePath?: string[] | null;
 }
 
 const STORAGE_KEY_PREFIX = 'diwan_commercial_draft_v1';
@@ -33,6 +36,7 @@ const SERVICE_TITLES: Record<string, string> = {
 export function CommercialWorkspace({
   service = 'commercial_claim',
   userSession,
+  caseTypePath,
 }: CommercialWorkspaceProps) {
   const currentService = service || 'commercial_claim';
   const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
@@ -193,6 +197,8 @@ ${caseBlock}
 
 ${sharedRules}`;
     }
+
+    prompt = withCaseType(prompt, caseTypePath);
 
     try {
       const response = await fetch('/api/chat', {

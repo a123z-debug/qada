@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from 'react';
+ import React, { Suspense, useState, useEffect } from 'react';
 import {
   Building2,
   Scale,
@@ -25,9 +25,13 @@ import {
   Users,
   ClipboardList,
   Briefcase,
-  Landmark
+  Landmark,
+  LayoutGrid
 } from 'lucide-react';
 import { UserSession } from '../../types';
+
+// الشجرة تحمّل بيانات الفهرس، فتُحمّل عند الحاجة فقط حتى لا تكبر الحزمة الرئيسية.
+const SidebarCaseTree = React.lazy(() => import('../catalog/SidebarCaseTree').then((module) => ({ default: module.SidebarCaseTree })));
 
 export type CourtJurisdiction = 'commercial' | 'general' | 'administrative' | 'criminal';
 
@@ -181,6 +185,7 @@ interface SidebarProps {
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   onOpenKnowledge?: () => void;
+  onOpenCatalog?: () => void;
   onOpenSearch?: () => void;
   onOpenAssistant?: () => void;
   onOpenReports?: () => void;
@@ -204,6 +209,7 @@ export function Sidebar({
   isMobileOpen,
   onCloseMobile,
   onOpenKnowledge,
+  onOpenCatalog,
   onOpenSearch,
   onOpenAssistant,
   onOpenReports,
@@ -217,6 +223,7 @@ export function Sidebar({
   courtroomActive = false,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
+  const [isCaseTreeOpen, setIsCaseTreeOpen] = useState(true);
   const isAdmin = userSession?.role === 'admin';
 
   useEffect(() => {
@@ -345,6 +352,22 @@ export function Sidebar({
             <span className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5" /> {isAdmin ? 'أدوات التقاضي والمسارات' : 'نوع القضية'}</span>
           </div>
 
+          {onOpenCatalog && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenCatalog();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className="min-h-11 w-full flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl text-xs font-black text-amber-300 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <LayoutGrid className="w-4 h-4" />
+                <span>{isAdmin ? 'فهرس القضايا الهرمي' : 'تصفّح كل أنواع القضايا'}</span>
+              </span>
+            </button>
+          )}
+
           {COURT_CATEGORIES.map((cat) => {
             const isCurrentCourt = activeCourt === cat.id;
             const CatIcon = cat.icon;
@@ -455,6 +478,33 @@ export function Sidebar({
             </button>
           )}
         </div>
+
+        {/* الفهرس الهرمي: قطاع ← فرع ← تصنيف ← نوع القضية */}
+        {onOpenCatalog && (
+          <div className="pt-2 border-t border-slate-800/80 space-y-1">
+            <button
+              type="button"
+              aria-expanded={isCaseTreeOpen}
+              onClick={() => setIsCaseTreeOpen((open) => !open)}
+              className="min-h-11 w-full px-2 py-1 flex items-center justify-between rounded-lg text-[11px] font-bold text-slate-400 tracking-wide hover:bg-slate-900"
+            >
+              <span className="flex items-center gap-1.5">
+                <LayoutGrid className="w-3.5 h-3.5 text-amber-400" /> {isAdmin ? 'الفهرس الهرمي للقضايا' : 'تصفّح حسب نوع القضية'}
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isCaseTreeOpen ? 'rotate-180 text-amber-400' : ''}`} />
+            </button>
+            {isCaseTreeOpen && (
+              <Suspense fallback={<div className="px-3 py-2 text-[11px] text-slate-400">جاري تحميل الفهرس…</div>}>
+                <SidebarCaseTree
+                  onOpenCatalog={() => {
+                    onOpenCatalog();
+                    if (onCloseMobile) onCloseMobile();
+                  }}
+                />
+              </Suspense>
+            )}
+          </div>
+        )}
 
         {/* قسم المعرفة والبحث النظامي */}
         <div className="pt-2 border-t border-slate-800/80 space-y-1">

@@ -19,10 +19,13 @@ import { LegalReviewEditor } from './LegalReviewEditor';
 import { LegalAdaptationResult, PlainStoryInput } from './PlainStoryInput';
 import { readFileAsAttachment } from '../../lib/clientAttachments';
 import { readSseTextResponse } from '../../lib/readSseTextResponse';
+import { withCaseType } from '../../data/caseTaxonomy';
 
 interface CriminalWorkspaceProps {
   service: string | null;
   userSession?: UserSession | null;
+  /** مسار نوع القضية المختار من الفهرس؛ يُضاف سياقه إلى الطلب. */
+  caseTypePath?: string[] | null;
 }
 
 const STORAGE_KEY_PREFIX = 'diwan_criminal_draft_v3';
@@ -30,6 +33,7 @@ const STORAGE_KEY_PREFIX = 'diwan_criminal_draft_v3';
 export function CriminalWorkspace({
   service = 'criminal_defense',
   userSession,
+  caseTypePath,
 }: CriminalWorkspaceProps) {
   const currentService = service || 'criminal_defense';
   const storageKey = `${STORAGE_KEY_PREFIX}:${userSession?.id || 'guest'}`;
@@ -208,6 +212,8 @@ ${storyAddon}
 
 ${sharedRules}`;
     }
+
+    prompt = withCaseType(prompt, caseTypePath);
 
     try {
       const response = await fetch('/api/chat', {

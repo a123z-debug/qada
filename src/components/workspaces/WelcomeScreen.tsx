@@ -22,7 +22,8 @@ import {
   LockKeyhole,
   Landmark,
   UsersRound,
-  Swords
+  Swords,
+  LayoutGrid
 } from 'lucide-react';
 import { CourtJurisdiction, COURT_CATEGORIES } from '../layout/Sidebar';
 import { readSseTextResponse } from '../../lib/readSseTextResponse';
@@ -57,6 +58,7 @@ interface WelcomeScreenProps {
   defaultMode?: 'simple' | 'professional';
   onModeChange?: (mode: 'simple' | 'professional') => void;
   onOpenAdminOverview?: () => void;
+  onOpenCatalog?: () => void;
   onOpenCourtroom?: () => void;
 }
 
@@ -69,6 +71,7 @@ export function WelcomeScreen({
   defaultMode,
   onModeChange,
   onOpenAdminOverview,
+  onOpenCatalog,
   onOpenCourtroom,
 }: WelcomeScreenProps) {
   const [interfaceMode, setInterfaceMode] = useState<'simple' | 'professional'>(defaultMode || (isAdmin ? 'professional' : 'simple'));
@@ -293,7 +296,17 @@ export function WelcomeScreen({
             <h2 className="text-sm font-black text-slate-950">قضيتي</h2>
             <p className="mt-0.5 text-[11px] text-slate-500">كل شيء عن مشكلتك في مكان واحد.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {onOpenCatalog && (
+              <button
+                type="button"
+                onClick={onOpenCatalog}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
+              >
+                <LayoutGrid className="h-4 w-4" strokeWidth={1.8} />
+                تصفّح أنواع القضايا
+              </button>
+            )}
             <button
               type="button"
               onClick={() => changeInterfaceMode('professional')}
@@ -474,6 +487,12 @@ export function WelcomeScreen({
           <p className="mt-1 text-xs text-slate-400">للشخص الذي يعرف نوع القضية ويريد اختيار المحكمة والخدمة والمراجع بنفسه.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {onOpenCatalog && (
+            <button type="button" onClick={onOpenCatalog} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 text-xs font-black text-amber-200 hover:bg-amber-500/20">
+              <LayoutGrid className="h-4 w-4" />
+              فهرس القضايا الهرمي
+            </button>
+          )}
           <button type="button" onClick={() => changeInterfaceMode('simple')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
             رجوع للوضع البسيط
           </button>
