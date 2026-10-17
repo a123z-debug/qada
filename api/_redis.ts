@@ -23,8 +23,22 @@ function hasNativeRedis(): boolean {
   return /^rediss?:\/\//i.test(nativeRedisUrl());
 }
 
+function isHostedRuntime(): boolean {
+  return process.env.VERCEL === '1'
+    || Boolean(process.env.VERCEL_ENV)
+    || Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_PROJECT_ID);
+}
+
+// REDIS_URL=memory:// keeps the store inside this server process so the whole platform
+// (accounts, cases, Sentinel, audit log) can be tried locally without Redis. Data is lost
+// on restart, and hosted runtimes refuse it: serverless or multi-instance deploys would
+// silently drop accounts and cases.
+function hasMemoryRedis(): boolean {
+  return /^memory:\/\//i.test(nativeRedisUrl()) && !isHostedRuntime();
+}
+
 export function isRedisConfigured(): boolean {
-  return hasUpstashRedis() || hasNativeRedis();
+  return hasMemoryRedis() || hasUpstashRedis() || hasNativeRedis();
 }
 
 export function redisPrefix(): string {
@@ -179,7 +193,118 @@ async function nativeRedisCommands(commands: RedisScalar[][]): Promise<any[]> {
   });
 }
 
+type MemoryEntry =
+  | { type: 'string'; value: string; expiresAt: number }
+  | { type: 'set'; value: Set<string>; expiresAt: number }
+  | { type: 'list'; value: string[]; expiresAt: number };
+
+const memoryStore = new Map<string, MemoryEntry>();
+let memoryStoreAnnounced = false;
+
+function liveMemoryEntry(key: string): MemoryEntry | undefined {
+  const entry = memoryStore.get(key);
+  if (entry?.expiresAt && entry.expiresAt <= Date.now()) {
+    memoryStore.delete(key);
+    return undefined;
+  }
+  return entry;
+}
+
+function memoryEntryOfType<T extends MemoryEntry['type']>(key: string, type: T): Extract<MemoryEntry, { type: T }> | undefined {
+  const entry = liveMemoryEntry(key);
+  if (entry && entry.type !== type) throw new Error('REDIS_ERROR:WRONGTYPE Operation against a key holding the wrong kind of value');
+  return entry as Extract<MemoryEntry, { type: T }> | undefined;
+}
+
+function memoryListRange(length: number, start: number, stop: number): [number, number] {
+  return [Math.max(0, start < 0 ? length + start : start), Math.min(length - 1, stop < 0 ? length + stop : stop)];
+}
+
+// Covers exactly the commands the API uses; anything else fails loudly instead of misbehaving.
+function memoryCommand(command: RedisScalar[]): any {
+  if (!memoryStoreAnnounced) {
+    memoryStoreAnnounced = true;
+    console.warn('[QADA_STORE] memory store active — in-process data for local testing; lost on restart.');
+  }
+  const [name, ...args] = command.map(String);
+  const key = args[0];
+  switch (name.toUpperCase()) {
+    case 'PING':
+      return 'PONG';
+    case 'GET':
+      return memoryEntryOfType(key, 'string')?.value ?? null;
+    case 'MGET':
+      return args.map((item) => memoryEntryOfType(item, 'string')?.value ?? null);
+    case 'SET': {
+      let expiresAt = 0;
+      for (let index = 2; index < args.length; index += 1) {
+        const option = args[index].toUpperCase();
+        if (option === 'NX' && liveMemoryEntry(key)) return null;
+        if (option === 'XX' && !liveMemoryEntry(key)) return null;
+        if (option === 'EX') expiresAt = Date.now() + Number(args[++index]) * 1000;
+        if (option === 'PX') expiresAt = Date.now() + Number(args[++index]);
+      }
+      memoryStore.set(key, { type: 'string', value: args[1], expiresAt });
+      return 'OK';
+    }
+    case 'DEL':
+      return args.filter((item) => liveMemoryEntry(item) && memoryStore.delete(item)).length;
+    case 'INCR': {
+      const entry = memoryEntryOfType(key, 'string');
+      const next = Number(entry?.value ?? 0) + 1;
+      if (!Number.isSafeInteger(next)) throw new Error('REDIS_ERROR:ERR value is not an integer or out of range');
+      memoryStore.set(key, { type: 'string', value: String(next), expiresAt: entry?.expiresAt ?? 0 });
+      return next;
+    }
+    case 'EXPIRE': {
+      const entry = liveMemoryEntry(key);
+      if (!entry) return 0;
+      entry.expiresAt = Date.now() + Number(args[1]) * 1000;
+      return 1;
+    }
+    case 'SADD': {
+      const entry = memoryEntryOfType(key, 'set') ?? { type: 'set' as const, value: new Set<string>(), expiresAt: 0 };
+      const before = entry.value.size;
+      for (const member of args.slice(1)) entry.value.add(member);
+      memoryStore.set(key, entry);
+      return entry.value.size - before;
+    }
+    case 'SREM': {
+      const entry = memoryEntryOfType(key, 'set');
+      if (!entry) return 0;
+      const removed = args.slice(1).filter((member) => entry.value.delete(member)).length;
+      if (!entry.value.size) memoryStore.delete(key);
+      return removed;
+    }
+    case 'SMEMBERS':
+      return Array.from(memoryEntryOfType(key, 'set')?.value ?? []);
+    case 'LPUSH': {
+      const entry = memoryEntryOfType(key, 'list') ?? { type: 'list' as const, value: [] as string[], expiresAt: 0 };
+      for (const item of args.slice(1)) entry.value.unshift(item);
+      memoryStore.set(key, entry);
+      return entry.value.length;
+    }
+    case 'LRANGE': {
+      const list = memoryEntryOfType(key, 'list')?.value ?? [];
+      const [from, to] = memoryListRange(list.length, Number(args[1]), Number(args[2]));
+      return list.slice(from, to + 1);
+    }
+    case 'LTRIM': {
+      const entry = memoryEntryOfType(key, 'list');
+      if (!entry) return 'OK';
+      const [from, to] = memoryListRange(entry.value.length, Number(args[1]), Number(args[2]));
+      entry.value = entry.value.slice(from, to + 1);
+      if (!entry.value.length) memoryStore.delete(key);
+      return 'OK';
+    }
+    default:
+      throw new Error(`REDIS_ERROR:memory store does not support ${name}`);
+  }
+}
+
 export async function redisCommand(command: RedisScalar[]): Promise<any> {
+  if (hasMemoryRedis()) return memoryCommand(command);
+
   // Prefer Railway/native Redis when configured. This prevents stale Upstash REST
   // credentials from shadowing a healthy in-project Redis database.
   if (hasNativeRedis()) {
@@ -205,6 +330,8 @@ export async function redisCommand(command: RedisScalar[]): Promise<any> {
 }
 
 export async function redisPipeline(commands: RedisScalar[][]): Promise<any[]> {
+  if (hasMemoryRedis()) return commands.map((command) => memoryCommand(command));
+
   // Keep the same precedence for pipelines and single commands.
   if (hasNativeRedis()) {
     return nativeRedisCommands(commands);
