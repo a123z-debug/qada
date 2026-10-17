@@ -3,6 +3,7 @@ import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 import { guardIntroducedLegalCitations } from '../src/lib/legalCitationGuard.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 import { buildCourtProfileInstruction } from '../src/lib/courtProfiles.js';
+import { assessClaimLiberation, type ClaimLiberationAssessment } from '../src/lib/claimLiberationGate.js';
 import { withTimeout } from './_async.js';
 import {
   USER_AI_MODELS,
@@ -24,6 +25,7 @@ export type DraftReleaseGateResult = {
   verifiedArticles: number;
   officialSources: number;
   provider?: string;
+  claimLiberation: ClaimLiberationAssessment;
 };
 
 type ReviewShape = {
@@ -36,6 +38,7 @@ type ReviewShape = {
   evidenceErrors?: string[];
   remedyErrors?: string[];
   contradictions?: string[];
+  liberationErrors?: string[];
 };
 
 function geminiClients(): GoogleGenAI[] {
@@ -87,6 +90,7 @@ export async function reviewDraftBeforeClientRelease(args: {
       sourceBlockers: [],
       verifiedArticles: 0,
       officialSources: 0,
+      claimLiberation: { applicable: false, complete: true, missingPillars: [], linkageIssues: [], sectionOrderValid: true },
     };
   }
 
@@ -94,7 +98,6 @@ export async function reviewDraftBeforeClientRelease(args: {
     args.court || '',
     args.documentTitle || '',
     args.sourceInputText || '',
-    draft.slice(0, 18000),
   ].filter(Boolean).join('\n').slice(0, 30000);
 
   const sourceBundle = runLegalSourceAgents(sourceQuery);
@@ -102,6 +105,11 @@ export async function reviewDraftBeforeClientRelease(args: {
     [args.court || '', args.documentTitle || '', args.sourceInputText || '', draft].join('\n'),
     Boolean(args.hasEvidence),
   );
+  const claimLiberation = assessClaimLiberation({
+    draft,
+    task: route.task,
+    sourceInputText: args.sourceInputText || '',
+  });
   const lawOfficeInstruction = buildLawOfficeInstruction(route, sourceBundle);
   const courtProfileInstruction = buildCourtProfileInstruction(
     [args.court || '', args.documentTitle || '', draft].join('\n'),
@@ -127,6 +135,14 @@ export async function reviewDraftBeforeClientRelease(args: {
   const bogPacket = sourceBundle.packets.find((packet) => packet.agentId === 'src-bog');
 
   const hardBlockers: string[] = [];
+  if (claimLiberation.applicable && !claimLiberation.complete) {
+    for (const pillar of claimLiberation.missingPillars) {
+      hardBlockers.push(`الدعوى غير محررة: قسم ${pillar} مفقود أو غير مكتمل.`);
+    }
+    for (const issue of claimLiberation.linkageIssues) {
+      hardBlockers.push(`تحرير الدعوى: ${issue}`);
+    }
+  }
   if (route.blocking) hardBlockers.push(route.reason);
   if (citationGuard.blocked) {
     hardBlockers.push('المسودة أدخلت إحالة قانونية جديدة غير متحققة من حزمة المصادر الرسمية.');
@@ -155,6 +171,9 @@ ${courtProfileInstruction}
 [بوابة اعتماد المسودة قبل إظهارها للعميل]
 هذه ليست مهمة صياغة جديدة. افحص المسودة الحالية فقط، ولا تحسنها ولا تعيد كتابتها.
 لا تمنح PASS للمجاملة. إذا كانت نقطة جوهرية غير متحققة فاختر BLOCK أو RETURN.
+كل ملاحظة يجب أن تكون مرتبطة مباشرة بعبارة في المسودة أو بواقعة/مستند/مصدر موجود فعلاً في الحزمة.
+ممنوع اقتراح أو افتراض نظرية قانونية بديلة لم يذكرها المستخدم ولم تظهر في المصادر، مثل الإثراء بلا سبب أو الفعل الضار أو أي أساس موضوعي جديد.
+إذا كان النقص مجرد معلومة مفقودة فصف المعلومة المفقودة نفسها، ولا تخترع سبباً قانونياً لملء الفراغ.
 
 اختبر إلزامياً:
 1) المحكمة والمرحلة وطريق الدعوى/الاعتراض.
@@ -166,6 +185,7 @@ ${courtProfileInstruction}
 7) التناقضات بين الوقائع والدليل والدفع وأسباب الحكم.
 8) هل الأسباب تنتج الطلب النهائي فعلاً.
 9) لا تنسب توجهاً لمحكمة أو قاضٍ إلا من سابقة رسمية متحققة.
+10) إذا كانت المهمة دعوى: افحص تحرير الدعوى إلزامياً وفق أربعة أركان مرتبة: البيانات → الوقائع → المستندات → الطلبات. لا يكفي وجود العناوين؛ يجب أن تكون البيانات معرفة بالأطراف والصفة، والوقائع محررة، والمستندات مرتبطة بما تثبته أو يصرح بنقصها، والطلبات جازمة ومتصلة بالوقائع والمستندات.
 
 أعد JSON فقط:
 {
@@ -177,7 +197,8 @@ ${courtProfileInstruction}
   "rebuttalErrors": [],
   "evidenceErrors": [],
   "remedyErrors": [],
-  "contradictions": []
+  "contradictions": [],
+  "liberationErrors": []
 }
 
 حزمة المصادر:
@@ -232,6 +253,7 @@ ${draft.slice(0, 30000)}
       sourceBlockers: sourceBundle.verification.blockers,
       verifiedArticles: sourceBundle.verification.verifiedArticles,
       officialSources: sourceBundle.verification.officialSources,
+      claimLiberation,
     };
   }
 
@@ -244,9 +266,13 @@ ${draft.slice(0, 30000)}
     ...stringArray(review.evidenceErrors),
     ...stringArray(review.remedyErrors),
     ...stringArray(review.contradictions),
+    ...stringArray(review.liberationErrors),
   ];
 
   for (const fatal of stringArray(review.fatalDefects)) hardBlockers.push(fatal);
+  if (claimLiberation.applicable) {
+    for (const issue of stringArray(review.liberationErrors)) hardBlockers.push(`تحرير الدعوى: ${issue}`);
+  }
 
   let readinessScore = 100;
   readinessScore -= Math.min(35, hardBlockers.length * 15);
@@ -257,6 +283,7 @@ ${draft.slice(0, 30000)}
   readinessScore -= stringArray(review.evidenceErrors).length * 7;
   readinessScore -= stringArray(review.remedyErrors).length * 8;
   readinessScore -= stringArray(review.contradictions).length * 8;
+  readinessScore -= stringArray(review.liberationErrors).length * 12;
   readinessScore = Math.max(0, Math.min(100, readinessScore));
 
   const requested = String(review.gateDecision || '').toUpperCase();
@@ -278,5 +305,6 @@ ${draft.slice(0, 30000)}
     verifiedArticles: sourceBundle.verification.verifiedArticles,
     officialSources: sourceBundle.verification.officialSources,
     provider,
+    claimLiberation,
   };
 }

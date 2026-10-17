@@ -57,6 +57,7 @@ const srcFiles = [
   'src/components/LoginScreen.tsx',
   'src/components/admin/AdminAnalysisRoom.tsx',
   'src/components/admin/AdminAgentMap.tsx',
+  'src/components/admin/AdminSentinel.tsx',
 ];
 for (const file of srcFiles) {
   const source = fs.readFileSync(file, 'utf8');
@@ -73,6 +74,7 @@ const boundedAiFiles = [
   'api/admin-analysis.ts',
   'api/judges-review.ts',
   'api/convert-story.ts',
+  'api/court-session.ts',
 ];
 for (const file of boundedAiFiles) {
   const source = fs.readFileSync(file, 'utf8');

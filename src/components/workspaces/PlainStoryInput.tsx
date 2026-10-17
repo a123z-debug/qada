@@ -19,7 +19,7 @@ export interface LegalAdaptationResult {
 }
 
 interface PlainStoryInputProps {
-  court: 'administrative' | 'general' | 'criminal';
+  court: 'administrative' | 'general' | 'criminal' | 'commercial';
   onApplyExtractedData: (data: LegalAdaptationResult) => void;
   currentStory: string;
   onStoryChange: (story: string) => void;
@@ -48,6 +48,12 @@ export function PlainStoryInput({
           'مماطلة في سداد دين عقد مقاولة',
           'مستأجر امتنع عن دفع الإيجار',
           'بيع سيارة معيبة بعيب خفي',
+        ]
+      : court === 'commercial'
+      ? [
+          'شركة لم تسدد قيمة توريدات بفواتير',
+          'شريك أخل بعقد الشراكة التجارية',
+          'وكيل تجاري أنهى العقد دون إشعار',
         ]
       : [
           'بطلان قبض وتفتيش بدون إذن',
@@ -84,7 +90,7 @@ export function PlainStoryInput({
       onApplyExtractedData(data);
       setSuccessMessage(
         data.legal_bases.length > 0
-          ? `تم إعداد التكييف وربطه بـ ${data.legal_bases.length} مراجع رسمية متاحة للمراجعة 🪄`
+          ? `تم إعداد التكييف وربطه بـ ${data.legal_bases.length} مراجع رسمية متاحة للمراجعة`
           : 'تم إعداد التكييف والطلبات، ولم يظهر سند رسمي مطابق بدرجة كافية؛ راجع المراجع قبل الاعتماد.'
       );
       setTimeout(() => setSuccessMessage(null), 4500);
@@ -113,7 +119,7 @@ export function PlainStoryInput({
   return (
     <div
       id="plain-story-assistant"
-      className="p-4 sm:p-5 rounded-3xl bg-neutral-950/90 border border-amber-500/40 shadow-lg space-y-3.5 transition-all"
+      className="qada-8k-story p-4 sm:p-5 rounded-3xl bg-neutral-950/90 border border-amber-500/40 shadow-lg space-y-3.5 transition-all"
     >
       {/* 1. Header & Title */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -141,7 +147,7 @@ export function PlainStoryInput({
             title="لصق النص من الحافظة"
           >
             <ClipboardPaste className="w-4 h-4 text-amber-400" />
-            <span>📋 لصق نص منسوخ</span>
+            <span>لصق نص منسوخ</span>
           </button>
 
           <button
@@ -152,7 +158,7 @@ export function PlainStoryInput({
             className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-black flex items-center gap-1.5 transition-all shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Sparkles className="w-4 h-4" />
-            <span>{isExtracting ? 'جاري التكييف والتحقق...' : 'تكييف القصة وربطها بالمراجع الرسمية 🪄'}</span>
+            <span>{isExtracting ? 'جاري التكييف والتحقق...' : 'تكييف القصة وربطها بالمراجع الرسمية'}</span>
           </button>
         </div>
       </div>

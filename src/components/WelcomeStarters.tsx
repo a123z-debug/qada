@@ -20,7 +20,7 @@ const CATEGORY_ICONS: Record<string, typeof Scale> = {
 
 export function WelcomeStarters({ onSelectPrompt, onOpenArticle8, onOpenRepository, onUploadClick, onOpenDossier }: WelcomeStartersProps) {
   return (
-    <div id="welcome-starters" className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-10 flex flex-col items-center text-center">
+    <div id="welcome-starters" className="qada-8k-welcome max-w-5xl mx-auto px-3 sm:px-5 py-6 sm:py-10 flex flex-col items-center text-center">
       {/* Official Judicial Emblem Badge */}
       <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] sm:text-xs font-semibold mb-3 sm:mb-4 shadow-sm">
         <Scale className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />

@@ -12,8 +12,12 @@ const files = [
   'src/components/workspaces/AdministrativeWorkspace.tsx',
   'src/components/workspaces/CriminalWorkspace.tsx',
   'src/components/workspaces/GeneralWorkspace.tsx',
+  'src/components/workspaces/CommercialWorkspace.tsx',
   'src/components/workspaces/LegalReviewEditor.tsx',
+  'src/components/courts/VirtualCourtroom.tsx',
   'src/components/LegalReferencesModal.tsx',
+  'src/lib/judicialSystem.ts',
+  'api/_courtEngine.ts',
   'api/chat.ts',
 ];
 

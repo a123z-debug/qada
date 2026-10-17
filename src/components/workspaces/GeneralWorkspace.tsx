@@ -281,7 +281,7 @@ ${sharedRules}`;
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="qada-case-workspace qada-case-general max-w-6xl mx-auto space-y-6">
       {/* 1. Header & Local Storage Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl bg-neutral-900 border border-emerald-500/30">
         <div className="flex items-center gap-3">
@@ -472,7 +472,7 @@ ${sharedRules}`;
                 <div className="flex items-center justify-between">
                   <label className="text-[11px] font-semibold text-neutral-300">موضوع النزاع والوقائع:</label>
                   {isAutoFilled && (
-                    <span className="text-[10px] text-emerald-400 font-bold animate-pulse">تم التكييف والتعبئة 🪄</span>
+                    <span className="text-[10px] text-emerald-400 font-bold animate-pulse">تم التكييف والتعبئة</span>
                   )}
                 </div>
                 <textarea

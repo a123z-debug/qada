@@ -25,6 +25,10 @@ const personnel = military.packets.find((packet) => packet.agentId === 'src-pers
 assert(personnel?.status === 'success' || personnel?.status === 'warning', 'personnel agent must report an explicit verification state');
 assert((personnel?.references.length || 0) > 0, 'personnel agent should expose verified right/source records');
 assert((personnel?.verifiedArticles.length || 0) > 0, 'personnel agent should expose verified personnel-service articles when relevant');
+assert((personnel?.reviewMaterials?.length || 0) > 0, 'personnel agent should expose user-supplied review material without treating it as official');
+assert(military.context.includes('مواد مراجعة داخلية غير رسمية'), 'source context should label the user transcript as review-only');
+assert(military.context.includes('review-only-unverified'), 'source context should preserve the non-official review status');
+assert(military.verification.literalQuotationReady === false, 'user review transcript must never unlock literal quotation');
 
 const royal = runLegalSourceAgents('مرسوم ملكي وقرار مجلس الوزراء وتعديل نظام');
 const royalIds = new Set(royal.packets.map((packet) => packet.agentId));

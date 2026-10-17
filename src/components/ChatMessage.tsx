@@ -69,7 +69,7 @@ export function ChatMessage({
   return (
     <div
       id={`message-${message.id}`}
-      className={`group w-full py-6 px-4 md:px-8 transition-colors border-b ${
+      className={`qada-8k-message group w-full py-6 px-4 md:px-8 transition-colors border-b ${
         isUser
           ? 'bg-neutral-900/50 border-neutral-800/80'
           : 'bg-neutral-950/80 border-neutral-800'

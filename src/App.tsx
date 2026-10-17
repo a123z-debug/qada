@@ -12,6 +12,8 @@ const WelcomeScreen = React.lazy(() => import('./components/workspaces/WelcomeSc
 const AdministrativeWorkspace = React.lazy(() => import('./components/workspaces/AdministrativeWorkspace').then((module) => ({ default: module.AdministrativeWorkspace })));
 const GeneralWorkspace = React.lazy(() => import('./components/workspaces/GeneralWorkspace').then((module) => ({ default: module.GeneralWorkspace })));
 const CriminalWorkspace = React.lazy(() => import('./components/workspaces/CriminalWorkspace').then((module) => ({ default: module.CriminalWorkspace })));
+const CommercialWorkspace = React.lazy(() => import('./components/workspaces/CommercialWorkspace').then((module) => ({ default: module.CommercialWorkspace })));
+const VirtualCourtroom = React.lazy(() => import('./components/courts/VirtualCourtroom').then((module) => ({ default: module.VirtualCourtroom })));
 const FloatingChatBot = React.lazy(() => import('./components/chat/FloatingChatBot').then((module) => ({ default: module.FloatingChatBot })));
 const Article8CalculatorModal = React.lazy(() => import('./components/Article8CalculatorModal').then((module) => ({ default: module.Article8CalculatorModal })));
 const CaseDossierModal = React.lazy(() => import('./components/CaseDossierModal').then((module) => ({ default: module.CaseDossierModal })));
@@ -23,6 +25,7 @@ const AdminAgentMap = React.lazy(() => import('./components/admin/AdminAgentMap'
 const AdminAnalysisRoom = React.lazy(() => import('./components/admin/AdminAnalysisRoom').then((module) => ({ default: module.AdminAnalysisRoom })));
 const AdminUserManagement = React.lazy(() => import('./components/admin/AdminUserManagement').then((module) => ({ default: module.AdminUserManagement })));
 const AdminAuditLog = React.lazy(() => import('./components/admin/AdminAuditLog').then((module) => ({ default: module.AdminAuditLog })));
+const AdminSentinel = React.lazy(() => import('./components/admin/AdminSentinel').then((module) => ({ default: module.AdminSentinel })));
 const AccountSecurityModal = React.lazy(() => import('./components/AccountSecurityModal').then((module) => ({ default: module.AccountSecurityModal })));
 type LaunchIntent =
   | { kind: 'dashboard' }
@@ -330,7 +333,9 @@ export default function App() {
   const [isAdminAnalysisOpen, setIsAdminAnalysisOpen] = useState(false);
   const [isAdminUsersOpen, setIsAdminUsersOpen] = useState(false);
   const [isAdminAuditOpen, setIsAdminAuditOpen] = useState(false);
+  const [isAdminSentinelOpen, setIsAdminSentinelOpen] = useState(false);
   const [isAccountSecurityOpen, setIsAccountSecurityOpen] = useState(false);
+  const [isCourtroomOpen, setIsCourtroomOpen] = useState(false);
 
   const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>([]);
   const [caseStoreError, setCaseStoreError] = useState('');
@@ -436,6 +441,7 @@ export default function App() {
       setIsAdminAnalysisOpen(false);
       setIsAdminUsersOpen(false);
       setIsAdminAuditOpen(false);
+      setIsAdminSentinelOpen(false);
       setIsAdminMapOpen(true);
     }
   }, [session?.id, session?.workspaceMode]);
@@ -496,7 +502,18 @@ export default function App() {
     setIsAdminAnalysisOpen(false);
     setIsAdminUsersOpen(false);
     setIsAdminAuditOpen(false);
+    setIsAdminSentinelOpen(false);
+    setIsCourtroomOpen(false);
     setIsAdminMapOpen(userSession.role === 'admin' || userSession.workspaceMode === 'admin');
+  };
+
+  const openCourtroom = () => {
+    setIsAdminMapOpen(false);
+    setIsAdminAnalysisOpen(false);
+    setIsAdminUsersOpen(false);
+    setIsAdminAuditOpen(false);
+    setIsAdminSentinelOpen(false);
+    setIsCourtroomOpen(true);
   };
 
   const handleInterfaceModeChange = (mode: 'simple' | 'professional') => {
@@ -518,7 +535,9 @@ export default function App() {
       setIsAdminAnalysisOpen(false);
       setIsAdminUsersOpen(false);
       setIsAdminAuditOpen(false);
+      setIsAdminSentinelOpen(false);
       setIsAccountSecurityOpen(false);
+      setIsCourtroomOpen(false);
       setJudgmentRecords([]);
     };
 
@@ -646,6 +665,7 @@ export default function App() {
           setIsAdminAnalysisOpen(false);
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(false);
+          setIsCourtroomOpen(false);
           setActiveCourt(court);
           setActiveService(null);
         }}
@@ -654,8 +674,11 @@ export default function App() {
           setIsAdminAnalysisOpen(false);
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(false);
+          setIsCourtroomOpen(false);
           setActiveService(service);
         }}
+        onOpenCourtroom={openCourtroom}
+        courtroomActive={isCourtroomOpen}
         userSession={session}
         onLogout={handleLogout}
         isMobileOpen={isMobileMenuOpen}
@@ -665,35 +688,53 @@ export default function App() {
         onOpenAssistant={() => requestAssistant('')}
         onOpenReports={() => setIsDossierOpen(true)}
         onOpenAdminMap={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
           setActiveCourt(null);
           setActiveService(null);
           setIsAdminAnalysisOpen(false);
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(false);
+          setIsAdminSentinelOpen(false);
           setIsAdminMapOpen(true);
         } : undefined}
         onOpenAdminAnalysis={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
           setActiveCourt(null);
           setActiveService(null);
           setIsAdminMapOpen(false);
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(false);
+          setIsAdminSentinelOpen(false);
           setIsAdminAnalysisOpen(true);
         } : undefined}
         onOpenAdminUsers={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
           setActiveCourt(null);
           setActiveService(null);
           setIsAdminMapOpen(false);
           setIsAdminAnalysisOpen(false);
+          setIsAdminSentinelOpen(false);
           setIsAdminUsersOpen(true);
         } : undefined}
         onOpenAdminAudit={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
           setActiveCourt(null);
           setActiveService(null);
           setIsAdminMapOpen(false);
           setIsAdminAnalysisOpen(false);
           setIsAdminUsersOpen(false);
+          setIsAdminSentinelOpen(false);
           setIsAdminAuditOpen(true);
+        } : undefined}
+        onOpenAdminSentinel={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
+          setActiveCourt(null);
+          setActiveService(null);
+          setIsAdminMapOpen(false);
+          setIsAdminAnalysisOpen(false);
+          setIsAdminUsersOpen(false);
+          setIsAdminAuditOpen(false);
+          setIsAdminSentinelOpen(true);
         } : undefined}
         onOpenAccountSecurity={session.loginMethod === 'test_open' ? undefined : () => setIsAccountSecurityOpen(true)}
       />
@@ -777,6 +818,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
+                  setIsCourtroomOpen(false);
                   setActiveCourt(null);
                   setActiveService(null);
                 }}
@@ -788,7 +830,7 @@ export default function App() {
             </div>
           )}
 
-          {session.role === 'admin' && isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && (
+          {session.role === 'admin' && isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && (
             <AdminAgentMap
               onOpenAnalysisRoom={() => {
                 setIsAdminMapOpen(false);
@@ -817,6 +859,15 @@ export default function App() {
                 }
                 if (nodeId === 'advisor') {
                   requestAssistant('');
+                  return;
+                }
+                if (nodeId === 'sentinel') {
+                  setIsAdminMapOpen(false);
+                  setIsAdminSentinelOpen(true);
+                  return;
+                }
+                if (nodeId === 'virtual-court') {
+                  openCourtroom();
                   return;
                 }
                 if (nodeId === 'drafting' || nodeId === 'editor-tool') {
@@ -851,12 +902,31 @@ export default function App() {
             <AdminAuditLog
               onBack={() => {
                 setIsAdminAuditOpen(false);
+                setIsAdminSentinelOpen(false);
                 setIsAdminMapOpen(true);
               }}
             />
           )}
 
-          {!activeCourt && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && (
+          {session.role === 'admin' && isAdminSentinelOpen && (
+            <AdminSentinel
+              onBack={() => {
+                setIsAdminSentinelOpen(false);
+                setIsAdminMapOpen(true);
+              }}
+            />
+          )}
+
+          {isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && (
+            <div className="mx-auto max-w-6xl">
+              <VirtualCourtroom
+                initialSystem={activeCourt || undefined}
+                onBack={() => setIsCourtroomOpen(false)}
+              />
+            </div>
+          )}
+
+          {!isCourtroomOpen && !activeCourt && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && (
             <WelcomeScreen
               userName={session.name}
               message="مرحباً بك في مساحة القضية الرقمية."
@@ -879,10 +949,18 @@ export default function App() {
                 setActiveService(null);
               }}
               onSelectService={(service) => setActiveService(service)}
+              onOpenCourtroom={session.role === 'admin' || !simpleUserMode ? openCourtroom : undefined}
             />
           )}
 
-          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && activeCourt === 'administrative' && (
+          {!isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'commercial' && (
+            <CommercialWorkspace
+              service={activeService}
+              userSession={session}
+            />
+          )}
+
+          {!isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'administrative' && (
             <AdministrativeWorkspace
               service={activeService}
               userSession={session}
@@ -893,14 +971,14 @@ export default function App() {
             />
           )}
 
-          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && activeCourt === 'general' && (
+          {!isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'general' && (
             <GeneralWorkspace
               service={activeService}
               userSession={session}
             />
           )}
 
-          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && activeCourt === 'criminal' && (
+          {!isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'criminal' && (
             <CriminalWorkspace
               service={activeService}
               userSession={session}
@@ -918,7 +996,7 @@ export default function App() {
           <div className="grid grid-cols-5 gap-1">
             <button
               type="button"
-              onClick={() => { setActiveCourt(null); setActiveService(null); }}
+              onClick={() => { setIsCourtroomOpen(false); setActiveCourt(null); setActiveService(null); }}
               className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-black ${
                 activeCourt === null ? 'bg-slate-100 text-slate-950' : 'text-slate-500'
               }`}
@@ -974,7 +1052,7 @@ export default function App() {
           <div className="grid grid-cols-5 gap-1 px-2 pt-2">
             <button
               type="button"
-              onClick={() => { setIsAdminMapOpen(false); setIsAdminAnalysisOpen(false); setIsAdminUsersOpen(false); setIsAdminAuditOpen(false); setActiveCourt(null); setActiveService(null); }}
+              onClick={() => { setIsAdminMapOpen(false); setIsAdminAnalysisOpen(false); setIsAdminUsersOpen(false); setIsAdminAuditOpen(false); setIsCourtroomOpen(false); setActiveCourt(null); setActiveService(null); }}
               className={`mobile-dock-btn ${activeCourt === null ? 'mobile-dock-btn-active' : ''}`}
             >
               <Home className="w-5 h-5" /><span>الرئيسية</span>

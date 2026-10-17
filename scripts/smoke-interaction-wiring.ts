@@ -15,12 +15,14 @@ const chatApi = fs.readFileSync('api/chat.ts', 'utf8');
 const hujjaAgent = fs.readFileSync('src/lib/hujjaBayanAgent.ts', 'utf8');
 
 const workspaces: Record<string, string> = {
+  commercial: fs.readFileSync('src/components/workspaces/CommercialWorkspace.tsx', 'utf8'),
   administrative: fs.readFileSync('src/components/workspaces/AdministrativeWorkspace.tsx', 'utf8'),
   general: fs.readFileSync('src/components/workspaces/GeneralWorkspace.tsx', 'utf8'),
   criminal: fs.readFileSync('src/components/workspaces/CriminalWorkspace.tsx', 'utf8'),
 };
 
 const serviceIds = [
+  'commercial_claim','commercial_appeal','commercial_memo','commercial_attachments',
   'administrative_claim','administrative_appeal','administrative_memo','administrative_attachments',
   'general_claim','general_appeal','general_memo','general_attachments',
   'criminal_defense','criminal_appeal','criminal_procedural','criminal_evidence',
@@ -162,8 +164,10 @@ assert(chatApi.includes('النية العملية المستنتجة: مطال�
 assert(chatApi.includes('النية العملية المستنتجة: إعداد لائحة اعتراض/استئناف.'), 'Appeal drafting routing directive missing');
 assert(chatApi.includes('لا تشرح منصة QADA'), 'Simple assistant must not explain the platform unless asked');
 assert(chatApi.includes('الرد المثالي في Simple: توجّه واضح → خطوة تالية → سؤالان أو أقل عند الحاجة.'), 'Simple action-first response contract missing');
-assert(chatApi.includes("responseMode === 'professional' && verifiedArticleList.length > 0"),
-  'Simple mode must not auto-append the verified legal article list');
+assert(chatApi.includes("body.responseMode === 'professional' ? 'professional' : 'simple'"),
+  'Chat API must default to Simple unless Professional is explicitly requested');
+assert(chatApi.includes('shouldAppendProfessionalAudit') && chatApi.includes('isSubstantiveLegalRequest(currentUserTurn)'),
+  'Professional legal audit must follow the current user turn and must not reactivate from stale history');
 assert(login.includes("action: authMode === 'register' ? 'register' : 'user-login'"), 'Email/password user access missing');
 assert(login.includes('إنشاء مستخدم جديد'), 'New user registration UI missing');
 assert(!login.includes("mode: 'admin',\n      title: 'الإدارة'"), 'Admin must not be exposed as a primary portal card');

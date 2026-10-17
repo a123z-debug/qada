@@ -23,11 +23,13 @@ import {
   GitCompare,
   Network,
   Users,
-  ClipboardList
+  ClipboardList,
+  Briefcase,
+  Landmark
 } from 'lucide-react';
 import { UserSession } from '../../types';
 
-export type CourtJurisdiction = 'administrative' | 'general' | 'criminal';
+export type CourtJurisdiction = 'commercial' | 'general' | 'administrative' | 'criminal';
 
 export interface ServiceOption {
   id: string;
@@ -54,22 +56,22 @@ export interface CourtCategoryConfig {
 
 export const COURT_CATEGORIES: CourtCategoryConfig[] = [
   {
-    id: 'administrative',
-    title: 'المحاكم الإدارية',
-    subTitle: 'القضايا الإدارية والتظلمات والقرارات',
-    icon: Building2,
+    id: 'commercial',
+    title: 'المحاكم التجارية',
+    subTitle: 'المنازعات التجارية والشركات والعقود التجارية',
+    icon: Briefcase,
     colorTheme: {
-      bg: 'bg-amber-500/10',
-      border: 'border-amber-500/30',
-      text: 'text-amber-400',
-      accent: 'text-amber-300',
-      hoverBg: 'hover:bg-amber-500/15',
+      bg: 'bg-sky-500/10',
+      border: 'border-sky-400/30',
+      text: 'text-sky-300',
+      accent: 'text-sky-200',
+      hoverBg: 'hover:bg-sky-400/10',
     },
     services: [
-      { id: 'administrative_claim', label: 'لائحة دعوى', icon: FileText, badge: 'إدارية', description: 'صياغة دعوى متكاملة وفق نظام ديوان المظالم' },
-      { id: 'administrative_appeal', label: 'اعتراض واستئناف', icon: Scale, badge: 'طعن', description: 'نقض أسباب الحكم الإداري والقصور في التسبيب' },
-      { id: 'administrative_memo', label: 'مذكرة دفوع', icon: Gavel, badge: 'موضوعية', description: 'دحض دفاع الإدارة وأوجه بطلان القرار' },
-      { id: 'administrative_attachments', label: 'فحص المرفقات والقرارات', icon: UploadCloud, badge: 'مستندات', description: 'استخراج الثغرات النظامية من القرار المطعون فيه' },
+      { id: 'commercial_claim', label: 'لائحة دعوى تجارية', icon: FileText, badge: 'تجارية', description: 'صياغة دعوى تجارية مربوطة بالعقد والفواتير والمراسلات' },
+      { id: 'commercial_appeal', label: 'اعتراض تجاري', icon: Gavel, badge: 'اعتراض', description: 'أسباب الاعتراض على الحكم التجاري وموضع الخطأ وأثره' },
+      { id: 'commercial_memo', label: 'مذكرة جوابية تجارية', icon: FileCheck, badge: 'دفوع', description: 'الرد على دعوى تجارية: الاختصاص والسداد والمقاصة والإخلال المقابل' },
+      { id: 'commercial_attachments', label: 'فحص العقود والفواتير', icon: UploadCloud, badge: 'بينات', description: 'فحص العقود التجارية والفواتير والدفاتر وما تثبته فعلاً' },
     ],
   },
   {
@@ -89,6 +91,25 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
       { id: 'general_appeal', label: 'استئناف عام', icon: Gavel, badge: 'اعتراض', description: 'أوجه الاعتراض والفساد في الاستدلال' },
       { id: 'general_memo', label: 'مذكرة جوابية', icon: FileCheck, badge: 'دفوع', description: 'الدفع بإنكار الالتزام أو انقضاء الدين' },
       { id: 'general_attachments', label: 'فحص السندات والعقود', icon: UploadCloud, badge: 'بينات', description: 'فحص السندات لأمر والعقود الموقعة إلكترونياً' },
+    ],
+  },
+  {
+    id: 'administrative',
+    title: 'ديوان المظالم والمحاكم الإدارية',
+    subTitle: 'القضايا الإدارية والتظلمات والقرارات',
+    icon: Building2,
+    colorTheme: {
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/30',
+      text: 'text-amber-400',
+      accent: 'text-amber-300',
+      hoverBg: 'hover:bg-amber-500/15',
+    },
+    services: [
+      { id: 'administrative_claim', label: 'لائحة دعوى', icon: FileText, badge: 'إدارية', description: 'صياغة دعوى متكاملة وفق نظام ديوان المظالم' },
+      { id: 'administrative_appeal', label: 'اعتراض واستئناف', icon: Scale, badge: 'طعن', description: 'نقض أسباب الحكم الإداري والقصور في التسبيب' },
+      { id: 'administrative_memo', label: 'مذكرة دفوع', icon: Gavel, badge: 'موضوعية', description: 'دحض دفاع الإدارة وأوجه بطلان القرار' },
+      { id: 'administrative_attachments', label: 'فحص المرفقات والقرارات', icon: UploadCloud, badge: 'مستندات', description: 'استخراج الثغرات النظامية من القرار المطعون فيه' },
     ],
   },
   {
@@ -113,6 +134,10 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
 ];
 
 const CLIENT_COURT_COPY: Record<CourtJurisdiction, { title: string; subTitle: string }> = {
+  commercial: {
+    title: 'نزاع تجاري أو شركة',
+    subTitle: 'عقود تجارية، فواتير، شركاء ومنشآت',
+  },
   administrative: {
     title: 'مشكلة مع جهة حكومية',
     subTitle: 'قرار، خصم، رفض طلب أو تظلّم',
@@ -128,6 +153,10 @@ const CLIENT_COURT_COPY: Record<CourtJurisdiction, { title: string; subTitle: st
 };
 
 const CLIENT_SERVICE_LABELS: Record<string, string> = {
+  commercial_claim: 'أرفع دعوى تجارية',
+  commercial_appeal: 'أعترض على حكم تجاري',
+  commercial_memo: 'أرد على الخصم التجاري',
+  commercial_attachments: 'أراجع عقد أو فاتورة تجارية',
   administrative_claim: 'أرفع دعوى على جهة حكومية',
   administrative_appeal: 'أعترض على حكم إداري',
   administrative_memo: 'أرد على الجهة',
@@ -159,7 +188,10 @@ interface SidebarProps {
   onOpenAdminAnalysis?: () => void;
   onOpenAdminUsers?: () => void;
   onOpenAdminAudit?: () => void;
+  onOpenAdminSentinel?: () => void;
   onOpenAccountSecurity?: () => void;
+  onOpenCourtroom?: () => void;
+  courtroomActive?: boolean;
 }
 
 export function Sidebar({
@@ -179,7 +211,10 @@ export function Sidebar({
   onOpenAdminAnalysis,
   onOpenAdminUsers,
   onOpenAdminAudit,
+  onOpenAdminSentinel,
   onOpenAccountSecurity,
+  onOpenCourtroom,
+  courtroomActive = false,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
   const isAdmin = userSession?.role === 'admin';
@@ -203,13 +238,13 @@ export function Sidebar({
   };
 
   const sidebarContent = (
-    <div className={`app-sidebar ${isAdmin ? 'qada-admin-sidebar' : 'qada-user-sidebar'} h-full flex flex-col bg-slate-950 border-l border-slate-800 text-slate-100 select-none`}>
+    <div className={`app-sidebar ${isAdmin ? 'qada-admin-sidebar qada-luxury-admin-sidebar' : 'qada-user-sidebar qada-luxury-user-sidebar'} h-full flex flex-col bg-slate-950 border-l border-slate-800 text-slate-100 select-none`}>
       
       {/* 1. رأس القائمة والهوية البصرية الفاخرة */}
-      <div className="p-4 border-b border-slate-800/80 bg-slate-900/60">
+      <div className="qada-sidebar-head p-4 border-b border-slate-800/80 bg-slate-900/60">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <div className="qada-sidebar-emblem w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
               <Scale className="w-5 h-5" />
             </div>
             <div>
@@ -238,7 +273,7 @@ export function Sidebar({
 
         {/* بيانات المستخدم الجلسة */}
         {userSession && (
-          <div className="mt-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs shadow-inner">
+          <div className="qada-sidebar-account mt-3 p-2.5 rounded-xl border text-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
                 <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
@@ -280,14 +315,14 @@ export function Sidebar({
       </div>
 
       {/* 2. زر الرئيسية (مركز القيادة) */}
-      <div className="p-3 border-b border-slate-800/60 bg-slate-900/40">
+      <div className="qada-sidebar-home-wrap p-3 border-b border-slate-800/60 bg-slate-900/40">
         <button
           type="button"
           onClick={() => {
             onSelectCourt(null);
             if (onCloseMobile) onCloseMobile();
           }}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`qada-sidebar-home w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
             activeCourt === null
               ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.3)] font-black'
               : 'bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
@@ -318,7 +353,7 @@ export function Sidebar({
             return (
               <div
                 key={cat.id}
-                className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                className={`qada-sidebar-court rounded-2xl border transition-all duration-200 overflow-hidden ${
                   isCurrentCourt
                     ? 'border-amber-500/50 bg-slate-900 shadow-lg ring-1 ring-amber-500/20'
                     : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
@@ -392,6 +427,33 @@ export function Sidebar({
               </div>
             );
           })}
+
+          {onOpenCourtroom && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenCourtroom();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              aria-pressed={courtroomActive}
+              className={`qada-sidebar-court min-h-12 w-full flex items-center justify-between gap-2.5 rounded-2xl border px-3 py-2.5 text-right transition-all ${
+                courtroomActive
+                  ? 'border-amber-500/50 bg-amber-500/10 ring-1 ring-amber-500/20'
+                  : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
+              }`}
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border bg-amber-500/10 border-amber-500/30 text-amber-300">
+                  <Landmark className="w-3.5 h-3.5" />
+                </span>
+                <span className="truncate">
+                  <span className="font-bold text-xs text-white block truncate">المحكمة الافتراضية</span>
+                  <span className="text-[10px] text-slate-400 block truncate">هيئة حكم ومدعٍ عام وستة محامين</span>
+                </span>
+              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25 shrink-0">٤ × ٣</span>
+            </button>
+          )}
         </div>
 
         {/* قسم المعرفة والبحث النظامي */}
@@ -516,6 +578,23 @@ export function Sidebar({
                 <span>سجل التدقيق</span>
               </span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-400/20">ADMIN</span>
+            </button>
+          )}
+
+          {userSession?.role === 'admin' && onOpenAdminSentinel && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenAdminSentinel();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className="min-h-12 w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-xs font-black text-rose-200 border border-rose-400/30 bg-rose-500/10 hover:bg-rose-500/15 hover:border-rose-300/50 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <ShieldAlert className="w-4 h-4 text-rose-300" />
+                <span>QADA Sentinel — المراقبة الحية</span>
+              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-200 border border-rose-400/20">LIVE</span>
             </button>
           )}
         </div>

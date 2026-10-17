@@ -93,6 +93,9 @@ export function FloatingChatBot({
     if (activeCourt === 'general') {
       return 'احكِ لي المشكلة كما حصلت. إذا كانت مطالبة مالية أو حق لم يُسدّد، سأحدد لك المسار وأطلب فقط الإثباتات والبيانات اللازمة ثم نجهز المطالبة.';
     }
+    if (activeCourt === 'commercial') {
+      return 'أهلاً بك في المسار التجاري. ما العلاقة التجارية بينك وبين الطرف الآخر، وما المبلغ أو الحق محل النزاع؟ اذكر العقد أو الفواتير أو المراسلات المتاحة، وهل يوجد شرط تحكيم. سأحدد المسار والمستندات اللازمة قبل الصياغة.';
+    }
     if (activeCourt === 'criminal') {
       return 'أهلاً بك في المسار الجزائي. اذكر الواقعة والإجراء الذي تم بحقك، وهل يوجد قبض أو تفتيش أو تحقيق أو اعتراف؟ لا ترسل بيانات حساسة غير لازمة. سأرتب الوقائع وأحدد الدفوع والمرفقات المطلوبة قبل الصياغة.';
     }
@@ -132,6 +135,7 @@ export function FloatingChatBot({
     if (activeCourt === 'administrative') return 'المحكمة الإدارية (ديوان المظالم)';
     if (activeCourt === 'general') return 'المحكمة العامة';
     if (activeCourt === 'criminal') return 'المحكمة الجزائية';
+    if (activeCourt === 'commercial') return 'المحكمة التجارية';
     return 'الاستشارة القضائية العامة';
   };
 
@@ -241,7 +245,7 @@ export function FloatingChatBot({
       : 'right-3 sm:right-6 bottom-20 sm:bottom-6';
 
   return (
-    <div className={`fixed ${posClass} z-40 flex flex-col items-start select-none font-sans`}>
+    <div className={`qada-8k-floating-chat fixed ${posClass} z-40 flex flex-col items-start select-none font-sans`}>
       {/* 1. Open Chat Pop-up Window */}
       {isOpen && (
         <div

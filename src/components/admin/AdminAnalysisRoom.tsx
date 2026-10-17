@@ -344,7 +344,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <section className="space-y-4" dir="rtl">
+    <section className="qada-8k-admin-view qada-8k-analysis-room space-y-4" dir="rtl">
       <div className="rounded-3xl border border-violet-400/25 bg-gradient-to-l from-violet-500/15 via-slate-950 to-cyan-500/10 p-5 sm:p-6 shadow-2xl">
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div className="flex items-start gap-4">

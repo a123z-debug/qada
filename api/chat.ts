@@ -10,6 +10,12 @@ import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError }
 import { buildHujjaBayanInstruction, isHujjaDraftingRequest } from '../src/lib/hujjaBayanAgent.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 import { reviewDraftBeforeClientRelease } from './_draftReleaseGate.js';
+import { recordSentinelTurn } from './_sentinel.js';
+import {
+  buildConversationStateInstruction,
+  latestUserTurnText,
+  shouldActivateDrafting,
+} from '../src/lib/conversationState.js';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
@@ -143,9 +149,11 @@ const SIMPLE_RESPONSE_INSTRUCTION = `وضع الإجابة: QADA Simple — تح
 - الرد المثالي في Simple: توجّه واضح → خطوة تالية → سؤالان أو أقل عند الحاجة.`;
 
 const PROFESSIONAL_RESPONSE_INSTRUCTION = `وضع الإجابة: QADA Professional.
-- قدم تحليلاً منظماً ومفصلاً يناسب المستخدم المتخصص.
+- قدم تحليلاً منظماً ومفصلاً يناسب المستخدم المتخصص عندما تكون هناك وقائع أو مسألة قانونية فعلية تستحق التحليل.
+- إذا كانت رسالة المستخدم مجرد تحية أو اختبار أو طلب عام بلا وقائع، فلا تعرض هيكلاً قانونياً ولا قائمة أنواع دعاوى ولا مواد نظامية؛ رحّب باختصار واطلب منه وصف المشكلة أو إرفاق المستند.
+- لا تعرض مادة نظامية لمجرد أنها موجودة في حزمة المصادر. يجب أن تكون مرتبطة مباشرة بمسألة محددة ظهرت في وقائع المستخدم أو طلبه.
 - عند ذكر سند قانوني متحقق، رتبه بصيغة: اسم النظام — المادة (رقم): المضمون النظامي المتحقق ذي الصلة.
-- ميّز بين الوقائع، المسألة النظامية، السند المتحقق، التحليل، المخاطر، والخطوة التالية.`;
+- ميّز بين الوقائع، المسألة النظامية، السند المتحقق، التحليل، المخاطر، والخطوة التالية، ولا تنشئ هذه الأقسام قبل وجود مادة واقعية كافية للتحليل.`;
 
 type SimpleIntent =
   | 'money-claim'
@@ -160,8 +168,8 @@ type SimpleIntent =
 function detectSimpleIntent(text: string): SimpleIntent {
   const value = text.replace(/\s+/g, ' ').trim();
   if (/(?:سلفت|سلف|اقرضت|أقرضت|قرض|دين|مبلغ|تحويل(?:\s+بنكي)?|رفض\s+(?:يسدد|يرجع|يدفع)|ما\s*رجع|لم\s*يسدد)/i.test(value)) return 'money-claim';
-  if (/(?:طعن|اعتراض).{0,16}(?:بال)?نقض|لائحة\s+نقض|صحيفة\s+نقض|المحكمة\s+(?:الإدارية\s+)?العليا/i.test(value)) return 'cassation';
-  if (/(?:لائحة\s+(?:اعتراض|استئناف)|اعتراض\s+على\s+(?:حكم|قرار)|استئناف|أعترض|اعترض)/i.test(value)) return 'appeal';
+  if (/(?:طعن|اعتراض).{0,16}(?:بال)?نقض|لائحة\s+نقض|صحيفة\s+نقض|(?:أريد|اريد|أبي|ابي|أبغى|ابغى).{0,24}(?:طعن\s+)?(?:بال)?نقض/i.test(value)) return 'cassation';
+  if (/(?:لائحة|صحيفة)\s+(?:اعتراض|استئناف)|(?:اعتراض|استئناف)\s+على\s+(?:حكم|قرار)|(?:أريد|اريد|أبي|ابي|أبغى|ابغى).{0,24}(?:اعتراض|استئناف)|أعترض\s+على\s+(?:حكم|قرار)|اعترض\s+على\s+(?:حكم|قرار)/i.test(value)) return 'appeal';
   if (/(?:لائحة\s+دعوى|صحيفة\s+دعوى|ارفع\s+دعوى|رفع\s+دعوى|أبي\s+دعوى|ابغى\s+دعوى)/i.test(value)) return 'claim-draft';
   if (/(?:رد\s+على\s+مذكرة|مذكرة\s+رد|اكتب\s+مذكرة|صياغة\s+مذكرة|مذكرة\s+دفاع)/i.test(value)) return 'memo-reply';
   if (/(?:قرار\s+إداري|تظلم|ديوان\s+المظالم|جهة\s+حكومية|قرار\s+جهة)/i.test(value)) return 'administrative';
@@ -170,11 +178,7 @@ function detectSimpleIntent(text: string): SimpleIntent {
 }
 
 function buildSimpleActionDirective(messages: IncomingMessage[]): string {
-  const userText = messages
-    .filter((message) => message.role !== 'assistant' && message.role !== 'model')
-    .map((message) => typeof message.content === 'string' ? message.content : '')
-    .join('\n')
-    .slice(-12000);
+  const userText = latestUserTurnText(messages).slice(0, 12000);
   const intent = detectSimpleIntent(userText);
 
   const directives: Record<SimpleIntent, string> = {
@@ -228,11 +232,19 @@ function buildSimpleActionDirective(messages: IncomingMessage[]): string {
 }
 
 function simpleUserExplicitlyRequestsDetail(messages: IncomingMessage[]): boolean {
-  const text = messages
-    .filter((message) => message.role !== 'assistant' && message.role !== 'model')
-    .map((message) => typeof message.content === 'string' ? message.content : '')
-    .join(' ');
+  const text = latestUserTurnText(messages);
   return /(?:اذكر|اعطني|أعطني|ابي|أبي|ابغى|أبغى|اريد|أريد).{0,30}(?:المواد|المراجع|الأسانيد|السند|النظام|تحليل\s+(?:قانوني|نظامي)|شرح\s+(?:قانوني|نظامي)|تفصيل)|(?:حلل|حلّل).{0,20}(?:قانونياً|قانونيا|نظامياً|نظاميا|بالتفصيل)|(?:ما\s+هي|وش).{0,20}(?:المواد|الأنظمة|الأسانيد)/i.test(text);
+}
+
+function isSubstantiveLegalRequest(text: string): boolean {
+  const value = text.replace(/\s+/g, ' ').trim();
+  if (!value) return false;
+
+  const greetingOnly = /^(?:السلام(?:\s+عليكم)?|وعليكم\s+السلام|أهلاً|اهلاً|اهلا|هلا|مرحبا|مرحباً|صباح\s+الخير|مساء\s+الخير|hi|hello|test|تجربة)[.!؟\s]*$/i;
+  if (greetingOnly.test(value)) return false;
+
+  const legalSignal = /(?:دعوى|قضية|حكم|قرار|اعتراض|استئناف|نقض|التماس|تظلم|مذكرة|محكمة|ديوان\s+المظالم|مطالبة|دين|سداد|عقد|تعويض|فصل|راتب|بدل|مخالفة|تنفيذ|خصم|مدعى|مدعي|جهة\s+حكومية|وزارة)/i;
+  return legalSignal.test(value) || value.length >= 40;
 }
 
 function simpleReplyLooksLikeLecture(reply: string): boolean {
@@ -640,7 +652,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = (req.body ?? {}) as { message?: string; messages?: IncomingMessage[]; history?: IncomingMessage[]; targetCourt?: string; responseMode?: ResponseMode };
-  const responseMode: ResponseMode = body.responseMode === 'simple' ? 'simple' : 'professional';
+  const responseMode: ResponseMode = body.responseMode === 'professional' ? 'professional' : 'simple';
   const clientMessages: IncomingMessage[] = Array.isArray(body.messages) && body.messages.length > 0 ? body.messages : [
     ...(Array.isArray(body.history) ? body.history : []),
     ...(typeof body.message === 'string' && body.message.trim() ? [{ role: 'user', content: body.message }] : []),
@@ -654,11 +666,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     : () => {};
 
   try {
-    const retrievalQuery = clientMessages
+    const recentUserMessages = clientMessages
       .filter((message) => message.role !== 'assistant' && message.role !== 'model')
+      .slice(-6);
+    const retrievalQuery = recentUserMessages
       .map((message) => typeof message.content === 'string' ? redactDirectIdentifiers(message.content).text : '')
       .join('\n')
       .slice(0, 24000);
+    const currentUserTurn = latestUserTurnText(clientMessages);
     const attachmentReferenceHints = await extractAttachmentReferenceHints(clientMessages);
     const sourceQuery = [retrievalQuery, attachmentReferenceHints].filter(Boolean).join('\n').slice(0, 26000);
     const sourceBundle = runLegalSourceAgents(
@@ -674,14 +689,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasAttachedEvidence(clientMessages),
     );
     const lawOfficeInstruction = buildLawOfficeInstruction(lawOfficeRoute, sourceBundle);
-    const hujjaBayanInstruction = isHujjaDraftingRequest(draftingRequestText) && lawOfficeRoute.allowDrafting
+    const activateHujjaDrafting = shouldActivateDrafting(clientMessages);
+    const hujjaBayanInstruction = activateHujjaDrafting && lawOfficeRoute.allowDrafting
       ? buildHujjaBayanInstruction(draftingRequestText, sourceBundle)
       : '';
+    const conversationStateInstruction = buildConversationStateInstruction(clientMessages);
 
     const contextInstruction = [
       SERVER_LEGAL_INSTRUCTION,
       responseMode === 'simple' ? SIMPLE_RESPONSE_INSTRUCTION : PROFESSIONAL_RESPONSE_INSTRUCTION,
       sourceBundle.context,
+      conversationStateInstruction,
       lawOfficeInstruction,
       hujjaBayanInstruction,
       body.targetCourt ? `الاختصاص المختار في الواجهة: ${String(body.targetCourt).slice(0, 120)}` : '',
@@ -690,13 +708,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       responseMode === 'professional'
         ? 'رتّب الأسانيد القانونية في الإجابة بصيغة: اسم النظام — المادة (رقم): المضمون النظامي المتحقق ذي الصلة.'
         : 'لا تضف سرداً للمواد أو الأسانيد في وضع Simple ما لم يطلبها المستخدم صراحة؛ اجعل التحقق المرجعي خلف التحليل لا أمام المستخدم.',
-      responseMode === 'simple' ? buildSimpleActionDirective(clientMessages) : '',
+      responseMode === 'simple' && !conversationStateInstruction ? buildSimpleActionDirective(clientMessages) : '',
       'لا تطبع روابط المصادر الخام داخل الجواب إلا إذا طلب المستخدم الرابط أو المصدر صراحة؛ تبقى الروابط لأغراض التحقق داخل المنصة.',
       'النص الحرفي الكامل للمواد غير معتمد من المستودع؛ لا تضع اقتباساً حرفياً إلا إذا كان وارداً في نص المستخدم نفسه.',
     ].filter(Boolean).join('\n\n');
 
     let reply = '';
     let lastError: unknown;
+    let sentinelReleaseGateDecision = '';
+    let sentinelReleaseGateScore: number | undefined;
+    let sentinelClaimLiberationApplicable = false;
+    let sentinelClaimLiberationComplete = true;
+    let sentinelMissingClaimPillars: string[] = [];
+    let sentinelClaimLiberationIssues: string[] = [];
 
     if (hujjaBayanInstruction) {
       const generated = await streamHujjaViaGemini({
@@ -793,9 +817,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const verifiedArticleList = Array.from(verifiedArticleMap.values()).slice(0, 8);
     const queryAsksForSourceLink = /(?:رابط|المصدر|المصادر|لينك|url)/i.test(retrievalQuery);
+    const shouldAppendProfessionalAudit = responseMode === 'professional' && isSubstantiveLegalRequest(currentUserTurn);
 
     const auditLines: string[] = [];
-    if (responseMode === 'professional' && verifiedArticleList.length > 0) {
+    if (shouldAppendProfessionalAudit && verifiedArticleList.length > 0) {
       auditLines.push('', 'المواد النظامية المتحققة ذات الصلة:');
       for (const article of verifiedArticleList) {
         auditLines.push(
@@ -807,14 +832,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    if (responseMode === 'professional' && verifiedArticleList.length === 0 && sourceBundle.verification.officialSources > 0) {
+    if (shouldAppendProfessionalAudit && verifiedArticleList.length === 0 && sourceBundle.verification.officialSources > 0) {
       auditLines.push(
         '',
         'لم يثبت في الفهرس التفصيلي الحالي رقم مادة محدد بدرجة كافية لهذا السؤال؛ لذلك لن أعرض روابط بدل المواد أو أخمن مادة من الذاكرة.'
       );
     }
 
-    if (responseMode === 'professional' && (sourceBundle.verification.blockers.length > 0 || citationGuard.unsupportedMarkers.length > 0)) {
+    if (shouldAppendProfessionalAudit && (sourceBundle.verification.blockers.length > 0 || citationGuard.unsupportedMarkers.length > 0)) {
       auditLines.push('', 'حالة التحقق: توجد نقاط تحتاج مراجعة المصدر الرسمي قبل الاعتماد النهائي.');
     }
 
@@ -829,6 +854,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         hasEvidence: hasAttachedEvidence(clientMessages),
       });
 
+      sentinelReleaseGateDecision = releaseGate.gateDecision;
+      sentinelReleaseGateScore = releaseGate.readinessScore;
+      sentinelClaimLiberationApplicable = releaseGate.claimLiberation.applicable;
+      sentinelClaimLiberationComplete = releaseGate.claimLiberation.complete;
+      sentinelMissingClaimPillars = releaseGate.claimLiberation.missingPillars;
+      sentinelClaimLiberationIssues = releaseGate.claimLiberation.linkageIssues;
+
       if (!res.headersSent) {
         res.setHeader('X-QADA-Legal-Gate', releaseGate.gateDecision);
         res.setHeader('X-QADA-Readiness-Score', String(releaseGate.readinessScore));
@@ -842,9 +874,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         reply = responseMode === 'simple'
           ? [
-              'راجعت QADA المسودة قبل تسليمها ولم تعتمدها بعد.',
-              reasons.length ? `السبب: ${reasons[0]}` : 'تحتاج المسودة مراجعة إضافية قبل إخراجها.',
-              'لن أعرض لك مسودة غير معتمدة. أكمل المستند أو المعلومة المطلوبة إن ظهرت، ثم أعد المحاولة.',
+              'ما زال ينقصني عنصر أساسي قبل إخراج الصيغة النهائية.',
+              lawOfficeRoute.nextAction && !/ابدأ بتحليل ملف القضية ثم الصياغة/i.test(lawOfficeRoute.nextAction)
+                ? `المطلوب الآن: ${lawOfficeRoute.nextAction}`
+                : 'أرسل المستند أو المعلومة الناقصة التي طلبتها منك، وسأكمل من نفس النقطة.',
+              'لن أضيف تكييفاً أو مادة نظامية من عندي قبل اكتمال هذه المعلومة.',
             ].join('\n')
           : [
               `بوابة الاعتماد: ${releaseGate.gateDecision}`,
@@ -857,6 +891,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Final privacy pass: never echo direct identifiers from prompts or attached documents.
     reply = redactDirectIdentifiers(reply).text;
+
+    try {
+      await withTimeout(
+        recordSentinelTurn({
+          sessionId: session.id,
+          responseMode,
+          lastUserText: currentUserTurn,
+          conversationText: draftingRequestText,
+          reply,
+          routeTask: lawOfficeRoute.task,
+          routeStage: lawOfficeRoute.stage,
+          draftingActive: Boolean(hujjaBayanInstruction),
+          releaseGateDecision: sentinelReleaseGateDecision,
+          releaseGateScore: sentinelReleaseGateScore,
+          sourceBlockers: sourceBundle.verification.blockers.length,
+          unsupportedCitations: citationGuard.unsupportedMarkers.length,
+          providerMode,
+          claimLiberationApplicable: sentinelClaimLiberationApplicable,
+          claimLiberationComplete: sentinelClaimLiberationComplete,
+          missingClaimPillars: sentinelMissingClaimPillars,
+          claimLiberationIssues: sentinelClaimLiberationIssues,
+        }),
+        650,
+        'SENTINEL_WRITE_TIMEOUT',
+      );
+    } catch (sentinelError) {
+      console.warn('QADA Sentinel telemetry skipped:', sentinelError instanceof Error ? sentinelError.message : sentinelError);
+    }
 
     if (!res.headersSent) {
       res.setHeader('X-QADA-AI-Mode', providerMode);

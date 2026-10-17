@@ -6,15 +6,20 @@ import {
   BadgeCheck,
   BookOpenCheck,
   Bot,
+  Brain,
   CheckCircle2,
+  Crown,
   Database,
   FileCheck2,
   FileSearch,
   ExternalLink,
+  Feather,
   FileText,
   Gavel,
   Gauge,
   GitBranch,
+  GraduationCap,
+  HeartPulse,
   Landmark,
   Layers3,
   LockKeyhole,
@@ -25,8 +30,10 @@ import {
   Search,
   SearchCheck,
   Settings,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Swords,
   Workflow,
   XCircle,
   ZoomIn,
@@ -55,7 +62,7 @@ type AgentNode = {
 type Edge = {
   from: string;
   to: string;
-  kind?: 'normal' | 'admin' | 'verification';
+  kind?: 'normal' | 'admin' | 'verification' | 'court';
 };
 
 type RuntimeAgentRun = {
@@ -126,7 +133,7 @@ type RuntimeSnapshot = {
 };
 
 const CANVAS_WIDTH = 1600;
-const CANVAS_HEIGHT = 1160;
+const CANVAS_HEIGHT = 1400;
 
 const nodes: AgentNode[] = [
   { id: 'auth', title: 'المصادقة والحساب', subtitle: 'دخول وصلاحيات', x: 35, y: 42, width: 165, height: 74, status: 'linked', tone: 'cyan', icon: ShieldCheck, detail: 'بوابة الدخول والجلسات وتحديد صلاحية المستخدم أو المشرف.' },
@@ -166,11 +173,12 @@ const nodes: AgentNode[] = [
   { id: 'virtual-judge', title: 'القاضي الافتراضي', subtitle: 'PASS / RETURN / BLOCK', x: 1390, y: 680, width: 205, height: 82, status: 'linked', tone: 'violet', icon: Gavel, detail: 'بوابة الجاهزية قبل التصدير: تفحص المحكمة والمرحلة والسريان والمصادر والعناصر والاستثناءات والدفوع والطلبات، وتمنع التصدير تحت 95/100 أو عند وجود مانع جوهري.' },
   { id: 'final-output', title: 'المخرجات النهائية', subtitle: 'تقرير / مسودة / خطة عمل', x: 1410, y: 780, width: 165, height: 78, status: 'linked', tone: 'amber', icon: FileCheck2, detail: 'لا تصبح المخرجات قابلة للنسخ أو التصدير إلا بعد اجتياز بوابة القاضي الافتراضي واعتماد النسخة نفسها دون تعديل لاحق.' },
 
-  { id: 'editor-tool', title: 'Editor', subtitle: 'إدارة وصياغة المواد', x: 610, y: 692, width: 155, height: 58, status: 'linked', tone: 'cyan', icon: FileText, detail: 'واجهة تحرير المذكرات والمسودات ومراجعة النص قبل إدخاله إلى مسارات التحليل.' },
-  { id: 'execution-tool', title: 'Execution', subtitle: 'مراقبة سير التشغيل', x: 785, y: 692, width: 155, height: 58, status: 'linked', tone: 'cyan', icon: Activity, detail: 'يعرض حالة تشغيل الوكلاء الفعلية، الأزمنة، التحذيرات، الأخطاء ومسار التنفيذ.' },
-  { id: 'evaluation-tool', title: 'Evaluation', subtitle: 'اختبار وتحقق', x: 960, y: 692, width: 155, height: 58, status: 'linked', tone: 'emerald', icon: CheckCircle2, detail: 'طبقة التقييم والاختبارات الآلية التي تمنع اعتماد نسخة لا تجتاز فحوص المصادر والأمان والبناء.' },
-  { id: 'agents-tool', title: 'Agents', subtitle: 'إدارة الوكلاء', x: 1135, y: 692, width: 155, height: 58, status: 'linked', tone: 'amber', icon: Layers3, detail: 'فهرس الوكلاء والمسارات المرتبطة بالخريطة التشغيلية وحالة كل وكيل.' },
+  { id: 'editor-tool', title: 'Editor', subtitle: 'إدارة وصياغة المواد', x: 610, y: 690, width: 155, height: 62, status: 'linked', tone: 'cyan', icon: FileText, detail: 'واجهة تحرير المذكرات والمسودات ومراجعة النص قبل إدخاله إلى مسارات التحليل.' },
+  { id: 'execution-tool', title: 'Execution', subtitle: 'مراقبة سير التشغيل', x: 785, y: 690, width: 155, height: 62, status: 'linked', tone: 'cyan', icon: Activity, detail: 'يعرض حالة تشغيل الوكلاء الفعلية، الأزمنة، التحذيرات، الأخطاء ومسار التنفيذ.' },
+  { id: 'evaluation-tool', title: 'Evaluation', subtitle: 'اختبار وتحقق', x: 960, y: 690, width: 155, height: 62, status: 'linked', tone: 'emerald', icon: CheckCircle2, detail: 'طبقة التقييم والاختبارات الآلية التي تمنع اعتماد نسخة لا تجتاز فحوص المصادر والأمان والبناء.' },
+  { id: 'agents-tool', title: 'Agents', subtitle: 'إدارة الوكلاء', x: 1135, y: 690, width: 155, height: 62, status: 'linked', tone: 'amber', icon: Layers3, detail: 'فهرس الوكلاء والمسارات المرتبطة بالخريطة التشغيلية وحالة كل وكيل.' },
   { id: 'security-007', title: '007 — AppSec', subtitle: 'أمن واختبار إصدار', x: 1135, y: 765, width: 205, height: 68, status: 'warning', tone: 'rose', icon: ShieldCheck, adminOnly: true, detail: 'وكيل أمني حرج للإطلاق. يعمل الآن كـ Release AppSec Audit داخل Verify لفحص الأسرار وXSS والمصادقة وواجهات API والفهرسة. يبقى Warning حتى اجتياز DAST حي على Staging.' },
+  { id: 'sentinel', title: 'QADA Sentinel', subtitle: 'مراقبة المحادثات لحظياً', x: 85, y: 955, width: 240, height: 82, status: 'linked', tone: 'rose', icon: ShieldAlert, adminOnly: true, detail: 'مراقب ظل يسجل انتقالات المحادثة والـRouter والصياغة وبوابة الاعتماد، ويكشف تعارض الحالة والنية والتكييف غير المبرر والتسريب الداخلي مع استنتاج قابل للتتبع.' },
 
   { id: 'admin-entry', title: 'غرفة التحليل للأدمن', subtitle: 'مدخل خاص ومقيد', x: 85, y: 840, width: 240, height: 82, status: 'linked', tone: 'violet', icon: LockKeyhole, adminOnly: true, detail: 'مدخل منفصل للمشرف لتحليل حكم أو مذكرة بشكل أعمق من واجهة المستخدم العامة.' },
   { id: 'judgment-audit', title: 'إيجنت تحليل الأحكام', subtitle: 'الحكم كاملاً', x: 380, y: 815, width: 205, height: 74, status: 'linked', tone: 'violet', icon: Gavel, adminOnly: true, detail: 'مسار فعلي لتحليل الأحكام يوزع الحكم على الفحص التشريعي والقضائي والإجرائي والإثباتي والتسبيب والدفوع.' },
@@ -182,6 +190,18 @@ const nodes: AgentNode[] = [
   { id: 'reasoning-flaws', title: 'فحص التكييف والتسبيب', subtitle: 'سبب ومنطوق', x: 930, y: 885, width: 205, height: 68, status: 'linked', tone: 'rose', icon: Workflow, adminOnly: true, detail: 'يفحص صحة التكييف وارتباط الأسباب بالمنطوق وأي قفزة منطقية في الحكم.' },
   { id: 'rebuttal-review', title: 'مراجعة الدفوع والردود', subtitle: 'نقاط القوة والقصور', x: 930, y: 970, width: 205, height: 68, status: 'linked', tone: 'violet', icon: Scale, adminOnly: true, detail: 'يرتب نقاط الاعتراض والردود الممكنة ويبين سند كل نقطة وحدودها.' },
   { id: 'admin-final', title: 'التقرير التحليلي للأدمن', subtitle: 'نتيجة داخلية غير عامة', x: 1245, y: 870, width: 270, height: 110, status: 'linked', tone: 'violet', icon: FileCheck2, adminOnly: true, detail: 'يجمع العيوب والمراجع والأثر المحتمل وما يحتاج إلى تحقق بشري في تقرير واحد خاص بالأدمن.' },
+
+  { id: 'virtual-court', title: 'المحكمة الافتراضية', subtitle: '4 جهات × 3 درجات', x: 85, y: 1170, width: 240, height: 104, status: 'linked', tone: 'amber', icon: Landmark, detail: 'قاعة المحاكاة القضائية: التجارية والعامة وديوان المظالم والجزائية، ولكل جهة ابتدائية واستئناف وعليا. تعمل بنفس العقل المركزي: حزمة المصادر الرسمية وعقود الوكلاء وبروفايل المحكمة وبوابة الإحالات.' },
+  { id: 'lawyer-facts-references', title: 'وكيل الوقائع والمراجع', subtitle: 'واقعة ← دليل ← مصدر', x: 385, y: 1100, width: 200, height: 66, status: 'linked', tone: 'emerald', icon: FileSearch, detail: 'يبني مصفوفة الوقائع وتسلسلها الزمني ويجمع المراجع من حزمة المصادر الرسمية دون غيرها.' },
+  { id: 'lawyer-gaps', title: 'وكيل الثغرات', subtitle: 'ثغرات الخصم وملفنا', x: 385, y: 1182, width: 200, height: 66, status: 'linked', tone: 'emerald', icon: ScanSearch, detail: 'يكشف ثغرات الخصم والحكم محل الاعتراض، وثغرات ملف الموكل قبل أن يكشفها الخصم.' },
+  { id: 'lawyer-statutes', title: 'وكيل المواد والأنظمة', subtitle: 'أسانيد متحققة فقط', x: 385, y: 1264, width: 200, height: 66, status: 'linked', tone: 'emerald', icon: BookOpenCheck, detail: 'يحدد المواد المتحققة ونسختها النافذة واستثناءاتها؛ أي إحالة غير متحققة تسقطها بوابة الإحالات.' },
+  { id: 'lawyer-drafting-advocacy', title: 'وكيل الصياغة والحجج', subtitle: 'تحرير الدعوى والمرافعة', x: 625, y: 1135, width: 205, height: 66, status: 'linked', tone: 'emerald', icon: Feather, detail: 'يحرر الدعوى أو المذكرة كاملة بحسب الدرجة، ويصوغ الحجج الموجزة التي تُلقى أمام القاضي.' },
+  { id: 'lawyer-former-judge', title: 'المحامي القاضي السابق', subtitle: 'بعين المنصة القضائية', x: 625, y: 1225, width: 205, height: 66, status: 'linked', tone: 'emerald', icon: GraduationCap, detail: 'يقرأ الملف كما تقرؤه الدائرة: ما الذي يُرد شكلاً أو موضوعاً، وكيف يصبح الطلب قابلاً للحكم به.' },
+  { id: 'lawyer-super', title: 'المحامي الخارق', subtitle: 'قائد فريق الدفاع', x: 870, y: 1166, width: 200, height: 90, status: 'linked', tone: 'emerald', icon: Crown, detail: 'يبني نظرية القضية الفائزة ويرتب الحجج ويستبق ضربات المدعي العام، ويعيد المرافعة حتى تعالج أسباب الحكم.' },
+  { id: 'judge-agent', title: 'وكيلا القاضي', subtitle: 'الشكل • الموضوع', x: 1115, y: 1100, width: 195, height: 66, status: 'linked', tone: 'amber', icon: Scale, detail: 'رأيان مسببان مستقلان: الأول في الاختصاص والقبول والإجراءات، والثاني في الموضوع والإثبات والتكييف.' },
+  { id: 'public-prosecutor', title: 'المدعي العام', subtitle: 'أقوى هجوم مشروع', x: 1115, y: 1290, width: 195, height: 70, status: 'linked', tone: 'rose', icon: Swords, detail: 'يهاجم موقف الموكل بأقوى صورة: الادعاء الجزائي، أو دفاع الجهة الإدارية، أو دفوع الخصم التجاري والحقوقي، دون اختلاق.' },
+  { id: 'presiding-judge', title: 'القاضي مُصدر الحكم', subtitle: 'المنطوق والأسباب', x: 1355, y: 1150, width: 215, height: 96, status: 'linked', tone: 'amber', icon: Gavel, detail: 'يزن رأيي وكيليه ومرافعة الطرفين ويصدر الحكم المحاكى؛ ولا يكسب الموكل بإحالة غير متحققة أو دعوى غير محررة.' },
+  { id: 'cassation-judge', title: 'قضاة النقض × 3', subtitle: 'القرار بالأغلبية', x: 1355, y: 1272, width: 215, height: 82, status: 'linked', tone: 'violet', icon: Landmark, detail: 'دائرة نقض من ثلاثة قضاة في كل محكمة عليا: رقابة قانونية دون إعادة وزن الأدلة، والقرار بالأغلبية.' },
 ];
 
 const edges: Edge[] = [
@@ -227,7 +247,11 @@ const edges: Edge[] = [
   { from: 'qada-core', to: 'evaluation-tool' },
   { from: 'qada-core', to: 'agents-tool' },
   { from: 'evaluation-tool', to: 'security-007', kind: 'verification' },
+  { from: 'qada-core', to: 'sentinel', kind: 'admin' },
+  { from: 'virtual-judge', to: 'sentinel', kind: 'admin' },
 
+  // غرفة الأدمن تعمل بنفس العقل المركزي: admin-analysis يمرر الطلب عبر qada-core.
+  { from: 'qada-core', to: 'admin-entry', kind: 'admin' },
   { from: 'admin-entry', to: 'judgment-audit', kind: 'admin' },
   { from: 'admin-entry', to: 'memo-audit', kind: 'admin' },
   { from: 'judgment-audit', to: 'legislative-flaws', kind: 'admin' },
@@ -248,7 +272,152 @@ const edges: Edge[] = [
   { from: 'evidence-flaws', to: 'admin-final', kind: 'admin' },
   { from: 'reasoning-flaws', to: 'admin-final', kind: 'admin' },
   { from: 'rebuttal-review', to: 'admin-final', kind: 'admin' },
+
+  // المحكمة الافتراضية: نفس العقل المركزي يوزع الملف على فريق الدفاع ثم الخصم ثم الهيئة.
+  { from: 'qada-core', to: 'virtual-court', kind: 'court' },
+  { from: 'virtual-court', to: 'lawyer-facts-references', kind: 'court' },
+  { from: 'virtual-court', to: 'lawyer-gaps', kind: 'court' },
+  { from: 'virtual-court', to: 'lawyer-statutes', kind: 'court' },
+  { from: 'lawyer-facts-references', to: 'lawyer-drafting-advocacy', kind: 'court' },
+  { from: 'lawyer-statutes', to: 'lawyer-drafting-advocacy', kind: 'court' },
+  { from: 'lawyer-gaps', to: 'lawyer-former-judge', kind: 'court' },
+  { from: 'lawyer-drafting-advocacy', to: 'lawyer-super', kind: 'court' },
+  { from: 'lawyer-former-judge', to: 'lawyer-super', kind: 'court' },
+  { from: 'lawyer-super', to: 'judge-agent', kind: 'court' },
+  { from: 'lawyer-super', to: 'public-prosecutor', kind: 'court' },
+  { from: 'lawyer-super', to: 'cassation-judge', kind: 'court' },
+  { from: 'public-prosecutor', to: 'presiding-judge', kind: 'court' },
+  { from: 'public-prosecutor', to: 'cassation-judge', kind: 'court' },
+  { from: 'judge-agent', to: 'presiding-judge', kind: 'court' },
 ];
+
+// ---------------------------------------------------------------------------
+// العقل المركزي الحي: كل موجة تنطلق من QADA AI وتنتشر عبر الروابط (تنشيط منتشر)،
+// وتضعف قوتها مع كل قفزة. المسافة هنا محسوبة من طوبولوجيا الخريطة نفسها.
+// الحالة الفعلية لكل وكيل تبقى من فحص الجاهزية وسجل التشغيل، لا من الموجة.
+// ---------------------------------------------------------------------------
+
+const BRAIN_ORIGIN = 'qada-core';
+const WAVE_CYCLE_S = 6.5;
+const HOP_S = 0.5;
+const HOP_DECAY = 0.86;
+
+function computeBrainHops(): Map<string, number> {
+  const adjacency = new Map<string, string[]>();
+  for (const edge of edges) {
+    adjacency.set(edge.from, [...(adjacency.get(edge.from) || []), edge.to]);
+    adjacency.set(edge.to, [...(adjacency.get(edge.to) || []), edge.from]);
+  }
+  const hops = new Map<string, number>([[BRAIN_ORIGIN, 0]]);
+  const queue = [BRAIN_ORIGIN];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    for (const next of adjacency.get(current) || []) {
+      if (hops.has(next)) continue;
+      hops.set(next, (hops.get(current) || 0) + 1);
+      queue.push(next);
+    }
+  }
+  return hops;
+}
+
+const BRAIN_HOPS = computeBrainHops();
+const BRAIN_DEPTH = Math.max(...BRAIN_HOPS.values());
+
+function signalStrength(hop: number): number {
+  return Math.pow(HOP_DECAY, hop);
+}
+
+function hopLabel(hop: number): string {
+  if (hop === 0) return 'المصدر';
+  if (hop === 1) return 'قفزة واحدة';
+  if (hop === 2) return 'قفزتان';
+  return hop + ' قفزات';
+}
+
+const FIRE_RGB: Record<AgentTone, string> = {
+  cyan: '34 211 238',
+  amber: '251 191 36',
+  emerald: '52 211 153',
+  violet: '167 139 250',
+  slate: '148 163 184',
+  rose: '251 113 133',
+};
+
+const SPARKS: Record<NonNullable<Edge['kind']>, { id: string; color: string }> = {
+  normal: { id: 'qadaSparkCyan', color: '#38bdf8' },
+  verification: { id: 'qadaSparkAmber', color: '#fbbf24' },
+  admin: { id: 'qadaSparkViolet', color: '#a78bfa' },
+  court: { id: 'qadaSparkBrass', color: '#e7cf9a' },
+};
+
+function edgeStroke(kind: Edge['kind']): string {
+  return SPARKS[kind || 'normal'].color;
+}
+
+function fmt(value: number): string {
+  return Math.min(1, Math.max(0, value)).toFixed(4);
+}
+
+/** Timing for one signal on one edge, phase-locked to the node firing animation. */
+function signalTiming(edge: Edge) {
+  const hopFrom = BRAIN_HOPS.get(edge.from) ?? BRAIN_DEPTH;
+  const hopTo = BRAIN_HOPS.get(edge.to) ?? BRAIN_DEPTH;
+  // The signal always travels away from the central brain.
+  const reverse = hopTo < hopFrom;
+  const departHop = Math.min(hopFrom, hopTo);
+  const t0 = (departHop * HOP_S) / WAVE_CYCLE_S;
+  const t1 = ((departHop + 1) * HOP_S) / WAVE_CYCLE_S;
+  const fade = 0.012;
+  const peak = 0.35 + 0.65 * signalStrength(departHop);
+  return {
+    keyPoints: reverse ? '1;1;0;0' : '0;0;1;1',
+    motionKeyTimes: ['0', fmt(Math.max(t0, 0.0001)), fmt(t1), '1'].join(';'),
+    opacityValues: ['0', '0', peak.toFixed(3), peak.toFixed(3), '0', '0'].join(';'),
+    opacityKeyTimes: ['0', fmt(t0), fmt(t0 + fade), fmt(t1 - fade), fmt(t1), '1'].join(';'),
+    glowRadius: 4.5 + 3 * signalStrength(departHop),
+  };
+}
+
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setReduced(query.matches);
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
+
+  return reduced;
+}
+
+const LIVE_PULSE_STORAGE_KEY = 'qada.agentMap.livePulse';
+
+function readLivePulsePreference(): boolean {
+  try {
+    return window.localStorage.getItem(LIVE_PULSE_STORAGE_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+function writeLivePulsePreference(on: boolean) {
+  try {
+    window.localStorage.setItem(LIVE_PULSE_STORAGE_KEY, on ? 'on' : 'off');
+  } catch {
+    // Preference is a convenience only.
+  }
+}
+
+function runTimestamp(run: RuntimeSnapshot): number {
+  const value = new Date(run.analyzedAt || 0).getTime();
+  return Number.isFinite(value) ? value : 0;
+}
 
 const statusMeta: Record<AgentStatus, { label: string; dot: string; text: string }> = {
   linked: { label: 'متصل حالياً', dot: 'bg-emerald-400', text: 'text-emerald-300' },
@@ -298,6 +467,18 @@ export function AdminAgentMap({
   const [healthError, setHealthError] = useState('');
   const [selfTestRunning, setSelfTestRunning] = useState(false);
   const [selfTestError, setSelfTestError] = useState('');
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const [livePulse, setLivePulse] = useState(readLivePulsePreference);
+  const pulseOn = livePulse && !prefersReducedMotion;
+  // Once the admin picks a run (or a self-test starts) the periodic refresh must not replace it.
+  const runPinnedRef = useRef(false);
+
+  const toggleLivePulse = () => {
+    setLivePulse((current) => {
+      writeLivePulsePreference(!current);
+      return !current;
+    });
+  };
 
   const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
   const navigableNodeIds = new Set([
@@ -312,6 +493,8 @@ export function AdminAgentMap({
     'drafting',
     'editor-tool',
     'final-output',
+    'sentinel',
+    'virtual-court',
   ]);
 
   const fitCanvasToViewport = useCallback(() => {
@@ -371,7 +554,7 @@ export function AdminAgentMap({
     let cancelled = false;
     setHistoryError('');
 
-    fetch('/api/admin-runs', {
+    const loadRuns = () => fetch('/api/admin-runs', {
       method: 'GET',
       credentials: 'same-origin',
       cache: 'no-store',
@@ -379,20 +562,39 @@ export function AdminAgentMap({
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload?.error || 'تعذر تحميل سجل التشغيل.');
-        return Array.isArray(payload?.runs) ? payload.runs as RuntimeSnapshot[] : [];
+        const runs = Array.isArray(payload?.runs) ? payload.runs as RuntimeSnapshot[] : [];
+        // Virtual-court sessions run through the same central brain and appear in the same history.
+        const courtRuns = Array.isArray(payload?.courtRuns) ? payload.courtRuns as RuntimeSnapshot[] : [];
+        return [...runs, ...courtRuns];
       })
       .then((runs) => {
         if (cancelled) return;
-        const safeRuns = runs.filter((item) => item && Array.isArray(item.agentRuns)).slice(0, 20);
-        setHistory(safeRuns);
-        setRuntime(safeRuns[0] || null);
+        const safeRuns = runs
+          .filter((item) => item && Array.isArray(item.agentRuns))
+          .sort((a, b) => runTimestamp(b) - runTimestamp(a))
+          .slice(0, 20);
+        setHistory((current) => {
+          const known = new Set(safeRuns.map((item) => item.runId));
+          // Keep runs recorded in this session that the store has not returned yet.
+          return [...safeRuns, ...current.filter((item) => item.runId && !known.has(item.runId))]
+            .sort((a, b) => runTimestamp(b) - runTimestamp(a))
+            .slice(0, 20);
+        });
+        if (!runPinnedRef.current) setRuntime(safeRuns[0] || null);
+        setHistoryError('');
       })
       .catch((error) => {
         if (!cancelled) setHistoryError(error instanceof Error ? error.message : 'تعذر تحميل سجل التشغيل.');
       });
 
+    void loadRuns();
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void loadRuns();
+    }, 20_000);
+
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -424,6 +626,7 @@ export function AdminAgentMap({
 
   const runLiveAgentSelfTest = async () => {
     if (selfTestRunning) return;
+    runPinnedRef.current = true;
     setSelfTestRunning(true);
     setSelfTestError('');
 
@@ -563,8 +766,25 @@ export function AdminAgentMap({
     };
   }, [health]);
 
+  const runningAgents = useMemo(
+    () => Array.from(runtimeById.values()).filter((run) => run.status === 'running').length,
+    [runtimeById],
+  );
+  const liveRunActive = selfTestRunning || runtime?.meta?.state === 'running' || runningAgents > 0;
+
+  const signalEdges = useMemo(() => {
+    return edges
+      .map((edge, index) => {
+        const from = nodes.find((node) => node.id === edge.from);
+        const to = nodes.find((node) => node.id === edge.to);
+        if (!from || !to || !visibleIds.has(from.id) || !visibleIds.has(to.id)) return null;
+        return { key: edge.from + '-' + edge.to + '-' + index, kind: edge.kind || 'normal', path: edgePath(from, to), timing: signalTiming(edge) };
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  }, [visibleIds]);
+
   return (
-    <section className="space-y-4" dir="rtl">
+    <section className="qada-8k-admin-view qada-8k-agent-map space-y-4" dir="rtl">
       <div className="rounded-2xl border border-violet-400/20 bg-gradient-to-l from-violet-500/10 via-slate-950/90 to-cyan-500/10 p-4 sm:p-5">
         <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div>
@@ -646,6 +866,7 @@ export function AdminAgentMap({
                       onChange={(event) => {
                         const selectedRun = history.find((item) => item.runId === event.target.value);
                         if (selectedRun) {
+                          runPinnedRef.current = true;
                           setRuntime(selectedRun);
                           setFilter('last-run');
                           setSelectedId('qada-core');
@@ -676,8 +897,37 @@ export function AdminAgentMap({
               <FilterButton active={filter === 'linked'} onClick={() => setFilter('linked')}>المتصل حالياً</FilterButton>
               <FilterButton active={filter === 'planned'} onClick={() => setFilter('planned')}>قيد الربط</FilterButton>
               <FilterButton active={filter === 'last-run'} onClick={() => setFilter('last-run')}>{runtime?.meta?.state === 'running' ? 'التشغيل الحي' : 'آخر تشغيل فعلي'}</FilterButton>
+              <span
+                className={'qada-brain-chip min-h-9 inline-flex items-center gap-2 rounded-lg border px-3 text-[10px] font-black ' + (liveRunActive ? 'qada-brain-chip-live' : '')}
+                aria-live="polite"
+              >
+                <Brain className="h-3.5 w-3.5" aria-hidden="true" />
+                {liveRunActive
+                  ? 'تشغيل فعلي الآن' + (runningAgents ? ' — ' + runningAgents + ' يعمل' : '')
+                  : pulseOn
+                    ? 'العقل المركزي: موجة كل ' + WAVE_CYCLE_S + ' ث • ' + nodes.length + ' وكيلاً • ' + BRAIN_DEPTH + ' قفزات'
+                    : 'العقل المركزي'}
+              </span>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={toggleLivePulse}
+                disabled={prefersReducedMotion}
+                aria-pressed={pulseOn}
+                className={
+                  'min-h-10 inline-flex items-center justify-center gap-1.5 rounded-lg border px-3 text-[10px] font-black transition-colors disabled:cursor-not-allowed disabled:opacity-50 ' +
+                  (pulseOn
+                    ? 'border-amber-300/40 bg-amber-400/10 text-amber-100 hover:bg-amber-400/20'
+                    : 'border-slate-700 bg-slate-900 text-slate-300 hover:text-white')
+                }
+                title={prefersReducedMotion
+                  ? 'الحركة متوقفة لأن الجهاز يطلب تقليل الحركة'
+                  : 'موجة توضيحية تبين كيف تنتشر إشارة العقل المركزي عبر الوكلاء؛ الحالة الفعلية من سجل التشغيل'}
+              >
+                <HeartPulse className={'h-4 w-4 ' + (pulseOn ? 'qada-heartbeat-icon' : '')} aria-hidden="true" />
+                <span>{prefersReducedMotion ? 'الحركة مخفّضة' : pulseOn ? 'النبض الحي' : 'النبض متوقف'}</span>
+              </button>
               <button type="button" onClick={() => setZoom((value) => Math.min(1.15, Number((value + 0.08).toFixed(2))))} className="min-h-10 min-w-10 inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-slate-300 hover:text-white" title="تكبير">
                 <ZoomIn className="h-4 w-4" />
               </button>
@@ -705,8 +955,12 @@ export function AdminAgentMap({
             }
           >
             <div
-              className="relative ml-auto origin-top-right transition-transform duration-200"
-              style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, transform: 'scale(' + zoom + ')' }}
+              className={
+                'relative ml-auto origin-top-right transition-transform duration-200 ' +
+                (pulseOn ? 'qada-map-pulse ' : '') +
+                (liveRunActive ? 'qada-map-live-run' : '')
+              }
+              style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, transform: 'scale(' + zoom + ')', '--wave-cycle': WAVE_CYCLE_S + 's' } as React.CSSProperties}
             >
               <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(rgba(56,189,248,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,.05) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
@@ -741,6 +995,10 @@ export function AdminAgentMap({
                 غرفة التحليل الخاصة بالأدمن
               </div>
               <div className="absolute left-[26px] right-[26px] top-[780px] h-px bg-gradient-to-l from-transparent via-violet-400/50 to-transparent" />
+              <div className="absolute left-[26px] top-[1063px] rounded-xl border border-amber-300/30 bg-amber-400/10 px-3 py-2 text-[11px] font-black text-amber-100">
+                المحكمة الافتراضية — نفس العقل المركزي
+              </div>
+              <div className="absolute left-[26px] right-[26px] top-[1058px] h-px bg-gradient-to-l from-transparent via-amber-300/50 to-transparent" />
 
               <svg className="absolute inset-0 h-full w-full pointer-events-none" viewBox={'0 0 ' + CANVAS_WIDTH + ' ' + CANVAS_HEIGHT} aria-hidden="true">
                 <defs>
@@ -757,9 +1015,11 @@ export function AdminAgentMap({
                   const to = nodes.find((node) => node.id === edge.to);
                   if (!from || !to) return null;
                   const visible = visibleIds.has(from.id) && visibleIds.has(to.id);
-                  const stroke = edge.kind === 'admin' ? '#a78bfa' : edge.kind === 'verification' ? '#fbbf24' : '#38bdf8';
+                  const stroke = edgeStroke(edge.kind);
                   const fromRuntime = runtimeById.get(from.id);
                   const toRuntime = runtimeById.get(to.id);
+                  // Hebbian view: a link both of whose agents succeeded in the shown real run is drawn stronger.
+                  const strongLink = fromRuntime?.status === 'success' && toRuntime?.status === 'success';
                   const activeRuntimeEdge = Boolean(
                     fromRuntime && toRuntime &&
                     (fromRuntime.status === 'running' || toRuntime.status === 'running')
@@ -781,8 +1041,8 @@ export function AdminAgentMap({
                         d={path}
                         fill="none"
                         stroke={stroke}
-                        strokeWidth={edge.kind === 'admin' ? 1.8 : 1.35}
-                        strokeOpacity={visible ? 0.42 : 0.05}
+                        strokeWidth={(edge.kind === 'admin' ? 1.8 : 1.35) + (strongLink ? 1.3 : 0)}
+                        strokeOpacity={visible ? (strongLink ? 0.78 : 0.42) : 0.05}
                         filter={visible ? 'url(#qadaGlow)' : undefined}
                       />
                       {activeRuntimeEdge && visible && (
@@ -819,6 +1079,47 @@ export function AdminAgentMap({
                 })}
               </svg>
 
+              {pulseOn && (
+                <>
+                  <div className="qada-core-aura" style={{ left: 640, top: 330, width: 320, height: 218 }} aria-hidden="true" />
+                  <div className="qada-core-ripple" style={{ left: 610, top: 314, width: 380, height: 250 }} aria-hidden="true" />
+                  <div className="qada-core-ripple qada-core-ripple-late" style={{ left: 610, top: 314, width: 380, height: 250 }} aria-hidden="true" />
+                  {/* Separate SVG: mounting it with the pulse class restarts both timelines together. */}
+                  <svg className="qada-signal-layer absolute inset-0 h-full w-full pointer-events-none" viewBox={'0 0 ' + CANVAS_WIDTH + ' ' + CANVAS_HEIGHT} aria-hidden="true">
+                    <defs>
+                      {Object.values(SPARKS).map((spark) => (
+                        <radialGradient key={spark.id} id={spark.id}>
+                          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+                          <stop offset="38%" stopColor={spark.color} stopOpacity="0.85" />
+                          <stop offset="100%" stopColor={spark.color} stopOpacity="0" />
+                        </radialGradient>
+                      ))}
+                    </defs>
+                    {signalEdges.map((signal) => (
+                      <g key={signal.key} opacity="0">
+                        <circle r={signal.timing.glowRadius} fill={'url(#' + SPARKS[signal.kind].id + ')'} />
+                        <circle r="1.7" fill="#ffffff" />
+                        <animateMotion
+                          path={signal.path}
+                          dur={WAVE_CYCLE_S + 's'}
+                          repeatCount="indefinite"
+                          calcMode="linear"
+                          keyPoints={signal.timing.keyPoints}
+                          keyTimes={signal.timing.motionKeyTimes}
+                        />
+                        <animate
+                          attributeName="opacity"
+                          dur={WAVE_CYCLE_S + 's'}
+                          repeatCount="indefinite"
+                          values={signal.timing.opacityValues}
+                          keyTimes={signal.timing.opacityKeyTimes}
+                        />
+                      </g>
+                    ))}
+                  </svg>
+                </>
+              )}
+
               {nodes.map((node) => {
                 const Icon = node.icon;
                 const runtimeRun = runtimeById.get(node.id);
@@ -836,34 +1137,57 @@ export function AdminAgentMap({
                 const meta = statusMeta[effectiveStatus];
                 const visible = visibleIds.has(node.id);
                 const selectedNode = node.id === selectedId;
+                const hop = BRAIN_HOPS.get(node.id) ?? BRAIN_DEPTH;
                 return (
                   <button
                     key={node.id}
                     type="button"
                     onClick={() => setSelectedId(node.id)}
+                    data-node={node.id}
                     className={
-                      'absolute rounded-2xl border p-3 text-right transition-all shadow-[0_14px_35px_rgba(0,0,0,.28)] backdrop-blur-md ' +
+                      'qada-neuron absolute rounded-2xl border px-3 py-2 text-right transition-all shadow-[0_14px_35px_rgba(0,0,0,.28)] backdrop-blur-md ' +
                       toneClass(node.tone) +
+                      (node.id === BRAIN_ORIGIN ? ' qada-neuron-origin ' : ' ') +
                       (selectedNode ? ' ring-2 ring-white/25 scale-[1.02] ' : ' ') +
-                      (runtimeRun?.status === 'running' ? ' ring-2 ring-cyan-200 shadow-[0_0_40px_rgba(34,211,238,.55)] animate-pulse ' : ' ') +
+                      (runtimeRun?.status === 'running' ? ' qada-neuron-running ring-2 ring-cyan-200 shadow-[0_0_40px_rgba(34,211,238,.55)] animate-pulse ' : ' ') +
                       (visible ? ' opacity-100 ' : ' opacity-15 ')
                     }
-                    style={{ left: node.x, top: node.y, width: node.width, height: node.height }}
+                    style={{
+                      left: node.x,
+                      top: node.y,
+                      width: node.width,
+                      height: node.height,
+                      '--fire-delay': (hop * HOP_S).toFixed(2) + 's',
+                      '--fire-strength': signalStrength(hop).toFixed(3),
+                      '--fire-rgb': FIRE_RGB[node.tone],
+                    } as React.CSSProperties}
                     aria-label={node.title}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="min-w-0">
-                        <span className="block truncate text-[13px] font-black text-white">{node.title}</span>
-                        <span className="mt-1 block truncate text-[11px] text-slate-300">{node.subtitle}</span>
+                    {/* Two rows in flow (title / subtitle + status) so short nodes never overlap their status. */}
+                    <span className="flex h-full flex-col justify-between gap-0.5">
+                      <span className="flex items-start justify-between gap-2">
+                        <span className="min-w-0">
+                          <span className="block truncate text-[13px] font-black text-white">{node.title}</span>
+                          {node.height >= 86 && <span className="mt-1 block truncate text-[11px] text-slate-300">{node.subtitle}</span>}
+                        </span>
+                        <span className={'grid shrink-0 place-items-center rounded-lg border border-white/10 bg-black/20 text-white ' + (node.height < 70 ? 'h-6 w-6' : 'h-7 w-7')}>
+                          <Icon className="h-3.5 w-3.5" />
+                        </span>
                       </span>
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-white/10 bg-black/20 text-white">
-                        <Icon className="h-4 w-4" />
+                      <span className="flex items-center justify-between gap-2">
+                        {node.height < 86
+                          ? <span className="min-w-0 truncate text-[10.5px] leading-4 text-slate-300">{node.subtitle}</span>
+                          : <span />}
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <span className={'text-[9px] font-bold leading-4 ' + meta.text}>{meta.label}</span>
+                          <span
+                            className={'qada-status-dot h-2 w-2 rounded-full ' + meta.dot + (effectiveStatus === 'running' ? ' animate-pulse' : '')}
+                            data-status={effectiveStatus}
+                            style={{ '--dot-delay': ((hop * 0.37) % 2.6).toFixed(2) + 's' } as React.CSSProperties}
+                          />
+                        </span>
                       </span>
-                    </div>
-                    <div className="absolute bottom-2.5 right-3 left-3 flex items-center justify-between gap-2">
-                      <span className={'text-[9px] font-bold ' + meta.text}>{meta.label}</span>
-                      <span className={'h-2 w-2 rounded-full ' + meta.dot + (effectiveStatus === 'running' ? ' animate-pulse' : '')} />
-                    </div>
+                    </span>
                   </button>
                 );
               })}
@@ -893,9 +1217,15 @@ export function AdminAgentMap({
                 : statusMeta[selected.status].label}
             />
             <DetailRow label="النطاق" value={selected.adminOnly ? 'خاص بالأدمن' : 'منصة عامة / محرك'} />
+            <DetailRow
+              label="موقعه من العقل المركزي"
+              value={(BRAIN_HOPS.get(selected.id) ?? 0) === 0
+                ? 'العقل المركزي نفسه — مصدر الموجة'
+                : hopLabel(BRAIN_HOPS.get(selected.id) ?? BRAIN_DEPTH) + ' • قوة الإشارة ' + Math.round(signalStrength(BRAIN_HOPS.get(selected.id) ?? BRAIN_DEPTH) * 100) + '%'}
+            />
             <DetailRow label="معرف الوكيل" value={selected.id} mono />
             {runtimeById.get(selected.id)?.model && <DetailRow label="النموذج" value={runtimeById.get(selected.id)?.model || ''} mono />}
-            {runtimeById.get(selected.id) && <DetailRow label="زمن آخر تشغيل" value={(runtimeById.get(selected.id)!.durationMs / 1000).toFixed(1) + ' ثانية'} />}
+            {Number(runtimeById.get(selected.id)?.durationMs) > 0 && <DetailRow label="زمن آخر تشغيل" value={(runtimeById.get(selected.id)!.durationMs / 1000).toFixed(1) + ' ثانية'} />}
             {runtimeById.get(selected.id)?.summary && <DetailRow label="ملخص آخر تشغيل" value={runtimeById.get(selected.id)?.summary || ''} />}
           </div>
 
@@ -971,7 +1301,12 @@ export function AdminAgentMap({
               <Legend dot="bg-rose-500" label="خطأ" />
               <Legend dot="bg-slate-500" label="قيد الربط" />
               <Legend dot="bg-violet-400" label="إداري" />
+              <Legend dot="bg-amber-200" label="محكمة افتراضية" />
+              <Legend dot="bg-white" label="إشارة العقل المركزي" />
             </div>
+            <p className="mt-3 text-[10px] leading-5 text-slate-500">
+              الموجة الدورية توضح كيف تنتشر إشارة العقل المركزي من QADA AI عبر الوكلاء وتضعف مع كل قفزة. أما حالة كل وكيل فتأتي من فحص الجاهزية وسجل التشغيل الفعلي فقط: الوكيل الذي يعمل فعلاً يومض بسرعة بإطار سماوي، والرابط الذي نجح طرفاه في التشغيل المعروض يظهر أقوى.
+            </p>
           </div>
         </aside>
       </div>

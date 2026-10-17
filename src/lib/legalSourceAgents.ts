@@ -15,6 +15,12 @@ import { EXECUTION_LAW_1447 } from '../data/officialReferences/executionLaw1447.
 import { JUDICIARY_LAW_1428 } from '../data/officialReferences/judiciaryLaw1428.js';
 import { LAW_PRACTICE_LAW_1422 } from '../data/officialReferences/lawPracticeLaw1422.js';
 import { PERSONNEL_SERVICE_LAW_1397 } from '../data/officialReferences/personnelServiceLaw1397.js';
+import {
+  PERSONNEL_USER_TRANSCRIPT_META,
+  retrievePersonnelUserReviewExcerpts,
+} from '../data/reviewReferences/personnelServiceLaw1397UserTranscript.js';
+import { COURT_CORE_LAWS, isSourceForeignToCourt } from './courtJurisdiction.js';
+import { getCourtSystem, type CourtSystemId } from './judicialSystem.js';
 
 export type SourceAgentStatus = 'success' | 'warning' | 'error';
 
@@ -45,6 +51,13 @@ export type LegalSourcePacket = {
     system: string;
     article: string;
     sourceUrl: string;
+    note: string;
+  }>;
+  reviewMaterials?: Array<{
+    title: string;
+    excerpt: string;
+    provenance: 'user-supplied';
+    status: 'review-only-unverified';
     note: string;
   }>;
   blockers: string[];
@@ -155,6 +168,21 @@ function packetToContext(packet: LegalSourcePacket): string {
         `- ${article.system} — المادة ${article.article}`,
         `  المصدر: ${article.sourceUrl}`,
         `  ملاحظة: ${article.note}`,
+      );
+    }
+  }
+
+  if (packet.reviewMaterials?.length) {
+    lines.push(
+      'مواد مراجعة داخلية غير رسمية — للمقارنة والاستخراج الأولي فقط، ولا ترفع حالة التحقق ولا تصلح وحدها للاقتباس القضائي:'
+    );
+    for (const material of packet.reviewMaterials) {
+      lines.push(
+        `- ${material.title}`,
+        `  المصدر الداخلي: ${PERSONNEL_USER_TRANSCRIPT_META.name}`,
+        `  الحالة: ${material.status}`,
+        `  مقتطف: ${material.excerpt}`,
+        `  ملاحظة: ${material.note}`,
       );
     }
   }
@@ -292,6 +320,8 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
     containsAny([regulation.parentSystem, regulation.regulationName].join(' '), ['خدمة الأفراد'])
   );
 
+  const reviewMaterials = retrievePersonnelUserReviewExcerpts(query, 6);
+
   const requestedArticles = new Set(articleNumbers(query));
   const personnelQuery = normalizeArabic(query);
   const allowanceDispute = containsAny(personnelQuery, [
@@ -370,6 +400,7 @@ function buildPersonnelPacket(query: string): LegalSourcePacket {
       })),
     ].slice(0, 16),
     verifiedArticles,
+    reviewMaterials,
     blockers,
   };
 }
@@ -560,11 +591,52 @@ function buildAmendmentPacket(query: string): LegalSourcePacket {
   };
 }
 
-export function runLegalSourceAgents(query: string): LegalSourceAgentBundle {
+function buildCourtFramePacket(courtSystem: CourtSystemId): LegalSourcePacket {
+  const system = getCourtSystem(courtSystem);
+  return {
+    agentId: 'court-frame',
+    label: `الإطار النظامي لـ${system.title}`,
+    status: 'success',
+    scope: `الأنظمة الأساسية لـ${system.title}؛ أنظمة الجهات الأخرى مستبعدة من هذه الحزمة.`,
+    references: COURT_CORE_LAWS[courtSystem].map((law) => ({
+      name: law.law,
+      sourceUrl: law.url,
+      issueInstrument: law.decree,
+      coverage: 'هوية النظام وأداة إصداره',
+      note: 'هوية النظام وأداة إصداره متحققة من بوابة هيئة الخبراء؛ أرقام المواد لا تُستخدم منه إلا ما ورد مفهرساً أو في كتلة المدد النظامية.',
+    })),
+    verifiedArticles: [],
+    blockers: [],
+  };
+}
+
+function scopePacketToCourt(packet: LegalSourcePacket, courtSystem: CourtSystemId): LegalSourcePacket {
+  const references = packet.references.filter((reference) => !isSourceForeignToCourt(reference.name, courtSystem));
+  const verifiedArticles = packet.verifiedArticles.filter((article) => !isSourceForeignToCourt(article.system, courtSystem));
+  const removed = packet.references.length - references.length;
+  return {
+    ...packet,
+    references,
+    verifiedArticles,
+    blockers: removed > 0 && references.length === 0
+      ? [...packet.blockers, `لا يوجد في هذا الاسترجاع مصدر مفهرس خاص بـ${getCourtSystem(courtSystem).title}؛ استُبعدت مصادر جهات أخرى.`]
+      : packet.blockers,
+  };
+}
+
+export type LegalSourceAgentOptions = {
+  /** عند تحديد الجهة: تُضاف أنظمتها الأساسية وتُستبعد أنظمة الجهات الأخرى. */
+  courtSystem?: CourtSystemId | null;
+};
+
+export function runLegalSourceAgents(query: string, options: LegalSourceAgentOptions = {}): LegalSourceAgentBundle {
   const started = Date.now();
   const normalizedQuery = normalizeArabic(query);
+  const courtSystem = options.courtSystem || null;
+  const administrativeCourtAllowed = !courtSystem || courtSystem === 'administrative';
 
   const packets: LegalSourcePacket[] = [
+    ...(courtSystem ? [buildCourtFramePacket(courtSystem)] : []),
     buildOfficialSourcePacket(query),
     buildAmendmentPacket(query),
     buildExactTextPacket(query),
@@ -605,11 +677,11 @@ export function runLegalSourceAgents(query: string): LegalSourceAgentBundle {
     'جهه اداريه',
   ]);
 
-  if (administrativeSignals || (personnelSignals && disputeSignals)) {
+  if (administrativeCourtAllowed && (administrativeSignals || (personnelSignals && disputeSignals))) {
     packets.push(buildBogPacket(query));
   }
 
-  if (personnelSignals) {
+  if (administrativeCourtAllowed && personnelSignals) {
     packets.push(buildPersonnelPacket(query));
   }
 
@@ -619,6 +691,12 @@ export function runLegalSourceAgents(query: string): LegalSourceAgentBundle {
 
   if (containsAny(normalizedQuery, ['مبدأ قضائي', 'مبادئ قضائيه', 'سابقه قضائيه', 'حكم رقم', 'المحكمه العليا', 'نقض', 'استئناف'])) {
     packets.push(buildPrecedentPacket());
+  }
+
+  if (courtSystem) {
+    packets.forEach((packet, index) => {
+      packets[index] = scopePacketToCourt(packet, courtSystem);
+    });
   }
 
   const elapsed = Math.max(1, Date.now() - started);

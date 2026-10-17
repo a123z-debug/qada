@@ -87,11 +87,11 @@ export function PdfUploadModal({ isOpen, onClose, onAddAttachments, onAnalyzeImm
     onClose();
   };
 
-  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
-    <div className="relative w-full max-w-2xl bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl overflow-hidden text-right flex flex-col max-h-[90vh]">
+  return <div className="qada-8k-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="qada-8k-modal qada-8k-upload relative w-full max-w-2xl bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl overflow-hidden text-right flex flex-col max-h-[90vh]">
       <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
         <div><h2 className="text-lg font-bold text-neutral-100">رفع وتدقيق المستندات</h2><p className="text-xs text-neutral-400">PDF والصور فقط — حتى 2.5MB إجمالاً لكل طلب</p></div>
-        <button onClick={onClose} className="p-2 text-neutral-400"><X className="w-5 h-5" /></button>
+        <button onClick={onClose} className="qada-8k-icon-button p-2 text-neutral-400" aria-label="إغلاق نافذة رفع المستندات"><X className="w-5 h-5" aria-hidden="true" /></button>
       </div>
       <div className="p-6 overflow-y-auto space-y-5">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">{[

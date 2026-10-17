@@ -6,6 +6,9 @@ export type CaseStrategyProfileId =
   | 'disciplinary'
   | 'general-money-claim'
   | 'general-contract'
+  | 'commercial-dispute'
+  | 'labor-dispute'
+  | 'personal-status-family'
   | 'criminal-defense'
   | 'unknown';
 
@@ -149,6 +152,39 @@ const PROFILES: Record<CaseStrategyProfileId, CaseStrategyProfile> = {
     mandatoryChecks: ['فحص الاختصاص النوعي قبل الصياغة', 'ربط الطلب بنص العقد والوقائع'],
     forbiddenShortcuts: ['تجاهل شرط خاص', 'الخلط بين المحكمة العامة والتجارية'],
   },
+  'commercial-dispute': {
+    id: 'commercial-dispute',
+    label: 'منازعة تجارية',
+    mission: 'إثبات الصفة التجارية للأطراف أو العمل، ثم مصدر الحق التجاري ومقداره وحلوله، مع فحص الاختصاص وشرط التحكيم والمدة.',
+    elements: ['الصفة التجارية للطرفين أو للعمل محل النزاع', 'العقد أو التعامل التجاري المنشئ للحق', 'التنفيذ والاستلام', 'المبلغ وأساس احتسابه وما سُدد منه', 'الحلول وعدم السداد'],
+    evidenceFocus: ['العقد التجاري', 'الفواتير ومحاضر الاستلام', 'كشف الحساب والدفاتر التجارية', 'المراسلات والمطالبات', 'السجل التجاري'],
+    opposingArguments: ['انتفاء الصفة التجارية أو الاختصاص', 'وجود شرط تحكيم', 'السداد أو المقاصة', 'الإخلال المقابل', 'مضي مدة عدم السماع'],
+    remedyFocus: ['إلزام بمبلغ محدد وأساسه، أو تنفيذ أو فسخ أو تعويض بحسب العقد'],
+    mandatoryChecks: ['فحص الصفة التجارية والاختصاص النوعي قبل الصياغة', 'فحص شرط التحكيم أو الاتفاق على جهة النظر', 'مطابقة الفواتير بكشف الحساب'],
+    forbiddenShortcuts: ['افتراض الصفة التجارية لمجرد وجود شركة', 'تجاهل شرط التحكيم', 'اعتبار الفاتورة وحدها إثباتاً قاطعاً للاستلام'],
+  },
+  'labor-dispute': {
+    id: 'labor-dispute',
+    label: 'نزاع عمالي',
+    mission: 'إثبات علاقة العمل ونوع العقد والأجر وتاريخ انتهاء العلاقة وسببه، ثم كل مستحق بأساسه ومقداره ودليله.',
+    elements: ['علاقة العمل ونوع العقد ومدته', 'الأجر الفعلي ومكوناته', 'تاريخ انتهاء العلاقة وسببه', 'كل مطالبة مستقلة بأساسها ومبلغها', 'الإجراء السابق على القيد متى لزم'],
+    evidenceFocus: ['عقد العمل', 'مسيرات الرواتب والتحويلات', 'سجل التأمينات الاجتماعية', 'خطاب الفصل أو الاستقالة', 'المراسلات والمخالصات'],
+    opposingArguments: ['انتفاء علاقة العمل أو اختلاف الأجر', 'المخالصة أو السداد', 'الاستقالة أو الإنهاء المشروع', 'مضي مدة قبول الدعوى'],
+    remedyFocus: ['جدول مستحقات: البند ← الأساس ← المبلغ ← الدليل'],
+    mandatoryChecks: ['تثبيت تاريخ انتهاء علاقة العمل', 'فصل كل مطالبة عن الأخرى', 'مراجعة أي مخالصة موقعة'],
+    forbiddenShortcuts: ['افتراض الأجر أو مدة الخدمة دون مستند', 'دمج المطالبات في مبلغ واحد', 'تطبيق قواعد الخدمة المدنية على عامل في منشأة خاصة'],
+  },
+  'personal-status-family': {
+    id: 'personal-status-family',
+    label: 'دعوى أحوال شخصية',
+    mission: 'إثبات العلاقة الأسرية محل الدعوى بالصكوك، ثم الطلب (نفقة أو حضانة أو زيارة أو فرقة) بأساسه ودليله وقابليته للتنفيذ، مع تقديم مصلحة المحضون.',
+    elements: ['ثبوت العلاقة: عقد النكاح أو صك الطلاق أو الخلع أو النسب', 'الطلب المحدد', 'مصلحة المحضون في الحضانة والزيارة', 'حاجة المنفق عليه وقدرة المنفق في النفقة'],
+    evidenceFocus: ['عقد النكاح وصك الطلاق', 'شهادات الميلاد وسجل الأسرة', 'ما يثبت الدخل والقدرة المالية', 'ما يثبت مصلحة المحضون'],
+    opposingArguments: ['عدم ثبوت العلاقة أو الواقعة', 'عدم القدرة المالية أو المبالغة في النفقة', 'مصلحة المحضون مع الطرف الآخر', 'سبق الفصل أو الصلح'],
+    remedyFocus: ['طلب قابل للتنفيذ: مبلغ النفقة ودوريته، أو ترتيب الحضانة والزيارة زماناً ومكاناً'],
+    mandatoryChecks: ['التحقق من الصكوك الرسمية قبل أي طلب', 'تقديم مصلحة المحضون على رغبة الطرفين'],
+    forbiddenShortcuts: ['تقدير نفقة بلا أساس من الملف', 'إدخال وقائع خاصة لا صلة لها بالطلب', 'افتراض ثبوت النكاح أو النسب دون صك'],
+  },
   'criminal-defense': {
     id: 'criminal-defense',
     label: 'دفاع في قضية جزائية',
@@ -173,9 +209,7 @@ const PROFILES: Record<CaseStrategyProfileId, CaseStrategyProfile> = {
   },
 };
 
-export function detectCaseStrategyProfile(text: string): CaseStrategyProfile {
-  const value = normalize(text);
-
+function detectFromText(value: string): CaseStrategyProfile {
   if (/عسكري|فرد عسكري|خدمه الافراد|وزاره الدفاع|القوات البريه|القوات الجويه|القوات البحريه/.test(value)
     && /بدل|علاوه|مكافاه|راتب|ترقيه|تسويه|حق وظيفي|مربوط|استحقاق/.test(value)) {
     return PROFILES['military-personnel-rights'];
@@ -187,12 +221,36 @@ export function detectCaseStrategyProfile(text: string): CaseStrategyProfile {
   if (/سلف|دين|تحويل بنكي|مطالبه ماليه/.test(value)) return PROFILES['general-money-claim'];
   if (/عقد|فسخ|اخلال|إخلال/.test(value) && /مدني|تجاري|المحكمه العامه|المحكمة العامة|محكمه تجاريه/.test(value)) return PROFILES['general-contract'];
   if (/جزائي|جنائي|متهم|اتهام|نيابه|قبض|تفتيش|توقيف/.test(value)) return PROFILES['criminal-defense'];
+  if (/نفقه|حضانه|طلاق|خلع|فسخ النكاح|المحضون/.test(value)) return PROFILES['personal-status-family'];
+  if (/صاحب العمل|عقد (?:ال)?عمل|علاقه العمل|نهايه الخدمه|المحكمه العماليه/.test(value)) return PROFILES['labor-dispute'];
+  if (/المحكمه التجاريه|سجل تجاري|توريد|فواتير|تاجر|كمبياله/.test(value)) return PROFILES['commercial-dispute'];
 
   return PROFILES.unknown;
 }
 
-export function buildCaseStrategyInstruction(text: string): string {
-  const profile = detectCaseStrategyProfile(text);
+/** بروفايلات نظرية القضية المسموحة لكل جهة: الأول هو بديلها حين لا يطابق النص بروفايلاً منها. */
+const SYSTEM_STRATEGIES: Record<string, CaseStrategyProfileId[]> = {
+  administrative: ['unknown', 'military-personnel-rights', 'administrative-annulment', 'administrative-compensation', 'administrative-contract', 'disciplinary'],
+  commercial: ['commercial-dispute', 'general-contract'],
+  general: ['general-money-claim', 'general-contract'],
+  labor: ['labor-dispute'],
+  'personal-status': ['personal-status-family'],
+  criminal: ['criminal-defense'],
+};
+
+/**
+ * عند تحديد الجهة القضائية لا يُختار إلا بروفايل يناسبها؛ فلا تُعالج قضية جزائية
+ * ذُكر فيها «تعويض» و«وزارة» كمنازعة إدارية.
+ */
+export function detectCaseStrategyProfile(text: string, courtSystem?: string | null): CaseStrategyProfile {
+  const detected = detectFromText(normalize(text));
+  const allowed = courtSystem ? SYSTEM_STRATEGIES[courtSystem] : undefined;
+  if (!allowed || allowed.includes(detected.id)) return detected;
+  return PROFILES[allowed[0]];
+}
+
+export function buildCaseStrategyInstruction(text: string, courtSystem?: string | null): string {
+  const profile = detectCaseStrategyProfile(text, courtSystem);
   return [
     '[بروفايل نظرية القضية]',
     `النوع: ${profile.label}`,

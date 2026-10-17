@@ -149,10 +149,10 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+    <div className="qada-8k-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <div
         id="article8-modal"
-        className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-xl w-full text-neutral-100 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="qada-8k-modal bg-neutral-900 border border-neutral-700 rounded-2xl max-w-xl w-full text-neutral-100 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-900/90">
@@ -182,10 +182,11 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
             <button
               id="close-article8-modal"
               onClick={onClose}
-              className="p-1.5 text-neutral-400 hover:text-neutral-200 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
+              className="qada-8k-icon-button p-1.5 text-neutral-400 hover:text-neutral-200 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
+              aria-label="إغلاق"
               title="إغلاق"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>

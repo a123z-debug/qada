@@ -25,10 +25,13 @@ import {
   RotateCcw,
   ExternalLink,
   LoaderCircle,
+  Landmark,
 } from 'lucide-react';
 import { CourtJurisdiction } from '../layout/Sidebar';
 import { printLegalMemo } from '../../utils/printMemo';
 import { JudgesCassationReviewPanel } from '../JudgesCassationReviewPanel';
+import { VirtualCourtroom } from '../courts/VirtualCourtroom';
+import { defaultLevelForService } from '../../lib/judicialSystem';
 import { Attachment, DetailedJudgesReviewReport } from '../../types';
 
 interface LegalReviewEditorProps {
@@ -150,7 +153,9 @@ export function LegalReviewEditor({
   onContentChange,
 }: LegalReviewEditorProps) {
   const [content, setContent] = useState(initialContent);
-  const [activeTab, setActiveTab] = useState<'editor' | 'highlighted' | 'judges'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'highlighted' | 'judges' | 'courtroom'>('editor');
+  // The courtroom stays mounted once opened so a running session survives tab switches.
+  const [courtroomOpened, setCourtroomOpened] = useState(false);
   const [copied, setCopied] = useState(false);
   const [referenceSearch, setReferenceSearch] = useState('');
   const [referenceResults, setReferenceResults] = useState<RagReference[]>([]);
@@ -261,6 +266,21 @@ export function LegalReviewEditor({
     }
     setRevisionToast('تم إدراج التعديل المقترح في صلب المذكرة ✓');
     setTimeout(() => setRevisionToast(null), 5000);
+  };
+
+  const openCourtroom = () => {
+    setCourtroomOpened(true);
+    setActiveTab('courtroom');
+  };
+
+  const handleAdoptCourtPleading = (pleading: string) => {
+    setPreviousContent(content);
+    setContent(pleading);
+    if (onContentChange) {
+      onContentChange(pleading);
+    }
+    setRevisionToast('تم اعتماد مذكرة المحكمة الافتراضية في المحرر. شغّل القاضي الافتراضي عليها قبل الطباعة أو التصدير ✓');
+    setTimeout(() => setRevisionToast(null), 6000);
   };
 
   const handleRestorePreviousContent = () => {
@@ -471,7 +491,7 @@ export function LegalReviewEditor({
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-10">
+    <div className="qada-8k-editor space-y-4 max-w-7xl mx-auto pb-10">
       {/* 1. Top Focus Mode Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl bg-neutral-900 border border-neutral-800 shadow-xl">
         <div className="flex items-center gap-3">
@@ -537,10 +557,22 @@ export function LegalReviewEditor({
               }`}
             >
               <Gavel className="w-3.5 h-3.5 text-amber-400" />
-              <span>هيئة المراجعة القانونية الآلية ⚖️</span>
+              <span>هيئة المراجعة القانونية الآلية</span>
               {judgesReport && (
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               )}
+            </button>
+            <button
+              type="button"
+              onClick={openCourtroom}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'courtroom'
+                  ? 'bg-amber-500 text-neutral-950 shadow'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              <Landmark className="w-3.5 h-3.5" />
+              <span>المحكمة الافتراضية</span>
             </button>
           </div>
 
@@ -664,8 +696,8 @@ export function LegalReviewEditor({
               {isLoadingJudges
                 ? 'جارٍ تشغيل المراجعين...'
                 : judgesReport
-                ? 'معاينة تقرير المراجعة الآلية ⚖️'
-                : 'تشغيل المراجعة الآلية للمذكرة والمرفقات ⚖️'}
+                ? 'معاينة تقرير المراجعة الآلية'
+                : 'تشغيل المراجعة الآلية للمذكرة والمرفقات'}
             </span>
           </button>
         </div>
@@ -685,7 +717,7 @@ export function LegalReviewEditor({
           previousEditorText={previousContent || undefined}
           onRestorePreviousText={handleRestorePreviousContent}
         />
-      ) : (
+      ) : activeTab === 'courtroom' ? null : (
         /* 3. Main Split Screen (Right: RAG Data 40%, Left: Rich Editor 60%) */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Right (40% / 5 cols): RAG Data & Statutory Grounds */}
@@ -973,8 +1005,8 @@ export function LegalReviewEditor({
                     {isLoadingJudges
                       ? 'جارٍ الفحص...'
                       : judgesReport
-                      ? 'معاينة تقرير المراجعة الآلية ⚖️'
-                      : 'تشغيل هيئة المراجعة الآلية ⚖️'}
+                      ? 'معاينة تقرير المراجعة الآلية'
+                      : 'تشغيل هيئة المراجعة الآلية'}
                   </span>
                 </button>
               </div>
@@ -984,9 +1016,9 @@ export function LegalReviewEditor({
             <div className="pt-2 border-t border-neutral-850 flex flex-wrap items-center justify-between gap-2">
               <div className="text-[11px] text-neutral-400">
                 {!isAllApproved ? (
-                  <span>⚠️ أكمل المراجعة اليدوية أولاً.</span>
+                  <span>أكمل المراجعة اليدوية أولاً.</span>
                 ) : !judgesSourceAudit ? (
-                  <span>⚖️ شغّل هيئة المراجعة القضائية قبل التصدير.</span>
+                  <span>شغّل هيئة المراجعة القضائية قبل التصدير.</span>
                 ) : !virtualJudgePassed ? (
                   <span className="text-amber-300">
                     بوابة القاضي: {judgesSourceAudit.gateDecision || 'RETURN'} • الجاهزية {readinessScore}/100 • الحد الأدنى {readinessTarget}/100
@@ -1035,6 +1067,21 @@ export function LegalReviewEditor({
           </div>
         </div>
       </div>
+      )}
+
+      {courtroomOpened && (
+        <div hidden={activeTab !== 'courtroom'}>
+          <VirtualCourtroom
+            embedded
+            initialSystem={court}
+            initialLevel={defaultLevelForService(serviceId)}
+            initialCaseText={content}
+            documentTitle={documentTitle}
+            documentsText={attachmentsText || uploadedFileText || ''}
+            initialAttachments={uploadedAttachments}
+            onAdoptPleading={handleAdoptCourtPleading}
+          />
+        </div>
       )}
 
       {isPrintPreviewOpen && (

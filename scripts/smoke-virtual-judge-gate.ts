@@ -17,6 +17,7 @@ for (const marker of [
   'H. PRECEDENT_TEST',
   'I. REMEDY_TEST',
   'J. CONTRADICTION_TEST',
+  'K. CLAIM_LIBERATION_TEST',
 ]) {
   assert(judges.includes(marker), 'virtual judge review stage missing: ' + marker);
 }
@@ -51,10 +52,17 @@ assert(
   'virtual judge must test whether the pleaded grounds support the requested remedy',
 );
 
+
+assert(
+  judges.includes('البيانات، الوقائع، المستندات، الطلبات')
+    && judges.includes('claimLiberationBlockers'),
+  'virtual judge must block an unliberated claim before PASS',
+);
+
 console.log(JSON.stringify({
   ok: true,
   scenario: 'generic administrative cassation quality gate',
-  stages: 10,
+  stages: 11,
   gate: ['PASS', 'RETURN', 'BLOCK'],
   piiFixture: false,
 }, null, 2));

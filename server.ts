@@ -10,11 +10,13 @@ import convertStoryHandler from './api/convert-story';
 import legalSourceSearchHandler from './api/legal-source-search';
 import adminAnalysisHandler from './api/admin-analysis';
 import judgesReviewHandler from './api/judges-review';
+import courtSessionHandler from './api/court-session';
 import casesHandler from './api/cases';
 import adminRunsHandler from './api/admin-runs';
 import healthHandler from './api/health';
 import adminUsersHandler from './api/admin-users';
 import auditLogHandler from './api/audit-log';
+import adminSentinelHandler from './api/admin-sentinel';
 
 dotenv.config();
 
@@ -69,11 +71,13 @@ async function startServer() {
       "object-src 'none'",
       "frame-ancestors 'none'",
       "form-action 'self'",
-      "script-src 'self'",
+      // Vite dev serving injects an inline React refresh preamble and opens an HMR
+      // websocket on its own port; allow both only outside production.
+      IS_PRODUCTION ? "script-src 'self'" : "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
-      "connect-src 'self'",
+      IS_PRODUCTION ? "connect-src 'self'" : "connect-src 'self' ws://localhost:* ws://127.0.0.1:*",
       "media-src 'self' data: blob:",
       "worker-src 'self' blob:",
       "manifest-src 'self'",
@@ -163,6 +167,10 @@ async function startServer() {
     void judgesReviewHandler(req as any, res as any);
   });
 
+  app.post('/api/court-session', (req, res) => {
+    void courtSessionHandler(req as any, res as any);
+  });
+
   app.all('/api/cases', (req, res) => {
     void casesHandler(req as any, res as any);
   });
@@ -177,6 +185,10 @@ async function startServer() {
 
   app.all('/api/audit-log', (req, res) => {
     void auditLogHandler(req as any, res as any);
+  });
+
+  app.get('/api/admin-sentinel', (req, res) => {
+    void adminSentinelHandler(req as any, res as any);
   });
 
   if (process.env.NODE_ENV !== 'production') {

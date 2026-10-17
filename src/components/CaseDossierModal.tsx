@@ -185,8 +185,8 @@ export function CaseDossierModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md p-2 sm:p-4" dir="rtl">
-      <div className="mx-auto flex h-[96dvh] max-w-6xl flex-col overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl">
+    <div className="qada-8k-modal-overlay fixed inset-0 z-[100] bg-black/85 backdrop-blur-md p-2 sm:p-4" dir="rtl">
+      <div className="qada-8k-modal qada-8k-dossier mx-auto flex h-[96dvh] max-w-6xl flex-col overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl">
         <header className="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/90 px-4 py-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-400/30 bg-emerald-400/10 text-emerald-300">
