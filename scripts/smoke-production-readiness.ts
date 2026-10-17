@@ -74,6 +74,7 @@ const boundedAiFiles = [
   'api/admin-analysis.ts',
   'api/judges-review.ts',
   'api/convert-story.ts',
+  'api/court-session.ts',
 ];
 for (const file of boundedAiFiles) {
   const source = fs.readFileSync(file, 'utf8');

@@ -6,7 +6,7 @@ import { enforceRateLimit } from './_rateLimit.js';
 import { withTimeout } from './_async.js';
 import { ECONOMY_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
 
-type Court = 'administrative' | 'general' | 'criminal';
+type Court = 'administrative' | 'general' | 'criminal' | 'commercial';
 function getGeminiClients(): GoogleGenAI[] {
   const keys = [1, 2, 3, 4]
     .map((index) => process.env[`GEMINI_API_KEY${index === 1 ? '' : `_${index}`}`]?.trim())
@@ -112,6 +112,7 @@ async function askAi(prompt: string): Promise<any | null> {
 function courtLabel(court: Court): string {
   if (court === 'criminal') return 'المحاكم الجزائية';
   if (court === 'general') return 'المحاكم العامة';
+  if (court === 'commercial') return 'المحاكم التجارية';
   return 'القضاء الإداري وديوان المظالم';
 }
 
@@ -139,7 +140,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const body = (req.body ?? {}) as { story?: string; court?: Court };
   const story = typeof body.story === 'string' ? body.story.trim().slice(0, 18000) : '';
-  const court: Court = body.court === 'general' || body.court === 'criminal' ? body.court : 'administrative';
+  const court: Court = body.court === 'general' || body.court === 'criminal' || body.court === 'commercial'
+    ? body.court
+    : 'administrative';
   if (!story) return res.status(400).json({ error: 'يُرجى كتابة ما حدث أو لصق النص.' });
 
   // Privacy gate: never forward common direct identifiers to an external AI provider.

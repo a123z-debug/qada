@@ -3,6 +3,7 @@ import { readActiveSession } from './session.js';
 import { isRedisConfigured, redisCommand, redisPrefix } from './_redis.js';
 import { enforceRateLimit } from './_rateLimit.js';
 import { protectJson, unprotectJson } from './_secureStore.js';
+import { courtRunsKey } from './_courtTelemetry.js';
 
 type AdminRunSnapshot = {
   runId?: string;
@@ -85,7 +86,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const runs = (Array.isArray(values) ? values : [])
         .map((value) => unprotectJson<AdminRunSnapshot>(typeof value === 'string' ? value : '', 'admin-run'))
         .filter((value): value is AdminRunSnapshot => Boolean(value));
-      return res.status(200).json({ runs });
+      // Virtual-court sessions are kept in their own list so they never push admin runs out of history.
+      const courtValues = await redisCommand(['LRANGE', courtRunsKey(), 0, 9]);
+      const courtRuns = (Array.isArray(courtValues) ? courtValues : [])
+        .map((value) => unprotectJson<AdminRunSnapshot>(typeof value === 'string' ? value : '', 'admin-run'))
+        .filter((value): value is AdminRunSnapshot => Boolean(value));
+      return res.status(200).json({ runs, courtRuns });
     }
 
     if (req.method === 'POST') {

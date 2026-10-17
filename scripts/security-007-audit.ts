@@ -19,7 +19,7 @@ function walk(dir: string): string[] {
       if (['node_modules', 'dist', 'scratch', '.git'].includes(entry.name)) continue;
       out.push(...walk(full));
     } else if (/\.(?:ts|tsx|js|jsx|html)$/.test(entry.name)) {
-      out.push(full);
+      out.push(full.split(path.sep).join('/'));
     }
   }
   return out;
@@ -182,6 +182,7 @@ const protectedEndpoints = [
   'api/admin-runs.ts',
   'api/admin-users.ts',
   'api/audit-log.ts',
+  'api/court-session.ts',
 ];
 for (const file of protectedEndpoints) {
   const source = fs.readFileSync(file, 'utf8');

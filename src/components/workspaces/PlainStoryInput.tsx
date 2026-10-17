@@ -19,7 +19,7 @@ export interface LegalAdaptationResult {
 }
 
 interface PlainStoryInputProps {
-  court: 'administrative' | 'general' | 'criminal';
+  court: 'administrative' | 'general' | 'criminal' | 'commercial';
   onApplyExtractedData: (data: LegalAdaptationResult) => void;
   currentStory: string;
   onStoryChange: (story: string) => void;
@@ -48,6 +48,12 @@ export function PlainStoryInput({
           'مماطلة في سداد دين عقد مقاولة',
           'مستأجر امتنع عن دفع الإيجار',
           'بيع سيارة معيبة بعيب خفي',
+        ]
+      : court === 'commercial'
+      ? [
+          'شركة لم تسدد قيمة توريدات بفواتير',
+          'شريك أخل بعقد الشراكة التجارية',
+          'وكيل تجاري أنهى العقد دون إشعار',
         ]
       : [
           'بطلان قبض وتفتيش بدون إذن',

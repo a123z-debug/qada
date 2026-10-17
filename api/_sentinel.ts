@@ -84,7 +84,7 @@ function normalizeArabic(value: string): string {
 export function looksLikeBareCourtAnswer(text: string): boolean {
   const value = normalizeArabic(text);
   if (!value || value.length > 120) return false;
-  if (/(?:ابي|ابغى|اريد|اكتب|صغ|جهز|اعد|اعترض|اطعن|ارفع|دعوى|مذكره|استئناف على|نقض على)/.test(value)) return false;
+  if (/(?:ابي|ابغي|اريد|اكتب|صغ|جهز|اعد|اعترض|اطعن|ارفع|دعوي|مذكره|استئناف علي|نقض علي)/.test(value)) return false;
   return /^(?:في\s+)?(?:المحكمه\s+)?(?:الاداريه|العامه|الجزائيه|التجاريه|العماليه|الاحوال\s+الشخصيه|الاستئناف\s+الاداريه|الاستئناف|العليا|الاداريه\s+العليا|محكمه\s+.+|[\p{L}\s]{2,40}\s+محكمه)$/u.test(value)
     || /^محكمه\s+[\p{L}\s]{2,60}$/u.test(value);
 }
@@ -94,7 +94,7 @@ function looksLikeShortCompletion(text: string): boolean {
   if (!value || value.length > 140) return false;
   if (looksLikeBareCourtAnswer(value)) return true;
   if (/^(?:نعم|لا|اي|ايوه|صح|تمام|امس|اليوم|قبل\s+\d+\s+ايام?|\d{1,4}(?:[/-]\d{1,2}){1,2}|\d{1,7})$/.test(value)) return true;
-  if (/^(?:بتاريخ|تاريخ|المبلغ|رقم|المدعي|المدعى عليه|الجهه|الوزاره)\s*[:：-]?\s*.+/.test(value)) return true;
+  if (/^(?:بتاريخ|تاريخ|المبلغ|رقم|المدعي|المدعي عليه|الجهه|الوزاره)\s*[:：-]?\s*.+/.test(value)) return true;
   return false;
 }
 

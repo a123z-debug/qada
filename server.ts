@@ -1,6 +1,8 @@
+// يجب أن يكون أول استيراد: ملفات api/* تقرأ بعض الإعدادات عند تحميلها (مثل QADA_OPEN_TEST_MODE)،
+// فإن حُمّل .env بعدها قرأتها فارغة محلياً. على Vercel تُحقن المتغيرات قبل التشغيل فلا يظهر الفرق.
+import 'dotenv/config';
 import express from 'express';
 import path from 'node:path';
-import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 
 import sessionHandler from './api/session';
@@ -10,6 +12,7 @@ import convertStoryHandler from './api/convert-story';
 import legalSourceSearchHandler from './api/legal-source-search';
 import adminAnalysisHandler from './api/admin-analysis';
 import judgesReviewHandler from './api/judges-review';
+import courtSessionHandler from './api/court-session';
 import casesHandler from './api/cases';
 import adminRunsHandler from './api/admin-runs';
 import healthHandler from './api/health';
@@ -17,7 +20,6 @@ import adminUsersHandler from './api/admin-users';
 import auditLogHandler from './api/audit-log';
 import adminSentinelHandler from './api/admin-sentinel';
 
-dotenv.config();
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -70,11 +72,13 @@ async function startServer() {
       "object-src 'none'",
       "frame-ancestors 'none'",
       "form-action 'self'",
-      "script-src 'self'",
+      // Vite dev serving injects an inline React refresh preamble and opens an HMR
+      // websocket on its own port; allow both only outside production.
+      IS_PRODUCTION ? "script-src 'self'" : "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",
-      "connect-src 'self'",
+      IS_PRODUCTION ? "connect-src 'self'" : "connect-src 'self' ws://localhost:* ws://127.0.0.1:*",
       "media-src 'self' data: blob:",
       "worker-src 'self' blob:",
       "manifest-src 'self'",
@@ -162,6 +166,10 @@ async function startServer() {
 
   app.post('/api/judges-review', (req, res) => {
     void judgesReviewHandler(req as any, res as any);
+  });
+
+  app.post('/api/court-session', (req, res) => {
+    void courtSessionHandler(req as any, res as any);
   });
 
   app.all('/api/cases', (req, res) => {

@@ -19,7 +19,11 @@ import {
   AlertTriangle,
   Clock,
   Network,
-  LockKeyhole
+  LockKeyhole,
+  Landmark,
+  UsersRound,
+  Swords,
+  LayoutGrid
 } from 'lucide-react';
 import { CourtJurisdiction, COURT_CATEGORIES } from '../layout/Sidebar';
 import { readSseTextResponse } from '../../lib/readSseTextResponse';
@@ -54,6 +58,8 @@ interface WelcomeScreenProps {
   defaultMode?: 'simple' | 'professional';
   onModeChange?: (mode: 'simple' | 'professional') => void;
   onOpenAdminOverview?: () => void;
+  onOpenCatalog?: () => void;
+  onOpenCourtroom?: () => void;
 }
 
 export function WelcomeScreen({
@@ -65,6 +71,8 @@ export function WelcomeScreen({
   defaultMode,
   onModeChange,
   onOpenAdminOverview,
+  onOpenCatalog,
+  onOpenCourtroom,
 }: WelcomeScreenProps) {
   const [interfaceMode, setInterfaceMode] = useState<'simple' | 'professional'>(defaultMode || (isAdmin ? 'professional' : 'simple'));
 
@@ -288,7 +296,17 @@ export function WelcomeScreen({
             <h2 className="text-sm font-black text-slate-950">قضيتي</h2>
             <p className="mt-0.5 text-[11px] text-slate-500">كل شيء عن مشكلتك في مكان واحد.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {onOpenCatalog && (
+              <button
+                type="button"
+                onClick={onOpenCatalog}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
+              >
+                <LayoutGrid className="h-4 w-4" strokeWidth={1.8} />
+                تصفّح أنواع القضايا
+              </button>
+            )}
             <button
               type="button"
               onClick={() => changeInterfaceMode('professional')}
@@ -469,6 +487,12 @@ export function WelcomeScreen({
           <p className="mt-1 text-xs text-slate-400">للشخص الذي يعرف نوع القضية ويريد اختيار المحكمة والخدمة والمراجع بنفسه.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {onOpenCatalog && (
+            <button type="button" onClick={onOpenCatalog} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 text-xs font-black text-amber-200 hover:bg-amber-500/20">
+              <LayoutGrid className="h-4 w-4" />
+              فهرس القضايا الهرمي
+            </button>
+          )}
           <button type="button" onClick={() => changeInterfaceMode('simple')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
             رجوع للوضع البسيط
           </button>
@@ -572,6 +596,40 @@ export function WelcomeScreen({
         </div>
       </div>
 
+      {onOpenCourtroom && (
+        <div className="qada-court-chamber p-5 sm:p-7">
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-4">
+              <span className="qada-court-emblem shrink-0" aria-hidden="true">
+                <Landmark className="h-7 w-7" strokeWidth={1.6} />
+              </span>
+              <div>
+                <div className="qada-court-kicker">القضاء الافتراضي</div>
+                <h2 className="qada-court-title mt-1 text-xl sm:text-2xl font-black">المحكمة الافتراضية</h2>
+                <p className="qada-court-muted mt-1.5 max-w-2xl text-xs sm:text-sm leading-7">
+                  أربع جهات قضائية: التجارية، العامة، ديوان المظالم والإدارية، والجزائية — ولكل جهة ثلاث درجات. اعرض قضيتك على هيئة حكم ومدعٍ عام، وفريق دفاع من ستة محامين يعيد المرافعة حتى تُعالج أسباب الحكم ضدك.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                  <span className="qada-court-chip inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1"><Gavel className="h-3.5 w-3.5" aria-hidden="true" />وكيلا قاضٍ وقاضٍ مُصدر للحكم</span>
+                  <span className="qada-court-chip inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1"><Landmark className="h-3.5 w-3.5" aria-hidden="true" />ثلاثة قضاة نقض</span>
+                  <span className="qada-court-chip inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1"><Swords className="h-3.5 w-3.5" aria-hidden="true" />مدعٍ عام</span>
+                  <span className="qada-court-chip inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1"><UsersRound className="h-3.5 w-3.5" aria-hidden="true" />ستة محامين</span>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenCourtroom}
+              className="qada-court-primary min-h-12 shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-black"
+            >
+              <Landmark className="h-5 w-5" aria-hidden="true" />
+              <span>دخول المحكمة الافتراضية</span>
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {isAdmin && onOpenAdminOverview && (
         <div className="qada-pro-admin relative overflow-hidden rounded-[26px] border p-5 sm:p-6">
           <div className="absolute -top-16 -left-16 h-44 w-44 rounded-full bg-violet-500/15 blur-3xl pointer-events-none" />
@@ -614,7 +672,7 @@ export function WelcomeScreen({
           <span className="text-xs text-slate-400">وضع متقدم للمستخدم الخبير</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
           {COURT_CATEGORIES.map((cat) => {
             const CatIcon = cat.icon;
             const primaryService = cat.services[0];

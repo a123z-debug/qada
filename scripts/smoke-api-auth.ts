@@ -11,6 +11,7 @@ const protectedEndpoints = [
   'api/admin-users.ts',
   'api/audit-log.ts',
   'api/admin-sentinel.ts',
+  'api/court-session.ts',
 ];
 
 const adminEndpoints = [
@@ -32,6 +33,7 @@ const rateLimitedEndpoints = [
   'api/admin-users.ts',
   'api/audit-log.ts',
   'api/admin-sentinel.ts',
+  'api/court-session.ts',
 ];
 
 const violations: string[] = [];

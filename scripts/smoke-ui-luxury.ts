@@ -46,6 +46,7 @@ assert(master.includes('Quiet Luxury') && master.includes('Mobile-first') && mas
 assert(css.includes('qada-user-auth-shell') && css.includes('qada-riyadh-hero'), 'Public landing and auth surfaces must share the premium identity');
 
 for (const path of [
+  'src/components/workspaces/CommercialWorkspace.tsx',
   'src/components/workspaces/AdministrativeWorkspace.tsx',
   'src/components/workspaces/GeneralWorkspace.tsx',
   'src/components/workspaces/CriminalWorkspace.tsx',

@@ -3,9 +3,10 @@ import { runLegalSourceAgents } from '../src/lib/legalSourceAgents.js';
 import { readActiveSession } from './session.js';
 import { enforceRateLimit } from './_rateLimit.js';
 
-type Court = 'administrative' | 'general' | 'criminal';
+type Court = 'administrative' | 'general' | 'criminal' | 'commercial';
 
 const COURT_HINTS: Record<Court, string> = {
+  commercial: 'المحاكم التجارية نظام المحاكم التجارية القضاء التجاري المنازعات التجارية',
   administrative: 'ديوان المظالم القضاء الإداري نظام المرافعات أمام ديوان المظالم',
   general: 'المحاكم العامة نظام القضاء نظام المرافعات الشرعية نظام الإثبات',
   criminal: 'المحاكم الجزائية نظام الإجراءات الجزائية نظام الإثبات',
@@ -46,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const body = (req.body ?? {}) as { query?: string; court?: Court };
-  const court: Court = body.court === 'general' || body.court === 'criminal'
+  const court: Court = body.court === 'general' || body.court === 'criminal' || body.court === 'commercial'
     ? body.court
     : 'administrative';
   const query = typeof body.query === 'string' ? body.query.trim().slice(0, 4000) : '';

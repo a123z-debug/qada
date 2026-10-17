@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from 'react';
+ import React, { Suspense, useState, useEffect } from 'react';
 import {
   Building2,
   Scale,
@@ -23,11 +23,17 @@ import {
   GitCompare,
   Network,
   Users,
-  ClipboardList
+  ClipboardList,
+  Briefcase,
+  Landmark,
+  LayoutGrid
 } from 'lucide-react';
 import { UserSession } from '../../types';
 
-export type CourtJurisdiction = 'administrative' | 'general' | 'criminal';
+// الشجرة تحمّل بيانات الفهرس، فتُحمّل عند الحاجة فقط حتى لا تكبر الحزمة الرئيسية.
+const SidebarCaseTree = React.lazy(() => import('../catalog/SidebarCaseTree').then((module) => ({ default: module.SidebarCaseTree })));
+
+export type CourtJurisdiction = 'commercial' | 'general' | 'administrative' | 'criminal';
 
 export interface ServiceOption {
   id: string;
@@ -54,22 +60,22 @@ export interface CourtCategoryConfig {
 
 export const COURT_CATEGORIES: CourtCategoryConfig[] = [
   {
-    id: 'administrative',
-    title: 'المحاكم الإدارية',
-    subTitle: 'القضايا الإدارية والتظلمات والقرارات',
-    icon: Building2,
+    id: 'commercial',
+    title: 'المحاكم التجارية',
+    subTitle: 'المنازعات التجارية والشركات والعقود التجارية',
+    icon: Briefcase,
     colorTheme: {
-      bg: 'bg-amber-500/10',
-      border: 'border-amber-500/30',
-      text: 'text-amber-400',
-      accent: 'text-amber-300',
-      hoverBg: 'hover:bg-amber-500/15',
+      bg: 'bg-sky-500/10',
+      border: 'border-sky-400/30',
+      text: 'text-sky-300',
+      accent: 'text-sky-200',
+      hoverBg: 'hover:bg-sky-400/10',
     },
     services: [
-      { id: 'administrative_claim', label: 'لائحة دعوى', icon: FileText, badge: 'إدارية', description: 'صياغة دعوى متكاملة وفق نظام ديوان المظالم' },
-      { id: 'administrative_appeal', label: 'اعتراض واستئناف', icon: Scale, badge: 'طعن', description: 'نقض أسباب الحكم الإداري والقصور في التسبيب' },
-      { id: 'administrative_memo', label: 'مذكرة دفوع', icon: Gavel, badge: 'موضوعية', description: 'دحض دفاع الإدارة وأوجه بطلان القرار' },
-      { id: 'administrative_attachments', label: 'فحص المرفقات والقرارات', icon: UploadCloud, badge: 'مستندات', description: 'استخراج الثغرات النظامية من القرار المطعون فيه' },
+      { id: 'commercial_claim', label: 'لائحة دعوى تجارية', icon: FileText, badge: 'تجارية', description: 'صياغة دعوى تجارية مربوطة بالعقد والفواتير والمراسلات' },
+      { id: 'commercial_appeal', label: 'اعتراض تجاري', icon: Gavel, badge: 'اعتراض', description: 'أسباب الاعتراض على الحكم التجاري وموضع الخطأ وأثره' },
+      { id: 'commercial_memo', label: 'مذكرة جوابية تجارية', icon: FileCheck, badge: 'دفوع', description: 'الرد على دعوى تجارية: الاختصاص والسداد والمقاصة والإخلال المقابل' },
+      { id: 'commercial_attachments', label: 'فحص العقود والفواتير', icon: UploadCloud, badge: 'بينات', description: 'فحص العقود التجارية والفواتير والدفاتر وما تثبته فعلاً' },
     ],
   },
   {
@@ -89,6 +95,25 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
       { id: 'general_appeal', label: 'استئناف عام', icon: Gavel, badge: 'اعتراض', description: 'أوجه الاعتراض والفساد في الاستدلال' },
       { id: 'general_memo', label: 'مذكرة جوابية', icon: FileCheck, badge: 'دفوع', description: 'الدفع بإنكار الالتزام أو انقضاء الدين' },
       { id: 'general_attachments', label: 'فحص السندات والعقود', icon: UploadCloud, badge: 'بينات', description: 'فحص السندات لأمر والعقود الموقعة إلكترونياً' },
+    ],
+  },
+  {
+    id: 'administrative',
+    title: 'ديوان المظالم والمحاكم الإدارية',
+    subTitle: 'القضايا الإدارية والتظلمات والقرارات',
+    icon: Building2,
+    colorTheme: {
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/30',
+      text: 'text-amber-400',
+      accent: 'text-amber-300',
+      hoverBg: 'hover:bg-amber-500/15',
+    },
+    services: [
+      { id: 'administrative_claim', label: 'لائحة دعوى', icon: FileText, badge: 'إدارية', description: 'صياغة دعوى متكاملة وفق نظام ديوان المظالم' },
+      { id: 'administrative_appeal', label: 'اعتراض واستئناف', icon: Scale, badge: 'طعن', description: 'نقض أسباب الحكم الإداري والقصور في التسبيب' },
+      { id: 'administrative_memo', label: 'مذكرة دفوع', icon: Gavel, badge: 'موضوعية', description: 'دحض دفاع الإدارة وأوجه بطلان القرار' },
+      { id: 'administrative_attachments', label: 'فحص المرفقات والقرارات', icon: UploadCloud, badge: 'مستندات', description: 'استخراج الثغرات النظامية من القرار المطعون فيه' },
     ],
   },
   {
@@ -113,6 +138,10 @@ export const COURT_CATEGORIES: CourtCategoryConfig[] = [
 ];
 
 const CLIENT_COURT_COPY: Record<CourtJurisdiction, { title: string; subTitle: string }> = {
+  commercial: {
+    title: 'نزاع تجاري أو شركة',
+    subTitle: 'عقود تجارية، فواتير، شركاء ومنشآت',
+  },
   administrative: {
     title: 'مشكلة مع جهة حكومية',
     subTitle: 'قرار، خصم، رفض طلب أو تظلّم',
@@ -128,6 +157,10 @@ const CLIENT_COURT_COPY: Record<CourtJurisdiction, { title: string; subTitle: st
 };
 
 const CLIENT_SERVICE_LABELS: Record<string, string> = {
+  commercial_claim: 'أرفع دعوى تجارية',
+  commercial_appeal: 'أعترض على حكم تجاري',
+  commercial_memo: 'أرد على الخصم التجاري',
+  commercial_attachments: 'أراجع عقد أو فاتورة تجارية',
   administrative_claim: 'أرفع دعوى على جهة حكومية',
   administrative_appeal: 'أعترض على حكم إداري',
   administrative_memo: 'أرد على الجهة',
@@ -152,6 +185,7 @@ interface SidebarProps {
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   onOpenKnowledge?: () => void;
+  onOpenCatalog?: () => void;
   onOpenSearch?: () => void;
   onOpenAssistant?: () => void;
   onOpenReports?: () => void;
@@ -161,6 +195,8 @@ interface SidebarProps {
   onOpenAdminAudit?: () => void;
   onOpenAdminSentinel?: () => void;
   onOpenAccountSecurity?: () => void;
+  onOpenCourtroom?: () => void;
+  courtroomActive?: boolean;
 }
 
 export function Sidebar({
@@ -173,6 +209,7 @@ export function Sidebar({
   isMobileOpen,
   onCloseMobile,
   onOpenKnowledge,
+  onOpenCatalog,
   onOpenSearch,
   onOpenAssistant,
   onOpenReports,
@@ -182,8 +219,11 @@ export function Sidebar({
   onOpenAdminAudit,
   onOpenAdminSentinel,
   onOpenAccountSecurity,
+  onOpenCourtroom,
+  courtroomActive = false,
 }: SidebarProps) {
   const [expandedSection, setExpandedSection] = useState<string | null>('courts');
+  const [isCaseTreeOpen, setIsCaseTreeOpen] = useState(true);
   const isAdmin = userSession?.role === 'admin';
 
   useEffect(() => {
@@ -312,6 +352,22 @@ export function Sidebar({
             <span className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5" /> {isAdmin ? 'أدوات التقاضي والمسارات' : 'نوع القضية'}</span>
           </div>
 
+          {onOpenCatalog && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenCatalog();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              className="min-h-11 w-full flex items-center justify-between gap-2.5 px-3 py-2 rounded-xl text-xs font-black text-amber-300 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 transition-all"
+            >
+              <span className="flex items-center gap-2.5">
+                <LayoutGrid className="w-4 h-4" />
+                <span>{isAdmin ? 'فهرس القضايا الهرمي' : 'تصفّح كل أنواع القضايا'}</span>
+              </span>
+            </button>
+          )}
+
           {COURT_CATEGORIES.map((cat) => {
             const isCurrentCourt = activeCourt === cat.id;
             const CatIcon = cat.icon;
@@ -394,7 +450,61 @@ export function Sidebar({
               </div>
             );
           })}
+
+          {onOpenCourtroom && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenCourtroom();
+                if (onCloseMobile) onCloseMobile();
+              }}
+              aria-pressed={courtroomActive}
+              className={`qada-sidebar-court min-h-12 w-full flex items-center justify-between gap-2.5 rounded-2xl border px-3 py-2.5 text-right transition-all ${
+                courtroomActive
+                  ? 'border-amber-500/50 bg-amber-500/10 ring-1 ring-amber-500/20'
+                  : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
+              }`}
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border bg-amber-500/10 border-amber-500/30 text-amber-300">
+                  <Landmark className="w-3.5 h-3.5" />
+                </span>
+                <span className="truncate">
+                  <span className="font-bold text-xs text-white block truncate">المحكمة الافتراضية</span>
+                  <span className="text-[10px] text-slate-400 block truncate">هيئة حكم ومدعٍ عام وستة محامين</span>
+                </span>
+              </span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/25 shrink-0">٤ × ٣</span>
+            </button>
+          )}
         </div>
+
+        {/* الفهرس الهرمي: قطاع ← فرع ← تصنيف ← نوع القضية */}
+        {onOpenCatalog && (
+          <div className="pt-2 border-t border-slate-800/80 space-y-1">
+            <button
+              type="button"
+              aria-expanded={isCaseTreeOpen}
+              onClick={() => setIsCaseTreeOpen((open) => !open)}
+              className="min-h-11 w-full px-2 py-1 flex items-center justify-between rounded-lg text-[11px] font-bold text-slate-400 tracking-wide hover:bg-slate-900"
+            >
+              <span className="flex items-center gap-1.5">
+                <LayoutGrid className="w-3.5 h-3.5 text-amber-400" /> {isAdmin ? 'الفهرس الهرمي للقضايا' : 'تصفّح حسب نوع القضية'}
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${isCaseTreeOpen ? 'rotate-180 text-amber-400' : ''}`} />
+            </button>
+            {isCaseTreeOpen && (
+              <Suspense fallback={<div className="px-3 py-2 text-[11px] text-slate-400">جاري تحميل الفهرس…</div>}>
+                <SidebarCaseTree
+                  onOpenCatalog={() => {
+                    onOpenCatalog();
+                    if (onCloseMobile) onCloseMobile();
+                  }}
+                />
+              </Suspense>
+            )}
+          </div>
+        )}
 
         {/* قسم المعرفة والبحث النظامي */}
         <div className="pt-2 border-t border-slate-800/80 space-y-1">

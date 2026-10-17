@@ -26,17 +26,17 @@ function normalizedLine(value: string): string {
 
 function detectHeading(line: string): ClaimLiberationPillar | null {
   const value = normalizedLine(line);
-  if (/^(?:البيانات|بيانات الدعوى|بيانات الاطراف|اطراف الدعوى|بيانات المدعي والمدعى عليه)(?:\s|$)/.test(value)) return 'البيانات';
-  if (/^(?:الوقائع|وقائع الدعوى)(?:\s|$)/.test(value)) return 'الوقائع';
+  if (/^(?:البيانات|بيانات الدعوي|بيانات الاطراف|اطراف الدعوي|بيانات المدعي والمدعي عليه)(?:\s|$)/.test(value)) return 'البيانات';
+  if (/^(?:الوقائع|وقائع الدعوي)(?:\s|$)/.test(value)) return 'الوقائع';
   if (/^(?:المستندات|المرفقات|الادله والمستندات|المستندات والادله)(?:\s|$)/.test(value)) return 'المستندات';
-  if (/^(?:الطلبات|طلبات الدعوى|الطلبات الختاميه)(?:\s|$)/.test(value)) return 'الطلبات';
+  if (/^(?:الطلبات|طلبات الدعوي|الطلبات الختاميه)(?:\s|$)/.test(value)) return 'الطلبات';
   return null;
 }
 
 function isPlaceholder(value: string): boolean {
   const text = normalize(value);
   return !text
-    || /(?:يحتاج\s+استكمال|تحتاج\s+الى\s+استكمال|غير\s+محدد|غير\s+معلوم|غير\s+متوفر|لم\s+يذكر|لم\s+تذكر|يستكمل\s+لاحقا|\.\.\.|___|\[\s*\])/.test(text);
+    || /(?:يحتاج\s+استكمال|تحتاج\s+الي\s+استكمال|غير\s+محدد|غير\s+معلوم|غير\s+متوفر|لم\s+يذكر|لم\s+تذكر|يستكمل\s+لاحقا|\.\.\.|___|\[\s*\])/.test(text);
 }
 
 function sectionMap(draft: string): {
@@ -77,8 +77,8 @@ export function assessClaimLiberation(args: {
   const combined = normalize([args.sourceInputText || '', args.draft || ''].join('\n'));
   const applicable =
     task === 'claim'
-    || /(?:صحيفه|لائحه)\s+دعوى/.test(combined)
-    || /(?:رفع|اقامه|اقامة)\s+دعوى/.test(combined);
+    || /(?:صحيفه|لائحه)\s+دعوي/.test(combined)
+    || /(?:رفع|اقامه|اقامة)\s+دعوي/.test(combined);
 
   if (!applicable) {
     return {
@@ -106,8 +106,8 @@ export function assessClaimLiberation(args: {
   if (!missingPillars.includes('البيانات')) {
     const identitySignals = [
       /المدعي/,
-      /المدعى\s+عليه/,
-      /الجهه\s+المدعى\s+عليها/,
+      /المدعي\s+عليه/,
+      /الجهه\s+المدعي\s+عليها/,
       /المحكمه/,
       /الصفه/,
     ].filter((rule) => rule.test(data)).length;
@@ -132,7 +132,7 @@ export function assessClaimLiberation(args: {
 
   const requests = normalize(bodies.get('الطلبات') || '');
   if (!missingPillars.includes('الطلبات')) {
-    const hasRemedySignal = /(?:اطلب|نطلب|الحكم|الزام|الغاء|ابطال|فسخ|تعويض|اثبات|رفض|رد\s+الدعوى|وقف\s+تنفيذ|اعاده)/.test(requests);
+    const hasRemedySignal = /(?:اطلب|نطلب|الحكم|الزام|الغاء|ابطال|فسخ|تعويض|اثبات|رفض|رد\s+الدعوي|وقف\s+تنفيذ|اعاده)/.test(requests);
     if (requests.length < 20 || !hasRemedySignal) {
       linkageIssues.push('قسم الطلبات لا يتضمن طلباً قضائياً جازماً ومحدداً يمكن ربطه بالوقائع.');
     }

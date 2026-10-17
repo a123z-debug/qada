@@ -16,10 +16,22 @@ import {
   latestUserTurnText,
   shouldActivateDrafting,
 } from '../src/lib/conversationState.js';
+import { buildCourtFrameInstruction, resolveCourtSystem } from '../src/lib/courtJurisdiction.js';
+import { buildDeadlinesInstruction } from '../src/lib/litigationDeadlines.js';
+import type { CourtLevelId } from '../src/lib/judicialSystem.js';
+import type { ClaimLiberationPillar } from '../src/lib/claimLiberationGate.js';
 
 type IncomingAttachment = { name?: string; type?: string; data?: string; isImage?: boolean };
 type IncomingMessage = { role?: string; content?: string; attachments?: IncomingAttachment[] };
 type ResponseMode = 'simple' | 'professional';
+
+/** ما يُطلب من صاحب الشأن بلغة بسيطة حين تُحجب لائحة دعوى ينقصها ركن من أركان التحرير. */
+const CLAIM_PILLAR_REQUESTS: Record<ClaimLiberationPillar, string> = {
+  'البيانات': 'بيانات الطرفين: اسمك وصفتك، واسم الطرف الآخر وصفته (فرد أو منشأة) ومدينته.',
+  'الوقائع': 'ما حدث بالتسلسل والتواريخ: متى بدأت العلاقة، وعلى ماذا اتفقتم، وماذا حصل بعدها.',
+  'المستندات': 'ما يثبت كلامك: العقد، التحويلات، المحادثات، الصور — أو أخبرني إن لم يوجد شيء منها.',
+  'الطلبات': 'ماذا تطلب من المحكمة تحديداً: مثل إلزامه بالسداد أو التنفيذ، أو فسخ العقد واسترداد المبلغ، أو التعويض.',
+};
 
 function getGeminiClients(): GoogleGenAI[] {
   const apiKeys = [1, 2, 3, 4]
@@ -676,9 +688,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const currentUserTurn = latestUserTurnText(clientMessages);
     const attachmentReferenceHints = await extractAttachmentReferenceHints(clientMessages);
     const sourceQuery = [retrievalQuery, attachmentReferenceHints].filter(Boolean).join('\n').slice(0, 26000);
+    // تمييز الجهة قبل جمع المصادر: الجهة المحسومة أو المرجّحة تقيّد الحزمة بأنظمتها (فلا تصل مدد ديوان المظالم
+    // إلى قضية حضانة مثلاً)، وغير المحسومة تبقى الحزمة كما كانت مع تعليمات بالسؤال عن الجهة بدل افتراضها.
+    const courtResolution = resolveCourtSystem(body.targetCourt, sourceQuery);
     const sourceBundle = runLegalSourceAgents(
-      [body.targetCourt || '', sourceQuery].filter(Boolean).join('\n')
+      [body.targetCourt || '', sourceQuery].filter(Boolean).join('\n'),
+      courtResolution.systemId ? { courtSystem: courtResolution.systemId } : {},
     );
+    const courtFrameInstruction = buildCourtFrameInstruction(courtResolution);
     const draftingRequestText = clientMessages
       .filter((message) => message.role !== 'assistant' && message.role !== 'model')
       .map((message) => typeof message.content === 'string' ? message.content : '')
@@ -689,6 +706,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasAttachedEvidence(clientMessages),
     );
     const lawOfficeInstruction = buildLawOfficeInstruction(lawOfficeRoute, sourceBundle);
+    // مدد الجهة المحسومة من نصها الرسمي (مثل المادتين 8 و33 من نظام المرافعات أمام ديوان المظالم)، حتى لا يذكر
+    // النموذج مدة من الذاكرة؛ وتدخل في السياق المتحقق فيقبل حارس الاستشهادات موادها.
+    const deadlineLevel: CourtLevelId = lawOfficeRoute.task === 'cassation' ? 'supreme' : lawOfficeRoute.task === 'appeal' ? 'appeal' : 'first';
+    const deadlinesInstruction = courtResolution.systemId ? buildDeadlinesInstruction(courtResolution.systemId, deadlineLevel, false) : '';
+    const verifiedSourceContext = [sourceBundle.context, deadlinesInstruction].filter(Boolean).join('\n\n');
     const activateHujjaDrafting = shouldActivateDrafting(clientMessages);
     const hujjaBayanInstruction = activateHujjaDrafting && lawOfficeRoute.allowDrafting
       ? buildHujjaBayanInstruction(draftingRequestText, sourceBundle)
@@ -698,7 +720,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const contextInstruction = [
       SERVER_LEGAL_INSTRUCTION,
       responseMode === 'simple' ? SIMPLE_RESPONSE_INSTRUCTION : PROFESSIONAL_RESPONSE_INSTRUCTION,
-      sourceBundle.context,
+      courtFrameInstruction,
+      verifiedSourceContext,
       conversationStateInstruction,
       lawOfficeInstruction,
       hujjaBayanInstruction,
@@ -727,7 +750,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         contents,
         contextInstruction,
         sourceQuery,
-        sourceContext: sourceBundle.context,
+        sourceContext: verifiedSourceContext,
       });
       reply = generated.draft;
       if (generated.lastError) {
@@ -794,7 +817,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       reply = enforceSimpleActionFirst(reply, clientMessages, body.targetCourt);
     }
 
-    const citationGuard = guardIntroducedLegalCitations(sourceQuery, reply, sourceBundle.context);
+    const citationGuard = guardIntroducedLegalCitations(sourceQuery, reply, verifiedSourceContext);
     if (citationGuard.unsupportedMarkers.length > 0) {
       for (const marker of citationGuard.unsupportedMarkers) {
         reply = reply.split(marker).join(`${marker} [غير متحقق من حزمة المصادر الرسمية]`);
@@ -852,6 +875,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         court: body.targetCourt,
         documentTitle: lawOfficeRoute.task,
         hasEvidence: hasAttachedEvidence(clientMessages),
+        verifiedContext: verifiedSourceContext,
       });
 
       sentinelReleaseGateDecision = releaseGate.gateDecision;
@@ -872,12 +896,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ...releaseGate.materialFindings,
         ].filter(Boolean).slice(0, 3);
 
+        const missingPillarRequests = releaseGate.claimLiberation.applicable
+          ? releaseGate.claimLiberation.missingPillars.map((pillar) => CLAIM_PILLAR_REQUESTS[pillar])
+          : [];
         reply = responseMode === 'simple'
           ? [
               'ما زال ينقصني عنصر أساسي قبل إخراج الصيغة النهائية.',
-              lawOfficeRoute.nextAction && !/ابدأ بتحليل ملف القضية ثم الصياغة/i.test(lawOfficeRoute.nextAction)
-                ? `المطلوب الآن: ${lawOfficeRoute.nextAction}`
-                : 'أرسل المستند أو المعلومة الناقصة التي طلبتها منك، وسأكمل من نفس النقطة.',
+              missingPillarRequests.length
+                ? `حتى أكتب لك اللائحة كاملة أحتاج منك:\n${missingPillarRequests.map((request, index) => `${index + 1}. ${request}`).join('\n')}`
+                : lawOfficeRoute.nextAction && !/ابدأ بتحليل ملف القضية ثم الصياغة/i.test(lawOfficeRoute.nextAction)
+                  ? `المطلوب الآن: ${lawOfficeRoute.nextAction}`
+                  : 'أرسل المستند أو المعلومة الناقصة التي طلبتها منك، وسأكمل من نفس النقطة.',
               'لن أضيف تكييفاً أو مادة نظامية من عندي قبل اكتمال هذه المعلومة.',
             ].join('\n')
           : [

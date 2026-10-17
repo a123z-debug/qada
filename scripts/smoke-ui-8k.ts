@@ -58,6 +58,7 @@ const requiredHooks: Record<string, string[]> = {
   'src/components/workspaces/PlainStoryInput.tsx': ['qada-8k-story'],
   'src/components/CassationJudgesPanel.tsx': ['qada-8k-judge-panel'],
   'src/components/JudgesCassationReviewPanel.tsx': ['qada-8k-judge-panel'],
+  'src/components/courts/VirtualCourtroom.tsx': ['qada-court-chamber', 'qada-court-bench', 'qada-court-paper'],
   'src/components/admin/AdminAgentMap.tsx': ['qada-8k-admin-view'],
   'src/components/admin/AdminAnalysisRoom.tsx': ['qada-8k-admin-view'],
   'src/components/admin/AdminAuditLog.tsx': ['qada-8k-admin-view'],
@@ -73,6 +74,7 @@ for (const [path, hooks] of Object.entries(requiredHooks)) {
 }
 
 for (const path of [
+  'src/components/workspaces/CommercialWorkspace.tsx',
   'src/components/workspaces/AdministrativeWorkspace.tsx',
   'src/components/workspaces/GeneralWorkspace.tsx',
   'src/components/workspaces/CriminalWorkspace.tsx',

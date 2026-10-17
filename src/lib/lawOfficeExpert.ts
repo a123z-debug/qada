@@ -10,18 +10,23 @@ function normalize(value: string): string { return (value || '').toLowerCase().r
 
 export function detectLawOfficeTask(text: string): LawOfficeTask {
   const value = normalize(text);
-  if (/(?:طعن|اعتراض).{0,16}(?:نقض)|(?:لائحه|صحيفه)\s+نقض|(?:اريد|ابي|ابغى).{0,24}(?:طعن\s+)?(?:بال)?نقض/.test(value)) return 'cassation';
+  if (/(?:طعن|اعتراض).{0,16}(?:نقض)|(?:لائحه|صحيفه)\s+نقض|(?:اريد|ابي|ابغي).{0,24}(?:طعن\s+)?(?:بال)?نقض/.test(value)) return 'cassation';
   if (/التماس\s+اعاد(?:ه|ة)\s+النظر/.test(value)) return 'petition';
-  if (/(?:لائحه|صحيفه)\s+(?:اعتراض|استئناف)|(?:اعتراض|استئناف)\s+على\s+(?:حكم|قرار)|(?:اريد|ابي|ابغى).{0,24}(?:اعتراض|استئناف)|اعترض\s+على\s+(?:حكم|قرار)/.test(value)) return 'appeal';
-  if (/رد\s+على\s+مذكره|مذكره\s+رد|جواب\s+على\s+مذكره/.test(value)) return 'reply';
-  if (/(?:لائحه|صحيفه)\s+دعوى|(?:اكتب|صغ|جهز|اعد).{0,24}دعوى/.test(value)) return 'claim';
+  if (/(?:لائحه|صحيفه)\s+(?:اعتراض|استئناف)|(?:اعتراض|استئناف)\s+علي\s+(?:ال)?(?:حكم|قرار)|(?:اريد|ابي|ابغي).{0,24}(?:اعتراض|استئناف|اعترض)|اعترض\s+علي\s+(?:ال)?(?:حكم|قرار)/.test(value)) return 'appeal';
+  if (/رد\s+علي\s+مذكره|مذكره\s+رد|جواب\s+علي\s+مذكره/.test(value)) return 'reply';
+  if (/(?:لائحه|صحيفه)\s+دعوي|(?:اكتب|صغ|جهز|اعد).{0,24}دعوي/.test(value)) return 'claim';
   if (/(?:اكتب|صغ|جهز|اعد|راجع).{0,28}(?:مذكره|لائحه)|مذكره\s+(?:جوابيه|دفاع|دفوع|ختاميه)/.test(value)) return 'memo';
   if (/(?:راجع|حلل|افحص)|(?:^|\s)(?:حكم|قرار|مستند)(?:\s|$)/.test(value)) return 'document-review';
   return 'consultation';
 }
 
 export function detectCourtStage(text: string): CourtStage {
-  const value = normalize(text);
+  // «أمام/إلى محكمة الاستئناف» و«أمام المحكمة الإدارية العليا» تحدد جهة الطعن المقصودة لا الجهة التي أصدرت الحكم؛
+  // قراءتها مصدراً للحكم كانت تجعل الاعتراض العادي على حكم ابتدائي يبدو استئنافاً ثانياً فيُمنع.
+  const value = normalize(text).replace(
+    /(?:امام|الي|لدي|عند|ل)\s*(?:محكمه\s+الاستئناف(?:\s+الاداريه)?|المحكمه\s+الاداريه\s+العليا|المحكمه\s+العليا|الدائره\s+الاستئنافيه)/g,
+    ' جهه الطعن ',
+  );
   if (/حكم.{0,40}(?:المحكمه\s+الاداريه\s+العليا|المحكمه\s+العليا)|صادر.{0,24}(?:المحكمه\s+الاداريه\s+العليا|المحكمه\s+العليا)/.test(value)) return 'supreme';
   if (/حكم.{0,50}محكمه\s+الاستئناف|محكمه\s+الاستئناف.{0,50}حكم|حكم\s+الاستئناف|حكم\s+في\s+الاستئناف|تأييد\s+الحكم|تاييد\s+الحكم|طلب\s+الاستئناف.{0,40}الحكم/.test(value)) return 'appeal';
   if (/حكم\s+ابتدائي|الحكم\s+محل\s+الاستئناف.{0,80}المحكمه|الحكم\s+الصادر.{0,60}(?:المحكمه\s+الاداريه|المحكمه\s+العامه|المحكمه\s+الجزائيه)/.test(value)) return 'first-instance';
@@ -33,7 +38,7 @@ export function analyzeLawOfficeRoute(text: string, hasAttachmentEvidence = fals
   const courtProfile = detectCourtProfile(text).id;
   const caseStrategyProfile = detectCaseStrategyProfile(text).id;
   const draftingRequested = ['claim','appeal','cassation','petition','memo','reply'].includes(task) || /اكتب|صغ|جهز|اعد|لائحه|مذكره|صحيفه/.test(value);
-  const hasJudgmentSignals = hasAttachmentEvidence || /حكم|منطوق|اسباب الحكم|الحيثيات|رقم الدعوى|رقم الاستئناف|تاريخ التبليغ/.test(value);
+  const hasJudgmentSignals = hasAttachmentEvidence || /حكم|منطوق|اسباب الحكم|الحيثيات|رقم الدعوي|رقم الاستئناف|تاريخ التبليغ/.test(value);
   if (task === 'appeal' && (stage === 'appeal' || stage === 'supreme')) return { task, stage, courtProfile, caseStrategyProfile, draftingRequested, allowDrafting:false, blocking:true, hasJudgmentSignals, reason:'المادة المعروضة تبدو صادرة من مرحلة الاستئناف/العليا؛ لا يجوز للمنصة أن تنشئ لائحة استئناف جديدة تلقائياً قبل تحديد طريق الاعتراض التالي نظاماً.', nextAction:'استخرج درجة الحكم ومنطوقه وتاريخ التبليغ، ثم تحقق من طريق الطعن التالي من المصدر الرسمي؛ إذا كان المطلوب نقضاً فحوّل المهمة إلى طعن بالنقض بعد التحقق.' };
   if (task === 'cassation' && stage === 'first-instance') return { task, stage, courtProfile, caseStrategyProfile, draftingRequested, allowDrafting:false, blocking:true, hasJudgmentSignals, reason:'المادة المعروضة تبدو حكماً ابتدائياً؛ طلب النقض في هذه المرحلة يحتاج تصحيح المسار قبل الصياغة.', nextAction:'حدد طريق الاعتراض على الحكم الابتدائي أولاً، ولا تصغ طعناً بالنقض قبل التحقق من المرحلة المختصة.' };
   if (task === 'cassation' && stage === 'supreme') return { task, stage, courtProfile, caseStrategyProfile, draftingRequested, allowDrafting:false, blocking:true, hasJudgmentSignals, reason:'المادة المعروضة تبدو صادرة من المحكمة العليا/الإدارية العليا؛ لا تنشئ طعناً جديداً من النوع نفسه على الحكم دون تحديد طريق نظامي آخر.', nextAction:'تحقق من طبيعة الحكم والطرق الاستثنائية المتاحة -إن وجدت- قبل أي صياغة.' };

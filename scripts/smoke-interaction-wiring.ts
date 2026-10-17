@@ -15,12 +15,14 @@ const chatApi = fs.readFileSync('api/chat.ts', 'utf8');
 const hujjaAgent = fs.readFileSync('src/lib/hujjaBayanAgent.ts', 'utf8');
 
 const workspaces: Record<string, string> = {
+  commercial: fs.readFileSync('src/components/workspaces/CommercialWorkspace.tsx', 'utf8'),
   administrative: fs.readFileSync('src/components/workspaces/AdministrativeWorkspace.tsx', 'utf8'),
   general: fs.readFileSync('src/components/workspaces/GeneralWorkspace.tsx', 'utf8'),
   criminal: fs.readFileSync('src/components/workspaces/CriminalWorkspace.tsx', 'utf8'),
 };
 
 const serviceIds = [
+  'commercial_claim','commercial_appeal','commercial_memo','commercial_attachments',
   'administrative_claim','administrative_appeal','administrative_memo','administrative_attachments',
   'general_claim','general_appeal','general_memo','general_attachments',
   'criminal_defense','criminal_appeal','criminal_procedural','criminal_evidence',

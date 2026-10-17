@@ -25,10 +25,13 @@ import {
   RotateCcw,
   ExternalLink,
   LoaderCircle,
+  Landmark,
 } from 'lucide-react';
 import { CourtJurisdiction } from '../layout/Sidebar';
 import { printLegalMemo } from '../../utils/printMemo';
 import { JudgesCassationReviewPanel } from '../JudgesCassationReviewPanel';
+import { VirtualCourtroom } from '../courts/VirtualCourtroom';
+import { defaultLevelForService } from '../../lib/judicialSystem';
 import { Attachment, DetailedJudgesReviewReport } from '../../types';
 
 interface LegalReviewEditorProps {
@@ -150,7 +153,9 @@ export function LegalReviewEditor({
   onContentChange,
 }: LegalReviewEditorProps) {
   const [content, setContent] = useState(initialContent);
-  const [activeTab, setActiveTab] = useState<'editor' | 'highlighted' | 'judges'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'highlighted' | 'judges' | 'courtroom'>('editor');
+  // The courtroom stays mounted once opened so a running session survives tab switches.
+  const [courtroomOpened, setCourtroomOpened] = useState(false);
   const [copied, setCopied] = useState(false);
   const [referenceSearch, setReferenceSearch] = useState('');
   const [referenceResults, setReferenceResults] = useState<RagReference[]>([]);
@@ -261,6 +266,21 @@ export function LegalReviewEditor({
     }
     setRevisionToast('تم إدراج التعديل المقترح في صلب المذكرة ✓');
     setTimeout(() => setRevisionToast(null), 5000);
+  };
+
+  const openCourtroom = () => {
+    setCourtroomOpened(true);
+    setActiveTab('courtroom');
+  };
+
+  const handleAdoptCourtPleading = (pleading: string) => {
+    setPreviousContent(content);
+    setContent(pleading);
+    if (onContentChange) {
+      onContentChange(pleading);
+    }
+    setRevisionToast('تم اعتماد مذكرة المحكمة الافتراضية في المحرر. شغّل القاضي الافتراضي عليها قبل الطباعة أو التصدير ✓');
+    setTimeout(() => setRevisionToast(null), 6000);
   };
 
   const handleRestorePreviousContent = () => {
@@ -542,6 +562,18 @@ export function LegalReviewEditor({
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               )}
             </button>
+            <button
+              type="button"
+              onClick={openCourtroom}
+              className={`px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'courtroom'
+                  ? 'bg-amber-500 text-neutral-950 shadow'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              <Landmark className="w-3.5 h-3.5" />
+              <span>المحكمة الافتراضية</span>
+            </button>
           </div>
 
           <button
@@ -685,7 +717,7 @@ export function LegalReviewEditor({
           previousEditorText={previousContent || undefined}
           onRestorePreviousText={handleRestorePreviousContent}
         />
-      ) : (
+      ) : activeTab === 'courtroom' ? null : (
         /* 3. Main Split Screen (Right: RAG Data 40%, Left: Rich Editor 60%) */
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Right (40% / 5 cols): RAG Data & Statutory Grounds */}
@@ -1035,6 +1067,21 @@ export function LegalReviewEditor({
           </div>
         </div>
       </div>
+      )}
+
+      {courtroomOpened && (
+        <div hidden={activeTab !== 'courtroom'}>
+          <VirtualCourtroom
+            embedded
+            initialSystem={court}
+            initialLevel={defaultLevelForService(serviceId)}
+            initialCaseText={content}
+            documentTitle={documentTitle}
+            documentsText={attachmentsText || uploadedFileText || ''}
+            initialAttachments={uploadedAttachments}
+            onAdoptPleading={handleAdoptCourtPleading}
+          />
+        </div>
       )}
 
       {isPrintPreviewOpen && (

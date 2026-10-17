@@ -25,10 +25,13 @@ import { LegalReviewEditor } from './LegalReviewEditor';
 import { LegalAdaptationResult, PlainStoryInput } from './PlainStoryInput';
 import { readFileAsAttachment } from '../../lib/clientAttachments';
 import { readSseTextResponse } from '../../lib/readSseTextResponse';
+import { withCaseType } from '../../data/caseTaxonomy';
 
 interface AdministrativeWorkspaceProps {
   service: string | null;
   userSession?: UserSession | null;
+  /** مسار نوع القضية المختار من الفهرس؛ يُضاف سياقه إلى الطلب. */
+  caseTypePath?: string[] | null;
   onOpenArticle8Modal?: () => void;
   onOpenDossierModal?: () => void;
   onOpenRepositoryModal?: () => void;
@@ -40,6 +43,7 @@ const STORAGE_KEY_PREFIX = 'diwan_administrative_draft_v3';
 export function AdministrativeWorkspace({
   service = 'administrative_claim',
   userSession,
+  caseTypePath,
   onOpenArticle8Modal,
   onOpenDossierModal,
   onOpenRepositoryModal,
@@ -248,6 +252,8 @@ ${storyAddon}
 
 ${sharedRules}`;
     }
+
+    promptContent = withCaseType(promptContent, caseTypePath);
 
     try {
       const response = await fetch('/api/chat', {

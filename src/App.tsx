@@ -4,14 +4,18 @@
  */
 
 import React, { Suspense, useEffect, useState } from 'react';
-import { Menu, Scale, ShieldCheck, LogOut, ArrowRight, FileText, Library, Bot, FileCheck, Sparkles, ArrowLeft, BookOpenCheck, Workflow, LockKeyhole, UploadCloud, ScanSearch, ChevronLeft, Home, FolderOpen } from 'lucide-react';
+import { Menu, Scale, ShieldCheck, LogOut, ArrowRight, FileText, Library, Bot, FileCheck, Sparkles, ArrowLeft, BookOpenCheck, Workflow, LockKeyhole, UploadCloud, ScanSearch, ChevronLeft, Home, FolderOpen, LayoutGrid } from 'lucide-react';
 import { UserSession, JudgmentRecord, Attachment } from './types';
+import type { CourtSystemId } from './lib/judicialSystem';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar, CourtJurisdiction } from './components/layout/Sidebar';
+const CaseCatalogModal = React.lazy(() => import('./components/catalog/CaseCatalogModal').then((module) => ({ default: module.CaseCatalogModal })));
 const WelcomeScreen = React.lazy(() => import('./components/workspaces/WelcomeScreen').then((module) => ({ default: module.WelcomeScreen })));
 const AdministrativeWorkspace = React.lazy(() => import('./components/workspaces/AdministrativeWorkspace').then((module) => ({ default: module.AdministrativeWorkspace })));
 const GeneralWorkspace = React.lazy(() => import('./components/workspaces/GeneralWorkspace').then((module) => ({ default: module.GeneralWorkspace })));
 const CriminalWorkspace = React.lazy(() => import('./components/workspaces/CriminalWorkspace').then((module) => ({ default: module.CriminalWorkspace })));
+const CommercialWorkspace = React.lazy(() => import('./components/workspaces/CommercialWorkspace').then((module) => ({ default: module.CommercialWorkspace })));
+const VirtualCourtroom = React.lazy(() => import('./components/courts/VirtualCourtroom').then((module) => ({ default: module.VirtualCourtroom })));
 const FloatingChatBot = React.lazy(() => import('./components/chat/FloatingChatBot').then((module) => ({ default: module.FloatingChatBot })));
 const Article8CalculatorModal = React.lazy(() => import('./components/Article8CalculatorModal').then((module) => ({ default: module.Article8CalculatorModal })));
 const CaseDossierModal = React.lazy(() => import('./components/CaseDossierModal').then((module) => ({ default: module.CaseDossierModal })));
@@ -333,6 +337,26 @@ export default function App() {
   const [isAdminAuditOpen, setIsAdminAuditOpen] = useState(false);
   const [isAdminSentinelOpen, setIsAdminSentinelOpen] = useState(false);
   const [isAccountSecurityOpen, setIsAccountSecurityOpen] = useState(false);
+  const [isCourtroomOpen, setIsCourtroomOpen] = useState(false);
+  /** الجهة التي تُفتح عليها المحكمة الافتراضية حين تأتي من الفهرس (أدق من activeCourt: عمالية، أحوال شخصية...). */
+  const [courtroomSystem, setCourtroomSystem] = useState<CourtSystemId | null>(null);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(() => typeof window !== 'undefined' && window.location.hash.startsWith('#/catalog'));
+  /** نوع القضية المختار من الفهرس: المسار يُرسل للطلب، والعنوان للعرض فقط. */
+  const [activeCaseTypePath, setActiveCaseTypePath] = useState<string[] | null>(null);
+  const [activeCaseTypeLabel, setActiveCaseTypeLabel] = useState('');
+
+  // الرجوع في المتصفح إلى رابط من الفهرس (#/catalog/...) يعيد فتحه على نفس الصفحة.
+  useEffect(() => {
+    const reopenCatalog = () => {
+      if (window.location.hash.startsWith('#/catalog')) setIsCatalogOpen(true);
+    };
+    window.addEventListener('hashchange', reopenCatalog);
+    window.addEventListener('popstate', reopenCatalog);
+    return () => {
+      window.removeEventListener('hashchange', reopenCatalog);
+      window.removeEventListener('popstate', reopenCatalog);
+    };
+  }, []);
 
   const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>([]);
   const [caseStoreError, setCaseStoreError] = useState('');
@@ -500,7 +524,18 @@ export default function App() {
     setIsAdminUsersOpen(false);
     setIsAdminAuditOpen(false);
     setIsAdminSentinelOpen(false);
+    setIsCourtroomOpen(false);
     setIsAdminMapOpen(userSession.role === 'admin' || userSession.workspaceMode === 'admin');
+  };
+
+  const openCourtroom = () => {
+    setCourtroomSystem(null);
+    setIsAdminMapOpen(false);
+    setIsAdminAnalysisOpen(false);
+    setIsAdminUsersOpen(false);
+    setIsAdminAuditOpen(false);
+    setIsAdminSentinelOpen(false);
+    setIsCourtroomOpen(true);
   };
 
   const handleInterfaceModeChange = (mode: 'simple' | 'professional') => {
@@ -524,6 +559,7 @@ export default function App() {
       setIsAdminAuditOpen(false);
       setIsAdminSentinelOpen(false);
       setIsAccountSecurityOpen(false);
+      setIsCourtroomOpen(false);
       setJudgmentRecords([]);
     };
 
@@ -651,25 +687,33 @@ export default function App() {
           setIsAdminAnalysisOpen(false);
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(false);
+          setIsCourtroomOpen(false);
           setActiveCourt(court);
           setActiveService(null);
+          setActiveCaseTypePath(null);
         }}
         onSelectService={(service) => {
+          // تغيير الإجراء داخل نفس الاختصاص يُبقي نوع القضية؛ تغيير الاختصاص يصفّره عبر onSelectCourt.
           setIsAdminMapOpen(false);
           setIsAdminAnalysisOpen(false);
           setIsAdminUsersOpen(false);
           setIsAdminAuditOpen(false);
+          setIsCourtroomOpen(false);
           setActiveService(service);
         }}
+        onOpenCourtroom={openCourtroom}
+        courtroomActive={isCourtroomOpen}
         userSession={session}
         onLogout={handleLogout}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
         onOpenKnowledge={() => setIsReferencesOpen(true)}
+        onOpenCatalog={() => setIsCatalogOpen(true)}
         onOpenSearch={() => requestAssistant('ابحث لي في الأنظمة والمراجع ذات الصلة بسؤالي، واذكر السند ومصدره بوضوح: ')}
         onOpenAssistant={() => requestAssistant('')}
         onOpenReports={() => setIsDossierOpen(true)}
         onOpenAdminMap={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
           setActiveCourt(null);
           setActiveService(null);
           setIsAdminAnalysisOpen(false);
@@ -679,6 +723,7 @@ export default function App() {
           setIsAdminMapOpen(true);
         } : undefined}
         onOpenAdminAnalysis={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
           setActiveCourt(null);
           setActiveService(null);
           setIsAdminMapOpen(false);
@@ -688,6 +733,7 @@ export default function App() {
           setIsAdminAnalysisOpen(true);
         } : undefined}
         onOpenAdminUsers={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
           setActiveCourt(null);
           setActiveService(null);
           setIsAdminMapOpen(false);
@@ -696,6 +742,7 @@ export default function App() {
           setIsAdminUsersOpen(true);
         } : undefined}
         onOpenAdminAudit={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
           setActiveCourt(null);
           setActiveService(null);
           setIsAdminMapOpen(false);
@@ -705,6 +752,7 @@ export default function App() {
           setIsAdminAuditOpen(true);
         } : undefined}
         onOpenAdminSentinel={session.role === 'admin' ? () => {
+          setIsCourtroomOpen(false);
           setActiveCourt(null);
           setActiveService(null);
           setIsAdminMapOpen(false);
@@ -765,6 +813,18 @@ export default function App() {
           )}
 
           <button
+            type="button"
+            onClick={() => setIsCatalogOpen(true)}
+            className={`ml-auto min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl transition-colors ${
+              userMode ? 'text-slate-500 hover:bg-slate-100' : 'text-amber-300 hover:bg-slate-800'
+            }`}
+            title="فهرس القضايا"
+            aria-label="فهرس القضايا"
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </button>
+
+          <button
             onClick={handleLogout}
             className={`min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl transition-colors ${
               userMode
@@ -789,12 +849,35 @@ export default function App() {
             </div>
           )}
           {activeCourt && (
-            <div className={`sticky top-0 z-20 mb-4 flex justify-end py-2 backdrop-blur-md ${
+            <div className={`sticky top-0 z-20 mb-4 flex flex-wrap items-center justify-end gap-2 py-2 backdrop-blur-md ${
               userMode ? 'bg-[#f7f8fa]/90' : 'bg-slate-950/80'
             }`}>
+              {activeCaseTypePath && activeCaseTypeLabel && (
+                <div
+                  className={`ml-auto flex min-h-9 max-w-full items-center gap-1 rounded-lg border px-2.5 text-[11px] font-bold ${
+                    userMode ? 'border-slate-200 bg-white text-slate-700' : 'border-slate-700 bg-slate-900 text-slate-200'
+                  }`}
+                  title="نوع القضية المختار من الفهرس يُرسل مع الطلب للتوجيه فقط"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">نوع القضية: {activeCaseTypeLabel}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setActiveCaseTypePath(null); setActiveCaseTypeLabel(''); }}
+                    className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-md opacity-70 hover:opacity-100"
+                    aria-label="إلغاء نوع القضية المختار"
+                    title="إلغاء نوع القضية"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => {
+                  setActiveCaseTypePath(null);
+                  setActiveCaseTypeLabel('');
+                  setIsCourtroomOpen(false);
                   setActiveCourt(null);
                   setActiveService(null);
                 }}
@@ -840,6 +923,10 @@ export default function App() {
                 if (nodeId === 'sentinel') {
                   setIsAdminMapOpen(false);
                   setIsAdminSentinelOpen(true);
+                  return;
+                }
+                if (nodeId === 'virtual-court') {
+                  openCourtroom();
                   return;
                 }
                 if (nodeId === 'drafting' || nodeId === 'editor-tool') {
@@ -889,13 +976,24 @@ export default function App() {
             />
           )}
 
-          {!activeCourt && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && (
+          {isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && (
+            <div className="mx-auto max-w-6xl">
+              <VirtualCourtroom
+                key={courtroomSystem || 'default'}
+                initialSystem={courtroomSystem || activeCourt || undefined}
+                onBack={() => { setIsCourtroomOpen(false); setCourtroomSystem(null); }}
+              />
+            </div>
+          )}
+
+          {!isCourtroomOpen && !activeCourt && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && (
             <WelcomeScreen
               userName={session.name}
               message="مرحباً بك في مساحة القضية الرقمية."
               isAdmin={session.role === 'admin'}
               defaultMode={session.role === 'admin' ? 'professional' : interfaceMode}
               onModeChange={handleInterfaceModeChange}
+              onOpenCatalog={() => setIsCatalogOpen(true)}
               onOpenAdminOverview={() => {
                 setActiveCourt(null);
                 setActiveService(null);
@@ -910,14 +1008,25 @@ export default function App() {
                 setIsAdminUsersOpen(false);
                 setActiveCourt(court);
                 setActiveService(null);
+                setActiveCaseTypePath(null);
               }}
-              onSelectService={(service) => setActiveService(service)}
+              onSelectService={(service) => { setActiveCaseTypePath(null); setActiveService(service); }}
+              onOpenCourtroom={session.role === 'admin' || !simpleUserMode ? openCourtroom : undefined}
             />
           )}
 
-          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'administrative' && (
+          {!isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'commercial' && (
+            <CommercialWorkspace
+              service={activeService}
+              caseTypePath={activeCaseTypePath}
+              userSession={session}
+            />
+          )}
+
+          {!isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'administrative' && (
             <AdministrativeWorkspace
               service={activeService}
+              caseTypePath={activeCaseTypePath}
               userSession={session}
               onOpenArticle8Modal={() => setIsArticle8Open(true)}
               onOpenDossierModal={() => setIsDossierOpen(true)}
@@ -926,16 +1035,18 @@ export default function App() {
             />
           )}
 
-          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'general' && (
+          {!isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'general' && (
             <GeneralWorkspace
               service={activeService}
+              caseTypePath={activeCaseTypePath}
               userSession={session}
             />
           )}
 
-          {!isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'criminal' && (
+          {!isCourtroomOpen && !isAdminMapOpen && !isAdminAnalysisOpen && !isAdminUsersOpen && !isAdminAuditOpen && !isAdminSentinelOpen && activeCourt === 'criminal' && (
             <CriminalWorkspace
               service={activeService}
+              caseTypePath={activeCaseTypePath}
               userSession={session}
             />
           )}
@@ -951,7 +1062,7 @@ export default function App() {
           <div className="grid grid-cols-5 gap-1">
             <button
               type="button"
-              onClick={() => { setActiveCourt(null); setActiveService(null); }}
+              onClick={() => { setIsCourtroomOpen(false); setActiveCourt(null); setActiveService(null); }}
               className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-black ${
                 activeCourt === null ? 'bg-slate-100 text-slate-950' : 'text-slate-500'
               }`}
@@ -1007,7 +1118,7 @@ export default function App() {
           <div className="grid grid-cols-5 gap-1 px-2 pt-2">
             <button
               type="button"
-              onClick={() => { setIsAdminMapOpen(false); setIsAdminAnalysisOpen(false); setIsAdminUsersOpen(false); setIsAdminAuditOpen(false); setActiveCourt(null); setActiveService(null); }}
+              onClick={() => { setIsAdminMapOpen(false); setIsAdminAnalysisOpen(false); setIsAdminUsersOpen(false); setIsAdminAuditOpen(false); setIsCourtroomOpen(false); setActiveCourt(null); setActiveService(null); }}
               className={`mobile-dock-btn ${activeCourt === null ? 'mobile-dock-btn-active' : ''}`}
             >
               <Home className="w-5 h-5" /><span>الرئيسية</span>
@@ -1046,6 +1157,34 @@ export default function App() {
         externalPrefill={assistantPrefill}
         externalAttachments={assistantAttachments}
       />
+
+      {isCatalogOpen && (
+        <Suspense fallback={null}>
+          <CaseCatalogModal
+            isOpen={isCatalogOpen}
+            isAdmin={session.role === 'admin'}
+            simpleMode={simpleUserMode}
+            onAskAssistant={(text) => requestAssistant(text)}
+            onClose={() => setIsCatalogOpen(false)}
+            onOpenCourtroom={session.role === 'admin' || !simpleUserMode ? (system) => {
+              openCourtroom();
+              setCourtroomSystem(system);
+            } : undefined}
+            onLaunch={(workspace, service, casePath, caseLabel) => {
+              setActiveCaseTypePath(casePath);
+              setActiveCaseTypeLabel(caseLabel);
+              setIsCourtroomOpen(false);
+              setIsAdminMapOpen(false);
+              setIsAdminAnalysisOpen(false);
+              setIsAdminUsersOpen(false);
+              setIsAdminAuditOpen(false);
+              setIsAdminSentinelOpen(false);
+              setActiveCourt(workspace);
+              setActiveService(service);
+            }}
+          />
+        </Suspense>
+      )}
 
       <Article8CalculatorModal
         isOpen={isArticle8Open}
