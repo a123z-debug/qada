@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Sparkles, ClipboardPaste, Check, AlertCircle, HelpCircle } from 'lucide-react';
+import { arabicCount } from '../../utils/arabicCount';
 
 export interface LegalAdaptationResult {
   subject: string;
@@ -84,7 +85,7 @@ export function PlainStoryInput({
       onApplyExtractedData(data);
       setSuccessMessage(
         data.legal_bases.length > 0
-          ? `تم إعداد التكييف وربطه بـ ${data.legal_bases.length} مراجع رسمية متاحة للمراجعة`
+          ? `تم إعداد التكييف وربطه بـ${arabicCount(data.legal_bases.length, { one: 'مرجع رسمي واحد', two: 'مرجعين رسميين', plural: 'مراجع رسمية', accusative: 'مرجعاً رسمياً', singular: 'مرجع رسمي' })} متاحة للمراجعة`
           : 'تم إعداد التكييف والطلبات، ولم يظهر سند رسمي مطابق بدرجة كافية؛ راجع المراجع قبل الاعتماد.'
       );
       setTimeout(() => setSuccessMessage(null), 4500);
@@ -125,7 +126,7 @@ export function PlainStoryInput({
             <h4 className="text-xs sm:text-sm font-black text-neutral-100 flex items-center gap-2">
               <span>ما تعرف المواد؟ اكتب وش صار معك ببساطة أو انسخ النص</span>
             </h4>
-            <p className="text-[11px] text-neutral-400">
+            <p className="text-xs text-neutral-400">
               يُحوَّل سردك إلى تكييف مبدئي، ثم تُربط به المراجع الرسمية التي استطاعت المنصة التحقق منها
             </p>
           </div>
@@ -171,7 +172,7 @@ export function PlainStoryInput({
 
       {/* 3. 3 Quick Example Chips */}
       <div className="flex flex-wrap items-center gap-2 pt-0.5">
-        <span className="text-[11px] font-bold text-neutral-400">أمثلة سريعة:</span>
+        <span className="text-xs font-bold text-neutral-400">أمثلة سريعة:</span>
         <div className="flex flex-wrap gap-1.5">
           {quickExamples.map((ex, idx) => (
             <button

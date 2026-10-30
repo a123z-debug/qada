@@ -24,6 +24,7 @@ import {
 import { OFFICIAL_JUDICIAL_REFERENCE_INDEX } from '../data/officialJudicialReferenceIndex';
 import { OFFICIAL_JUDICIAL_REGULATIONS } from '../data/officialJudicialRegulations';
 import { OFFICIAL_JUDICIAL_AMENDMENTS } from '../data/officialJudicialAmendments';
+import { arabicCount } from '../utils/arabicCount';
 
 interface LegalReferencesModalProps {
   isOpen: boolean;
@@ -271,8 +272,8 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-base font-black sm:text-xl">مركز المراجع والأنظمة</h2>
-              <p className="mt-0.5 text-[11px] text-slate-400">
-                {officialVerifiedCount} نظاماً/مرجعاً • {regulationVerifiedCount} لائحة/ضابطاً • {amendmentVerifiedCount} تعديلاً موثقاً • {needsCorrectionCount} يحتاج تصحيحاً • إصدار {LEGAL_REFERENCE_DB_VERSION}
+              <p className="mt-0.5 text-xs text-slate-400">
+                {arabicCount(officialVerifiedCount, { one: 'نظام واحد', two: 'نظامان', plural: 'أنظمة', accusative: 'نظاماً', singular: 'نظام' })} • {arabicCount(regulationVerifiedCount, { one: 'لائحة واحدة', two: 'لائحتان', plural: 'لوائح', accusative: 'لائحة', singular: 'لائحة' })} • {arabicCount(amendmentVerifiedCount, { one: 'تعديل موثق', two: 'تعديلان موثقان', plural: 'تعديلات موثقة', accusative: 'تعديلاً موثقاً', singular: 'تعديل موثق' })} • بحاجة إلى تصحيح: {needsCorrectionCount} • إصدار {LEGAL_REFERENCE_DB_VERSION}
               </p>
             </div>
           </div>
@@ -290,7 +291,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
               </div>
               <div className="flex gap-1.5 overflow-x-auto pb-1">
                 {['الكل', ...LEGAL_REFERENCE_CATEGORIES.map((item) => item.name)].map((item) => (
-                  <button key={item} onClick={() => setCategory(item)} className={`whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[11px] font-bold ${category === item ? 'border-cyan-300/50 bg-cyan-400/15 text-cyan-200' : 'border-slate-800 bg-slate-900 text-slate-400'}`}>
+                  <button key={item} onClick={() => setCategory(item)} className={`whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-xs font-bold ${category === item ? 'border-cyan-300/50 bg-cyan-400/15 text-cyan-200' : 'border-slate-800 bg-slate-900 text-slate-400'}`}>
                     {item}
                   </button>
                 ))}
@@ -306,7 +307,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
   ? <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
   : <FileCheck2 className={`mt-0.5 h-4 w-4 shrink-0 ${system.verificationStatus === 'needs-correction' ? 'text-rose-400' : 'text-amber-400'}`} />}
                   </div>
-                  <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-slate-500">{system.subCategory}</p>
+                  <p className="mt-1 line-clamp-2 text-xs leading-4 text-slate-500">{system.subCategory}</p>
                 </button>
               ))}
               {systems.length === 0 && <div className="p-8 text-center text-xs text-slate-500">لا توجد نتائج مطابقة.</div>}
@@ -321,11 +322,11 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                     <CheckCircle2 className="h-5 w-5" />
                     <h3 className="font-black">الفهرس الرسمي الآمن</h3>
                   </div>
-                  <p className="mt-1 text-[11px] leading-5 text-slate-400">
+                  <p className="mt-1 text-xs leading-5 text-slate-400">
                     هذه هي الطبقة التي يستخدمها خبير المراجع فعلياً. السجل الذي يحتاج تصحيحاً لا يدخل الاسترجاع القضائي.
                   </p>
                 </div>
-                <span className="rounded-full border border-emerald-400/20 bg-slate-950/50 px-3 py-1 text-[10px] font-bold text-emerald-200">
+                <span className="rounded-full border border-emerald-400/20 bg-slate-950/50 px-3 py-1 text-xs font-bold text-emerald-200">
                   {officialReferences.length + officialRegulations.length + officialAmendments.length} نتيجة موثقة/مفهرسة
                 </span>
               </div>
@@ -335,20 +336,20 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="text-xs font-black text-slate-100">{reference.systemName}</div>
-                        <div className="mt-1 text-[10px] text-slate-500">{reference.category}</div>
+                        <div className="mt-1 text-xs text-slate-500">{reference.category}</div>
                       </div>
-                      <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-bold ${reference.status === 'official-verified' ? 'bg-emerald-400/10 text-emerald-300' : 'bg-rose-400/10 text-rose-200'}`}>
+                      <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${reference.status === 'official-verified' ? 'bg-emerald-400/10 text-emerald-300' : 'bg-rose-400/10 text-rose-200'}`}>
                         {reference.status === 'official-verified' ? 'موثق' : 'يحتاج تصحيح'}
                       </span>
                     </div>
-                    <p className="mt-2 line-clamp-2 text-[10px] leading-5 text-slate-400">{reference.issueInstrument}</p>
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-400">{reference.issueInstrument}</p>
                     {reference.materialIndex.length > 0 && (
-                      <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-slate-500">
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
                         المواد المفهرسة: {reference.materialIndex.join('، ')}
                       </p>
                     )}
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <a href={reference.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+                      <a href={reference.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-300">
                         <ExternalLink className="h-3 w-3" /> المصدر
                       </a>
                       <button
@@ -361,7 +362,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
 المطلوب: استخرج فقط ما هو موثق رسمياً من النظام والمواد واللائحة والتعديلات والنسخ. إذا كان السجل يحتاج تصحيحاً فلا تعتمد النص المتعارض.`);
                           onClose();
                         }}
-                        className="text-[10px] font-bold text-cyan-300"
+                        className="text-xs font-bold text-cyan-300"
                       >
                         اسأل الخبير
                       </button>
@@ -379,18 +380,18 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                         <div className="flex items-start justify-between gap-2">
                           <div>
                             <div className="text-xs font-black text-slate-100">{reference.regulationName}</div>
-                            <div className="mt-1 text-[10px] text-slate-500">يتبع: {reference.parentSystem}</div>
+                            <div className="mt-1 text-xs text-slate-500">يتبع: {reference.parentSystem}</div>
                           </div>
-                          <span className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-bold ${reference.status === 'official-verified' ? 'bg-cyan-400/10 text-cyan-200' : 'bg-rose-400/10 text-rose-200'}`}>
+                          <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${reference.status === 'official-verified' ? 'bg-cyan-400/10 text-cyan-200' : 'bg-rose-400/10 text-rose-200'}`}>
                             {reference.status === 'official-verified' ? 'موثق' : 'يحتاج تصحيح'}
                           </span>
                         </div>
-                        <p className="mt-2 line-clamp-2 text-[10px] leading-5 text-slate-400">{reference.issueInstrument}</p>
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-400">{reference.issueInstrument}</p>
                         {reference.materialIndex.length > 0 && (
-                          <p className="mt-1 line-clamp-2 text-[10px] leading-5 text-slate-500">المواد: {reference.materialIndex.join('، ')}</p>
+                          <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">المواد: {reference.materialIndex.join('، ')}</p>
                         )}
                         <div className="mt-2 flex flex-wrap gap-2">
-                          <a href={reference.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+                          <a href={reference.officialSourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-300">
                             <ExternalLink className="h-3 w-3" /> المصدر
                           </a>
                           <button
@@ -403,7 +404,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
 المطلوب: استخرج فقط النص أو المادة أو التعديل المثبت رسمياً، وميّز بين النسخة الأصلية والنسخة المعدلة.`);
                               onClose();
                             }}
-                            className="text-[10px] font-bold text-cyan-300"
+                            className="text-xs font-bold text-cyan-300"
                           >
                             اسأل الخبير
                           </button>
@@ -421,10 +422,10 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                     {officialAmendments.map((reference) => (
                       <div key={reference.id} className={`rounded-xl border p-3 ${reference.status === 'official-verified' ? 'border-amber-400/15 bg-slate-950/60' : 'border-rose-400/20 bg-rose-400/5'}`}>
                         <div className="text-xs font-black text-slate-100">{reference.systemName}</div>
-                        <div className="mt-1 text-[10px] text-amber-200">{reference.affectedProvision}</div>
-                        <p className="mt-2 line-clamp-2 text-[10px] leading-5 text-slate-400">{reference.instrument}</p>
-                        <p className="mt-1 line-clamp-3 text-[10px] leading-5 text-slate-500">{reference.effect}</p>
-                        <a href={reference.officialSourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+                        <div className="mt-1 text-xs text-amber-200">{reference.affectedProvision}</div>
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-slate-400">{reference.instrument}</p>
+                        <p className="mt-1 line-clamp-3 text-xs leading-5 text-slate-500">{reference.effect}</p>
+                        <a href={reference.officialSourceUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-emerald-300">
                           <ExternalLink className="h-3 w-3" /> المصدر الرسمي
                         </a>
                       </div>
@@ -441,10 +442,10 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                                 <div>
                                   <div className="flex flex-wrap items-center gap-2">
                                     <h3 className="text-lg font-black text-white sm:text-2xl">{selected.name}</h3>
-                                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${sourceBadgeClasses(selected)}`}>{sourceBadge(selected)}</span>
+                                    <span className={`rounded-full border px-2 py-1 text-xs font-bold ${sourceBadgeClasses(selected)}`}>{sourceBadge(selected)}</span>
                                   </div>
                                   <p className="mt-2 text-xs leading-6 text-slate-400">{selected.subCategory}</p>
-                                  <div className="mt-3 grid gap-2 text-[11px] text-slate-400 sm:grid-cols-2">
+                                  <div className="mt-3 grid gap-2 text-xs text-slate-400 sm:grid-cols-2">
                                     <div><span className="font-bold text-slate-300">أداة الإصدار:</span> {selected.royalDecree || 'غير مثبتة'}</div>
                                     <div><span className="font-bold text-slate-300">قرار مجلس الوزراء:</span> {selected.cabinetResolution || 'غير مثبت'}</div>
                                     <div><span className="font-bold text-slate-300">الحالة:</span> {selected.status || 'غير محددة'}</div>
@@ -470,7 +471,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                                 <ShieldCheck className="h-5 w-5" />
                                 <h4 className="font-black">مصادر الاعتماد الرئيسية</h4>
                               </div>
-                              <p className="mt-1 text-[11px] leading-5 text-slate-400">
+                              <p className="mt-1 text-xs leading-5 text-slate-400">
                                 ترتيب التحقق في أصول القضاء: هيئة الخبراء بمجلس الوزراء، قرارات مجلس الوزراء السعودي، مجلس الشورى، ثم جريدة أم القرى لإثبات النشر والنفاذ. لا تُقدَّم النسخة الداخلية على المصدر الرسمي.
                               </p>
                               <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -480,7 +481,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                                       <ExternalLink className="h-3.5 w-3.5 text-emerald-300" />
                                       <span>{portal.label}</span>
                                     </div>
-                                    <p className="mt-1 text-[10px] leading-4 text-slate-500">{portal.note}</p>
+                                    <p className="mt-1 text-xs leading-4 text-slate-500">{portal.note}</p>
                                   </a>
                                 ))}
                               </div>
@@ -489,17 +490,17 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                             <section className="mt-4 grid gap-3 xl:grid-cols-2">
                               <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4">
                                 <div className="flex items-center gap-2 text-cyan-200"><Bot className="h-5 w-5" /><span className="font-black">أمين المراجع</span></div>
-                                <p className="mt-1 text-[11px] leading-5 text-slate-400">موظف مخصص لإحضار المادة المطلوبة باسم النظام ورقم المادة والمصدر، ويرفض اختلاق النص عند غياب التوثيق.</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-400">موظف مخصص لإحضار المادة المطلوبة باسم النظام ورقم المادة والمصدر، ويرفض اختلاق النص عند غياب التوثيق.</p>
                               </div>
                               <div className="rounded-2xl border border-violet-400/20 bg-violet-400/5 p-4">
                                 <div className="flex items-center gap-2 text-violet-200"><Sparkles className="h-5 w-5" /><span className="font-black">مدقق المراجع</span></div>
-                                <p className="mt-1 text-[11px] leading-5 text-slate-400">خبير ثانٍ لمراجعة النسخة النافذة والتعديل والمصدر قبل اعتماد النص في التحليل أو المذكرة.</p>
+                                <p className="mt-1 text-xs leading-5 text-slate-400">خبير ثانٍ لمراجعة النسخة النافذة والتعديل والمصدر قبل اعتماد النص في التحليل أو المذكرة.</p>
                               </div>
                             </section>
                 
                             <section className="mt-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-3">
                               <div className="flex flex-col gap-2 sm:flex-row">
-                                <input value={expertRequest} onChange={(e) => setExpertRequest(e.target.value)} placeholder="مثال: أحضر المادة الثامنة من نظام المرافعات أمام ديوان المظالم مع آخر تعديل" className="min-h-11 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-400/60" />
+                                <input value={expertRequest} onChange={(e) => setExpertRequest(e.target.value)} placeholder="مثال: أحضر المادة الثامنة من نظام المرافعات أمام ديوان المظالم مع آخر تعديل" className="min-h-11 min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 text-xs outline-none focus:border-cyan-400/60" />
                                 <button onClick={askReferenceCustodian} className="min-h-11 rounded-xl bg-cyan-400 px-4 text-xs font-black text-slate-950 hover:bg-cyan-300">استدعاء أمين المراجع</button>
                                 <button onClick={askReferenceAuditor} className="min-h-11 rounded-xl border border-violet-400/30 bg-violet-400/10 px-4 text-xs font-black text-violet-200 hover:bg-violet-400/15">تدقيق المرجع</button>
                               </div>
@@ -518,7 +519,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
                                     <article key={article.title + index} className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
                                       <div className="mb-2 flex items-center justify-between gap-2">
                                         <h4 className="font-black text-amber-300">{article.title}</h4>
-                                        <button onClick={() => { setExpertRequest(`${article.title} من ${selected.name}`); }} className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-300">
+                                        <button onClick={() => { setExpertRequest(`${article.title} من ${selected.name}`); }} className="inline-flex items-center gap-1 text-xs font-bold text-cyan-300">
                                           طلب التحقق <ChevronLeft className="h-3 w-3" />
                                         </button>
                                       </div>
@@ -581,7 +582,7 @@ ${selected.officialSourceUrl ? `المصدر الرسمي المتاح: ${select
               </section>
             )}
 
-            <div className="mt-6 rounded-2xl border border-rose-400/15 bg-rose-400/5 p-4 text-[11px] leading-6 text-slate-400">
+            <div className="mt-6 rounded-2xl border border-rose-400/15 bg-rose-400/5 p-4 text-xs leading-6 text-slate-400">
               <span className="font-black text-rose-200">قاعدة اعتماد المراجع:</span> لا يُعتمد أي نص أو رقم مادة أو تعديل في مخرج قضائي لمجرد وجوده في قاعدة المنصة؛ الأولوية دائماً للنص الرسمي النافذ ومصدره وتاريخ تعديله.
             </div>
           </main>
@@ -621,7 +622,7 @@ function ReferenceText({ title, text }: { title: string; text: string }) {
           <h4 className="font-black text-white">{title}</h4>
         </div>
         {text && (
-          <button onClick={copyText} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-2.5 text-[11px] font-bold text-cyan-200 hover:bg-cyan-400/10">
+          <button onClick={copyText} className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-2.5 text-xs font-bold text-cyan-200 hover:bg-cyan-400/10">
             {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {copied ? 'تم النسخ' : 'نسخ النص كاملاً'}
           </button>

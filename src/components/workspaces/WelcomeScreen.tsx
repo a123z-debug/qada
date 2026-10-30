@@ -1,23 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Building2,
+import { useEffect, useState } from 'react';
+import { 
   Scale,
-  ShieldAlert,
   ArrowLeft,
   FileText,
   Gavel,
   ShieldCheck,
   Sparkles,
   Zap,
-  CheckCircle2,
-  HelpCircle,
   FolderOpen,
   Search,
-  Library,
   Bot,
-  FileCheck,
-  AlertTriangle,
-  Clock,
   Network,
   LockKeyhole
 } from 'lucide-react';
@@ -60,7 +52,6 @@ export function WelcomeScreen({
   onSelectCourt,
   onSelectService,
   userName,
-  message = 'الرجاء اختيار الاختصاص القضائي للبدء',
   isAdmin = false,
   defaultMode,
   onModeChange,
@@ -255,14 +246,14 @@ export function WelcomeScreen({
               </div>
 
               <div className="min-w-0">
-                <div className="qada-profile-kicker mb-1 inline-flex items-center gap-1.5 text-[10px] font-black">
+                <div className="qada-profile-kicker mb-1 inline-flex items-center gap-1.5 text-xs font-black">
                   <Scale className="h-3.5 w-3.5" strokeWidth={1.9} />
                   الملف الشخصي
                 </div>
                 <div className="qada-profile-name truncate text-base font-black sm:text-lg">
                   {userName || 'مستخدم QADA'}
                 </div>
-                <div className="qada-profile-meta mt-1 flex flex-wrap items-center gap-1.5 text-[10px] font-bold sm:text-[11px]">
+                <div className="qada-profile-meta mt-1 flex flex-wrap items-center gap-1.5 text-xs font-bold sm:text-xs">
                   <span>الوضع المبسط</span>
                   <span className="opacity-40">•</span>
                   <span>مساحة شخصية</span>
@@ -270,13 +261,13 @@ export function WelcomeScreen({
               </div>
             </div>
 
-            <div className="qada-profile-status hidden items-center gap-2 rounded-full px-3 py-2 text-[10px] font-black sm:flex">
+            <div className="qada-profile-status hidden items-center gap-2 rounded-full px-3 py-2 text-xs font-black sm:flex">
               <ShieldCheck className="h-4 w-4" strokeWidth={2} />
               جلسة محمية
             </div>
           </div>
 
-          <div className="qada-profile-mobile-status relative z-10 mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black sm:hidden">
+          <div className="qada-profile-mobile-status relative z-10 mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black sm:hidden">
             <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} />
             جلسة محمية
           </div>
@@ -286,7 +277,7 @@ export function WelcomeScreen({
           <div>
             <div className="sr-only">QADA SIMPLE</div>
             <h2 className="text-sm font-black text-slate-950">قضيتي</h2>
-            <p className="mt-0.5 text-[11px] text-slate-500">كل شيء عن مشكلتك في مكان واحد.</p>
+            <p className="mt-0.5 text-xs text-slate-500">كل شيء عن مشكلتك في مكان واحد.</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -332,16 +323,16 @@ export function WelcomeScreen({
             ].map(([number, title, text]) => (
               <div key={number} className="rounded-2xl border border-emerald-900/10 bg-emerald-50/45 px-3 py-3">
                 <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-800 text-[10px] font-black text-white">{number}</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-800 text-xs font-black text-white">{number}</span>
                   <span className="text-xs font-black text-slate-900">{title}</span>
                 </div>
-                <p className="mt-1.5 pr-8 text-[10px] leading-5 text-slate-500">{text}</p>
+                <p className="mt-1.5 pr-8 text-xs leading-5 text-slate-500">{text}</p>
               </div>
             ))}
           </div>
 
           {simpleMessages.length > 0 && (
-            <div className="mt-5 max-h-[48dvh] space-y-3 overflow-y-auto rounded-2xl bg-[#f7f8fa] p-3 custom-scrollbar sm:p-4">
+            <div role="log" aria-label="المحادثة" tabIndex={0} className="mt-5 max-h-[48dvh] space-y-3 overflow-y-auto rounded-2xl bg-[#f7f8fa] p-3 custom-scrollbar sm:p-4">
               {simpleMessages.map((message) => (
                 <div
                   key={message.id}
@@ -351,7 +342,7 @@ export function WelcomeScreen({
                       : 'qada-chat-bubble qada-chat-bubble-ai ml-auto max-w-[96%] rounded-2xl rounded-tl-md border p-3.5'
                   }
                 >
-                  <div className="mb-1 text-[10px] font-black text-slate-400">
+                  <div className="mb-1 text-xs font-black text-slate-400">
                     {message.role === 'user' ? 'أنت' : 'QADA'}
                   </div>
                   <div className="whitespace-pre-wrap text-sm leading-7 text-slate-700">
@@ -381,7 +372,7 @@ export function WelcomeScreen({
                     key={attachment.id}
                     type="button"
                     onClick={() => setSimpleAttachments((current) => current.filter((item) => item.id !== attachment.id))}
-                    className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600 shadow-sm hover:border-rose-200 hover:text-rose-600"
+                    className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-600 shadow-sm hover:border-rose-200 hover:text-rose-600"
                     title="إزالة المرفق"
                   >
                     {attachment.name}
@@ -428,7 +419,7 @@ export function WelcomeScreen({
           <section>
             <div className="mb-3 flex items-center justify-between gap-3 px-1">
               <h2 className="text-sm font-black text-slate-950">أمثلة تساعدك تبدأ</h2>
-              <span className="text-[10px] font-bold text-slate-400">اختر الأقرب أو اكتب حالتك بنفسك</span>
+              <span className="text-xs font-bold text-slate-400">اختر الأقرب أو اكتب حالتك بنفسك</span>
             </div>
             <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
               {simpleActions.map((action) => {
@@ -454,7 +445,7 @@ export function WelcomeScreen({
           </section>
         )}
 
-        <p className="px-1 text-center text-[10px] leading-5 text-slate-400">
+        <p className="px-1 text-center text-xs leading-5 text-slate-400">
           QADA يرتب التحليل والمراجع في الخلفية. أنت تشوف فقط اللي يفيدك في قضيتك.
         </p>
       </div>
@@ -465,7 +456,7 @@ export function WelcomeScreen({
     <div className="qada-professional-screen max-w-7xl mx-auto space-y-7 py-4 px-2 sm:px-6 select-none" dir="rtl">
       <div className="qada-pro-toolbar flex flex-col gap-3 rounded-2xl border p-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-[11px] font-black text-amber-300">QADA PROFESSIONAL</div>
+          <div className="text-xs font-black text-amber-300">QADA PROFESSIONAL</div>
           <p className="mt-1 text-xs text-slate-400">للشخص الذي يعرف نوع القضية ويريد اختيار المحكمة والخدمة والمراجع بنفسه.</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -484,9 +475,9 @@ export function WelcomeScreen({
         <div className="qada-pro-shared rounded-2xl border p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-[11px] font-black text-cyan-200">ملف العمل المشترك بين Simple وProfessional</div>
+              <div className="text-xs font-black text-cyan-200">ملف العمل المشترك بين Simple وProfessional</div>
               <p className="mt-1 line-clamp-2 text-xs leading-6 text-slate-400">{sharedTask.content}</p>
-              <p className="mt-1 text-[10px] text-slate-600">محفوظ في مخزن QADA المشفر لحسابك، ويمكنك الرجوع إلى Simple ومتابعة نفس السياق.</p>
+              <p className="mt-1 text-xs text-slate-600">محفوظ في مخزن QADA المشفر لحسابك، ويمكنك الرجوع إلى Simple ومتابعة نفس السياق.</p>
             </div>
             <button type="button" onClick={() => changeInterfaceMode('simple')} className="min-h-10 shrink-0 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 text-xs font-black text-cyan-200 hover:bg-cyan-400/15">
               متابعة الملف في Simple
@@ -507,7 +498,7 @@ export function WelcomeScreen({
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-              اختر المسار بنفسك <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">وتابع التفاصيل</span>
+              اختر المسار بنفسك <span className="qada-hero-accent">وتابع التفاصيل</span>
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
@@ -537,7 +528,7 @@ export function WelcomeScreen({
               <span className="font-bold text-xs text-amber-400 flex items-center gap-1.5">
                 <FolderOpen className="w-4 h-4" /> مساحة قضيتي
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono">
                 قيد المراجعة
               </span>
             </div>
@@ -548,7 +539,7 @@ export function WelcomeScreen({
                 <span className="font-bold text-amber-400">بانتظار الفحص</span>
               </div>
 
-              <div className="space-y-1.5 pt-2 text-[11px]">
+              <div className="space-y-1.5 pt-2 text-xs">
                 <div className="flex items-center justify-between text-slate-400">
                   <span>المحرر القضائي:</span>
                   <span className="text-slate-300">غير مقيم بعد</span>
@@ -563,7 +554,7 @@ export function WelcomeScreen({
                 </div>
               </div>
 
-              <p className="pt-2 border-t border-slate-800 text-[10px] leading-5 text-slate-500">
+              <p className="pt-2 border-t border-slate-800 text-xs leading-5 text-slate-500">
                 لا تعرض المنصة نسبة سلامة ثابتة قبل تشغيل فحص فعلي على ملف القضية.
               </p>
             </div>
@@ -581,7 +572,7 @@ export function WelcomeScreen({
                 <Network className="h-7 w-7" />
               </div>
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-1 text-[10px] font-black text-violet-200">
+                <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-1 text-xs font-black text-violet-200">
                   <LockKeyhole className="h-3 w-3" />
                   ADMIN ONLY
                 </div>
@@ -629,7 +620,7 @@ export function WelcomeScreen({
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner ${cat.colorTheme.bg} ${cat.colorTheme.border} ${cat.colorTheme.text}`}>
                       <CatIcon className="w-6 h-6" />
                     </div>
-                    <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">
+                    <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300">
                       {cat.services.length} مسارات
                     </span>
                   </div>
@@ -644,7 +635,7 @@ export function WelcomeScreen({
                   </div>
 
                   <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
-                    <p className="text-[11px] font-bold text-slate-400">الخدمات والأدوات المتاحة:</p>
+                    <p className="text-xs font-bold text-slate-400">الخدمات والأدوات المتاحة:</p>
                     {cat.services.map((srv) => (
                       <button
                         key={srv.id}
@@ -683,7 +674,7 @@ export function WelcomeScreen({
           </div>
           <div>
             <h4 className="text-xs font-bold text-white">تحليل فجوات الإثبات</h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-0.5">
               مقارنة تلقائية بين ما تدعيه في اللائحة وما تثبته في المستندات والمرفقات.
             </p>
           </div>
@@ -695,7 +686,7 @@ export function WelcomeScreen({
           </div>
           <div>
             <h4 className="text-xs font-bold text-white">تحقق مرجعي منظم</h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-0.5">
               تمييز المراجع المتحققة من المصادر الرسمية عن النصوص التي ما زالت تحتاج مراجعة.
             </p>
           </div>
@@ -707,7 +698,7 @@ export function WelcomeScreen({
           </div>
           <div>
             <h4 className="text-xs font-bold text-white">المستشار القانوني المترجم</h4>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-0.5">
               شرح المصطلحات المعقدة وتوجيهك بخطوات واضحة وبسيطة لتقوية موقفك.
             </p>
           </div>

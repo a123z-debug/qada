@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { UploadCloud, FileText, X, AlertCircle, FileCheck, Trash2, ShieldCheck } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { UploadCloud, X, AlertCircle, FileCheck, Trash2, ShieldCheck } from 'lucide-react';
 import { Attachment } from '../types';
 
 interface PdfUploadModalProps {
@@ -102,7 +102,7 @@ export function PdfUploadModal({ isOpen, onClose, onAddAttachments, onAnalyzeImm
           <UploadCloud className="w-8 h-8 mx-auto mb-3 text-amber-400"/><p className="text-sm font-bold text-neutral-100">اسحب PDF أو صورة هنا، أو انقر للاختيار</p>
         </div>
         {uploadError && <div className="p-3 bg-rose-950 border border-rose-800 rounded-xl text-rose-200 text-xs flex gap-2"><AlertCircle className="w-4 h-4"/>{uploadError}</div>}
-        {selectedFiles.map(file => <div key={file.id} className="flex items-center justify-between p-3 rounded-xl bg-neutral-950 border border-neutral-800"><div className="flex gap-3"><FileCheck className="w-5 h-5 text-amber-400"/><div><p className="text-xs font-bold text-neutral-200">{file.name}</p><p className="text-[10px] text-neutral-400">{(file.size/(1024*1024)).toFixed(2)} MB</p></div></div><button onClick={() => setSelectedFiles(prev => prev.filter(f => f.id !== file.id))}><Trash2 className="w-4 h-4 text-rose-400"/></button></div>)}
+        {selectedFiles.map(file => <div key={file.id} className="flex items-center justify-between p-3 rounded-xl bg-neutral-950 border border-neutral-800"><div className="flex gap-3"><FileCheck className="w-5 h-5 text-amber-400"/><div><p className="text-xs font-bold text-neutral-200">{file.name}</p><p className="text-xs text-neutral-400">{(file.size/(1024*1024)).toFixed(2)} MB</p></div></div><button onClick={() => setSelectedFiles(prev => prev.filter(f => f.id !== file.id))}><Trash2 className="w-4 h-4 text-rose-400"/></button></div>)}
         <textarea value={customNote} onChange={e => setCustomNote(e.target.value)} placeholder="ملاحظة اختيارية للتحليل" className="w-full min-h-20 p-3 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-200 text-sm" />
         <div className="flex items-center gap-2 text-xs text-neutral-400"><ShieldCheck className="w-4 h-4 text-amber-400"/>تُرسل الملفات إلى مزود الذكاء المهيأ للمنصة عند اختيار التحليل؛ لا ترفع بيانات غير لازمة للقضية.</div>
       </div>

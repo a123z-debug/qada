@@ -422,7 +422,7 @@ function normalizeIssue(issue: any, index: number) {
 }
 
 function normalizeReport(input: any) {
-  const issues = Array.isArray(input?.issues)
+  const issues: ReturnType<typeof normalizeIssue>[] = Array.isArray(input?.issues)
     ? input.issues.slice(0, 80).map(normalizeIssue)
     : [];
 

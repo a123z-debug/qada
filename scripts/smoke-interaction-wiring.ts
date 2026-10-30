@@ -137,7 +137,7 @@ assert(welcome.includes("responseMode: 'simple'"), 'Simple interface must reques
 assert(floatingChat.includes("responseMode?: 'simple' | 'professional'") && floatingChat.includes('responseMode,'),
   'Floating assistant must follow the unified Simple/Professional workspace mode');
 assert(chatApi.includes('SIMPLE_RESPONSE_INSTRUCTION'), 'Chat API missing dedicated Simple response contract');
-assert(chatApi.includes('buildHujjaBayanInstruction') && chatApi.includes('isHujjaDraftingRequest'),
+assert(chatApi.includes('buildHujjaBayanInstruction') && chatApi.includes('shouldActivateDrafting(clientMessages)'),
   'Chat API must route drafting tasks through Hujja wa Bayan');
 assert(chatApi.includes('generateContentStream'), 'Hujja wa Bayan must preserve streamed generation internally');
 assert(chatApi.includes('streamHujjaViaGemini'), 'Hujja wa Bayan internal generation helper missing');

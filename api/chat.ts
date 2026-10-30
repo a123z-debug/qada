@@ -7,7 +7,7 @@ import { enforceRateLimit } from './_rateLimit.js';
 import { redactDirectIdentifiers } from './_privacy.js';
 import { withTimeout } from './_async.js';
 import { USER_AI_MODELS, isQuotaError, isModelCoolingDown, markModelQuotaError } from './_aiRuntime.js';
-import { buildHujjaBayanInstruction, isHujjaDraftingRequest } from '../src/lib/hujjaBayanAgent.js';
+import { buildHujjaBayanInstruction} from '../src/lib/hujjaBayanAgent.js';
 import { analyzeLawOfficeRoute, buildLawOfficeInstruction } from '../src/lib/lawOfficeExpert.js';
 import { reviewDraftBeforeClientRelease } from './_draftReleaseGate.js';
 import { recordSentinelTurn } from './_sentinel.js';
@@ -353,6 +353,36 @@ function buildSafeFallbackReply(messages: IncomingMessage[], targetCourt?: strin
         'وأرفق أهم إثبات عندك، ثم أبدأ الصياغة.',
       ].join('\n');
     }
+    if (intent === 'administrative') {
+      return [
+        'وصلت الصورة: مشكلتك مع جهة حكومية بسبب قرار صدر بحقك.',
+        'أهم شيء الآن هو المواعيد، لأن التظلم والدعوى الإدارية لهما مدد محددة.',
+        '',
+        'أرسل لي:',
+        '1) متى تبلّغت بالقرار بالضبط؟',
+        '2) هل قدّمت تظلماً للجهة؟ ومتى؟ وهل ردّوا عليك؟',
+        '3) وش تبي بالنهاية: إلغاء القرار، أو تعويض، أو الاثنين؟',
+        '',
+        'وإذا عندك صورة القرار أو خطاب التبليغ أرفقها، وبعدها أرتب لك الخطوة التالية.',
+      ].join('\n');
+    }
+    if (intent === 'document-review') {
+      return [
+        'تمام، نبدأ بمراجعة المستند.',
+        'أرفق الحكم أو المستند كاملاً بكل صفحاته، واذكر في أي مرحلة وصلت القضية.',
+        'بعدها أوضح لك: وش يقول المستند، وهل فيه نقاط اعتراض، ووش الخطوة التالية.',
+      ].join('\n');
+    }
+    const providedWords = normalized.split(' ').filter(Boolean).length;
+    if (providedWords >= 8) {
+      return [
+        'وصلتني قصتك، وأحتاج تفاصيل قليلة حتى أحدد الطريق الصحيح:',
+        '1) متى حصل هذا بالضبط؟',
+        '2) وش تبي بالنهاية؟',
+        '3) وش عندك من أوراق أو رسائل تثبت كلامك؟',
+        'وإذا عندك حكم أو قرار أو عقد أو تحويل، أرفقه هنا.',
+      ].join('\n');
+    }
     return [
       'تمام. اكتب لي باختصار:',
       '1) ضد من؟',
@@ -503,11 +533,6 @@ function takeStreamingFlush(buffer: string, force = false): { send: string; rest
   }
 
   return { send: buffer, rest: '' };
-}
-
-function writeSseDelta(res: VercelResponse, text: string) {
-  if (!text) return;
-  res.write(`data: ${JSON.stringify({ text })}\n\n`);
 }
 
 function startSimpleSseKeepAlive(res: VercelResponse): () => void {

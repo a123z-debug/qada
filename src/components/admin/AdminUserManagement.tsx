@@ -69,7 +69,7 @@ export function AdminUserManagement({ onBack }: { onBack: () => void }) {
               <Users className="h-7 w-7" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-[10px] font-black text-violet-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-xs font-black text-violet-200">
                 <LockKeyhole className="h-3 w-3" /> ADMIN ONLY
               </div>
               <h2 className="mt-2 text-xl sm:text-2xl font-black text-white">إدارة مستخدمي المنصة</h2>
@@ -92,7 +92,7 @@ export function AdminUserManagement({ onBack }: { onBack: () => void }) {
       <div className="rounded-2xl border border-slate-800 bg-slate-950/90 overflow-hidden">
         <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
           <div className="text-sm font-black text-white">الحسابات المسجلة</div>
-          <div className="text-[11px] font-bold text-slate-500">{users.length} مستخدم</div>
+          <div className="text-xs font-bold text-slate-500">{users.length} مستخدم</div>
         </div>
 
         {loading ? (
@@ -106,12 +106,12 @@ export function AdminUserManagement({ onBack }: { onBack: () => void }) {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-black text-slate-100">{user.name}</span>
-                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-black ${user.disabled ? 'border-rose-400/30 bg-rose-500/10 text-rose-200' : 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200'}`}>
+                    <span className={`rounded-full border px-2 py-0.5 text-xs font-black ${user.disabled ? 'border-rose-400/30 bg-rose-500/10 text-rose-200' : 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200'}`}>
                       {user.disabled ? 'موقوف' : 'نشط'}
                     </span>
                   </div>
                   <div className="mt-1 break-all text-xs text-slate-400" dir="ltr">{user.email}</div>
-                  <div className="mt-1 text-[10px] text-slate-600">أنشئ: {new Date(user.createdAt).toLocaleString('ar-SA')}</div>
+                  <div className="mt-1 text-xs text-slate-600">أنشئ: {new Date(user.createdAt).toLocaleString('ar-SA-u-nu-latn')}</div>
                 </div>
                 <button
                   type="button"

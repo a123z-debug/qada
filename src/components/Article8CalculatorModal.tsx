@@ -194,8 +194,8 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
         {/* Form Controls */}
         <div className="p-6 space-y-4 overflow-y-auto">
           <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
-            <label className="block text-xs font-bold text-amber-200">اختر مسار الدعوى قبل الحساب</label>
-            <select
+            <label htmlFor="article8calculatormodal-field-1" className="block text-xs font-bold text-amber-200">اختر مسار الدعوى قبل الحساب</label>
+            <select id="article8calculatormodal-field-1"
               value={claimPath}
               onChange={(e) => setClaimPath(e.target.value as 'cancellation' | 'service_rights' | 'unknown')}
               className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-hidden focus:border-amber-500"
@@ -204,13 +204,13 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
               <option value="cancellation">دعوى إلغاء قرار إداري</option>
               <option value="service_rights">دعوى حقوق وظيفية / خدمة مدنية أو عسكرية</option>
             </select>
-            <p className="text-[11px] leading-relaxed text-neutral-400">
+            <p className="text-xs leading-relaxed text-neutral-400">
               لا تحتوي هذه الحاسبة على مدد نظامية ثابتة. أدخل عدد الأيام فقط بعد التحقق من النص الرسمي النافذ لنوع دعواك.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3">
             <label className="space-y-1">
-              <span className="text-[11px] font-bold text-cyan-200">فترة التظلم بالأيام</span>
+              <span className="text-xs font-bold text-cyan-200">فترة التظلم بالأيام</span>
               <input
                 type="number"
                 min="1"
@@ -222,7 +222,7 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
               />
             </label>
             <label className="space-y-1">
-              <span className="text-[11px] font-bold text-cyan-200">فترة بت الجهة بالأيام</span>
+              <span className="text-xs font-bold text-cyan-200">فترة بت الجهة بالأيام</span>
               <input
                 type="number"
                 min="1"
@@ -234,7 +234,7 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
               />
             </label>
             <label className="space-y-1">
-              <span className="text-[11px] font-bold text-cyan-200">فترة رفع الدعوى بالأيام</span>
+              <span className="text-xs font-bold text-cyan-200">فترة رفع الدعوى بالأيام</span>
               <input
                 type="number"
                 min="1"
@@ -245,7 +245,7 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
                 className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-hidden focus:border-cyan-400"
               />
             </label>
-            <p className="sm:col-span-3 text-[10px] leading-5 text-cyan-100/70">
+            <p className="sm:col-span-3 text-xs leading-5 text-cyan-100/70">
               أدخل هذه الفترات فقط إذا راجعت المصدر الرسمي وحددت الفقرة المنطبقة على نوع الدعوى والمرحلة.
             </p>
           </div>
@@ -328,7 +328,7 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-amber-400">النتيجة الإجرائية المبدئية</span>
                 <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                     calcResult.isCourtWindowOpen === true && (calcResult.isGrievanceOnTime !== false)
                       ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                       : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
@@ -350,16 +350,16 @@ ${calcResult.courtDeadlineStr ? `- التاريخ الحسابي الناتج ل
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-neutral-300">
                 <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800/80">
-                  <span className="text-neutral-400 block text-[11px]">{claimPath === 'cancellation' ? 'آخر موعد مبدئي للتظلم في مسار الإلغاء:' : 'ميعاد التظلم في مسار الحقوق:'}</span>
+                  <span className="text-neutral-400 block text-xs">{claimPath === 'cancellation' ? 'آخر موعد مبدئي للتظلم في مسار الإلغاء:' : 'ميعاد التظلم في مسار الحقوق:'}</span>
                   <span className="font-semibold text-neutral-100">{calcResult.grievanceDeadlineStr || 'أدخل فترة الأيام بعد التحقق من المصدر الرسمي'}</span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-neutral-900/80 border border-neutral-800/80">
-                  <span className="text-neutral-400 block text-[11px]">التاريخ الحسابي لنهاية فترة رفع الدعوى:</span>
+                  <span className="text-neutral-400 block text-xs">التاريخ الحسابي لنهاية فترة رفع الدعوى:</span>
                   <span className="font-semibold text-neutral-100">{calcResult.courtDeadlineStr || 'أدخل الفترات اللازمة وتاريخ التظلم/الرد'}</span>
                 </div>
               </div>
 
-              <div className="text-[11px] text-neutral-400 leading-relaxed border-t border-neutral-800/80 pt-2">
+              <div className="text-xs text-neutral-400 leading-relaxed border-t border-neutral-800/80 pt-2">
                 {typeof calcResult.daysRemainingForCourt === 'number' ? (
                   calcResult.daysRemainingForCourt >= 0 ? (
                     <span>

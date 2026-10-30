@@ -24,7 +24,7 @@
     "test:ai-runtime": "tsx scripts/smoke-ai-runtime.ts",
     "audit:prod": "npm audit --omit=dev --audit-level=low",
     "release:check": "tsx scripts/check-launch-blockers.ts",
-    "verify": "npm run lint && npm run test:legal-sources && npm run test:legal-guard && npm run test:legal-ui-safety && npm run test:api-auth && npm run test:auth-consistency && npm run test:privacy-storage && npm run test:multimodal-evidence && npm run test:production-readiness && npm run test:blueprint-map && npm run test:interaction-wiring && npm run test:ui-luxury && npm run test:ui-8k && npm run test:sentinel && npm run test:claim-liberation && npm run test:conversation-state && npm run test:release-gate-grounding && npm run test:serverless-runtime && npm run test:security-hardening && npm run test:security-007 && npm run test:virtual-judge-gate && npm run test:agent-contracts && npm run test:agent-scenarios && npm run test:stress-agent-contracts && npm run test:stress-legal-workflows && npm run test:stress-source-agents && npm run test:turki-case",
+    "verify": "npm run lint && npm run test:legal-sources && npm run test:reference-consistency && npm run test:legal-guard && npm run test:legal-ui-safety && npm run test:api-auth && npm run test:auth-consistency && npm run test:privacy-storage && npm run test:multimodal-evidence && npm run test:production-readiness && npm run test:blueprint-map && npm run test:interaction-wiring && npm run test:ui-text-quality && npm run test:ui-luxury && npm run test:ui-8k && npm run test:sentinel && npm run test:claim-liberation && npm run test:conversation-state && npm run test:release-gate-grounding && npm run test:serverless-runtime && npm run test:security-hardening && npm run test:security-007 && npm run test:virtual-judge-gate && npm run test:agent-contracts && npm run test:agent-scenarios && npm run test:stress-agent-contracts && npm run test:stress-legal-workflows && npm run test:stress-source-agents && npm run test:turki-case",
     "test:turki-case": "tsx scripts/smoke-turki-case.ts",
     "perf:bench": "tsx scripts/perf-benchmark.ts",
     "perf:http": "tsx scripts/perf-http-load.ts",
@@ -41,12 +41,16 @@
     "test:sentinel": "tsx scripts/smoke-sentinel.ts",
     "test:claim-liberation": "tsx scripts/smoke-claim-liberation.ts",
     "test:ui-luxury": "tsx scripts/smoke-ui-luxury.ts",
-    "test:ui-8k": "tsx scripts/smoke-ui-8k.ts"
+    "test:ui-8k": "tsx scripts/smoke-ui-8k.ts",
+    "test:reference-consistency": "tsx scripts/smoke-reference-consistency.ts",
+    "test:ui-text-quality": "tsx scripts/smoke-ui-text-quality.ts"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-sans-arabic": "^5.2.8",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "compression": "^1.8.1",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "lucide-react": "^0.546.0",
@@ -57,18 +61,26 @@
     "vite": "^6.2.3"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
-    "@vercel/node": "^13.0.1",
+    "@types/react-dom": "^19.2.3",
+    "@vercel/node": "^29.0.0",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vercel": "^59.20.0",
     "vite": "^6.2.3"
   },
   "engines": {
     "node": "22.x"
+  },
+  "overrides": {
+    "@vercel/node": {
+      "path-to-regexp": "6.3.0",
+      "undici": "6.29.1",
+      "ajv": "8.20.0"
+    }
   }
 }

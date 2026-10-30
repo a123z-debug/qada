@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   ArrowRight,
@@ -64,7 +64,7 @@ function formatTime(value: number) {
       timeStyle: 'medium',
     }).format(new Date(value));
   } catch {
-    return new Date(value).toLocaleString();
+    return new Date(value).toLocaleString('ar-SA-u-nu-latn');
   }
 }
 
@@ -143,8 +143,8 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
           <div>
             <div className="flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-rose-300" />
-              <h1 className="text-base font-black">QADA Sentinel — المراقب الظل</h1>
-              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-black ${
+              <h2 className="text-base font-black">QADA Sentinel — المراقب الظل</h2>
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-black ${
                 heartbeatFresh
                   ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
                   : 'border-amber-400/25 bg-amber-500/10 text-amber-200'
@@ -153,7 +153,7 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
                 {heartbeatFresh ? 'LIVE • 1s' : 'إعادة اتصال'}
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-400">يراقب انتقالات المحادثة والوكلاء والبوابات ويكشف الانحراف قبل أن يتحول إلى نمط متكرر — نبض اتصال كل ثانية وتحليل فوري عند الحدث.</p>
+            <p className="mt-1 text-xs text-slate-400">يراقب انتقالات المحادثة والوكلاء والبوابات ويكشف الانحراف قبل أن يتحول إلى نمط متكرر — نبض اتصال كل ثانية وتحليل فوري عند الحدث.</p>
           </div>
         </div>
         <button
@@ -185,7 +185,7 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
             ['P2 جودة', summary.P2, 'text-cyan-200'],
           ].map(([label, value, color]) => (
             <div key={String(label)} className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3">
-              <div className="text-[10px] font-bold text-slate-500">{label}</div>
+              <div className="text-xs font-bold text-slate-500">{label}</div>
               <div className={`mt-2 text-2xl font-black ${color}`}>{value}</div>
             </div>
           ))}
@@ -244,13 +244,13 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`rounded-lg border px-2 py-1 text-[10px] font-black ${severityStyle[event.maxSeverity] || severityStyle.OK}`}>
+                    <span className={`rounded-lg border px-2 py-1 text-xs font-black ${severityStyle[event.maxSeverity] || severityStyle.OK}`}>
                       {event.maxSeverity}
                     </span>
-                    <span className="text-[10px] text-slate-500">{formatTime(event.at)}</span>
+                    <span className="text-xs text-slate-500">{formatTime(event.at)}</span>
                   </div>
                   <div className="mt-2 line-clamp-2 text-xs font-bold leading-5 text-slate-200">{event.userSnippet || 'رسالة بدون نص'}</div>
-                  <div className="mt-2 flex flex-wrap gap-1.5 text-[9px] text-slate-500">
+                  <div className="mt-2 flex flex-wrap gap-1.5 text-xs text-slate-500">
                     <span>{event.responseMode}</span>
                     {event.routeTask && <span>• {event.routeTask}</span>}
                     {event.draftingActive && <span>• drafting</span>}
@@ -272,18 +272,18 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
                           : <CircleAlert className="h-5 w-5 text-amber-300" />}
                         <h2 className="text-sm font-black">{selected.status === 'clean' ? 'المسار سليم حسب القواعد الحالية' : 'Sentinel اكتشف انحرافاً'}</h2>
                       </div>
-                      <div className="mt-1 text-[10px] text-slate-500">{formatTime(selected.at)} • جلسة #{selected.sessionFingerprint.slice(0, 10)}</div>
+                      <div className="mt-1 text-xs text-slate-500">{formatTime(selected.at)} • جلسة #{selected.sessionFingerprint.slice(0, 10)}</div>
                     </div>
                     <span className={`rounded-xl border px-3 py-1.5 text-xs font-black ${severityStyle[selected.maxSeverity] || severityStyle.OK}`}>{selected.maxSeverity}</span>
                   </div>
 
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div className="rounded-xl border border-slate-800 bg-slate-950/65 p-3">
-                      <div className="text-[10px] font-black text-slate-500">رسالة المستخدم — منزوعة المعرّفات المباشرة</div>
+                      <div className="text-xs font-black text-slate-500">رسالة المستخدم — منزوعة المعرّفات المباشرة</div>
                       <div className="mt-2 whitespace-pre-wrap text-xs leading-6 text-slate-200">{selected.userSnippet || '—'}</div>
                     </div>
                     <div className="rounded-xl border border-slate-800 bg-slate-950/65 p-3">
-                      <div className="text-[10px] font-black text-slate-500">رد QADA المرصود</div>
+                      <div className="text-xs font-black text-slate-500">رد QADA المرصود</div>
                       <div className="mt-2 whitespace-pre-wrap text-xs leading-6 text-slate-200">{selected.replySnippet || '—'}</div>
                     </div>
                   </div>
@@ -296,7 +296,7 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
                       ['Release Gate', selected.releaseGateDecision || 'لم يعمل'],
                     ].map(([label, value]) => (
                       <div key={label} className="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
-                        <div className="text-[9px] font-bold text-slate-500">{label}</div>
+                        <div className="text-xs font-bold text-slate-500">{label}</div>
                         <div className="mt-1 text-xs font-black text-slate-200">{value}</div>
                       </div>
                     ))}
@@ -308,16 +308,16 @@ export function AdminSentinel({ onBack }: { onBack: () => void }) {
                       <div key={finding.code + index} className={`rounded-2xl border p-4 ${severityStyle[finding.severity]}`}>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="text-xs font-black">{finding.title}</div>
-                          <div className="font-mono text-[10px] opacity-75">{finding.severity} • {finding.code}</div>
+                          <div className="font-mono text-xs opacity-75">{finding.severity} • {finding.code}</div>
                         </div>
                         <p className="mt-2 text-xs leading-6 opacity-95">{finding.conclusion}</p>
                         {(finding.expected || finding.actual) && (
                           <div className="mt-3 grid gap-2 md:grid-cols-2">
-                            {finding.expected && <div className="rounded-xl bg-black/15 p-3 text-[11px] leading-5"><b>المفترض:</b> {finding.expected}</div>}
-                            {finding.actual && <div className="rounded-xl bg-black/15 p-3 text-[11px] leading-5"><b>الذي حدث:</b> {finding.actual}</div>}
+                            {finding.expected && <div className="rounded-xl bg-black/15 p-3 text-xs leading-5"><b>المفترض:</b> {finding.expected}</div>}
+                            {finding.actual && <div className="rounded-xl bg-black/15 p-3 text-xs leading-5"><b>الذي حدث:</b> {finding.actual}</div>}
                           </div>
                         )}
-                        {finding.agent && <div className="mt-2 text-[10px] opacity-70">المسار/الوكيل: {finding.agent}</div>}
+                        {finding.agent && <div className="mt-2 text-xs opacity-70">المسار/الوكيل: {finding.agent}</div>}
                       </div>
                     )) : (
                       <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-4 text-xs leading-6 text-emerald-100/80">

@@ -6,18 +6,14 @@ import {
   AlertTriangle,
   XCircle,
   CheckCircle2,
-  FileSearch,
-  UserCheck,
-  ChevronDown,
   Sparkles,
   Gavel,
   Check,
   X,
-  ExternalLink,
   BookOpen,
-  Building2,
 } from 'lucide-react';
 import { CassationAuditReport, CassationJudgeOpinion, JudgeCourtCategory } from '../types';
+import { arabicCount } from '../utils/arabicCount';
 
 interface CassationJudgesPanelProps {
   report: CassationAuditReport;
@@ -30,7 +26,6 @@ export function CassationJudgesPanel({
   report,
   onApplyRemedy,
   onDismiss,
-  compact = false,
 }: CassationJudgesPanelProps) {
   const [selectedCourtTab, setSelectedCourtTab] = useState<'الكل' | JudgeCourtCategory>(
     report.targetCourt || 'الكل'
@@ -126,15 +121,15 @@ export function CassationJudgesPanel({
             <div className="flex items-center gap-2">
               <h4 className="text-xs sm:text-sm font-bold text-neutral-100 flex items-center gap-1.5">
                 <span>هيئة المراجعة والتدقيق (الإدارية • الجزائية • العامة)</span>
-                <span className="text-[10px] text-amber-400 font-mono px-1.5 py-0.5 rounded-sm bg-neutral-950/60 border border-neutral-800">
-                  {allJudges.length} مراجعين متخصصين
+                <span className="text-xs text-amber-400 font-mono px-1.5 py-0.5 rounded-sm bg-neutral-950/60 border border-neutral-800">
+                  {arabicCount(allJudges.length, { one: 'مراجع متخصص واحد', two: 'مراجعان متخصصان', plural: 'مراجعين متخصصين', accusative: 'مراجعاً متخصصاً', singular: 'مراجع متخصص' })}
                 </span>
               </h4>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${banner.badge}`}>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${banner.badge}`}>
                 {displayedOverallStatus}
               </span>
             </div>
-            <p className="text-[11px] text-neutral-300 mt-0.5">
+            <p className="text-xs text-neutral-300 mt-0.5">
               نوع المرفوع المفحوص: <span className="text-amber-300 font-bold">{report.documentType}</span>
             </p>
           </div>
@@ -173,7 +168,7 @@ export function CassationJudgesPanel({
             }`}
           >
             <Scale className="w-3 h-3" />
-            <span>المحكمة الإدارية (٢)</span>
+            <span>المحكمة الإدارية (2)</span>
           </button>
           <button
             onClick={() => setSelectedCourtTab('المحكمة الجزائية')}
@@ -184,7 +179,7 @@ export function CassationJudgesPanel({
             }`}
           >
             <ShieldAlert className="w-3 h-3" />
-            <span>المحكمة الجزائية (٢)</span>
+            <span>المحكمة الجزائية (2)</span>
           </button>
           <button
             onClick={() => setSelectedCourtTab('المحكمة العامة')}
@@ -195,11 +190,11 @@ export function CassationJudgesPanel({
             }`}
           >
             <BookOpen className="w-3 h-3" />
-            <span>المحكمة العامة (٢)</span>
+            <span>المحكمة العامة (2)</span>
           </button>
         </div>
 
-        <span className="text-[11px] text-neutral-400 hidden sm:inline">
+        <span className="text-xs text-neutral-400 hidden sm:inline">
           مراجعة تحليلية وفق المصادر والأنظمة المتاحة في حزمة التحقق
         </span>
       </div>
@@ -292,17 +287,17 @@ function JudgeBox({
             <div>
               <div className="flex items-center gap-1.5">
                 <h5 className="text-xs font-bold text-neutral-100">{judge.judgeName}</h5>
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md border font-semibold ${getCourtBadgeColor(judge.courtCategory)}`}>
+                <span className={`text-xs px-1.5 py-0.5 rounded-md border font-semibold ${getCourtBadgeColor(judge.courtCategory)}`}>
                   {judge.courtCategory || 'المحكمة الإدارية'}
                 </span>
               </div>
-              <p className="text-[10px] text-neutral-400 truncate max-w-[220px]">{judge.judgeTitle}</p>
+              <p className="text-xs text-neutral-400 truncate max-w-[220px]">{judge.judgeTitle}</p>
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-1">
             <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${badge.bg}`}
+              className={`text-xs font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${badge.bg}`}
             >
               <VerdictIcon className="w-3 h-3" />
               <span>
@@ -311,7 +306,7 @@ function JudgeBox({
                   : judge.verdict}
               </span>
             </span>
-            <span className="text-[10px] font-mono text-neutral-400">
+            <span className="text-xs font-mono text-neutral-400">
               مؤشر التحليل: <b className="text-amber-400">{typeof judge.scoreOutOf100 === 'number' ? `${judge.scoreOutOf100}%` : 'غير مقيم'}</b>
             </span>
           </div>
@@ -320,7 +315,7 @@ function JudgeBox({
         {/* Fatal Flaws List */}
         {judge.fatalFlaws && judge.fatalFlaws.length > 0 && (
           <div className="mt-2.5 p-2.5 rounded-xl bg-neutral-900/90 border border-neutral-800 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-400">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-rose-400">
               <AlertTriangle className="w-3.5 h-3.5" />
               <span>مكامن الخلل المرصودة في المرفوع:</span>
             </div>
@@ -338,17 +333,17 @@ function JudgeBox({
         {/* Critique Analysis */}
         <div className="mt-3 space-y-2 text-xs">
           <div className="p-2 rounded-lg bg-neutral-900/60 border border-neutral-800/80">
-            <span className="font-bold text-amber-300/90 text-[11px] block mb-0.5">
+            <span className="font-bold text-amber-300/90 text-xs block mb-0.5">
               الرقابة الإجرائية والمواعيد وشروط الدعوى:
             </span>
-            <p className="text-neutral-300 leading-relaxed text-[11px]">{judge.proceduralCritique}</p>
+            <p className="text-neutral-300 leading-relaxed text-xs">{judge.proceduralCritique}</p>
           </div>
 
           <div className="p-2 rounded-lg bg-neutral-900/60 border border-neutral-800/80">
-            <span className="font-bold text-sky-300/90 text-[11px] block mb-0.5">
+            <span className="font-bold text-sky-300/90 text-xs block mb-0.5">
               تحليل التطبيق الموضوعي والمراجع القضائية المتاحة:
             </span>
-            <p className="text-neutral-300 leading-relaxed text-[11px]">{judge.substantiveCritique}</p>
+            <p className="text-neutral-300 leading-relaxed text-xs">{judge.substantiveCritique}</p>
           </div>
         </div>
       </div>
@@ -358,13 +353,13 @@ function JudgeBox({
         <div className="pt-2 border-t border-neutral-800/80 mt-auto">
           <div className="flex items-start justify-between gap-2 p-2 rounded-xl bg-amber-950/20 border border-amber-500/20 text-xs">
             <div className="min-w-0 flex-1">
-              <span className="font-bold text-amber-300 text-[11px] block">اقتراح المراجع لمعالجة الخلل:</span>
-              <p className="text-neutral-200 text-[11px] leading-relaxed mt-0.5">{judge.actionableRemedy}</p>
+              <span className="font-bold text-amber-300 text-xs block">اقتراح المراجع لمعالجة الخلل:</span>
+              <p className="text-neutral-200 text-xs leading-relaxed mt-0.5">{judge.actionableRemedy}</p>
             </div>
             {onApplyRemedy && (
               <button
                 onClick={() => onApplyRemedy(judge.actionableRemedy)}
-                className="px-2 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold shrink-0 flex items-center gap-1 transition-colors cursor-pointer self-center"
+                className="px-2 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold shrink-0 flex items-center gap-1 transition-colors cursor-pointer self-center"
                 title="إدراج في صندوق الكتابة"
               >
                 <span>إدراج</span>

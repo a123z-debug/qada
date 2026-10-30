@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Building2,
   Scale,
@@ -14,12 +14,10 @@ import {
   Gavel,
   Library,
   Bot,
-  FolderOpen,
   BarChart3,
   Settings,
   X,
   Search,
-  Clock,
   GitCompare,
   Network,
   Users,
@@ -183,18 +181,8 @@ export function Sidebar({
   onOpenAdminSentinel,
   onOpenAccountSecurity,
 }: SidebarProps) {
-  const [expandedSection, setExpandedSection] = useState<string | null>('courts');
   const isAdmin = userSession?.role === 'admin';
 
-  useEffect(() => {
-    if (activeCourt) {
-      setExpandedSection('courts');
-    }
-  }, [activeCourt]);
-
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
 
   const handleServiceClick = (courtId: CourtJurisdiction, serviceId: string) => {
     if (activeCourt !== courtId) {
@@ -216,14 +204,12 @@ export function Sidebar({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <h1 className="text-sm font-bold text-white tracking-tight">أصول القضاء</h1>
+                <p className="text-sm font-bold text-white tracking-tight">أصول القضاء</p>
                 {isAdmin && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
-                    OS v3.0
-                  </span>
+                  <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">الإصدار 3.0</span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400">{isAdmin ? 'منصة التدقيق والتقاضي الذكي' : 'قضاياك ومذكراتك في مكان واحد'}</p>
+              <p className="text-xs text-slate-400">{isAdmin ? 'منصة التدقيق والتقاضي الذكي' : 'قضاياك ومذكراتك في مكان واحد'}</p>
             </div>
           </div>
 
@@ -247,11 +233,11 @@ export function Sidebar({
                   <User className="w-3.5 h-3.5" />
                 </div>
                 <div className="truncate">
-                  <p className="text-slate-200 font-semibold truncate text-[11px]">
+                  <p className="text-slate-200 font-semibold truncate text-xs">
                     {userSession.name}
                   </p>
-                  <p className="text-[10px] text-slate-400 truncate" dir="ltr">
-                    {userSession.role === 'admin' ? 'ADMIN' : userSession.email}
+                  <p className="text-xs text-slate-400 truncate" dir={userSession.role === 'admin' ? 'rtl' : 'ltr'}>
+                    {userSession.role === 'admin' ? 'حساب الإدارة' : userSession.email}
                   </p>
                 </div>
               </div>
@@ -299,7 +285,7 @@ export function Sidebar({
             <Home className="w-4 h-4" />
             <span>{isAdmin ? 'مركز القيادة الرئيسي' : 'الرئيسية'}</span>
           </span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/30 font-mono text-amber-300">الرئيسية</span>
+          <span className="text-xs px-1.5 py-0.5 rounded bg-black/30 font-mono text-amber-300">الرئيسية</span>
         </button>
       </div>
 
@@ -308,7 +294,7 @@ export function Sidebar({
         
         {/* قسم أدوات التقاضي والاختصاصات */}
         <div className="space-y-1.5">
-          <div className="px-2 py-1 flex items-center justify-between text-[11px] font-bold text-amber-400/90 tracking-wide">
+          <div className="px-2 py-1 flex items-center justify-between text-xs font-bold text-amber-400/90 tracking-wide">
             <span className="flex items-center gap-1.5"><Scale className="w-3.5 h-3.5" /> {isAdmin ? 'أدوات التقاضي والمسارات' : 'نوع القضية'}</span>
           </div>
 
@@ -349,7 +335,7 @@ export function Sidebar({
                       <span className="font-bold text-xs text-white block truncate">
                         {isAdmin ? cat.title : clientCopy.title}
                       </span>
-                      <span className="text-[10px] text-slate-400 block truncate">
+                      <span className="text-xs text-slate-400 block truncate">
                         {isAdmin ? cat.subTitle : clientCopy.subTitle}
                       </span>
                     </div>
@@ -380,7 +366,7 @@ export function Sidebar({
                             <div className="flex items-center justify-between">
                               <span className="text-xs truncate">{isAdmin ? srv.label : (CLIENT_SERVICE_LABELS[srv.id] || srv.label)}</span>
                               {srv.badge && (
-                                <span className="text-[9px] px-1 rounded bg-slate-800 text-slate-400 font-mono">
+                                <span className="text-xs px-1 rounded bg-slate-800 text-slate-400 font-mono">
                                   {srv.badge}
                                 </span>
                               )}
@@ -398,7 +384,7 @@ export function Sidebar({
 
         {/* قسم المعرفة والبحث النظامي */}
         <div className="pt-2 border-t border-slate-800/80 space-y-1">
-          <div className="px-2 py-1 text-[11px] font-bold text-slate-400 tracking-wide flex items-center gap-1.5">
+          <div className="px-2 py-1 text-xs font-bold text-slate-400 tracking-wide flex items-center gap-1.5">
             <Library className="w-3.5 h-3.5 text-amber-400" /> {isAdmin ? 'المعرفة والأسانيد' : 'الأنظمة والمراجع'}
           </div>
           
@@ -427,7 +413,7 @@ export function Sidebar({
 
         {/* قسم الذكاء الاصطناعي والإدارة */}
         <div className="pt-2 border-t border-slate-800/80 space-y-1">
-          <div className="px-2 py-1 text-[11px] font-bold text-slate-400 tracking-wide flex items-center gap-1.5">
+          <div className="px-2 py-1 text-xs font-bold text-slate-400 tracking-wide flex items-center gap-1.5">
             <Bot className="w-3.5 h-3.5 text-amber-400" /> {isAdmin ? 'المحرك الذكي' : 'مساعدة'}
           </div>
 
@@ -466,7 +452,7 @@ export function Sidebar({
                 <Network className="w-4 h-4 text-violet-300" />
                 <span>خريطة الوكلاء وغرفة العمليات</span>
               </span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-200 border border-violet-400/20">ADMIN</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-200 border border-violet-400/20">إدارة</span>
             </button>
           )}
 
@@ -483,7 +469,7 @@ export function Sidebar({
                 <GitCompare className="w-4 h-4 text-amber-300" />
                 <span>غرفة تحليل الأحكام والمذكرات</span>
               </span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/20">ADMIN</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/20">إدارة</span>
             </button>
           )}
 
@@ -500,7 +486,7 @@ export function Sidebar({
                 <Users className="w-4 h-4 text-cyan-300" />
                 <span>إدارة المستخدمين</span>
               </span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/20">ADMIN</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/20">إدارة</span>
             </button>
           )}
 
@@ -517,7 +503,7 @@ export function Sidebar({
                 <ClipboardList className="w-4 h-4 text-emerald-300" />
                 <span>سجل التدقيق</span>
               </span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-400/20">ADMIN</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-400/20">إدارة</span>
             </button>
           )}
 
@@ -534,7 +520,7 @@ export function Sidebar({
                 <ShieldAlert className="w-4 h-4 text-rose-300" />
                 <span>QADA Sentinel — المراقبة الحية</span>
               </span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-200 border border-rose-400/20">LIVE</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-200 border border-rose-400/20">مباشر</span>
             </button>
           )}
         </div>
@@ -542,12 +528,12 @@ export function Sidebar({
       </div>
 
       {/* 4. تذييل القائمة الحماية والعزل */}
-      <div className="p-3 border-t border-slate-800/80 bg-slate-900/80 text-[11px] text-slate-400 flex items-center justify-between">
+      <div className="p-3 border-t border-slate-800/80 bg-slate-900/80 text-xs text-slate-400 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
           <span>{isAdmin ? 'حماية وعزل قضائي' : 'جلسة محمية'}</span>
         </div>
-        {isAdmin && <span className="font-mono text-[10px] text-amber-400/80">SECURE OS</span>}
+        {isAdmin && <span className="font-mono text-xs text-amber-400/80">بيئة محمية</span>}
       </div>
     </div>
   );

@@ -4,7 +4,7 @@
  */
 
 import React, { Suspense, useEffect, useState } from 'react';
-import { Menu, Scale, ShieldCheck, LogOut, ArrowRight, FileText, Library, Bot, FileCheck, Sparkles, ArrowLeft, BookOpenCheck, Workflow, LockKeyhole, UploadCloud, ScanSearch, ChevronLeft, Home, FolderOpen } from 'lucide-react';
+import { Menu, Scale, ShieldCheck, LogOut, ArrowRight, FileText, Library, Bot, FileCheck, ArrowLeft, ScanSearch, Home, FolderOpen } from 'lucide-react';
 import { UserSession, JudgmentRecord, Attachment } from './types';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar, CourtJurisdiction } from './components/layout/Sidebar';
@@ -47,11 +47,14 @@ function DeferredSurfaceFallback() {
 // 1. مكون العلامة المائية الأمنية (Dynamic Watermark)
 // ==========================================
 function SecurityWatermark({ user }: { user: UserSession }) {
-  const identityMarker = user.nationalId ? `••••${user.nationalId.slice(-4)}` : 'ADMIN';
+  const identityMarker = user.nationalId
+    ? `••••${user.nationalId.slice(-4)}`
+    : user.role === 'admin' ? 'إدارة' : user.id.slice(-6);
+  const stamp = new Date().toLocaleDateString('ar-SA-u-nu-latn');
   return (
-    <div className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden opacity-[0.02] flex items-center justify-center select-none">
-      <div className="rotate-[-35deg] text-white font-black text-4xl sm:text-7xl whitespace-nowrap">
-        {user.name} - {identityMarker} - {new Date().toLocaleDateString()}
+    <div aria-hidden="true" className="qada-watermark pointer-events-none fixed inset-0 z-[9999] overflow-hidden flex items-center justify-center select-none">
+      <div className="rotate-[-35deg] font-black text-4xl sm:text-7xl whitespace-nowrap">
+        {user.name} - {identityMarker} - {stamp}
       </div>
     </div>
   );
@@ -138,7 +141,7 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
             </span>
             <span className="text-right">
               <span className="block text-sm font-black leading-4">أصول القضاء</span>
-              <span className="block text-[9px] font-bold text-slate-400">QADA</span>
+              <span className="block text-xs font-bold text-slate-400">QADA</span>
             </span>
           </button>
 
@@ -170,7 +173,7 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
 
           <div className="relative z-10 mx-auto grid min-h-[560px] max-w-6xl items-end gap-8 px-4 pb-12 pt-24 sm:px-6 sm:pb-16 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:pt-20">
             <div className="max-w-2xl text-right">
-              <div className="qada-hero-badge mb-5 inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[11px] font-black">
+              <div className="qada-hero-badge mb-5 inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-black">
                 <Scale className="h-4 w-4" strokeWidth={1.8} />
                 QADA • مساعدك القانوني الذكي
               </div>
@@ -210,7 +213,7 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
               </div>
               <div>
                 <div className="text-xs font-black">ابدأ بدون مصطلحات قانونية</div>
-                <div className="mt-1 text-[11px]">قل لنا وش صار • والباقي نرتبه معك</div>
+                <div className="mt-1 text-xs">قل لنا وش صار • والباقي نرتبه معك</div>
               </div>
             </div>
           </div>
@@ -238,7 +241,7 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
         <section id="about" className="border-y border-slate-200 bg-white">
           <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
             <div>
-              <span className="text-[11px] font-black text-slate-400">كيف تمشي معك QADA؟</span>
+              <span className="text-xs font-black text-slate-400">كيف تمشي معك QADA؟</span>
               <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
                 من المشكلة إلى خطوة واضحة.
               </h2>
@@ -266,7 +269,7 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
         <section className="mx-auto max-w-5xl px-4 pb-4 sm:px-6">
           <div className="rounded-3xl border border-emerald-900/10 bg-white p-5 shadow-[0_14px_44px_rgba(0,70,45,.06)] sm:p-7">
             <div className="mb-5">
-              <div className="text-[11px] font-black text-emerald-700">وش تحصل بعد ما تبدأ؟</div>
+              <div className="text-xs font-black text-emerald-700">وش تحصل بعد ما تبدأ؟</div>
               <h2 className="mt-1 text-xl font-black text-slate-950 sm:text-2xl">النتيجة تكون واضحة، مو كلام عام.</h2>
             </div>
             <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -747,14 +750,14 @@ export default function App() {
               </span>
               <div>
                 <div className="text-sm font-black">أصول القضاء</div>
-                <div className="text-[9px] font-bold text-slate-400">
+                <div className="text-xs font-bold text-slate-400">
                   {simpleUserMode ? 'QADA' : 'QADA Professional'}
                 </div>
               </div>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <button onClick={() => setIsMobileMenuOpen(true)} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors">
+              <button type="button" aria-label="فتح القائمة" onClick={() => setIsMobileMenuOpen(true)} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors">
                 <Menu className="w-5 h-5" />
               </button>
               <div className="flex items-center gap-2">
@@ -789,9 +792,7 @@ export default function App() {
             </div>
           )}
           {activeCourt && (
-            <div className={`sticky top-0 z-20 mb-4 flex justify-end py-2 backdrop-blur-md ${
-              userMode ? 'bg-[#f7f8fa]/90' : 'bg-slate-950/80'
-            }`}>
+            <div className="mb-4 flex justify-end py-1">
               <button
                 type="button"
                 onClick={() => {
@@ -952,7 +953,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => { setActiveCourt(null); setActiveService(null); }}
-              className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-black ${
+              className={`flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-black ${
                 activeCourt === null ? 'bg-slate-100 text-slate-950' : 'text-slate-500'
               }`}
             >
@@ -962,7 +963,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => handleInterfaceModeChange('professional')}
-                className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+                className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-bold text-slate-500 active:bg-slate-100"
               >
                 <Scale className="h-5 w-5" strokeWidth={1.8} /><span>متقدم</span>
               </button>
@@ -970,7 +971,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+                className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-bold text-slate-500 active:bg-slate-100"
               >
                 <ScanSearch className="h-5 w-5" strokeWidth={1.8} /><span>الأدوات</span>
               </button>
@@ -978,21 +979,21 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsDossierOpen(true)}
-              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-bold text-slate-500 active:bg-slate-100"
             >
               <FolderOpen className="h-5 w-5" strokeWidth={1.8} /><span>قضيتي</span>
             </button>
             <button
               type="button"
               onClick={() => setIsReferencesOpen(true)}
-              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-bold text-slate-500 active:bg-slate-100"
             >
               <Library className="h-5 w-5" strokeWidth={1.8} /><span>المراجع</span>
             </button>
             <button
               type="button"
               onClick={() => requestAssistant('')}
-              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold text-slate-500 active:bg-slate-100"
+              className="flex min-h-[58px] flex-col items-center justify-center gap-1 rounded-xl text-xs font-bold text-slate-500 active:bg-slate-100"
             >
               <Bot className="h-5 w-5" strokeWidth={1.8} /><span>المستشار</span>
             </button>

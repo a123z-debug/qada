@@ -5,18 +5,13 @@ import {
   ShieldAlert,
   ArrowRight,
   Scale,
-  Calendar,
   CheckCircle2,
   Copy,
   Check,
-  Send,
   Sparkles,
-  BookOpen,
-  HelpCircle,
-  Download,
   Printer,
 } from 'lucide-react';
-import { JudgmentRecord, PleadingDocumentType, CaseStageLevel, UserSession } from '../types';
+import { JudgmentRecord, PleadingDocumentType, UserSession } from '../types';
 import { printLegalMemo } from '../utils/printMemo';
 
 interface CasePleadingStudioModalProps {
@@ -32,7 +27,6 @@ export function CasePleadingStudioModal({
   onClose,
   record,
   onSendToChatPrompt,
-  currentUser,
 }: CasePleadingStudioModalProps) {
   const [activeDocType, setActiveDocType] = useState<PleadingDocumentType>('صحيفة طعن بالنقض');
   const [copied, setCopied] = useState(false);
@@ -40,14 +34,6 @@ export function CasePleadingStudioModal({
   // Record access is already scoped by the server repository. Do not rewrite
   // parties or identifiers based on browser-side heuristics.
   const effectiveRecord = useMemo<JudgmentRecord>(() => record, [record]);
-
-  const [selectedStage, setSelectedStage] = useState<CaseStageLevel>(
-    effectiveRecord.courtType === 'المحكمة الإدارية العليا'
-      ? 'المحكمة الإدارية العليا (النقض)'
-      : effectiveRecord.courtType === 'محكمة الاستئناف الإدارية'
-      ? 'محكمة الاستئناف الإدارية'
-      : 'المحكمة الإدارية (الدرجة الأولى)'
-  );
 
   if (!isOpen) return null;
 
@@ -249,7 +235,7 @@ ${effectiveRecord.dialoguesAndExchanges.length
                 <h3 className="font-bold text-base text-amber-200">
                   استوديو إعداد لوائح الترافع والطعون القضائية
                 </h3>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-neutral-800 text-amber-400 border border-neutral-700">
+                <span className="px-2 py-0.5 rounded-md text-xs font-mono bg-neutral-800 text-amber-400 border border-neutral-700">
                   قضية {record.caseNumber || '—'}
                 </span>
               </div>

@@ -165,7 +165,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!ai) return res.status(503).json({ error: 'AI_PROVIDER_UNAVAILABLE' });
 
   const subject = String(ai.subject || ai.disputedSubject || '').trim().slice(0, 600);
-  const requests = Array.isArray(ai.requests)
+  const requests: string[] = Array.isArray(ai.requests)
     ? ai.requests.map((item: unknown) => String(item || '').trim()).filter(Boolean).slice(0, 12) : [];
   if (!subject) return res.status(502).json({ error: 'AI_INVALID_RESPONSE' });
 

@@ -4,24 +4,17 @@ import {
   Search,
   Plus,
   Gavel,
-  Shield,
   FileText,
   User,
   Building,
   Calendar,
-  ChevronRight,
   ArrowRight,
   AlertTriangle,
   CheckCircle2,
   Trash2,
-  Edit,
-  ExternalLink,
   MessageSquare,
   Sparkles,
   Layers,
-  ChevronDown,
-  ChevronUp,
-  HelpCircle,
   Copy,
   Check,
 } from 'lucide-react';
@@ -30,7 +23,6 @@ import {
   CourtType,
   CaseStageRecord,
   CaseStageLevel,
-  PartyDialogue,
   UserSession,
 } from '../types';
 
@@ -272,11 +264,11 @@ export function JudgmentRepositoryModal({
                 <h3 className="font-extrabold text-base md:text-lg text-amber-200">
                   مستودع الأحكام والقضايا والتدرج القضائي
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
                   {authorizedRecords.length} صكوك محفوظة
                 </span>
                 {isAdminView && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
                     عرض كل مرفوعات المستخدمين
                   </span>
                 )}
@@ -324,7 +316,7 @@ export function JudgmentRepositoryModal({
                 />
               </div>
 
-              <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[11px]">
+              <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs">
                 <button
                   onClick={() => setSelectedCourtFilter('all')}
                   className={`px-2 py-1 rounded-lg border whitespace-nowrap ${
@@ -395,17 +387,17 @@ export function JudgmentRepositoryModal({
                           <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                           <span>{rec.personName}</span>
                         </div>
-                        <span className="px-1.5 py-0.5 rounded-sm font-mono text-[10px] bg-neutral-800 text-amber-400 border border-neutral-700">
+                        <span className="px-1.5 py-0.5 rounded-sm font-mono text-xs bg-neutral-800 text-amber-400 border border-neutral-700">
                           {rec.nationalId ? `•••• ${rec.nationalId.slice(-4)}` : (rec.caseNumber || 'بدون رقم')}
                         </span>
                       </div>
 
-                      <div className="text-[11px] text-neutral-400 flex items-center gap-1 mb-1.5 truncate">
+                      <div className="text-xs text-neutral-400 flex items-center gap-1 mb-1.5 truncate">
                         <Building className="w-3 h-3 text-neutral-500 shrink-0" />
                         <span className="truncate">{rec.agencyName}</span>
                       </div>
 
-                      <div className="flex items-center justify-between text-[10px]">
+                      <div className="flex items-center justify-between text-xs">
                         <span
                           className={`px-2 py-0.5 rounded-md font-medium ${
                             rec.courtType === 'المحكمة الإدارية العليا'
@@ -545,8 +537,8 @@ export function JudgmentRepositoryModal({
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-neutral-400 mb-1 font-medium">موضوع النزاع</label>
-                      <input
+                      <label htmlFor="judgmentrepositorymodal-field-1" className="block text-neutral-400 mb-1 font-medium">موضوع النزاع</label>
+                      <input id="judgmentrepositorymodal-field-1"
                         type="text"
                         placeholder="مثال: مكافأة الحاسب الآلي"
                         value={newMatterTitle}
@@ -555,8 +547,8 @@ export function JudgmentRepositoryModal({
                       />
                     </div>
                     <div>
-                      <label className="block text-neutral-400 mb-1 font-medium">رقم القضية الأصلية</label>
-                      <input
+                      <label htmlFor="judgmentrepositorymodal-field-2" className="block text-neutral-400 mb-1 font-medium">رقم القضية الأصلية</label>
+                      <input id="judgmentrepositorymodal-field-2"
                         type="text"
                         placeholder="رقم دعوى الدرجة الأولى"
                         value={newRootCaseNumber}
@@ -565,8 +557,8 @@ export function JudgmentRepositoryModal({
                       />
                     </div>
                     <div>
-                      <label className="block text-neutral-400 mb-1 font-medium">أرقام قضايا مرتبطة</label>
-                      <input
+                      <label htmlFor="judgmentrepositorymodal-field-3" className="block text-neutral-400 mb-1 font-medium">أرقام قضايا مرتبطة</label>
+                      <input id="judgmentrepositorymodal-field-3"
                         type="text"
                         placeholder="استئناف، نقض... مفصولة بفواصل"
                         value={newRelatedCaseNumbersInput}
@@ -583,14 +575,14 @@ export function JudgmentRepositoryModal({
                     <div className="grid grid-cols-2 gap-2">
                       <input
                         type="text"
-                        placeholder="رقم القضية: ٤٤١٠/ق"
+                        placeholder="رقم القضية: 4410/ق"
                         value={newCaseNumber}
                         onChange={(e) => setNewCaseNumber(e.target.value)}
                         className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 font-mono"
                       />
                       <input
                         type="text"
-                        placeholder="صك الحكم: ص/٨٩/٤٤"
+                        placeholder="صك الحكم: ص/89/44"
                         value={newJudgmentNumber}
                         onChange={(e) => setNewJudgmentNumber(e.target.value)}
                         className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 font-mono"
@@ -604,7 +596,7 @@ export function JudgmentRepositoryModal({
                     </label>
                     <input
                       type="text"
-                      placeholder="مثال: ١٤٤٥/٠٤/١٨ هـ"
+                      placeholder="مثال: 1445/04/18 هـ"
                       value={newJudgmentDate}
                       onChange={(e) => setNewJudgmentDate(e.target.value)}
                       className="w-full p-2.5 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100"
@@ -662,7 +654,7 @@ export function JudgmentRepositoryModal({
                         placeholder="المادة 8 من نظام المرافعات&#10;نظام الخدمة المدنية"
                         value={newRegulationsInput}
                         onChange={(e) => setNewRegulationsInput(e.target.value)}
-                        className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 text-[11px]"
+                        className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 text-xs"
                       />
                     </div>
                     <div>
@@ -674,7 +666,7 @@ export function JudgmentRepositoryModal({
                         placeholder="عيب السبب وانعدام المبرر&#10;مخالفة الميعاد الشكلي"
                         value={newFatalFlawsInput}
                         onChange={(e) => setNewFatalFlawsInput(e.target.value)}
-                        className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 text-[11px]"
+                        className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 text-xs"
                       />
                     </div>
                     <div>
@@ -686,7 +678,7 @@ export function JudgmentRepositoryModal({
                         placeholder="الدفع بمبدأ المشروعية&#10;تقييد السلطة التقديرية"
                         value={newRebuttalsInput}
                         onChange={(e) => setNewRebuttalsInput(e.target.value)}
-                        className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 text-[11px]"
+                        className="w-full p-2 rounded-xl bg-neutral-950 border border-neutral-700 text-neutral-100 text-xs"
                       />
                     </div>
                   </div>
@@ -766,7 +758,7 @@ export function JudgmentRepositoryModal({
                   </div>
 
                   {/* Summary Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-neutral-800/80 text-[11px]">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-neutral-800/80 text-xs">
                     <div className="bg-neutral-900/60 p-2 rounded-xl border border-neutral-800">
                       <span className="text-neutral-500 block">المحكمة المصدرة</span>
                       <span className="font-bold text-amber-300">{activeRecord.courtType}</span>
@@ -808,7 +800,7 @@ export function JudgmentRepositoryModal({
                   >
                     <Layers className="w-3.5 h-3.5" />
                     <span>تدرج المعاملة عبر المحاكم (المسار الكامل)</span>
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-neutral-800 text-amber-300">
+                    <span className="px-1.5 py-0.2 rounded-full text-xs bg-neutral-800 text-amber-300">
                       {activeRecord.caseChronology.length}
                     </span>
                   </button>
@@ -847,7 +839,7 @@ export function JudgmentRepositoryModal({
                         </span>
                         <button
                           onClick={() => copyText(activeRecord.rulingOperative, 'operative')}
-                          className="text-neutral-400 hover:text-white flex items-center gap-1 text-[11px]"
+                          className="text-neutral-400 hover:text-white flex items-center gap-1 text-xs"
                         >
                           {copiedId === 'operative' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                           <span>نسخ المنطوق</span>
@@ -938,8 +930,8 @@ export function JudgmentRepositoryModal({
                         </h5>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                           <div>
-                            <label className="block text-neutral-400 mb-1">المرحلة القضائية</label>
-                            <select
+                            <label htmlFor="judgmentrepositorymodal-field-4" className="block text-neutral-400 mb-1">المرحلة القضائية</label>
+                            <select id="judgmentrepositorymodal-field-4"
                               value={newStageLevel}
                               onChange={(e) => setNewStageLevel(e.target.value as CaseStageLevel)}
                               className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100"
@@ -952,8 +944,8 @@ export function JudgmentRepositoryModal({
                             </select>
                           </div>
                           <div>
-                            <label className="block text-neutral-400 mb-1">اسم المحكمة أو الجهة</label>
-                            <select
+                            <label htmlFor="judgmentrepositorymodal-field-5" className="block text-neutral-400 mb-1">اسم المحكمة أو الجهة</label>
+                            <select id="judgmentrepositorymodal-field-5"
                               value={newStageCourt}
                               onChange={(e) => setNewStageCourt(e.target.value as CourtType)}
                               className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100"
@@ -964,10 +956,10 @@ export function JudgmentRepositoryModal({
                             </select>
                           </div>
                           <div>
-                            <label className="block text-neutral-400 mb-1">التاريخ</label>
-                            <input
+                            <label htmlFor="judgmentrepositorymodal-field-6" className="block text-neutral-400 mb-1">التاريخ</label>
+                            <input id="judgmentrepositorymodal-field-6"
                               type="text"
-                              placeholder="١٤٤٥ هـ"
+                              placeholder="1445 هـ"
                               value={newStageDate}
                               onChange={(e) => setNewStageDate(e.target.value)}
                               className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100"
@@ -977,40 +969,40 @@ export function JudgmentRepositoryModal({
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                           <div>
-                            <label className="block text-neutral-400 mb-1">نوع المستند</label>
-                            <select value={newStageDocumentType} onChange={(e) => setNewStageDocumentType(e.target.value as NonNullable<CaseStageRecord['documentType']>)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100">
+                            <label htmlFor="judgmentrepositorymodal-field-7" className="block text-neutral-400 mb-1">نوع المستند</label>
+                            <select id="judgmentrepositorymodal-field-7" value={newStageDocumentType} onChange={(e) => setNewStageDocumentType(e.target.value as NonNullable<CaseStageRecord['documentType']>)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100">
                               {['تظلم','لائحة دعوى','مذكرة','حكم ابتدائي','صحيفة استئناف','حكم استئناف','صحيفة نقض','حكم عليا','التماس','قرار إداري','مرفق إثبات','أخرى'].map((item) => <option key={item} value={item}>{item}</option>)}
                             </select>
                           </div>
                           <div>
-                            <label className="block text-neutral-400 mb-1">رقم القضية</label>
-                            <input value={newStageCaseNumber} onChange={(e) => setNewStageCaseNumber(e.target.value)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100 font-mono" />
+                            <label htmlFor="judgmentrepositorymodal-field-8" className="block text-neutral-400 mb-1">رقم القضية</label>
+                            <input id="judgmentrepositorymodal-field-8" value={newStageCaseNumber} onChange={(e) => setNewStageCaseNumber(e.target.value)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100 font-mono" />
                           </div>
                           <div>
-                            <label className="block text-neutral-400 mb-1">رقم الحكم/الصك</label>
-                            <input value={newStageJudgmentNumber} onChange={(e) => setNewStageJudgmentNumber(e.target.value)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100 font-mono" />
+                            <label htmlFor="judgmentrepositorymodal-field-9" className="block text-neutral-400 mb-1">رقم الحكم/الصك</label>
+                            <input id="judgmentrepositorymodal-field-9" value={newStageJudgmentNumber} onChange={(e) => setNewStageJudgmentNumber(e.target.value)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100 font-mono" />
                           </div>
                           <div>
-                            <label className="block text-neutral-400 mb-1">النتيجة لصاحب الشأن</label>
-                            <select value={newStageOutcome} onChange={(e) => setNewStageOutcome(e.target.value as NonNullable<CaseStageRecord['outcomeForPerson']>)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100">
+                            <label htmlFor="judgmentrepositorymodal-field-10" className="block text-neutral-400 mb-1">النتيجة لصاحب الشأن</label>
+                            <select id="judgmentrepositorymodal-field-10" value={newStageOutcome} onChange={(e) => setNewStageOutcome(e.target.value as NonNullable<CaseStageRecord['outcomeForPerson']>)} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100">
                               {['لصالح صاحب الشأن','ضد صاحب الشأن','جزئي','إجرائي فقط','غير محسوم'].map((item) => <option key={item} value={item}>{item}</option>)}
                             </select>
                           </div>
                         </div>
 
                         <div>
-                          <label className="block text-neutral-400 mb-1">تكييف المحكمة للواقعة</label>
-                          <textarea value={newStageCharacterization} onChange={(e) => setNewStageCharacterization(e.target.value)} rows={2} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100" placeholder="كيف وصفت المحكمة النزاع أو مناط الاستحقاق؟" />
+                          <label htmlFor="judgmentrepositorymodal-field-11" className="block text-neutral-400 mb-1">تكييف المحكمة للواقعة</label>
+                          <textarea id="judgmentrepositorymodal-field-11" value={newStageCharacterization} onChange={(e) => setNewStageCharacterization(e.target.value)} rows={2} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100" placeholder="كيف وصفت المحكمة النزاع أو مناط الاستحقاق؟" />
                         </div>
 
                         <div>
-                          <label className="block text-neutral-400 mb-1">المواد والقرارات التي اعتمدت عليها المحكمة</label>
-                          <textarea value={newStageLegalMaterialsInput} onChange={(e) => setNewStageLegalMaterialsInput(e.target.value)} rows={3} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100" placeholder="كل مادة أو قرار في سطر مستقل" />
+                          <label htmlFor="judgmentrepositorymodal-field-12" className="block text-neutral-400 mb-1">المواد والقرارات التي اعتمدت عليها المحكمة</label>
+                          <textarea id="judgmentrepositorymodal-field-12" value={newStageLegalMaterialsInput} onChange={(e) => setNewStageLegalMaterialsInput(e.target.value)} rows={3} className="w-full p-2 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-100" placeholder="كل مادة أو قرار في سطر مستقل" />
                         </div>
 
                         <div>
-                          <label className="block text-neutral-400 mb-1">منطوق أو نتيجة المرحلة</label>
-                          <input
+                          <label htmlFor="judgmentrepositorymodal-field-13" className="block text-neutral-400 mb-1">منطوق أو نتيجة المرحلة</label>
+                          <input id="judgmentrepositorymodal-field-13"
                             type="text"
                             placeholder="مثال: نقض حكم أول درجة / رفض الدعوى / تأييد الحكم..."
                             value={newStageRuling}
@@ -1054,14 +1046,14 @@ export function JudgmentRepositoryModal({
                                   {stage.courtName} {stage.circuitNumber ? `• ${stage.circuitNumber}` : ''}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-2 text-[11px]">
+                              <div className="flex items-center gap-2 text-xs">
                                 {stage.rulingDate && (
                                   <span className="font-mono text-neutral-400 flex items-center gap-1">
                                     <Calendar className="w-3.5 h-3.5 text-neutral-500" />
                                     {stage.rulingDate}
                                   </span>
                                 )}
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-800 text-emerald-400">
+                                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-neutral-800 text-emerald-400">
                                   {stage.status}
                                 </span>
                               </div>
@@ -1069,20 +1061,20 @@ export function JudgmentRepositoryModal({
 
                             {stage.rulingSummary && (
                               <div>
-                                <span className="text-neutral-500 block text-[11px] mb-0.5">منطوق أو نتيجة المرحلة:</span>
+                                <span className="text-neutral-500 block text-xs mb-0.5">منطوق أو نتيجة المرحلة:</span>
                                 <p className="font-bold text-neutral-100 leading-relaxed">{stage.rulingSummary}</p>
                               </div>
                             )}
 
                             {stage.rulingReasons && (
                               <div className="text-neutral-300 leading-relaxed bg-neutral-900/60 p-2.5 rounded-lg border border-neutral-850">
-                                <span className="text-amber-400/80 block text-[10px] font-bold mb-0.5">حيثيات ومسببات الحكم في هذه المحكمة:</span>
+                                <span className="text-amber-400/80 block text-xs font-bold mb-0.5">حيثيات ومسببات الحكم في هذه المحكمة:</span>
                                 {stage.rulingReasons}
                               </div>
                             )}
 
                             {stage.deadlinesNote && (
-                              <div className="text-[11px] text-amber-300/90 flex items-center gap-1">
+                              <div className="text-xs text-amber-300/90 flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                                 <span>{stage.deadlinesNote}</span>
                               </div>
@@ -1131,7 +1123,7 @@ export function JudgmentRepositoryModal({
                             "{dialogue.statement}"
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] pt-2 border-t border-neutral-800/80">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs pt-2 border-t border-neutral-800/80">
                             {dialogue.legalFlawIdentified && (
                               <div className="text-rose-300 flex items-start gap-1">
                                 <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />

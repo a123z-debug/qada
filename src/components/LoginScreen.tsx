@@ -335,7 +335,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                 )}
 
                 {authMode === 'register' && (
-                  <p className="text-[11px] leading-5 text-slate-500">
+                  <p className="text-xs leading-5 text-slate-500">
                     كلمة المرور لا تقل عن 10 أحرف.
                   </p>
                 )}
@@ -396,7 +396,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-slate-950">دخول إدارة QADA</h2>
-                  <p className="mt-0.5 text-[11px] text-slate-500">
+                  <p className="mt-0.5 text-xs text-slate-500">
                     {checkingAdmin
                       ? 'جاري فحص خدمة الإدارة...'
                       : adminReady
@@ -415,7 +415,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
                     autoComplete="username"
                     dir="ltr"
                     className="h-12 rounded-2xl border border-slate-200 bg-[#fafbfc] px-4 text-base text-slate-950 outline-none focus:border-slate-400 focus:bg-white"
-                    placeholder="Admin code"
+                    placeholder="رمز المدير"
                   />
                 </label>
 
@@ -469,7 +469,7 @@ export function LoginScreen({ onLoginSuccess, onBack }: LoginScreenProps) {
         </div>
 
         <span className="sr-only">صُممت الواجهة للجوال أولاً</span>
-        <p className="mt-4 text-center text-[11px] leading-5 text-slate-400">
+        <p className="mt-4 text-center text-xs leading-5 text-slate-400">
           واجهة بسيطة للجوال والكمبيوتر، ومصطلحات القانون تظهر فقط عندما تحتاجها.
         </p>
       </div>

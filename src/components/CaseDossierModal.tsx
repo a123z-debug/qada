@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { CaseStageRecord, JudgmentRecord, UserSession } from '../types';
+import { arabicCount } from '../utils/arabicCount';
 
 interface CaseDossierModalProps {
   isOpen: boolean;
@@ -194,7 +195,7 @@ export function CaseDossierModal({
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-base font-black sm:text-lg">قضيتي — ملف نزاع موحد بتسلسل الأحكام</h2>
-              <p className="text-[11px] text-slate-400">المستخدم: {currentUser?.name || 'غير معروف'} • الحساب: {identityMarker}</p>
+              <p className="text-xs text-slate-400">المستخدم: {currentUser?.name || 'غير معروف'} • الحساب: {identityMarker}</p>
             </div>
           </div>
           <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 bg-slate-900 text-slate-300 hover:text-white" aria-label="إغلاق">
@@ -204,7 +205,7 @@ export function CaseDossierModal({
 
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[330px_1fr]">
           <aside className="min-h-0 border-b border-slate-800 bg-slate-900/50 p-3 lg:border-b-0 lg:border-l">
-            <div className="mb-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3 text-[11px] leading-5 text-slate-400">
+            <div className="mb-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3 text-xs leading-5 text-slate-400">
               <div className="mb-1 flex items-center gap-2 font-black text-emerald-300"><ShieldCheck className="h-4 w-4" /> الربط القضائي مفعل</div>
               الاسم والهوية محفوظان داخل السجل المشفر. الخادم يربط الأحكام إذا تطابقت هوية صاحب الشأن ووجد رابط قوي في أرقام القضايا/الأحكام أو ملف النزاع، ولا يدمج القضايا المختلفة بالهوية وحدها.
             </div>
@@ -220,8 +221,8 @@ export function CaseDossierModal({
                     <Scale className="h-4 w-4 shrink-0 text-amber-300" />
                     <span className="text-xs font-black text-slate-100">{group.matterTitle}</span>
                   </div>
-                  <p className="mt-1 text-[10px] text-slate-400">{group.personName} • هوية {maskNationalId(group.nationalId)}</p>
-                  <p className="mt-1 text-[10px] text-slate-500">{group.records.length} سجل/حكم مرتبط • {group.agencyName || 'جهة غير مدخلة'}</p>
+                  <p className="mt-1 text-xs text-slate-400">{group.personName} • هوية {maskNationalId(group.nationalId)}</p>
+                  <p className="mt-1 text-xs text-slate-500">{arabicCount(group.records.length, { one: 'سجل واحد مرتبط', two: 'سجلان مرتبطان', plural: 'سجلات مرتبطة', accusative: 'سجلاً مرتبطاً', singular: 'سجل مرتبط' })} • {group.agencyName || 'جهة غير مدخلة'}</p>
                 </button>
               ))}
             </div>
@@ -240,9 +241,9 @@ export function CaseDossierModal({
                     <div>
                       <h3 className="text-lg font-black text-white">{selectedGroup.matterTitle}</h3>
                       <p className="mt-1 text-xs text-slate-400">{selectedGroup.personName} • هوية {maskNationalId(selectedGroup.nationalId)}</p>
-                      <p className="mt-2 text-[11px] text-slate-500">{selectedGroup.agencyName} • {selectedGroup.records.length} وثيقة/حكم في الملف</p>
+                      <p className="mt-2 text-xs text-slate-500">{selectedGroup.agencyName} • {selectedGroup.records.length} وثيقة/حكم في الملف</p>
                       {selected.dossierLinkStatus === 'candidate' && (
-                        <p className="mt-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[10px] font-bold text-amber-200">يوجد ملف مرشح للربط؛ لم تدمجه المنصة تلقائياً لأن الصلة لم تبلغ حد الثقة.</p>
+                        <p className="mt-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-xs font-bold text-amber-200">يوجد ملف مرشح للربط؛ لم تدمجه المنصة تلقائياً لأن الصلة لم تبلغ حد الثقة.</p>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -260,9 +261,9 @@ export function CaseDossierModal({
                       <div key={record.id} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="font-black text-amber-200">{recordIndex + 1}. {record.judgmentType}</div>
-                          <div className="text-[10px] text-slate-500">{record.judgmentDate || 'تاريخ غير مدخل'}</div>
+                          <div className="text-xs text-slate-500">{record.judgmentDate || 'تاريخ غير مدخل'}</div>
                         </div>
-                        <div className="mt-2 grid gap-2 text-[11px] text-slate-400 sm:grid-cols-3">
+                        <div className="mt-2 grid gap-2 text-xs text-slate-400 sm:grid-cols-3">
                           <span>المحكمة: {record.courtType}</span>
                           <span>القضية: {record.caseNumber || '—'}</span>
                           <span>الحكم: {record.judgmentNumber || '—'}</span>
@@ -273,7 +274,7 @@ export function CaseDossierModal({
                           <div key={stage.id} className="mt-3 rounded-xl border border-cyan-400/15 bg-cyan-400/5 p-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <span className="text-xs font-black text-cyan-200">{stageIndex + 1}. {stage.stageLevel} {stage.documentType ? `• ${stage.documentType}` : ''}</span>
-                              <span className="text-[10px] text-slate-500">{stageDate(stage)}</span>
+                              <span className="text-xs text-slate-500">{stageDate(stage)}</span>
                             </div>
                             <p className="mt-2 text-xs leading-6 text-slate-300"><b>النتيجة:</b> {stage.outcomeForPerson || 'غير محسوم'} — {stage.rulingSummary || 'لا يوجد منطوق مسجل'}</p>
                             {stage.judicialCharacterization && <p className="mt-1 text-xs leading-6 text-slate-300"><b>تكييف المحكمة:</b> {stage.judicialCharacterization}</p>}

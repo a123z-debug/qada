@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import dotenv from 'dotenv';
-import { createServer as createViteServer } from 'vite';
+import compression from 'compression';
 
 import sessionHandler from './api/session';
 import aiHandler from './api/ai';
@@ -100,6 +100,8 @@ async function startServer() {
     }
     next();
   });
+  // API responses include SSE streams that must not be buffered by gzip.
+  app.use(compression({ filter: (req, res) => !req.path.startsWith('/api/') && compression.filter(req, res) }));
   app.use(express.json({ limit: '4mb' }));
   app.use(express.urlencoded({ limit: '4mb', extended: true }));
 
@@ -184,7 +186,14 @@ async function startServer() {
     void adminSentinelHandler(req as any, res as any);
   });
 
+  // Unknown API routes must not fall through to the SPA shell with a 200.
+  app.all('/api/*', (_req, res) => {
+    res.status(404).json({ error: 'NOT_FOUND' });
+  });
+
   if (process.env.NODE_ENV !== 'production') {
+    // Loaded lazily so the production server never requires the dev toolchain.
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',

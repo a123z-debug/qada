@@ -137,6 +137,7 @@ for (const [courtName, expectedStage] of [
   const route = analyzeLawOfficeRoute(courtName, false);
   assert(route.task === 'consultation', `bare court name must not infer a drafting task: ${courtName}`);
   assert(route.draftingRequested === false, `bare court name must not request drafting: ${courtName}`);
+  assert(route.stage === expectedStage, `bare court name must not infer a stage: ${courtName} → ${route.stage}`);
 }
 
 console.log(JSON.stringify({

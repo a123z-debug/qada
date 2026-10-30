@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Scale,
   ShieldAlert,
@@ -15,7 +15,6 @@ import {
   ArrowRight,
   Copy,
   AlertCircle,
-  Layers,
   ChevronDown,
   ChevronUp,
   Printer,
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react';
 import { DetailedJudgesReviewReport, DetailedJudgeItem } from '../types';
 import { printLegalMemo } from '../utils/printMemo';
+import { arabicCount } from '../utils/arabicCount';
 
 interface JudgesSourceAudit {
   officialSources: number;
@@ -119,13 +119,13 @@ export function JudgesCassationReviewPanel({
       return;
     }
     onApplyFullRevision(text);
-    setAppliedNotification('تم تطبيق الصياغة المنقحة في المحرر ✓');
+    setAppliedNotification('تم تطبيق الصياغة المنقحة في المحرر');
     setTimeout(() => setAppliedNotification(null), 4000);
   };
 
   const handleApplySpecific = (text: string, judgeName: string) => {
     onApplySpecificAmendment(text);
-    setAppliedNotification(`تم إدراج تعديل ${judgeName} في المحرر ✓`);
+    setAppliedNotification(`تم إدراج تعديل ${judgeName} في المحرر`);
     setTimeout(() => setAppliedNotification(null), 4000);
   };
 
@@ -144,15 +144,15 @@ export function JudgesCassationReviewPanel({
           </p>
         </div>
         <div className="flex justify-center gap-2 pt-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-800 text-[11px] text-amber-300 border border-neutral-700">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-800 text-xs text-amber-300 border border-neutral-700">
             <Scale className="w-3.5 h-3.5" />
             <span>مراجع الاستئناف</span>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-800 text-[11px] text-rose-300 border border-neutral-700">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-800 text-xs text-rose-300 border border-neutral-700">
             <Gavel className="w-3.5 h-3.5" />
             <span>مراجع النقض</span>
           </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-800 text-[11px] text-sky-300 border border-neutral-700">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-800 text-xs text-sky-300 border border-neutral-700">
             <Paperclip className="w-3.5 h-3.5" />
             <span>مراجع المرفقات</span>
           </span>
@@ -207,7 +207,7 @@ export function JudgesCassationReviewPanel({
                 <h3 className="text-sm sm:text-base font-bold text-neutral-100">
                   تقرير هيئة المراجعة القانونية الآلية
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   {reviewFailed ? 'الفحص غير مكتمل' : 'فحص وتعديل مكتمل'}
                 </span>
               </div>
@@ -219,7 +219,7 @@ export function JudgesCassationReviewPanel({
 
           <div className="flex items-center gap-2 self-end sm:self-center">
             <div className="px-3 py-1.5 rounded-xl bg-neutral-950 border border-neutral-800 text-center">
-              <div className="text-[10px] text-neutral-400 font-medium">مؤشر التحليل</div>
+              <div className="text-xs text-neutral-400 font-medium">مؤشر التحليل</div>
               <div className="text-sm font-bold font-mono text-amber-400">{averageScore === null ? 'غير مقيم' : `${averageScore}%`}</div>
             </div>
             <button
@@ -261,14 +261,14 @@ export function JudgesCassationReviewPanel({
                 {' • '}السوابق الكاملة: {sourceAudit.precedentCorpusReady ? 'جاهزة' : 'غير مكتملة'}
               </div>
               {sourceAudit.blockers.length > 0 && (
-                <ul className="mt-2 space-y-1 text-[11px] text-amber-100/75">
+                <ul className="mt-2 space-y-1 text-xs text-amber-100/75">
                   {sourceAudit.blockers.slice(0, 4).map((item, index) => (
                     <li key={index}>• {item}</li>
                   ))}
                 </ul>
               )}
               {sourceAudit.blockedRevision && (
-                <div className="mt-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-2 text-[11px] font-bold text-rose-200">
+                <div className="mt-2 rounded-xl border border-rose-500/25 bg-rose-500/10 p-2 text-xs font-bold text-rose-200">
                   أوقفت بوابة التحقق تطبيق المسودة المنقحة لأنها أدخلت إحالات قانونية جديدة لم تثبت في حزمة المصادر الرسمية.
                   {sourceAudit.unsupportedMarkers?.length ? (
                     <div className="mt-1 font-normal text-rose-100/75">
@@ -384,7 +384,7 @@ export function JudgesCassationReviewPanel({
                 <AlertCircle className="w-4 h-4 text-rose-400" />
                 <span>فحص ومطابقة مكامن الخلل القضائي في الأوجه الثلاثة المطلوبة:</span>
               </h4>
-              <span className="text-[11px] text-neutral-400">تدقيق إجرائي وموضوعي دقيق</span>
+              <span className="text-xs text-neutral-400">تدقيق إجرائي وموضوعي دقيق</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
@@ -404,23 +404,23 @@ export function JudgesCassationReviewPanel({
                         {report.cassationErrors.title || 'أخطاء وعوار النقض'}
                       </h5>
                     </div>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${
                       !reviewFailed && report.cassationErrors.items.length === 0
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
                     }`}>
-                      {!reviewFailed && report.cassationErrors.items.length === 0 ? 'لم تُرصد ملاحظات ✓' : `خطورة ${report.cassationErrors.severity || 'عالية'}`}
+                      {!reviewFailed && report.cassationErrors.items.length === 0 ? 'لم تُرصد ملاحظات' : `خطورة ${report.cassationErrors.severity || 'عالية'}`}
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-neutral-400 mt-2">
+                  <p className="text-xs text-neutral-400 mt-2">
                     تحليل أوجه الاعتراض والنقض بحسب المستند والمراجع التي تم استرجاعها والتحقق منها في هذه العملية:
                   </p>
 
                   {!reviewFailed && report.cassationErrors.items.length === 0 ? (
                     <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
                       <p className="text-xs text-emerald-300 font-semibold">لم تُرصد ملاحظات نقض في هذا المسار</p>
-                      <p className="text-[11px] text-neutral-300 leading-relaxed">
+                      <p className="text-xs text-neutral-300 leading-relaxed">
                         لم يسجل مسار التحليل ملاحظة إضافية هنا؛ لا يعني ذلك سلامة المستند خارج نطاق البيانات والمراجع المتاحة.
                       </p>
                     </div>
@@ -436,10 +436,10 @@ export function JudgesCassationReviewPanel({
                   )}
                 </div>
 
-                <div className="pt-2 text-[10px] text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
+                <div className="pt-2 text-xs text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
                   <span>محكمة النقض (المحكمة العليا)</span>
                   <span className={!reviewFailed && report.cassationErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
-                    {!reviewFailed && report.cassationErrors.items.length === 0 ? 'لا ملاحظات مسجلة ✓' : `${report.cassationErrors.items.length} عيوب مرصودة`}
+                    {!reviewFailed && report.cassationErrors.items.length === 0 ? 'لا ملاحظات مسجلة' : arabicCount(report.cassationErrors.items.length, { one: 'عيب واحد مرصود', two: 'عيبان مرصودان', plural: 'عيوب مرصودة', accusative: 'عيباً مرصوداً', singular: 'عيب مرصود' })}
                   </span>
                 </div>
               </div>
@@ -460,23 +460,23 @@ export function JudgesCassationReviewPanel({
                         {report.claimErrors.title || 'أخطاء عريضة الدعوى والطلبات'}
                       </h5>
                     </div>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${
                       !reviewFailed && report.claimErrors.items.length === 0
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                     }`}>
-                      {!reviewFailed && report.claimErrors.items.length === 0 ? 'لم تُرصد ملاحظات ✓' : `خطورة ${report.claimErrors.severity || 'متوسطة'}`}
+                      {!reviewFailed && report.claimErrors.items.length === 0 ? 'لم تُرصد ملاحظات' : `خطورة ${report.claimErrors.severity || 'متوسطة'}`}
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-neutral-400 mt-2">
+                  <p className="text-xs text-neutral-400 mt-2">
                     تحرير النزاع، بيان الصفة والمصلحة، وتعيين الطلبات القضائية الجازمة دون تجهيل أو غموض:
                   </p>
 
                   {!reviewFailed && report.claimErrors.items.length === 0 ? (
                     <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
                       <p className="text-xs text-emerald-300 font-semibold">صياغة الطلبات جازمة ومحكمة</p>
-                      <p className="text-[11px] text-neutral-300 leading-relaxed">
+                      <p className="text-xs text-neutral-300 leading-relaxed">
                         تم الفصل المتقن بين الطلبات الأصلية والاحتياطية مع تحديد المدعى ضده بدقة.
                       </p>
                     </div>
@@ -492,10 +492,10 @@ export function JudgesCassationReviewPanel({
                   )}
                 </div>
 
-                <div className="pt-2 text-[10px] text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
+                <div className="pt-2 text-xs text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
                   <span>محكمة الاستئناف والموضوع</span>
                   <span className={!reviewFailed && report.claimErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
-                    {!reviewFailed && report.claimErrors.items.length === 0 ? 'لا ملاحظات مسجلة ✓' : `${report.claimErrors.items.length} ملاحظات صياغة`}
+                    {!reviewFailed && report.claimErrors.items.length === 0 ? 'لا ملاحظات مسجلة' : arabicCount(report.claimErrors.items.length, { one: 'ملاحظة صياغة واحدة', two: 'ملاحظتا صياغة', plural: 'ملاحظات صياغة', accusative: 'ملاحظة صياغة', singular: 'ملاحظة صياغة' })}
                   </span>
                 </div>
               </div>
@@ -516,23 +516,23 @@ export function JudgesCassationReviewPanel({
                         {report.attachmentErrors.title || 'أخطاء ونواقص المرفقات'}
                       </h5>
                     </div>
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded border ${
                       !reviewFailed && report.attachmentErrors.items.length === 0
                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                         : 'bg-sky-500/20 text-sky-300 border-sky-500/30'
                     }`}>
-                      {!reviewFailed && report.attachmentErrors.items.length === 0 ? 'مستوفٍ تماماً ✓' : `خطورة ${report.attachmentErrors.severity || 'عالية'}`}
+                      {!reviewFailed && report.attachmentErrors.items.length === 0 ? 'مستوفٍ تماماً' : `خطورة ${report.attachmentErrors.severity || 'عالية'}`}
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-neutral-400 mt-2">
+                  <p className="text-xs text-neutral-400 mt-2">
                     كفاية وحجية البينات والمحررات وفق نظام الإثبات والمستندات الواجب إيداعها لإثبات الحق:
                   </p>
 
                   {!reviewFailed && report.attachmentErrors.items.length === 0 ? (
                     <div className="mt-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
                       <p className="text-xs text-emerald-300 font-semibold">مرفقات مرحلة النقض مستوفاة</p>
-                      <p className="text-[11px] text-neutral-300 leading-relaxed">
+                      <p className="text-xs text-neutral-300 leading-relaxed">
                         تم حصر صك حكم الاستئناف وتاريخ التبليغ؛ يرجى فقط إرفاق ملفاتها عند القيد بمنصة معين.
                       </p>
                     </div>
@@ -550,10 +550,10 @@ export function JudgesCassationReviewPanel({
                   {/* Missing Required Docs */}
                   {report.attachmentErrors.missingRequiredDocs && report.attachmentErrors.missingRequiredDocs.length > 0 && (
                     <div className="mt-3 p-2.5 rounded-xl bg-sky-950/40 border border-sky-500/20 space-y-1.5">
-                      <span className="text-[10px] font-bold text-sky-300 block">وثائق لازمة يوصى بإرفاقها فوراً:</span>
+                      <span className="text-xs font-bold text-sky-300 block">وثائق لازمة يوصى بإرفاقها فوراً:</span>
                       <div className="flex flex-wrap gap-1.5">
                         {report.attachmentErrors.missingRequiredDocs.map((doc, idx) => (
-                          <span key={idx} className="text-[10px] px-2 py-0.5 rounded-md bg-neutral-900 text-sky-200 border border-sky-500/30 font-medium">
+                          <span key={idx} className="text-xs px-2 py-0.5 rounded-md bg-neutral-900 text-sky-200 border border-sky-500/30 font-medium">
                             <span className="inline-flex items-center gap-1"><Paperclip className="h-3 w-3" aria-hidden="true" />{doc}</span>
                           </span>
                         ))}
@@ -562,10 +562,10 @@ export function JudgesCassationReviewPanel({
                   )}
                 </div>
 
-                <div className="pt-2 text-[10px] text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
+                <div className="pt-2 text-xs text-neutral-400 border-t border-neutral-900 flex items-center justify-between">
                   <span>دائرة تدقيق المرفقات</span>
                   <span className={!reviewFailed && report.attachmentErrors.items.length === 0 ? 'text-emerald-400 font-semibold' : 'text-sky-400 font-semibold'}>
-                    {!reviewFailed && report.attachmentErrors.items.length === 0 ? 'مستندات كافية ✓' : `${report.attachmentErrors.items.length} نواقص مسجلة`}
+                    {!reviewFailed && report.attachmentErrors.items.length === 0 ? 'مستندات كافية' : `${report.attachmentErrors.items.length} نواقص مسجلة`}
                   </span>
                 </div>
               </div>
@@ -597,7 +597,7 @@ export function JudgesCassationReviewPanel({
               <h4 className="text-xs font-bold text-neutral-300">
                 أعضاء الدائرة القضائية الثلاثية وفحصهم المتخصص:
               </h4>
-              <span className="text-[11px] text-neutral-400">انقر على أي قاضٍ لمعاينة تفاصيل التسبيب والتعديل</span>
+              <span className="text-xs text-neutral-400">انقر على أي قاضٍ لمعاينة تفاصيل التسبيب والتعديل</span>
             </div>
 
             <div className="space-y-3">
@@ -627,16 +627,16 @@ export function JudgesCassationReviewPanel({
                         <div>
                           <div className="flex items-center gap-2">
                             <h5 className="text-xs font-bold text-neutral-100">{judge.judgeName}</h5>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${badgeColor}`}>
+                            <span className={`text-xs px-2 py-0.5 rounded-full border font-bold ${badgeColor}`}>
                               {judge.courtCategory}
                             </span>
                           </div>
-                          <p className="text-[11px] text-neutral-400 mt-0.5">{judge.judgeTitle}</p>
+                          <p className="text-xs text-neutral-400 mt-0.5">{judge.judgeTitle}</p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-mono text-neutral-400 hidden sm:inline">
+                        <span className="text-xs font-mono text-neutral-400 hidden sm:inline">
                           درجة التدقيق: <b className="text-amber-400">{judge.scoreOutOf100}%</b>
                         </span>
                         <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-200">
@@ -656,7 +656,7 @@ export function JudgesCassationReviewPanel({
                         {/* Errors Identified */}
                         {judge.errorsIdentified && judge.errorsIdentified.length > 0 && (
                           <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800 space-y-1.5">
-                            <span className="text-[11px] font-bold text-rose-400 block">الملاحظات المرصودة من مسار المراجعة:</span>
+                            <span className="text-xs font-bold text-rose-400 block">الملاحظات المرصودة من مسار المراجعة:</span>
                             <ul className="space-y-1">
                               {judge.errorsIdentified.map((err, i) => (
                                 <li key={i} className="text-xs text-neutral-300 flex items-start gap-2">
@@ -670,7 +670,7 @@ export function JudgesCassationReviewPanel({
 
                         {/* Detailed Critique */}
                         <div className="p-3 rounded-xl bg-neutral-900/50 border border-neutral-800/80 space-y-1">
-                          <span className="text-[11px] font-bold text-amber-300 block">التسبيب والنقد القضائي:</span>
+                          <span className="text-xs font-bold text-amber-300 block">التسبيب والنقد القضائي:</span>
                           <p className="text-xs text-neutral-300 leading-relaxed">{judge.critique}</p>
                         </div>
 
@@ -678,7 +678,7 @@ export function JudgesCassationReviewPanel({
                         {judge.specificAmendment && (
                           <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="space-y-1 flex-1">
-                              <span className="text-[11px] font-bold text-amber-300 block">التعديل المقترح من مسار المراجعة:</span>
+                              <span className="text-xs font-bold text-amber-300 block">التعديل المقترح من مسار المراجعة:</span>
                               <p className="text-xs text-neutral-200 leading-relaxed font-mono bg-neutral-950/70 p-2.5 rounded-lg border border-neutral-800">
                                 {judge.specificAmendment}
                               </p>
@@ -721,13 +721,13 @@ export function JudgesCassationReviewPanel({
                 <div>
                   <span className="font-bold text-emerald-300 block text-sm">
                     {isSoundDocument
-                      ? 'اللائحة صحيحة ومستوفية للأصول القضائية 100% بكافة تفاصيلها وأسانيدها'
+                      ? 'لم يرصد الفحص الآلي ملاحظات جوهرية — المراجعة البشرية ما زالت مطلوبة'
                       : 'تم تنقيح وتعديل المذكرة وفق مبادئ الاستئناف والنقض ونظام الإثبات'}
                   </span>
-                  <span className="text-[11px] text-neutral-300">
+                  <span className="text-xs text-neutral-300">
                     {isSoundDocument
-                      ? 'تم اعتماد النص الكامل بكافة تواريخه، أرقام صكوكه، نصوص المراسيم الملكية (م/37)، وقائمة المرفقات الخمسة دون أي حذف أو تقليل للمعلومات.'
-                      : 'تم تدقيق العوار القضائي مع الحفاظ التام على كامل بيانات القضية.'}
+                      ? 'هذه نتيجة فحص آلي وليست اعتماداً قضائياً. طابِق التواريخ وأرقام الصكوك والمواد والمرفقات مع المصادر الرسمية قبل التقديم.'
+                      : 'راجع كل تعديل مقترح وتأكد من بقاء بيانات القضية كاملة قبل الاعتماد.'}
                   </span>
                 </div>
               </div>
@@ -771,10 +771,10 @@ export function JudgesCassationReviewPanel({
             </div>
 
             {/* Verification Guarantee Metadata */}
-            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-400">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-400">
               <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>المسودة الحالية: {effectiveText.length.toLocaleString('ar-SA')} حرفاً • تحقق من الحيثيات والمرفقات والمصادر قبل الاعتماد</span>
+                <span>المسودة الحالية: {effectiveText.length.toLocaleString('ar-SA-u-nu-latn')} حرفاً • تحقق من الحيثيات والمرفقات والمصادر قبل الاعتماد</span>
               </span>
               <span className="text-neutral-400">يتطلب مراجعة بشرية نهائية قبل أي إيداع عبر معين / ناجز</span>
             </div>
@@ -782,14 +782,14 @@ export function JudgesCassationReviewPanel({
             {/* Change Log Chips */}
             {report.changeLog && report.changeLog.length > 0 && (
               <div className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-2">
-                <span className="text-[11px] font-bold text-neutral-400 block">
+                <span className="text-xs font-bold text-neutral-400 block">
                   سجل المراجعة التحليلية الآلية:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {report.changeLog.map((change, idx) => (
                     <span
                       key={idx}
-                      className="text-[11px] px-2.5 py-1 rounded-lg bg-neutral-900 text-neutral-300 border border-neutral-700/80 flex items-center gap-1"
+                      className="text-xs px-2.5 py-1 rounded-lg bg-neutral-900 text-neutral-300 border border-neutral-700/80 flex items-center gap-1"
                     >
                       <Check className="w-3 h-3 text-emerald-400" />
                       <span>{change}</span>

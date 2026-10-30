@@ -3,12 +3,8 @@ import {
   Scale,
   FileText,
   Gavel,
-  Building2,
   UploadCloud,
   Sparkles,
-  Copy,
-  Check,
-  Printer,
   ShieldCheck,
   FileCheck,
   Save,
@@ -115,7 +111,7 @@ export function GeneralWorkspace({
       };
       sessionStorage.setItem(storageKey, JSON.stringify(data));
       const now = new Date();
-      setLastSavedTime(`تم الحفظ في ${now.toLocaleTimeString('ar-SA')}`);
+      setLastSavedTime(`تم الحفظ في ${now.toLocaleTimeString('ar-SA-u-nu-latn')}`);
     } catch {
       // ignore
     }
@@ -291,7 +287,7 @@ ${sharedRules}`;
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-bold text-neutral-100">بؤرة المحاكم العامة</h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 معزول حسب الحساب
               </span>
             </div>
@@ -305,7 +301,7 @@ ${sharedRules}`;
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-400">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-400">
             <Save className="w-3.5 h-3.5 text-emerald-400" />
             <span>{lastSavedTime}</span>
           </div>
@@ -356,10 +352,10 @@ ${sharedRules}`;
                 <FileCheck className="w-6 h-6 text-emerald-400" />
                 <div>
                   <p className="text-xs font-bold text-neutral-200">{uploadedFileName}</p>
-                  <p className="text-[11px] text-neutral-400">تم إدراج المستند في المسودة بنجاح.</p>
+                  <p className="text-xs text-neutral-400">تم إدراج المستند في المسودة بنجاح.</p>
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-bold border border-emerald-500/20">
+              <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-bold border border-emerald-500/20">
                 جاهز للصياغة
               </span>
             </div>
@@ -367,8 +363,8 @@ ${sharedRules}`;
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-300">المدعي:</label>
-              <input
+              <label htmlFor="generalworkspace-field-1" className="text-xs font-semibold text-neutral-300">المدعي:</label>
+              <input id="generalworkspace-field-1"
                 type="text"
                 value={claimantName}
                 onChange={(e) => setClaimantName(e.target.value)}
@@ -376,8 +372,8 @@ ${sharedRules}`;
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-300">المدعى عليه:</label>
-              <input
+              <label htmlFor="generalworkspace-field-2" className="text-xs font-semibold text-neutral-300">المدعى عليه:</label>
+              <input id="generalworkspace-field-2"
                 type="text"
                 value={defendantName}
                 onChange={(e) => setDefendantName(e.target.value)}
@@ -411,8 +407,8 @@ ${sharedRules}`;
                   {currentService === 'general_memo' && 'نموذج المذكرة الجوابية'}
                 </h3>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                حفظ محلي (LocalStorage)
+              <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                حفظ محلي في هذا المتصفح
               </span>
             </div>
 
@@ -426,11 +422,11 @@ ${sharedRules}`;
 
             {pendingAdaptation && (
               <div className="space-y-4 rounded-2xl border border-emerald-500/30 bg-white/5 p-4 backdrop-blur-sm">
-                <div><p className="text-xs font-bold text-emerald-300">التكييف الأولي المقترح</p><p className="mt-1 text-[11px] text-neutral-400">راجع الموضوع والأسانيد والطلبات قبل اعتمادها.</p></div>
+                <div><p className="text-xs font-bold text-emerald-300">التكييف الأولي المقترح</p><p className="mt-1 text-xs text-neutral-400">راجع الموضوع والأسانيد والطلبات قبل اعتمادها.</p></div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">موضوع القضية</span><p className="mt-1 text-xs leading-relaxed text-neutral-200">{pendingAdaptation.subject || pendingAdaptation.disputedSubject}</p></div>
-                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">المراجع الرسمية المتاحة</span><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.legal_bases?.map((basis) => `- ${basis}`).join('\n') || pendingAdaptation.legalBases}</p></div>
-                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-[10px] font-bold text-neutral-400">الطلبات المقترحة</span><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.requests?.map((request, index) => `${index + 1}. ${request}`).join('\n') || pendingAdaptation.claimDemands}</p></div>
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-xs font-bold text-neutral-400">موضوع القضية</span><p className="mt-1 text-xs leading-relaxed text-neutral-200">{pendingAdaptation.subject || pendingAdaptation.disputedSubject}</p></div>
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-xs font-bold text-neutral-400">المراجع الرسمية المتاحة</span><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.legal_bases?.map((basis) => `- ${basis}`).join('\n') || pendingAdaptation.legalBases}</p></div>
+                  <div className="rounded-xl border border-white/10 bg-slate-800/30 p-3"><span className="text-xs font-bold text-neutral-400">الطلبات المقترحة</span><p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-neutral-200">{pendingAdaptation.requests?.map((request, index) => `${index + 1}. ${request}`).join('\n') || pendingAdaptation.claimDemands}</p></div>
                 </div>
                 <div className="flex justify-end gap-2"><button type="button" onClick={() => setPendingAdaptation(null)} className="rounded-xl border border-neutral-700 px-3 py-2 text-xs font-bold text-neutral-300 hover:bg-neutral-800">إلغاء الاقتراح</button><button type="button" onClick={() => applyAdaptation(pendingAdaptation)} className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-neutral-950 hover:bg-emerald-400">اعتماد وتعبئة النموذج</button></div>
               </div>
@@ -439,8 +435,8 @@ ${sharedRules}`;
             <div className="space-y-3 pt-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-neutral-300">المدعي:</label>
-                  <input
+                  <label htmlFor="generalworkspace-field-3" className="text-xs font-semibold text-neutral-300">المدعي:</label>
+                  <input id="generalworkspace-field-3"
                     type="text"
                     value={claimantName}
                     onChange={(e) => setClaimantName(e.target.value)}
@@ -448,8 +444,8 @@ ${sharedRules}`;
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-neutral-300">الهوية الوطنية:</label>
-                  <input
+                  <label htmlFor="generalworkspace-field-4" className="text-xs font-semibold text-neutral-300">الهوية الوطنية:</label>
+                  <input id="generalworkspace-field-4"
                     type="text"
                     value={nationalId}
                     onChange={(e) => setNationalId(e.target.value)}
@@ -459,8 +455,8 @@ ${sharedRules}`;
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-neutral-300">المدعى عليه:</label>
-                <input
+                <label htmlFor="generalworkspace-field-5" className="text-xs font-semibold text-neutral-300">المدعى عليه:</label>
+                <input id="generalworkspace-field-5"
                   type="text"
                   value={defendantName}
                   onChange={(e) => setDefendantName(e.target.value)}
@@ -470,12 +466,12 @@ ${sharedRules}`;
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-semibold text-neutral-300">موضوع النزاع والوقائع:</label>
+                  <label htmlFor="generalworkspace-field-6" className="text-xs font-semibold text-neutral-300">موضوع النزاع والوقائع:</label>
                   {isAutoFilled && (
-                    <span className="text-[10px] text-emerald-400 font-bold animate-pulse">تم التكييف والتعبئة</span>
+                    <span className="text-xs text-emerald-400 font-bold animate-pulse">تم التكييف والتعبئة</span>
                   )}
                 </div>
-                <textarea
+                <textarea id="generalworkspace-field-6"
                   rows={2}
                   value={disputeSubject}
                   onChange={(e) => setDisputeSubject(e.target.value)}
@@ -487,12 +483,12 @@ ${sharedRules}`;
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-semibold text-neutral-300">الأسانيد والنصوص النظامية (المعاملات المدنية والإثبات):</label>
+                  <label htmlFor="generalworkspace-field-7" className="text-xs font-semibold text-neutral-300">الأسانيد والنصوص النظامية (المعاملات المدنية والإثبات):</label>
                   {isAutoFilled && (
-                    <span className="text-[10px] text-emerald-400 font-bold animate-pulse">مستخرجة نظامياً ✓</span>
+                    <span className="text-xs text-emerald-400 font-bold animate-pulse">مستخرجة نظامياً</span>
                   )}
                 </div>
-                <textarea
+                <textarea id="generalworkspace-field-7"
                   rows={3}
                   value={legalGrounds}
                   onChange={(e) => setLegalGrounds(e.target.value)}
@@ -504,12 +500,12 @@ ${sharedRules}`;
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-semibold text-neutral-300">الطلبات الختامية:</label>
+                  <label htmlFor="generalworkspace-field-8" className="text-xs font-semibold text-neutral-300">الطلبات الختامية:</label>
                   {isAutoFilled && (
-                    <span className="text-[10px] text-emerald-400 font-bold animate-pulse">مكتملة ✓</span>
+                    <span className="text-xs text-emerald-400 font-bold animate-pulse">مكتملة</span>
                   )}
                 </div>
-                <textarea
+                <textarea id="generalworkspace-field-8"
                   rows={3}
                   value={claimDemands}
                   onChange={(e) => setClaimDemands(e.target.value)}
@@ -543,7 +539,7 @@ ${sharedRules}`;
                 {generatedOutput && (
                   <button
                     onClick={() => setIsReviewMode(true)}
-                    className="text-[11px] text-emerald-300 hover:underline font-bold"
+                    className="text-xs text-emerald-300 hover:underline font-bold"
                   >
                     فتح شاشة المراجعة الكاملة &larr;
                   </button>
@@ -559,7 +555,7 @@ ${sharedRules}`;
                     <p className="text-xs font-semibold text-neutral-300">
                       اضغط على زر (صياغة المذكرة) للبدء.
                     </p>
-                    <p className="text-[11px] text-neutral-400 max-w-xs">
+                    <p className="text-xs text-neutral-400 max-w-xs">
                       ستنتقل مباشرة إلى وضع التركيز (Focus Mode) للمراجعة وتظليل الأرقام والهويات واعتماد التصدير.
                     </p>
                   </div>
@@ -567,7 +563,7 @@ ${sharedRules}`;
               </div>
             </div>
 
-            <div className="pt-2 border-t border-neutral-800 flex items-center justify-between text-[11px] text-neutral-400">
+            <div className="pt-2 border-t border-neutral-800 flex items-center justify-between text-xs text-neutral-400">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>نظام المعاملات المدنية (م/191)</span>

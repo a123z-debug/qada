@@ -1,17 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import {
-  MessageSquare,
+import { useState, useRef, useEffect } from 'react';
+import { 
   Sparkles,
   X,
   Send,
   Minimize2,
   Maximize2,
   Trash2,
-  Scale,
   Copy,
   Check,
-  Building2,
-  ShieldAlert,
   Bot,
   User,
 } from 'lucide-react';
@@ -61,7 +57,6 @@ async function assistantHttpError(response: Response): Promise<string> {
 
 export function FloatingChatBot({
   activeCourt,
-  activeService,
   userSession,
   responseMode = 'simple',
   position = 'bottom-left',
@@ -259,12 +254,12 @@ export function FloatingChatBot({
                 <div className="flex items-center gap-1.5">
                   <h4 className="text-xs font-bold text-neutral-100 truncate">المستشار الذكي</h4>
                   {!userFacing && (
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
+                    <span className="text-xs px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
                       عائم
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-neutral-400 truncate max-w-[190px]">
+                <p className="text-xs text-neutral-400 truncate max-w-[190px]">
                   {getCourtLabel()}
                 </p>
               </div>
@@ -337,7 +332,7 @@ export function FloatingChatBot({
                         </div>
 
                         {!isUser && m.content && (
-                          <div className="mt-2 pt-1 border-t border-neutral-800/80 flex items-center justify-between text-[10px] text-neutral-400">
+                          <div className="mt-2 pt-1 border-t border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
                             <span>مستشار أصول القضاء</span>
                             <button
                               type="button"
@@ -362,7 +357,7 @@ export function FloatingChatBot({
               {/* Chat Input Bar */}
               <div className="p-2.5 bg-neutral-900 border-t border-neutral-800">
                 {pendingAttachments.length > 0 && (
-                  <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-2 text-[10px] text-cyan-200">
+                  <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-3 py-2 text-xs text-cyan-200">
                     <span>{pendingAttachments.length} مرفق جاهز للتحليل مع رسالتك</span>
                     <button type="button" onClick={() => setPendingAttachments([])} className="text-slate-400 hover:text-white">إزالة</button>
                   </div>
@@ -380,13 +375,14 @@ export function FloatingChatBot({
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="اكتب مشكلتك أو ما تريد إنجازه: دعوى، اعتراض، مذكرة، رد، مطالبة..."
                     disabled={isSending}
-                    className="flex-1 px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-xs focus:border-amber-500 outline-none placeholder:text-neutral-500 disabled:opacity-50"
+                    className="min-w-0 flex-1 px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800 text-neutral-100 text-base sm:text-xs focus:border-amber-500 outline-none placeholder:text-neutral-500 disabled:opacity-50"
                   />
                   <button
                     type="submit"
                     disabled={!input.trim() || isSending}
-                    className="p-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
+                    className="grid h-11 w-11 place-items-center rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold transition-colors disabled:opacity-40 cursor-pointer shrink-0"
                     title="إرسال"
+                    aria-label="إرسال"
                   >
                     <Send className="w-4 h-4 rotate-180" />
                   </button>
@@ -419,11 +415,11 @@ export function FloatingChatBot({
             <span className="text-xs font-bold text-neutral-100 group-hover:text-amber-300 transition-colors">
               المستشار الذكي
             </span>
-            <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-400 font-mono">
+            <span className="text-xs px-1 py-0.2 rounded bg-amber-500/20 text-amber-400 font-mono">
               AI
             </span>
           </div>
-          <p className="text-[10px] text-neutral-400">اسأل في أي وقت</p>
+          <p className="text-xs text-neutral-400">اسأل في أي وقت</p>
         </div>
       </button>
     </div>

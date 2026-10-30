@@ -85,7 +85,7 @@ export function AccountSecurityModal({
               <div className="flex items-center gap-2 text-xs font-black text-slate-200"><ShieldCheck className="h-4 w-4 text-emerald-400" />الحساب الحالي</div>
               <div className="mt-3 text-sm font-bold text-white">{session.name}</div>
               <div className="mt-1 break-all text-xs text-slate-500" dir="ltr">{session.email}</div>
-              <div className="mt-2 text-[10px] font-bold text-slate-600">الدور: {session.role === 'admin' ? 'مدير النظام' : 'مستخدم'}</div>
+              <div className="mt-2 text-xs font-bold text-slate-600">الدور: {session.role === 'admin' ? 'مدير النظام' : 'مستخدم'}</div>
             </div>
 
             {session.role === 'admin' ? (
@@ -96,7 +96,7 @@ export function AccountSecurityModal({
               <form onSubmit={submit} className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-black text-slate-200"><KeyRound className="h-4 w-4 text-cyan-300" />تغيير كلمة المرور</div>
-                  <button type="button" onClick={() => setShowPasswords((value) => !value)} className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-slate-300">
+                  <button type="button" onClick={() => setShowPasswords((value) => !value)} className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-300">
                     {showPasswords ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     {showPasswords ? 'إخفاء' : 'إظهار'}
                   </button>

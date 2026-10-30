@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { X, Search, Scale, Check, BookMarked, ArrowRight } from 'lucide-react';
+import { X, Search, Check, BookMarked, ArrowRight } from 'lucide-react';
 import { PROMPT_TEMPLATES } from '../data/promptTemplates';
-import { PromptTemplate, LegalCategory } from '../types';
+import { PromptTemplate} from '../types';
 
 interface PromptLibraryModalProps {
   isOpen: boolean;
@@ -121,7 +121,7 @@ export function PromptLibraryModal({ isOpen, onClose, onSelect }: PromptLibraryM
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold text-neutral-100">{t.title}</span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-medium">
                         {t.category}
                       </span>
                     </div>

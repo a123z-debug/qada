@@ -68,7 +68,7 @@ export function AdminAuditLog({ onBack }: { onBack: () => void }) {
               <Activity className="h-7 w-7" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-500/10 px-3 py-1 text-[10px] font-black text-cyan-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-500/10 px-3 py-1 text-xs font-black text-cyan-200">
                 <ShieldCheck className="h-3 w-3" /> ADMIN AUDIT TRAIL
               </div>
               <h2 className="mt-2 text-xl sm:text-2xl font-black text-white">سجل التدقيق التشغيلي</h2>
@@ -87,9 +87,9 @@ export function AdminAuditLog({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4"><div className="text-2xl font-black text-white">{events.length}</div><div className="mt-1 text-[10px] font-bold text-slate-500">الأحداث المحملة</div></div>
-        <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/5 p-4"><div className="text-2xl font-black text-emerald-300">{events.filter((event) => event.outcome === 'success').length}</div><div className="mt-1 text-[10px] font-bold text-slate-500">عمليات ناجحة</div></div>
-        <div className="rounded-2xl border border-rose-400/15 bg-rose-500/5 p-4"><div className="text-2xl font-black text-rose-300">{failures}</div><div className="mt-1 text-[10px] font-bold text-slate-500">أخطاء أو وصول مرفوض</div></div>
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4"><div className="text-2xl font-black text-white">{events.length}</div><div className="mt-1 text-xs font-bold text-slate-500">الأحداث المحملة</div></div>
+        <div className="rounded-2xl border border-emerald-400/15 bg-emerald-500/5 p-4"><div className="text-2xl font-black text-emerald-300">{events.filter((event) => event.outcome === 'success').length}</div><div className="mt-1 text-xs font-bold text-slate-500">عمليات ناجحة</div></div>
+        <div className="rounded-2xl border border-rose-400/15 bg-rose-500/5 p-4"><div className="text-2xl font-black text-rose-300">{failures}</div><div className="mt-1 text-xs font-bold text-slate-500">أخطاء أو وصول مرفوض</div></div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -98,7 +98,7 @@ export function AdminAuditLog({ onBack }: { onBack: () => void }) {
             key={value}
             type="button"
             onClick={() => setFilter(value)}
-            className={`rounded-xl border px-3 py-2 text-[11px] font-black ${filter === value ? 'border-cyan-400/35 bg-cyan-500/10 text-cyan-200' : 'border-slate-800 bg-slate-950 text-slate-500 hover:text-white'}`}
+            className={`rounded-xl border px-3 py-2 text-xs font-black ${filter === value ? 'border-cyan-400/35 bg-cyan-500/10 text-cyan-200' : 'border-slate-800 bg-slate-950 text-slate-500 hover:text-white'}`}
           >
             {value === 'all' ? 'الكل' : outcomeLabel(value)}
           </button>
@@ -120,19 +120,19 @@ export function AdminAuditLog({ onBack }: { onBack: () => void }) {
                   <div className="flex flex-wrap items-center gap-2">
                     {event.outcome === 'success' ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : event.outcome === 'denied' ? <ShieldAlert className="h-4 w-4 text-orange-400" /> : <AlertTriangle className="h-4 w-4 text-amber-400" />}
                     <span className="font-mono text-xs font-black text-slate-200">{event.action}</span>
-                    <span className={`rounded-full border px-2 py-0.5 text-[9px] font-black ${outcomeClass(event.outcome)}`}>{outcomeLabel(event.outcome)}</span>
+                    <span className={`rounded-full border px-2 py-0.5 text-xs font-black ${outcomeClass(event.outcome)}`}>{outcomeLabel(event.outcome)}</span>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-slate-600">
+                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-600">
                     <span>الممثل: {event.actorRole}</span>
                     <span>#{event.actorId}</span>
                     {event.targetType && <span>الهدف: {event.targetType}</span>}
                     {event.targetRef && <span>مرجع: #{event.targetRef}</span>}
                   </div>
                 </div>
-                <div className="text-xs text-slate-400">{new Date(event.at).toLocaleString('ar-SA')}</div>
+                <div className="text-xs text-slate-400">{new Date(event.at).toLocaleString('ar-SA-u-nu-latn')}</div>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.entries(event.metadata || {}).map(([key, value]) => (
-                    <span key={key} className="rounded-lg border border-slate-800 bg-slate-900/70 px-2 py-1 text-[9px] text-slate-500">{key}: {String(value)}</span>
+                    <span key={key} className="rounded-lg border border-slate-800 bg-slate-900/70 px-2 py-1 text-xs text-slate-500">{key}: {String(value)}</span>
                   ))}
                 </div>
               </article>

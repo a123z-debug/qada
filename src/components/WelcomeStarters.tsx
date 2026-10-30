@@ -1,4 +1,4 @@
-import { Scale, Calendar, Award, FileText, ArrowLeft, Shield, Upload, FileUp, Lock, ShieldCheck } from 'lucide-react';
+import { Scale, Calendar, Award, FileText, ArrowLeft, Shield, Upload, FileUp, Lock} from 'lucide-react';
 import { PROMPT_TEMPLATES } from '../data/promptTemplates';
 import { PromptTemplate } from '../types';
 
@@ -22,7 +22,7 @@ export function WelcomeStarters({ onSelectPrompt, onOpenArticle8, onOpenReposito
   return (
     <div id="welcome-starters" className="qada-8k-welcome max-w-5xl mx-auto px-3 sm:px-5 py-6 sm:py-10 flex flex-col items-center text-center">
       {/* Official Judicial Emblem Badge */}
-      <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] sm:text-xs font-semibold mb-3 sm:mb-4 shadow-sm">
+      <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs sm:text-xs font-semibold mb-3 sm:mb-4 shadow-sm">
         <Scale className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
         <span>أصول القضاء | منصة القضايا والدفوعات</span>
       </div>
@@ -42,25 +42,25 @@ export function WelcomeStarters({ onSelectPrompt, onOpenArticle8, onOpenReposito
             <Shield className="w-4 h-4 text-amber-400 shrink-0" />
             <span>الإطار التشغيلي لطعون المحكمة الإدارية العليا (محكمة قانون لا محكمة موضوع)</span>
           </div>
-          <span className="text-[10px] sm:text-[11px] text-neutral-400">سقف الرد النظامي 3,500 حرف</span>
+          <span className="text-xs sm:text-xs text-neutral-400">سقف الرد النظامي 3,500 حرف</span>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
           <div className="p-2 sm:p-2.5 rounded-xl bg-neutral-950/70 border border-neutral-800 text-neutral-300">
-            <span className="text-amber-400 font-bold block mb-0.5 text-[11px] sm:text-xs">١. مكمن الخلل</span>
-            <span className="text-[10px] sm:text-[11px] text-neutral-400">تحديد سبب الطعن الحصري</span>
+            <span className="text-amber-400 font-bold block mb-0.5 text-xs sm:text-xs">1. مكمن الخلل</span>
+            <span className="text-xs sm:text-xs text-neutral-400">تحديد سبب الطعن الحصري</span>
           </div>
           <div className="p-2 sm:p-2.5 rounded-xl bg-neutral-950/70 border border-neutral-800 text-neutral-300">
-            <span className="text-amber-400 font-bold block mb-0.5 text-[11px] sm:text-xs">٢. تكييف الدفع</span>
-            <span className="text-[10px] sm:text-[11px] text-neutral-400">رقابة المشروعية والتأويل</span>
+            <span className="text-amber-400 font-bold block mb-0.5 text-xs sm:text-xs">2. تكييف الدفع</span>
+            <span className="text-xs sm:text-xs text-neutral-400">رقابة المشروعية والتأويل</span>
           </div>
           <div className="p-2 sm:p-2.5 rounded-xl bg-neutral-950/70 border border-neutral-800 text-neutral-300">
-            <span className="text-amber-400 font-bold block mb-0.5 text-[11px] sm:text-xs">٣. الرد الاستباقي</span>
-            <span className="text-[10px] sm:text-[11px] text-neutral-400">تفنيد دفوع ممثلي الجهة</span>
+            <span className="text-amber-400 font-bold block mb-0.5 text-xs sm:text-xs">3. الرد الاستباقي</span>
+            <span className="text-xs sm:text-xs text-neutral-400">تفنيد دفوع ممثلي الجهة</span>
           </div>
           <div className="p-2 sm:p-2.5 rounded-xl bg-neutral-950/70 border border-neutral-800 text-neutral-300">
-            <span className="text-amber-400 font-bold block mb-0.5 text-[11px] sm:text-xs">٤. مسودة الطعن</span>
-            <span className="text-[10px] sm:text-[11px] text-neutral-400">صياغة محكمة لا تُرد</span>
+            <span className="text-amber-400 font-bold block mb-0.5 text-xs sm:text-xs">4. مسودة الطعن</span>
+            <span className="text-xs sm:text-xs text-neutral-400">صياغة محكمة لا تُرد</span>
           </div>
         </div>
       </div>
@@ -75,7 +75,7 @@ export function WelcomeStarters({ onSelectPrompt, onOpenArticle8, onOpenReposito
             </div>
             <div className="min-w-0">
               <div className="text-xs font-bold text-amber-300 truncate">ملف الترافع (محمي)</div>
-              <div className="text-[10px] sm:text-[11px] text-neutral-400 truncate">مقيد بالهوية الوطنية</div>
+              <div className="text-xs sm:text-xs text-neutral-400 truncate">مقيد بالهوية الوطنية</div>
             </div>
           </div>
           {onOpenDossier && (
@@ -99,7 +99,7 @@ export function WelcomeStarters({ onSelectPrompt, onOpenArticle8, onOpenReposito
             </div>
             <div className="min-w-0">
               <div className="text-xs font-bold text-amber-200 truncate">سجل الأحكام بالهوية</div>
-              <div className="text-[10px] sm:text-[11px] text-neutral-400 truncate">تتبع صكوك القضية</div>
+              <div className="text-xs sm:text-xs text-neutral-400 truncate">تتبع صكوك القضية</div>
             </div>
           </div>
           {onOpenRepository && (
@@ -122,7 +122,7 @@ export function WelcomeStarters({ onSelectPrompt, onOpenArticle8, onOpenReposito
             </div>
             <div className="min-w-0">
               <div className="text-xs font-bold text-neutral-200 truncate">حاسبة الميعاد (م/8)</div>
-              <div className="text-[10px] sm:text-[11px] text-neutral-400 truncate">مهل التظلم والطعن</div>
+              <div className="text-xs sm:text-xs text-neutral-400 truncate">مهل التظلم والطعن</div>
             </div>
           </div>
           <button
@@ -143,7 +143,7 @@ export function WelcomeStarters({ onSelectPrompt, onOpenArticle8, onOpenReposito
             </div>
             <div className="min-w-0">
               <div className="text-xs font-bold text-neutral-200 truncate">فحص صك أو قرار</div>
-              <div className="text-[10px] sm:text-[11px] text-neutral-400 truncate">رفع صكوك وقرارات</div>
+              <div className="text-xs sm:text-xs text-neutral-400 truncate">رفع صكوك وقرارات</div>
             </div>
           </div>
           {onUploadClick && (
@@ -177,14 +177,14 @@ export function WelcomeStarters({ onSelectPrompt, onOpenArticle8, onOpenReposito
                     <Icon className="w-3.5 h-3.5 text-amber-400" />
                     {template.category}
                   </span>
-                  <span className="text-[11px] text-neutral-500 group-hover:text-amber-300 transition-colors flex items-center gap-1 font-medium">
+                  <span className="text-xs text-neutral-500 group-hover:text-amber-300 transition-colors flex items-center gap-1 font-medium">
                     استخدام <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
                   </span>
                 </div>
                 <h2 className="text-xs sm:text-sm font-bold text-neutral-100 mb-1 group-hover:text-amber-300 transition-colors">
                   {template.title}
                 </h2>
-                <p className="text-[11px] sm:text-xs text-neutral-400 line-clamp-2 leading-relaxed">
+                <p className="text-xs sm:text-xs text-neutral-400 line-clamp-2 leading-relaxed">
                   {template.description}
                 </p>
               </div>

@@ -39,7 +39,7 @@ assert(
     && map.includes("from: 'virtual-judge', to: 'final-output'"),
   'Drafting must pass through the Virtual Judge before final output',
 );
-assert(map.includes('Editor') && map.includes('Execution') && map.includes('Evaluation') && map.includes('Agents'),
+assert(['editor-tool', 'execution-tool', 'evaluation-tool', 'agents-tool'].every((id) => map.includes(`id: '${id}'`)),
   'Operations tool row is incomplete');
 assert(map.includes('runtimeById') && map.includes('sourcePacketById'),
   'Blueprint must be wired to real runtime/source telemetry');

@@ -1,4 +1,4 @@
-import { X, Sliders, RotateCcw, Scale, Shield, ArrowRight } from 'lucide-react';
+import { X, Sliders, RotateCcw, Shield, ArrowRight } from 'lucide-react';
 import { ChatSettings } from '../types';
 
 interface ChatSettingsModalProps {
@@ -101,7 +101,7 @@ export function ChatSettingsModal({
                 <Shield className="w-3.5 h-3.5 text-amber-400" />
                 <span>التعليمات السيادية للمنظومة (الموجه القضائي)</span>
               </label>
-              <span className="text-[10px] text-amber-400/90 font-medium">
+              <span className="text-xs text-amber-400/90 font-medium">
                 مصادر رسمية فقط • تحقق قبل الاستناد
               </span>
             </div>
@@ -114,7 +114,7 @@ export function ChatSettingsModal({
               }
               className="w-full p-3 bg-neutral-950 border border-neutral-700 rounded-xl text-xs text-neutral-200 focus:outline-hidden focus:border-amber-500 transition-all font-mono leading-relaxed resize-y"
             />
-            <p className="text-[11px] text-neutral-400 leading-normal">
+            <p className="text-xs text-neutral-400 leading-normal">
               تلتزم المنظومة بتمييز ما تم التحقق منه من المصدر الرسمي عن التحليل أو المعلومات التي تحتاج مراجعة.
             </p>
           </div>
@@ -125,7 +125,7 @@ export function ChatSettingsModal({
               <label htmlFor="temp-slider" className="text-xs font-bold text-neutral-200">
                 درجة الانضباط والحرية التحليلية ({settings.temperature.toFixed(2)})
               </label>
-              <span className="text-[11px] text-amber-400 font-medium">
+              <span className="text-xs text-amber-400 font-medium">
                 {settings.temperature <= 0.3
                   ? 'انضباط تحليلي مرتفع'
                   : settings.temperature <= 0.7
@@ -145,7 +145,7 @@ export function ChatSettingsModal({
               }
               className="w-full accent-amber-500 cursor-pointer"
             />
-            <div className="flex justify-between text-[10px] text-neutral-500">
+            <div className="flex justify-between text-xs text-neutral-500">
               <span>0.0 (أقل توليد)</span>
               <span>0.25 (مراجعة قانونية منضبطة)</span>
               <span>1.0 (استكشافي)</span>
@@ -181,7 +181,7 @@ export function ChatSettingsModal({
                   }`}
                 >
                   <div className="text-xs font-bold">{preset.label}</div>
-                  <div className="text-[10px] text-neutral-400 mt-0.5">{preset.desc}</div>
+                  <div className="text-xs text-neutral-400 mt-0.5">{preset.desc}</div>
                 </button>
               ))}
             </div>

@@ -1,0 +1,337 @@
+/* ==========================================================================
+   QADA Design Layer — final cascade authority (imported last in main.tsx).
+   Tokens follow design-system/qada/MASTER.md: judicial ink, Saudi green,
+   ivory paper and restrained brass. Earlier theme layers remap the dark
+   component palette for the light user shell; this layer resolves the
+   conflicts between them instead of adding new decoration.
+   ========================================================================== */
+
+:root {
+  --qd-font: "IBM Plex Sans Arabic", "Noto Kufi Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  --qd-ink: #13261f;
+  --qd-ink-soft: #33463e;
+  --qd-muted: #55665e;
+  --qd-paper: #fbfaf5;
+  --qd-paper-2: #f4f1e8;
+  --qd-paper-3: #ebe6da;
+  --qd-line: rgba(16, 32, 25, .11);
+  --qd-line-strong: rgba(16, 32, 25, .18);
+  --qd-green-900: #053d29;
+  --qd-green-800: #064b32;
+  --qd-green-700: #006c35;
+  --qd-green-50: #e9f3ee;
+  --qd-brass-700: #7a5c22;
+  --qd-brass-500: #c7a15a;
+  --qd-brass-300: #e7cf9a;
+  --qd-brass-50: #f8f1e1;
+  --qd-danger: #b42318;
+  --qd-focus: 0 0 0 4px rgba(0, 108, 53, .14);
+}
+
+/* ---------- Typography ---------- */
+
+html,
+body {
+  font-family: var(--qd-font);
+}
+
+body {
+  line-height: 1.75;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  font-kerning: normal;
+}
+
+:is(button, input, textarea, select):not(.font-legal) {
+  font-family: var(--qd-font) !important;
+}
+
+/* Arabic is cursive: any letter-spacing breaks or crowds letter joins. */
+body *:not(code):not(kbd):not(pre) {
+  letter-spacing: normal !important;
+}
+
+/* Monospace stacks render Arabic badges with fallback glyphs; keep the brand
+   face and only borrow fixed-width digits. */
+.font-mono {
+  font-family: var(--qd-font) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:is(h1, h2, h3) {
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* ---------- Security watermark: present for screenshots, quiet for reading ---------- */
+
+.qada-watermark {
+  opacity: 1 !important;
+  color: rgba(19, 38, 31, .035) !important;
+}
+
+.admin-shell .qada-watermark {
+  color: rgba(255, 255, 255, .03) !important;
+}
+
+/* ---------- Public landing ---------- */
+
+/* The landing header is themed dark green; its brand name inherited dark ink. */
+.qada-saudi-landing > header [aria-label="الرئيسية"] .text-right > span:first-child {
+  color: var(--qd-paper) !important;
+}
+
+.qada-saudi-landing > header [aria-label="الرئيسية"] .text-right > span:last-child {
+  color: var(--qd-brass-300) !important;
+}
+
+/* ---------- Light user shell: one brand accent system ---------- */
+
+.user-shell {
+  background: var(--qd-paper) !important;
+  color: var(--qd-ink) !important;
+}
+
+.user-shell :is([class*="text-cyan-"], [class*="text-blue-"], [class*="text-violet-"], [class*="text-fuchsia-"]) {
+  color: var(--qd-green-700) !important;
+}
+
+.user-shell [class*="text-amber-"] {
+  color: var(--qd-brass-700) !important;
+}
+
+.user-shell :is([class~="text-slate-300"], [class~="text-slate-400"], [class~="text-slate-500"], [class~="text-slate-600"],
+  [class~="text-neutral-300"], [class~="text-neutral-400"], [class~="text-neutral-500"]) {
+  color: var(--qd-muted) !important;
+}
+
+.user-shell [class~="text-transparent"] {
+  color: var(--qd-green-800) !important;
+  -webkit-text-fill-color: var(--qd-green-800) !important;
+  background: none !important;
+}
+
+.user-shell :is([class*="border-cyan-"], [class*="border-blue-"], [class*="border-violet-"], [class*="border-fuchsia-"]) {
+  border-color: rgba(0, 108, 53, .2) !important;
+}
+
+.user-shell [class*="border-amber-"] {
+  border-color: rgba(167, 130, 63, .3) !important;
+}
+
+.user-shell :is([class*="bg-cyan-500/"], [class*="bg-cyan-400/"], [class*="bg-blue-500/"], [class*="bg-violet-500/"],
+  [class*="bg-violet-400/"], [class*="bg-fuchsia-500/"]) {
+  background-color: var(--qd-green-50) !important;
+}
+
+.user-shell :is([class*="bg-amber-500/"], [class*="bg-amber-400/"]) {
+  background-color: var(--qd-brass-50) !important;
+}
+
+.user-shell :is([class~="bg-amber-500"], [class~="bg-amber-400"], [class~="bg-cyan-500"], [class~="bg-cyan-400"],
+  [class~="bg-violet-500"], [class~="bg-violet-400"], [class~="bg-blue-500"], [class~="bg-blue-600"]) {
+  background-color: var(--qd-green-800) !important;
+  color: #fff !important;
+}
+
+.user-shell button:is([class*="from-amber-"], [class*="from-cyan-"], [class*="from-violet-"], [class*="from-blue-"]) {
+  background: linear-gradient(180deg, var(--qd-green-700), var(--qd-green-800)) !important;
+  border-color: var(--qd-green-800) !important;
+  color: #fff !important;
+  box-shadow: 0 10px 24px rgba(6, 75, 50, .18), inset 0 1px rgba(255, 255, 255, .12) !important;
+}
+
+.user-shell button:is([class*="from-amber-"], [class*="from-cyan-"], [class*="from-violet-"], [class*="from-blue-"]) * {
+  color: #fff !important;
+}
+
+.user-shell :is(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid var(--qd-green-700) !important;
+  outline-offset: 2px;
+}
+
+/* Dark brand surfaces inside the light shell keep light accents. */
+.user-shell :is(.qada-pro-hero, .qada-user-sidebar) :is([class*="text-amber-"], [class*="text-cyan-"], [class*="text-blue-"], [class*="text-violet-"]) {
+  color: var(--qd-brass-300) !important;
+}
+
+.user-shell .qada-pro-hero [class*="border-blue-"] {
+  border-color: rgba(231, 207, 154, .28) !important;
+  background-color: rgba(231, 207, 154, .08) !important;
+}
+
+.qada-hero-accent {
+  color: var(--qd-brass-300);
+}
+
+.user-shell .qada-pro-hero .qada-hero-accent {
+  color: var(--qd-brass-300) !important;
+  -webkit-text-fill-color: var(--qd-brass-300) !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Tints and muted text on the dark hero/sidebar stay translucent and light. */
+.user-shell :is(.qada-pro-hero, .qada-user-sidebar) :is([class*="bg-amber-500/"], [class*="bg-amber-400/"], [class*="bg-blue-500/"], [class*="bg-cyan-500/"]) {
+  background-color: rgba(231, 207, 154, .12) !important;
+}
+
+.user-shell :is(.qada-pro-hero, .qada-user-sidebar) :is([class*="border-amber-"], [class*="border-blue-"], [class*="border-cyan-"]) {
+  border-color: rgba(231, 207, 154, .3) !important;
+}
+
+.user-shell .qada-user-sidebar :is([class~="text-slate-300"], [class~="text-slate-400"], [class~="text-slate-500"], [class~="text-slate-600"],
+  [class~="text-neutral-300"], [class~="text-neutral-400"], [class~="text-neutral-500"]) {
+  color: rgba(246, 248, 244, .74) !important;
+}
+
+.user-shell .qada-pro-hero :is([class~="text-slate-500"], [class~="text-slate-600"], [class~="text-neutral-500"]) {
+  color: rgba(246, 248, 244, .66) !important;
+}
+
+.app-sidebar .truncate {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+/* ---------- Modals in the user shell: paper, not dark glass ---------- */
+
+.user-shell .qada-8k-modal-overlay {
+  background: rgba(8, 19, 15, .5) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+.user-shell .qada-8k-modal {
+  color: var(--qd-ink) !important;
+  background: var(--qd-paper) !important;
+  border: 1px solid var(--qd-line) !important;
+  box-shadow: 0 30px 80px rgba(8, 19, 15, .22) !important;
+}
+
+.user-shell .qada-8k-modal > header,
+.user-shell .qada-8k-modal > div:first-child {
+  color: var(--qd-ink) !important;
+  background: rgba(251, 250, 245, .97) !important;
+  border-color: var(--qd-line) !important;
+}
+
+.user-shell .qada-8k-modal :is([class*="bg-neutral-950"], [class*="bg-slate-950"], [class*="bg-[#030b1b]"], [class*="bg-[#06142b]"], [class*="bg-black"]) {
+  background-color: #fff !important;
+}
+
+.user-shell .qada-8k-modal :is([class*="bg-neutral-900"], [class*="bg-slate-900"], [class*="bg-neutral-800"], [class*="bg-slate-800"]) {
+  background-color: var(--qd-paper-2) !important;
+}
+
+.user-shell .qada-8k-modal :is([class*="border-neutral-8"], [class*="border-neutral-7"], [class*="border-slate-8"],
+  [class*="border-slate-7"], [class*="border-white/"]) {
+  border-color: var(--qd-line) !important;
+}
+
+.user-shell .qada-8k-modal :is([class*="text-neutral-4"], [class*="text-neutral-5"], [class*="text-slate-4"], [class*="text-slate-5"]) {
+  color: var(--qd-muted) !important;
+}
+
+.user-shell .qada-8k-modal [class*="text-amber-"] {
+  color: var(--qd-brass-700) !important;
+}
+
+.user-shell .qada-8k-modal :is([class*="text-cyan-"], [class*="text-blue-"], [class*="text-emerald-"]) {
+  color: var(--qd-green-700) !important;
+}
+
+.user-shell .qada-8k-modal [class*="text-rose-"] {
+  color: var(--qd-danger) !important;
+}
+
+.user-shell .qada-8k-modal [class*="bg-amber-500"]:not([class*="/"]) {
+  color: #fff !important;
+  background: var(--qd-green-800) !important;
+}
+
+.user-shell .qada-8k-modal :is(input, textarea, select) {
+  color: var(--qd-ink) !important;
+  background: #fff !important;
+  border-color: var(--qd-line-strong) !important;
+}
+
+.user-shell .qada-8k-modal :is(input, textarea, select)::placeholder {
+  color: #74847c !important;
+}
+
+.user-shell .qada-8k-modal :is(input, textarea, select):focus {
+  border-color: var(--qd-green-700) !important;
+  box-shadow: var(--qd-focus) !important;
+}
+
+.user-shell :is(.qada-8k-dossier aside, .qada-8k-repository [class*="lg:col-span-4"], .qada-8k-references aside) {
+  background: var(--qd-paper-2) !important;
+  border-color: var(--qd-line) !important;
+}
+
+.user-shell .qada-8k-upload [class*="border-dashed"] {
+  background: #fff !important;
+  border-color: rgba(0, 108, 53, .28) !important;
+}
+
+/* Neutral buttons inside modals are secondary actions, not primary green. */
+.user-shell .qada-8k-modal button:is(.bg-slate-950, .bg-slate-900, .bg-neutral-950, .bg-neutral-900) {
+  background: var(--qd-paper-2) !important;
+  color: var(--qd-ink-soft) !important;
+  border-color: var(--qd-line) !important;
+  box-shadow: none !important;
+}
+
+.user-shell .qada-8k-modal button:is(.bg-slate-950, .bg-slate-900, .bg-neutral-950, .bg-neutral-900) * {
+  color: inherit !important;
+}
+
+.user-shell .qada-8k-modal button:is(.bg-slate-950, .bg-slate-900, .bg-neutral-950, .bg-neutral-900):hover {
+  background: var(--qd-paper-3) !important;
+  color: var(--qd-ink) !important;
+}
+
+/* ---------- Admin dark shell ---------- */
+
+/* slate-500 on the admin ink surfaces measured 4.05:1; lift it above 4.5:1. */
+.admin-shell :is([class~="text-slate-500"], [class~="text-neutral-500"], [class~="text-slate-600"]) {
+  color: #8c9bb0 !important;
+}
+
+/* ---------- Phones: 44px touch targets (MASTER.md) ---------- */
+
+@media (max-width: 767px) {
+  /* Links inside running text keep their line height. */
+  :is(.user-shell, .qada-saudi-landing) :is(button, a[href]:not(:is(p, li, span, td) a), [role="button"], summary) {
+    min-height: 44px;
+  }
+
+  :is(.user-shell, .qada-saudi-landing, .admin-shell) button:has(> svg:only-child) {
+    min-width: 44px;
+  }
+
+  :is(.user-shell, .qada-saudi-landing) a[href]:not(:is(p, li, span, td) a) {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .mobile-dock-btn {
+    font-size: 12px !important;
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

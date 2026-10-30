@@ -20,6 +20,7 @@ import {
   Sparkles,
   UploadCloud,
 } from 'lucide-react';
+import { arabicCount } from '../../utils/arabicCount';
 
 type AnalysisIssue = {
   id: string;
@@ -352,7 +353,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
               <ScanSearch className="h-7 w-7" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-[10px] font-black text-violet-200">
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-xs font-black text-violet-200">
                 <LockKeyhole className="h-3 w-3" />
                 ADMIN ANALYSIS ROOM
               </div>
@@ -376,7 +377,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                   <option value="">{historyLoading ? 'جاري تحميل السجل...' : 'فتح تحليل سابق'}</option>
                   {history.map((item, index) => (
                     <option key={item.runId || index} value={item.runId || ''}>
-                      {item.documentTitle || 'تحليل قضائي'} — {item.analyzedAt ? new Date(item.analyzedAt).toLocaleString('ar-SA') : 'بدون تاريخ'}
+                      {item.documentTitle || 'تحليل قضائي'} — {item.analyzedAt ? new Date(item.analyzedAt).toLocaleString('ar-SA-u-nu-latn') : 'بدون تاريخ'}
                     </option>
                   ))}
                 </select>
@@ -444,7 +445,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                 className="mt-2 w-full resize-y rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-3 text-sm leading-7 text-slate-100 outline-none focus:border-violet-400/60"
                 placeholder="الصق النص هنا، أو ارفع ملف PDF/صورة أدناه..."
               />
-              <div className="mt-1 text-left text-[10px] text-slate-600">{text.length.toLocaleString('ar-SA')} حرف</div>
+              <div className="mt-1 text-left text-xs text-slate-600">{text.length.toLocaleString('ar-SA-u-nu-latn')} حرف</div>
             </label>
 
             <label className="block cursor-pointer rounded-2xl border border-dashed border-violet-400/25 bg-violet-500/5 p-4 hover:bg-violet-500/10 transition-colors">
@@ -464,7 +465,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                 </span>
                 <div>
                   <div className="text-xs font-black text-slate-200">رفع حكم أو مذكرة أو مرفق</div>
-                  <div className="mt-1 text-[10px] text-slate-500">PDF أو PNG/JPG/WEBP — حتى 5 ملفات بإجمالي إرسال لا يتجاوز نحو 2.5MB خام</div>
+                  <div className="mt-1 text-xs text-slate-500">PDF أو PNG/JPG/WEBP — حتى 5 ملفات بإجمالي إرسال لا يتجاوز نحو 2.5MB خام</div>
                 </div>
               </div>
             </label>
@@ -475,12 +476,12 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                   <div key={attachment.name + index} className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2">
                     <div className="min-w-0">
                       <div className="truncate text-xs font-bold text-slate-300">{attachment.name}</div>
-                      <div className="text-[9px] text-slate-600">{attachment.type}</div>
+                      <div className="text-xs text-slate-600">{attachment.type}</div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setAttachments((items) => items.filter((_, itemIndex) => itemIndex !== index))}
-                      className="text-[10px] font-black text-rose-300 hover:text-rose-200"
+                      className="text-xs font-black text-rose-300 hover:text-rose-200"
                     >
                       حذف
                     </button>
@@ -511,7 +512,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
               <span>{busy ? 'جاري تشغيل غرفة التحليل...' : 'ابدأ التحليل العميق'}</span>
             </button>
 
-            <div className="rounded-xl border border-amber-400/15 bg-amber-500/5 p-3 text-[10px] leading-5 text-amber-100/70">
+            <div className="rounded-xl border border-amber-400/15 bg-amber-500/5 p-3 text-xs leading-5 text-amber-100/70">
               أي نقطة لم يكتمل التحقق من مصدرها الرسمي يجب أن تظهر في قائمة «التحقق المطلوب» ولا تُعامل كسند نهائي. عند تشغيل التحليل تُرسل المدخلات والمرفقات إلى مزود الذكاء المهيأ للمنصة؛ أزل البيانات الشخصية غير اللازمة قبل الرفع.
             </div>
           </div>
@@ -558,7 +559,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-xs sm:text-sm leading-7 text-slate-300">{report.executiveSummary || 'لا يوجد ملخص.'}</p>
                 {meta && (
-                  <div className="mt-3 flex flex-wrap gap-2 text-[9px] text-slate-600">
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
                     <span>المعمارية: {meta.architecture || 'تحليل متعدد المراحل'}</span>
                     <span>•</span>
                     <span>المكتملون: {meta.completedAgents ?? agentRuns.filter((run) => run.status === 'success').length}</span>
@@ -572,7 +573,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                     <span>مواد مفهرسة: {meta.verifiedArticles ?? 0}</span>
                     <span>•</span>
                     <span>قيود تحقق: {meta.sourceBlockers ?? 0}</span>
-                    {meta.analyzedAt && <><span>•</span><span>{new Date(meta.analyzedAt).toLocaleString('ar-SA')}</span></>}
+                    {meta.analyzedAt && <><span>•</span><span>{new Date(meta.analyzedAt).toLocaleString('ar-SA-u-nu-latn')}</span></>}
                   </div>
                 )}
               </div>
@@ -584,18 +585,18 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                       <Sparkles className="h-4 w-4" />
                       الوكلاء الذين نفذوا هذه العملية فعلياً
                     </div>
-                    <span className="text-[9px] text-slate-600">{agentRuns.length} وكلاء</span>
+                    <span className="text-xs text-slate-600">{arabicCount(agentRuns.length, { one: 'وكيل واحد', two: 'وكيلان', plural: 'وكلاء', accusative: 'وكيلاً', singular: 'وكيل' })}</span>
                   </div>
                   <div className="mt-3 grid md:grid-cols-2 gap-2">
                     {agentRuns.map((run) => (
                       <div key={run.id} className="rounded-xl border border-slate-800 bg-slate-950/55 p-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="truncate text-[11px] font-black text-slate-200">{run.label}</div>
-                            <div className="mt-1 font-mono text-[9px] text-slate-600">{run.id}</div>
+                            <div className="truncate text-xs font-black text-slate-200">{run.label}</div>
+                            <div className="mt-1 font-mono text-xs text-slate-600">{run.id}</div>
                           </div>
                           <span className={
-                            'rounded-full border px-2 py-1 text-[9px] font-black ' +
+                            'rounded-full border px-2 py-1 text-xs font-black ' +
                             (run.status === 'success'
                               ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
                               : run.status === 'warning'
@@ -605,16 +606,16 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                             {run.status === 'success' ? 'مكتمل' : run.status === 'warning' ? 'تحقق مطلوب' : 'تعثر'}
                           </span>
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-2 text-[9px] text-slate-500">
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
                           <span>{(run.durationMs / 1000).toFixed(1)}ث</span>
                           {run.model && <><span>•</span><span>{run.model}</span></>}
                         </div>
                         {run.blockers?.length ? (
                           <div className="mt-2 rounded-lg border border-amber-400/15 bg-amber-500/5 p-2">
-                            <div className="text-[9px] font-black text-amber-200">سبب التحذير / ما ينقص التحقق</div>
+                            <div className="text-xs font-black text-amber-200">سبب التحذير / ما ينقص التحقق</div>
                             <ul className="mt-1 space-y-1">
                               {run.blockers.slice(0, 4).map((blocker, blockerIndex) => (
-                                <li key={blockerIndex} className="text-[9px] leading-5 text-amber-100/70">• {blocker}</li>
+                                <li key={blockerIndex} className="text-xs leading-5 text-amber-100/70">• {blocker}</li>
                               ))}
                             </ul>
                           </div>
@@ -632,18 +633,18 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                       <BookOpenCheck className="h-4 w-4" />
                       أثر المراجع الرسمية ووكلاء المصدر
                     </div>
-                    <span className="text-[9px] text-slate-600">{sourcePackets.reduce((sum, packet) => sum + packet.references.length, 0)} مرجعاً مسترجعاً</span>
+                    <span className="text-xs text-slate-600">{sourcePackets.reduce((sum, packet) => sum + packet.references.length, 0)} مرجعاً مسترجعاً</span>
                   </div>
                   <div className="mt-3 space-y-3">
                     {sourcePackets.map((packet) => (
                       <div key={packet.agentId} className="rounded-xl border border-slate-800 bg-slate-950/55 p-3">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div>
-                            <div className="text-[11px] font-black text-slate-200">{packet.label}</div>
-                            <div className="mt-1 text-[9px] leading-5 text-slate-500">{packet.scope}</div>
+                            <div className="text-xs font-black text-slate-200">{packet.label}</div>
+                            <div className="mt-1 text-xs leading-5 text-slate-500">{packet.scope}</div>
                           </div>
                           <span className={
-                            'rounded-full border px-2 py-1 text-[9px] font-black ' +
+                            'rounded-full border px-2 py-1 text-xs font-black ' +
                             (packet.status === 'success'
                               ? 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200'
                               : packet.status === 'warning'
@@ -658,13 +659,13 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                           <div className="mt-3 grid md:grid-cols-2 gap-2">
                             {packet.references.slice(0, 6).map((reference, index) => (
                               <div key={reference.sourceUrl + index} className="rounded-lg border border-slate-800 bg-black/15 p-2.5">
-                                <div className="text-[10px] font-bold text-slate-300">{reference.name}</div>
-                                {reference.issueInstrument && <div className="mt-1 text-[9px] text-slate-500">{reference.issueInstrument}</div>}
+                                <div className="text-xs font-bold text-slate-300">{reference.name}</div>
+                                {reference.issueInstrument && <div className="mt-1 text-xs text-slate-500">{reference.issueInstrument}</div>}
                                 <a
                                   href={reference.sourceUrl}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="mt-2 inline-flex items-center gap-1 text-[9px] font-black text-cyan-300 hover:text-cyan-200"
+                                  className="mt-2 inline-flex items-center gap-1 text-xs font-black text-cyan-300 hover:text-cyan-200"
                                 >
                                   <ExternalLink className="h-3 w-3" />
                                   المصدر الرسمي
@@ -683,7 +684,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                                 target="_blank"
                                 rel="noreferrer"
                                 title={article.note}
-                                className="rounded-full border border-emerald-400/20 bg-emerald-500/5 px-2 py-1 text-[9px] font-bold text-emerald-200 hover:bg-emerald-500/10"
+                                className="rounded-full border border-emerald-400/20 bg-emerald-500/5 px-2 py-1 text-xs font-bold text-emerald-200 hover:bg-emerald-500/10"
                               >
                                 {article.system} — مادة {article.article}
                               </a>
@@ -694,7 +695,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                         {packet.blockers.length > 0 && (
                           <div className="mt-3 rounded-lg border border-amber-400/15 bg-amber-500/5 p-2.5">
                             {packet.blockers.slice(0, 4).map((blocker, index) => (
-                              <div key={index} className="text-[9px] leading-5 text-amber-100/70">• {blocker}</div>
+                              <div key={index} className="text-xs leading-5 text-amber-100/70">• {blocker}</div>
                             ))}
                           </div>
                         )}
@@ -711,7 +712,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                     type="button"
                     onClick={() => setActiveCategory(category)}
                     className={
-                      'rounded-lg border px-3 py-1.5 text-[10px] font-black transition-colors ' +
+                      'rounded-lg border px-3 py-1.5 text-xs font-black transition-colors ' +
                       (activeCategory === category
                         ? 'border-violet-400/40 bg-violet-500/15 text-violet-200'
                         : 'border-slate-700 bg-slate-900 text-slate-400 hover:text-white')
@@ -732,21 +733,21 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={'rounded-full border px-2 py-1 text-[9px] font-black ' + severityClass(issue.severity)}>{issue.severity}</span>
-                          <span className={'rounded-full border px-2 py-1 text-[9px] font-black ' + categoryClass(issue.category)}>{issue.category}</span>
+                          <span className={'rounded-full border px-2 py-1 text-xs font-black ' + severityClass(issue.severity)}>{issue.severity}</span>
+                          <span className={'rounded-full border px-2 py-1 text-xs font-black ' + categoryClass(issue.category)}>{issue.category}</span>
                           {issue.verificationNeeded && (
-                            <span className="rounded-full border border-amber-400/25 bg-amber-500/10 px-2 py-1 text-[9px] font-black text-amber-200">تحقق مطلوب</span>
+                            <span className="rounded-full border border-amber-400/25 bg-amber-500/10 px-2 py-1 text-xs font-black text-amber-200">تحقق مطلوب</span>
                           )}
                         </div>
                         <h4 className="mt-2 text-sm font-black text-white">{issue.title}</h4>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-600">#{index + 1}</span>
+                      <span className="text-xs font-mono text-slate-600">#{index + 1}</span>
                     </div>
 
                     {issue.documentSegment && (
                       <div className="mt-3 rounded-xl border border-slate-800 bg-black/20 p-3">
-                        <div className="text-[9px] font-black text-slate-600">الموضع محل الفحص</div>
-                        <div className="mt-1 whitespace-pre-wrap text-[11px] leading-6 text-slate-400">{issue.documentSegment}</div>
+                        <div className="text-xs font-black text-slate-600">الموضع محل الفحص</div>
+                        <div className="mt-1 whitespace-pre-wrap text-xs leading-6 text-slate-400">{issue.documentSegment}</div>
                       </div>
                     )}
 
@@ -765,7 +766,7 @@ export function AdminAnalysisRoom({ onBack }: { onBack: () => void }) {
                             href={url}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 bg-cyan-500/5 px-2.5 py-1.5 text-[9px] font-black text-cyan-300 hover:bg-cyan-500/10"
+                            className="inline-flex items-center gap-1 rounded-lg border border-cyan-400/20 bg-cyan-500/5 px-2.5 py-1.5 text-xs font-black text-cyan-300 hover:bg-cyan-500/10"
                           >
                             <ExternalLink className="h-3 w-3" />
                             المصدر الرسمي {sourceIndex + 1}
@@ -808,7 +809,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string; 
     <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 min-w-0">
       <Icon className="h-4 w-4 text-cyan-300" />
       <div className="mt-2 truncate text-xs font-black text-white">{value}</div>
-      <div className="mt-1 text-[9px] font-bold text-slate-600">{label}</div>
+      <div className="mt-1 text-xs font-bold text-slate-600">{label}</div>
     </div>
   );
 }
@@ -816,8 +817,8 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string; 
 function InfoBox({ title, text, highlight = false }: { title: string; text: string; highlight?: boolean }) {
   return (
     <div className={'rounded-xl border p-3 ' + (highlight ? 'border-amber-400/15 bg-amber-500/5' : 'border-slate-800 bg-black/15')}>
-      <div className={'text-[9px] font-black ' + (highlight ? 'text-amber-300' : 'text-slate-600')}>{title}</div>
-      <div className="mt-1 whitespace-pre-wrap text-[11px] leading-6 text-slate-400">{text || '—'}</div>
+      <div className={'text-xs font-black ' + (highlight ? 'text-amber-300' : 'text-slate-600')}>{title}</div>
+      <div className="mt-1 whitespace-pre-wrap text-xs leading-6 text-slate-400">{text || '—'}</div>
     </div>
   );
 }
@@ -832,14 +833,14 @@ function ListPanel({ title, items, icon: Icon, amber = false }: { title: string;
       {items?.length ? (
         <ul className="mt-3 space-y-2">
           {items.map((item, index) => (
-            <li key={index} className="flex items-start gap-2 text-[11px] leading-6 text-slate-400">
+            <li key={index} className="flex items-start gap-2 text-xs leading-6 text-slate-400">
               <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-600" />
               <span>{item}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <div className="mt-3 text-[10px] text-slate-600">لا توجد عناصر مسجلة.</div>
+        <div className="mt-3 text-xs text-slate-600">لا توجد عناصر مسجلة.</div>
       )}
     </div>
   );

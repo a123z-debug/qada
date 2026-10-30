@@ -11,7 +11,6 @@ import {
   ArrowRight,
   AlertTriangle,
   BookOpen,
-  Sparkles,
   ShieldCheck,
   Eye,
   Edit3,
@@ -30,6 +29,7 @@ import { CourtJurisdiction } from '../layout/Sidebar';
 import { printLegalMemo } from '../../utils/printMemo';
 import { JudgesCassationReviewPanel } from '../JudgesCassationReviewPanel';
 import { Attachment, DetailedJudgesReviewReport } from '../../types';
+import { arabicCount } from '../../utils/arabicCount';
 
 interface LegalReviewEditorProps {
   initialContent: string;
@@ -141,7 +141,6 @@ export function LegalReviewEditor({
   serviceId,
   documentTitle,
   clientName,
-  nationalId,
   uploadedFileName,
   uploadedFileText,
   attachmentsText,
@@ -248,7 +247,7 @@ export function LegalReviewEditor({
     if (onContentChange) {
       onContentChange(revisedText);
     }
-    setRevisionToast('تم تطبيق الصياغة المقترحة من هيئة المراجعة الآلية في المحرر ✓');
+    setRevisionToast('تم تطبيق الصياغة المقترحة من هيئة المراجعة الآلية في المحرر');
     setTimeout(() => setRevisionToast(null), 5000);
   };
 
@@ -259,7 +258,7 @@ export function LegalReviewEditor({
     if (onContentChange) {
       onContentChange(newContent);
     }
-    setRevisionToast('تم إدراج التعديل المقترح في صلب المذكرة ✓');
+    setRevisionToast('تم إدراج التعديل المقترح في صلب المذكرة');
     setTimeout(() => setRevisionToast(null), 5000);
   };
 
@@ -271,7 +270,7 @@ export function LegalReviewEditor({
       if (onContentChange) {
         onContentChange(previousContent);
       }
-      setRevisionToast('تم التراجع واستعادة النص السابق ✓');
+      setRevisionToast('تم التراجع واستعادة النص السابق');
       setTimeout(() => setRevisionToast(null), 4000);
     }
   };
@@ -490,7 +489,7 @@ export function LegalReviewEditor({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-black text-neutral-100">{documentTitle}</h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                 وضع التركيز والمراجعة القانونية
               </span>
             </div>
@@ -571,7 +570,7 @@ export function LegalReviewEditor({
             type="button"
             onClick={handleRunJudgesAudit}
             disabled={isLoadingJudges}
-            className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-[11px] text-rose-100 hover:bg-rose-500/20 disabled:opacity-50"
+            className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-100 hover:bg-rose-500/20 disabled:opacity-50"
           >
             إعادة المحاولة
           </button>
@@ -603,7 +602,7 @@ export function LegalReviewEditor({
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
           <span>التظليل الذكي للبيانات الحساسة باللون الأصفر:</span>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
           <span className="px-2 py-0.5 rounded bg-amber-300 text-neutral-950 font-bold flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             <span>{detectedMetrics.datesCount} تواريخ</span>
@@ -635,7 +634,7 @@ export function LegalReviewEditor({
                 هيئة المراجعة القانونية الآلية متعددة المسارات
               </h4>
               {isAllApproved && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   اكتملت المراجعة اليدوية
                 </span>
               )}
@@ -648,7 +647,7 @@ export function LegalReviewEditor({
 
         <div className="flex items-center gap-2 self-end sm:self-center">
           {uploadedFileName && (
-            <span className="text-[10px] px-2.5 py-1 rounded-xl bg-neutral-950 border border-neutral-800 text-sky-300 flex items-center gap-1.5 font-medium">
+            <span className="text-xs px-2.5 py-1 rounded-xl bg-neutral-950 border border-neutral-800 text-sky-300 flex items-center gap-1.5 font-medium">
               <Paperclip className="w-3 h-3 text-sky-400" />
               <span className="truncate max-w-[140px]">{uploadedFileName}</span>
             </span>
@@ -696,11 +695,11 @@ export function LegalReviewEditor({
                 <BookOpen className="w-5 h-5 text-amber-400" />
                 <div>
                   <h3 className="text-sm font-bold text-neutral-100">المراجع الرسمية المتحققة</h3>
-                  <p className="mt-0.5 text-[10px] text-neutral-500">بيانات مصدر موثق فقط — لا تُحقن نصوص مواد من الذاكرة.</p>
+                  <p className="mt-0.5 text-xs text-neutral-500">بيانات مصدر موثق فقط — لا تُحقن نصوص مواد من الذاكرة.</p>
                 </div>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-800 text-amber-300">
-                {filteredReferences.length} مراجع
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-neutral-800 text-amber-300">
+                {arabicCount(filteredReferences.length, { one: 'مرجع واحد', two: 'مرجعان', plural: 'مراجع', accusative: 'مرجعاً', singular: 'مرجع' })}
               </span>
             </div>
 
@@ -718,7 +717,7 @@ export function LegalReviewEditor({
             </div>
 
             {referenceMeta && (
-              <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/5 px-2.5 py-2 text-neutral-400">
                   مصادر رسمية: <span className="font-bold text-emerald-300">{referenceMeta.officialSources}</span>
                 </div>
@@ -729,14 +728,14 @@ export function LegalReviewEditor({
             )}
 
             {referenceError && (
-              <div className="rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2.5 text-[10px] font-bold text-rose-200">
+              <div className="rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2.5 text-xs font-bold text-rose-200">
                 {referenceError}
               </div>
             )}
 
             <div className="h-[460px] overflow-y-auto space-y-3 custom-scrollbar pr-1">
               {!referencesLoading && filteredReferences.length === 0 && !referenceError && (
-                <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-center text-[11px] leading-6 text-neutral-500">
+                <div className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-center text-xs leading-6 text-neutral-500">
                   لم يظهر مرجع رسمي مطابق بدرجة كافية. غيّر عبارة البحث، ولا تعتمد سنداً من الذاكرة.
                 </div>
               )}
@@ -749,7 +748,7 @@ export function LegalReviewEditor({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <span className={
-                        'text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 ' +
+                        'text-xs font-bold px-2 py-0.5 rounded border inline-block mb-1 ' +
                         (ref.agentStatus === 'success'
                           ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
                           : ref.agentStatus === 'warning'
@@ -766,7 +765,7 @@ export function LegalReviewEditor({
                     <button
                       type="button"
                       onClick={() => handleInsertReference(ref)}
-                      className="px-2 py-1 rounded-lg bg-neutral-800 hover:bg-amber-500 hover:text-neutral-950 text-neutral-300 text-[10px] font-bold transition-all shrink-0 cursor-pointer"
+                      className="px-2 py-1 rounded-lg bg-neutral-800 hover:bg-amber-500 hover:text-neutral-950 text-neutral-300 text-xs font-bold transition-all shrink-0 cursor-pointer"
                       title="إدراج بيانات المرجع الرسمي دون اقتباس حرفي"
                     >
                       + إدراج المرجع
@@ -774,26 +773,26 @@ export function LegalReviewEditor({
                   </div>
 
                   {ref.issueInstrument && (
-                    <p className="text-[10px] text-neutral-400 leading-relaxed">
+                    <p className="text-xs text-neutral-400 leading-relaxed">
                       <span className="font-bold text-neutral-300">أداة الإصدار:</span> {ref.issueInstrument}
                     </p>
                   )}
 
                   {ref.verificationNote && (
-                    <p className="text-[11px] text-neutral-400 leading-relaxed line-clamp-4">
+                    <p className="text-xs text-neutral-400 leading-relaxed line-clamp-4">
                       {ref.verificationNote}
                     </p>
                   )}
 
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-neutral-900">
-                    <span className="text-[10px] text-neutral-500">
+                    <span className="text-xs text-neutral-500">
                       {ref.source}{ref.coverage ? ' • ' + ref.coverage : ''}
                     </span>
                     <a
                       href={ref.sourceUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-300 hover:text-cyan-200"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-cyan-300 hover:text-cyan-200"
                     >
                       <ExternalLink className="h-3 w-3" />
                       فتح المصدر الرسمي
@@ -805,17 +804,17 @@ export function LegalReviewEditor({
 
             {referenceBlockers.length > 0 && (
               <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
-                <div className="text-[10px] font-bold text-amber-200">قيود تحقق يجب الانتباه لها</div>
+                <div className="text-xs font-bold text-amber-200">قيود تحقق يجب الانتباه لها</div>
                 <div className="mt-1 space-y-1">
                   {referenceBlockers.slice(0, 3).map((blocker, index) => (
-                    <div key={index} className="text-[9px] leading-5 text-amber-100/70">• {blocker}</div>
+                    <div key={index} className="text-xs leading-5 text-amber-100/70">• {blocker}</div>
                   ))}
                 </div>
               </div>
             )}
           </div>
 
-          <div className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 text-[11px] text-neutral-400 flex items-start gap-2">
+          <div className="p-3 rounded-2xl bg-neutral-950 border border-neutral-800 text-xs text-neutral-400 flex items-start gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
             <span>
               تعرض هذه اللوحة بيانات مصادر رسمية مفهرسة. وجود المرجع لا يعني أن نص المادة الحرفي مخزن أو أن الحكم القضائي السابق متحقق؛ افتح المصدر الرسمي قبل اعتماد الاقتباس أو الأثر القانوني.
@@ -833,7 +832,7 @@ export function LegalReviewEditor({
                   {activeTab === 'editor' ? 'محرر النص الحي القابل للتعديل' : 'معاينة التظليل الذكي والتدقيق'}
                 </h3>
               </div>
-              <span className="text-[10px] text-neutral-400 font-mono">
+              <span className="text-xs text-neutral-400 font-mono">
                 {content.length} حرفاً
               </span>
             </div>
@@ -872,7 +871,7 @@ export function LegalReviewEditor({
                 <h4 className="text-xs font-bold text-neutral-100">بوابة الاعتماد والتدقيق المهني (إلزامي):</h4>
               </div>
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-mono ${
+                className={`text-xs font-bold px-2 py-0.5 rounded-full font-mono ${
                   isAllApproved
                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                     : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
@@ -902,7 +901,7 @@ export function LegalReviewEditor({
                 ) : (
                   <Square className="w-4 h-4 text-neutral-500 shrink-0" />
                 )}
-                <span className="text-[11px] font-semibold">1. مراجعة الأسماء والخصوم</span>
+                <span className="text-xs font-semibold">1. مراجعة الأسماء والخصوم</span>
               </label>
 
               <label
@@ -923,7 +922,7 @@ export function LegalReviewEditor({
                 ) : (
                   <Square className="w-4 h-4 text-neutral-500 shrink-0" />
                 )}
-                <span className="text-[11px] font-semibold">2. مراجعة التواريخ والمهل</span>
+                <span className="text-xs font-semibold">2. مراجعة التواريخ والمهل</span>
               </label>
 
               <label
@@ -944,7 +943,7 @@ export function LegalReviewEditor({
                 ) : (
                   <Square className="w-4 h-4 text-neutral-500 shrink-0" />
                 )}
-                <span className="text-[11px] font-semibold">3. مراجعة ومطابقة الطلبات</span>
+                <span className="text-xs font-semibold">3. مراجعة ومطابقة الطلبات</span>
               </label>
             </div>
 
@@ -957,7 +956,7 @@ export function LegalReviewEditor({
                     <span className="font-bold text-amber-300 block">
                       اكتمل اعتماد التظليل الذكي ومطابقة البيانات الجوهرية!
                     </span>
-                    <span className="text-neutral-300 text-[11px]">
+                    <span className="text-neutral-300 text-xs">
                       شغّل هيئة المراجعة الآلية لفحص الاعتراض والدعوى والمرفقات، ثم راجع المصادر الرسمية قبل التصدير.
                     </span>
                   </div>
@@ -982,7 +981,7 @@ export function LegalReviewEditor({
 
             {/* Export Buttons Gated */}
             <div className="pt-2 border-t border-neutral-850 flex flex-wrap items-center justify-between gap-2">
-              <div className="text-[11px] text-neutral-400">
+              <div className="text-xs text-neutral-400">
                 {!isAllApproved ? (
                   <span>أكمل المراجعة اليدوية أولاً.</span>
                 ) : !judgesSourceAudit ? (
@@ -1043,7 +1042,7 @@ export function LegalReviewEditor({
             <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-3 sm:px-6">
               <div>
                 <h3 className="text-sm font-bold text-neutral-100">معاينة نهائية قبل الطباعة</h3>
-                <p className="mt-1 text-[11px] text-neutral-400">يمكنك الرجوع للمحرر وإضافة أي تعديل قبل إخراج اللائحة.</p>
+                <p className="mt-1 text-xs text-neutral-400">يمكنك الرجوع للمحرر وإضافة أي تعديل قبل إخراج اللائحة.</p>
               </div>
               <button
                 type="button"
@@ -1060,7 +1059,7 @@ export function LegalReviewEditor({
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-800 bg-neutral-950 px-4 py-3 sm:px-6">
-              <span className="text-[11px] text-neutral-400">هذه المعاينة لا ترسل اللائحة إلى أي جهة.</span>
+              <span className="text-xs text-neutral-400">هذه المعاينة لا ترسل اللائحة إلى أي جهة.</span>
               <button
                 type="button"
                 onClick={handleConfirmPrint}

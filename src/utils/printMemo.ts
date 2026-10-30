@@ -108,7 +108,7 @@ export function printLegalMemo(
         <div class="kingdom">المملكة العربية السعودية</div>
         <h1>أصول القضاء - منصة القضايا والدفوعات</h1>
         <div class="subtitle">محرر قضائي رسمي للمراجعة والطباعة</div>
-        <div class="date">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-SA')}</div>
+        <div class="date">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-SA-u-nu-latn')}</div>
       </div>
       <div class="content">${escapedContent}</div>
       <div class="footer">

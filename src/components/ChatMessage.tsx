@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Markdown from 'react-markdown';
-import { Copy, Check, Scale, User, ShieldCheck, FileText, Image as ImageIcon, ExternalLink, X, Gavel, Printer, ChevronDown, ShieldAlert, BookOpen, Fingerprint } from 'lucide-react';
-import { Message, Attachment, JudgeCourtCategory } from '../types';
+import { Copy, Check, Scale, User, ShieldCheck, FileText, X, Gavel, Printer, ChevronDown, ShieldAlert, BookOpen, Fingerprint } from 'lucide-react';
+import { Message, JudgeCourtCategory } from '../types';
 import { CassationJudgesPanel } from './CassationJudgesPanel';
 import { printLegalMemo } from '../utils/printMemo';
 
@@ -96,13 +96,13 @@ export function ChatMessage({
               </span>
 
               {!isUser && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   <ShieldCheck className="w-3 h-3" />
                   QADA • مساعد قانوني آلي
                 </span>
               )}
 
-              <span className="text-[11px] text-neutral-500">
+              <span className="text-xs text-neutral-500">
                 {new Date(message.timestamp).toLocaleTimeString('ar-SA', {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -112,7 +112,7 @@ export function ChatMessage({
               {/* National ID Tag for Transaction Owner */}
               {activeNationalId && (
                 <span
-                  className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold"
+                  className="inline-flex items-center gap-1 text-xs font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold"
                   title="رقم قيد المعاملة للشخص الممشى له"
                 >
                   <Fingerprint className="w-3 h-3 text-amber-400" />
@@ -122,14 +122,14 @@ export function ChatMessage({
 
               {/* Character limit verification indicator */}
               <span
-                className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
+                className={`text-xs font-mono px-1.5 py-0.5 rounded-md ${
                   charCount > 3500
                     ? 'text-rose-400 bg-rose-950/40 border border-rose-800/50'
                     : 'text-neutral-500 bg-neutral-900 border border-neutral-800'
                 }`}
                 title="الحد الأقصى للرسالة لضمان الاستقرار النظامي (3500 حرف)"
               >
-                {charCount.toLocaleString('ar-SA')} / ٣,٥٠٠ حرف
+                {charCount.toLocaleString('ar-SA-u-nu-latn')} / 3,500 حرف
               </span>
             </div>
 
@@ -147,7 +147,7 @@ export function ChatMessage({
                     >
                       <Gavel className={`w-3.5 h-3.5 text-amber-400 ${isAuditing ? 'animate-spin' : ''}`} />
                       <span className="hidden sm:inline">
-                        {message.cassationAudit ? 'إعادة المراجعة الآلية' : 'مراجعة آلية (٦)'}
+                        {message.cassationAudit ? 'إعادة المراجعة الآلية' : 'مراجعة آلية (6)'}
                       </span>
                     </button>
                     <button
@@ -163,7 +163,7 @@ export function ChatMessage({
 
                   {showCourtDropdown && (
                     <div className="absolute left-0 bottom-full mb-1 w-52 bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl py-1.5 z-50 text-right animate-in fade-in slide-in-from-bottom-2">
-                      <div className="px-3 py-1 text-[10px] font-bold text-neutral-400 border-b border-neutral-800">
+                      <div className="px-3 py-1 text-xs font-bold text-neutral-400 border-b border-neutral-800">
                         اختر اختصاص المحكمة للفحص:
                       </div>
                       <button
@@ -173,7 +173,7 @@ export function ChatMessage({
                         }}
                         className="w-full px-3 py-1.5 text-xs text-right text-amber-300 hover:bg-amber-500/15 flex items-center justify-between transition-colors cursor-pointer"
                       >
-                        <span className="font-semibold">جميع المراجعين الآليين (٦)</span>
+                        <span className="font-semibold">جميع المراجعين الآليين (6)</span>
                         <Scale className="w-3.5 h-3.5 text-amber-400" />
                       </button>
                       <button
@@ -185,7 +185,7 @@ export function ChatMessage({
                       >
                         <div>
                           <p className="font-semibold">المحكمة الإدارية (ديوان المظالم)</p>
-                          <span className="text-[10px] text-neutral-400">مواعيد، قرارات، تظلمات</span>
+                          <span className="text-xs text-neutral-400">مواعيد، قرارات، تظلمات</span>
                         </div>
                         <Scale className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                       </button>
@@ -198,7 +198,7 @@ export function ChatMessage({
                       >
                         <div>
                           <p className="font-semibold">المحكمة الجزائية</p>
-                          <span className="text-[10px] text-neutral-400">بطلان قبض وتفتيش وشبهات</span>
+                          <span className="text-xs text-neutral-400">بطلان قبض وتفتيش وشبهات</span>
                         </div>
                         <ShieldAlert className="w-3.5 h-3.5 text-rose-400 shrink-0" />
                       </button>
@@ -211,7 +211,7 @@ export function ChatMessage({
                       >
                         <div>
                           <p className="font-semibold">المحكمة العامة</p>
-                          <span className="text-[10px] text-neutral-400">مسؤولية تقصيرية وتعويض</span>
+                          <span className="text-xs text-neutral-400">مسؤولية تقصيرية وتعويض</span>
                         </div>
                         <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       </button>
@@ -229,12 +229,12 @@ export function ChatMessage({
                 {copied ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-emerald-400 text-[11px]">تم النسخ</span>
+                    <span className="text-emerald-400 text-xs">تم النسخ</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span className="text-[11px]">نسخ</span>
+                    <span className="text-xs">نسخ</span>
                   </>
                 )}
               </button>
@@ -253,7 +253,7 @@ export function ChatMessage({
                 className="opacity-80 group-hover:opacity-100 focus:opacity-100 transition-all px-2 py-1 text-neutral-400 hover:text-amber-300 rounded-lg hover:bg-neutral-800 flex items-center gap-1.5 text-xs bg-neutral-900/60 border border-neutral-800 cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-[11px]">طباعة المذكرة</span>
+                <span className="text-xs">طباعة المذكرة</span>
               </button>
             </div>
           </div>
@@ -280,7 +280,7 @@ export function ChatMessage({
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent flex items-end p-2 opacity-90">
-                        <span className="text-[10px] text-neutral-200 truncate font-mono">
+                        <span className="text-xs text-neutral-200 truncate font-mono">
                           {att.name}
                         </span>
                       </div>
@@ -298,7 +298,7 @@ export function ChatMessage({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold truncate text-neutral-200">{att.name}</p>
-                      <p className="text-[10px] text-neutral-400 font-mono">
+                      <p className="text-xs text-neutral-400 font-mono">
                         {formatFileSize(att.size)} • {att.type.includes('pdf') ? 'مستند PDF' : 'ملف نظامي'}
                       </p>
                     </div>
@@ -332,7 +332,7 @@ export function ChatMessage({
 
           {/* Mandatory Transaction Binding Notice for Every Reply */}
           {!isUser && activeNationalId && (
-            <div className="mt-3.5 pt-2.5 border-t border-neutral-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-400">
+            <div className="mt-3.5 pt-2.5 border-t border-neutral-800/80 flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-400">
               <div className="flex items-center gap-1.5 text-amber-300 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span>ملف المعاملة مرتبط بالسجل المشفر:</span>
@@ -341,7 +341,7 @@ export function ChatMessage({
                 </span>
                 {activePersonName && <span className="text-neutral-300">({activePersonName})</span>}
               </div>
-              <span className="text-[10px] text-neutral-500 font-mono">
+              <span className="text-xs text-neutral-500 font-mono">
                 QADA • حفظ خاص
               </span>
             </div>
