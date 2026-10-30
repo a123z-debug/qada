@@ -3,9 +3,9 @@ import type { OfficialReferenceSystem } from '../officialReferenceIndex';
 export const CRIMINAL_PROCEDURE_LAW_1435: OfficialReferenceSystem = {
   id: 'criminal_procedure_law_1435',
   name: 'نظام الإجراءات الجزائية',
-  status: 'verified',
+  status: 'needs-correction',
   royalDecree: 'م/2 بتاريخ 22/01/1435هـ',
-  cabinetResolution: '12 بتاريخ 08/01/1435هـ',
+  cabinetResolution: '12 — صفحة المصدر الرسمي تعرض تاريخين مختلفين للقرار ويحتاج التاريخ مطابقة أصل الوثيقة',
   issueDateHijri: '1435-01-22',
   publicationDateHijri: '1435-02-03',
   sources: [

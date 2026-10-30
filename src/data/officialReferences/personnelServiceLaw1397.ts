@@ -15,9 +15,9 @@ import type { OfficialReferenceSystem } from '../officialReferenceIndex';
 export const PERSONNEL_SERVICE_LAW_1397: OfficialReferenceSystem = {
   id: 'personnel_service_law_1397',
   name: 'نظام خدمة الأفراد',
-  status: 'verified',
+  status: 'needs-correction',
   royalDecree: 'م/9 بتاريخ 24/03/1397هـ',
-  cabinetResolution: '324 بتاريخ 16/03/1397هـ',
+  cabinetResolution: '324 — تاريخ القرار يختلف بين بيانات الأداة ومتن المرسوم في المصدر الرسمي ويحتاج مطابقة أصل القرار',
   issueDateHijri: '1397-03-24',
   effectiveRule: 'يبدأ العمل بالنظام من غرة ربيع الثاني سنة 1397هـ وفق المرسوم الملكي رقم (م/9).',
   sources: [

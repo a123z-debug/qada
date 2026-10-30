@@ -7,7 +7,7 @@ import type { OfficialReferenceSystem } from '../officialReferenceIndex';
  */
 export const EXECUTION_LAW_1447: OfficialReferenceSystem = {
   id: 'execution_law_1447',
-  name: 'نظام التنفيذ',
+  name: 'نظام التنفيذ - إصدار 1447هـ',
   status: 'verified',
   royalDecree: 'م/237 بتاريخ 03/11/1447هـ',
   cabinetResolution: '746 بتاريخ 26/10/1447هـ',
