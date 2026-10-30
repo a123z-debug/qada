@@ -20,3 +20,8 @@ export function arabicCount(count: number, forms: ArabicNounForms): string {
   if (lastTwo >= 11) return `${n} ${forms.accusative}`;
   return `${n} ${forms.singular}`;
 }
+
+// The counted noun alone, for layouts that render the number separately.
+export function arabicCountNoun(count: number, forms: ArabicNounForms): string {
+  return arabicCount(count, forms).replace(/^\d+\s/, '');
+}

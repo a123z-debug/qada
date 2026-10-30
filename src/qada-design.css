@@ -85,17 +85,6 @@ p {
   color: #fff !important;
 }
 
-/* ---------- Public landing ---------- */
-
-/* The landing header is themed dark green; its brand name inherited dark ink. */
-.qada-saudi-landing > header [aria-label="الرئيسية"] .text-right > span:first-child {
-  color: var(--qd-paper) !important;
-}
-
-.qada-saudi-landing > header [aria-label="الرئيسية"] .text-right > span:last-child {
-  color: var(--qd-brass-300) !important;
-}
-
 /* ---------- Light user shell: one brand accent system ---------- */
 
 .user-shell {

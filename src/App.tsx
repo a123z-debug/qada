@@ -4,11 +4,12 @@
  */
 
 import React, { Suspense, useEffect, useState } from 'react';
-import { Menu, Scale, ShieldCheck, LogOut, ArrowRight, FileText, Library, Bot, FileCheck, ArrowLeft, ScanSearch, Home, FolderOpen } from 'lucide-react';
+import { Menu, Scale, ShieldCheck, LogOut, ArrowRight, Library, Bot, ScanSearch, Home, FolderOpen, Search, ChevronLeft, KeyRound, Repeat, Network, Users, ScrollText, ShieldAlert, Gavel, FileUp } from 'lucide-react';
 import { UserSession, JudgmentRecord, Attachment } from './types';
 import { LoginScreen } from './components/LoginScreen';
-import { Sidebar, CourtJurisdiction } from './components/layout/Sidebar';
-import { AgentFlowDiagram } from './components/AgentFlowDiagram';
+import { Sidebar, CourtJurisdiction, COURT_CATEGORIES } from './components/layout/Sidebar';
+import { CommandPalette, type CommandAction } from './components/CommandPalette';
+import { LandingPage } from './components/landing/LandingPage';
 const WelcomeScreen = React.lazy(() => import('./components/workspaces/WelcomeScreen').then((module) => ({ default: module.WelcomeScreen })));
 const AdministrativeWorkspace = React.lazy(() => import('./components/workspaces/AdministrativeWorkspace').then((module) => ({ default: module.AdministrativeWorkspace })));
 const GeneralWorkspace = React.lazy(() => import('./components/workspaces/GeneralWorkspace').then((module) => ({ default: module.GeneralWorkspace })));
@@ -114,202 +115,6 @@ function SystemAgentBar() {
   );
 }
 
-// ==========================================
-// 3. مكون الصفحة الترحيبية (Landing Page - OS Style)
-// ==========================================
-function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => void }) {
-  const quickActions = [
-    { icon: Bot, title: 'عندي مشكلة قانونية', text: 'احكِ اللي صار بطريقتك، وQADA يرتب لك الخطوة التالية.', action: { kind: 'assistant', prefill: 'عندي مشكلة قانونية وأبغى أعرف وش أسوي. اسألني فقط عن المعلومات الناقصة وابدأ من الوقائع.' } as LaunchIntent },
-    { icon: FileCheck, title: 'عندي حكم أو قرار', text: 'ارفعه أو اشرح محتواه، واعرف هل عندك اعتراض وما الذي يلزمك.', action: { kind: 'dossier' } as LaunchIntent },
-    { icon: FileText, title: 'أبغى دعوى أو مذكرة', text: 'QADA يجمع منك البيانات ثم يبني لك مسودة قابلة للمراجعة.', action: { kind: 'assistant', prefill: 'أبغى أجهز دعوى أو مذكرة. اجمع مني البيانات خطوة بخطوة وحدد لي المطلوب والمستندات قبل الصياغة.' } as LaunchIntent },
-    { icon: Library, title: 'أبي أعرف حقي', text: 'ابحث في الأنظمة والمراجع الرسمية واشرحها بكلام واضح.', action: { kind: 'repository' } as LaunchIntent },
-  ];
-
-  return (
-    <div id="home" className="qada-saudi-landing min-h-[100dvh] bg-[#f7f8fa] text-slate-950" dir="rtl">
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <button
-            type="button"
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-2.5"
-            aria-label="الرئيسية"
-          >
-            <span className="qada-brand-emblem flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-white">
-              <Scale className="h-5 w-5" strokeWidth={1.8} />
-            </span>
-            <span className="text-right">
-              <span className="block text-sm font-black leading-4">أصول القضاء</span>
-              <span className="block text-xs font-bold text-slate-400">QADA</span>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onEnterApp({ kind: 'dashboard' })}
-            className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-xs font-black text-white transition hover:bg-slate-800"
-          >
-            دخول
-            <ArrowLeft className="h-4 w-4" />
-          </button>
-        </div>
-      </header>
-
-      <main>
-        <section className="qada-riyadh-hero relative overflow-hidden">
-          <div className="qada-riyadh-skyline" aria-hidden="true">
-            <div className="qada-riyadh-tower">
-              <span className="qada-riyadh-tower-cutout" />
-            </div>
-            <span className="qada-riyadh-city qada-riyadh-city-a" />
-            <span className="qada-riyadh-city qada-riyadh-city-b" />
-            <span className="qada-riyadh-city qada-riyadh-city-c" />
-            <span className="qada-riyadh-palm qada-riyadh-palm-a" />
-            <span className="qada-riyadh-palm qada-riyadh-palm-b" />
-            <span className="qada-abstract-green-wave qada-wave-one" />
-            <span className="qada-abstract-green-wave qada-wave-two" />
-          </div>
-
-          <div className="relative z-10 mx-auto grid min-h-[560px] max-w-6xl items-end gap-8 px-4 pb-12 pt-24 sm:px-6 sm:pb-16 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:pt-20">
-            <div className="max-w-2xl text-right">
-              <div className="qada-hero-badge mb-5 inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-black">
-                <Scale className="h-4 w-4" strokeWidth={1.8} />
-                QADA • مساعدك القانوني الذكي
-              </div>
-
-              <h1 className="qada-riyadh-title text-4xl font-black leading-[1.12] tracking-tight sm:text-6xl lg:text-7xl">
-                عندك قضية أو مشكلة؟
-                <span className="block">احكِها مثل ما صارت.</span>
-              </h1>
-
-              <p className="qada-riyadh-copy mt-5 max-w-xl text-sm leading-7 sm:text-base">
-                ما تحتاج تعرف اسم المحكمة أو رقم المادة. اكتب اللي صار، وارفع أوراقك إن وجدت، وQADA يرتب الوقائع ويحدد لك الخيارات والخطوة التالية.
-              </p>
-
-              <div className="mt-7 flex max-w-md flex-col gap-2.5 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => onEnterApp({ kind: 'dashboard' })}
-                  className="qada-riyadh-primary inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-black transition active:scale-[0.99]"
-                >
-                  ابدأ قضيتي
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onEnterApp({ kind: 'assistant', prefill: 'عندي حكم أو قرار وأبغى أعرف وش أقدر أسوي عليه. ابدأ بالسؤال عن نوع القرار وتاريخه وما الذي أريده.' })}
-                  className="qada-riyadh-secondary inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-black transition"
-                >
-                  <Bot className="h-4 w-4" />
-                  عندي حكم أو قرار
-                </button>
-              </div>
-            </div>
-
-            <div className="qada-hero-signature hidden lg:block">
-              <div className="qada-hero-signature-mark">
-                <ShieldCheck className="h-5 w-5" strokeWidth={1.7} />
-              </div>
-              <div>
-                <div className="text-xs font-black">ابدأ بدون مصطلحات قانونية</div>
-                <div className="mt-1 text-xs">قل لنا وش صار • والباقي نرتبه معك</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="knowledge" className="mx-auto max-w-5xl px-4 pb-12 sm:px-6">
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            {quickActions.map(({ icon: Icon, title, text: description, action }) => (
-              <button
-                key={title}
-                type="button"
-                onClick={() => onEnterApp(action)}
-                className="group rounded-2xl border border-slate-200 bg-white p-4 text-right shadow-[0_6px_24px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_30px_rgba(15,23,42,0.07)]"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition group-hover:bg-slate-950 group-hover:text-white">
-                  <Icon className="h-5 w-5" strokeWidth={1.8} />
-                </span>
-                <h2 className="mt-4 text-sm font-black text-slate-950">{title}</h2>
-                <p className="mt-1.5 text-xs leading-5 text-slate-500">{description}</p>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section id="about" className="border-y border-slate-200 bg-white">
-          <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
-            <div>
-              <span className="text-xs font-black text-slate-400">كيف تمشي معك QADA؟</span>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                من المشكلة إلى خطوة واضحة.
-              </h2>
-              <p className="mt-3 text-sm leading-7 text-slate-500">
-                أنت تعطينا القصة والمستندات، والمنصة ترتبها وتسألك فقط عن الناقص ثم توضح لك ماذا تفعل بعد ذلك.
-              </p>
-            </div>
-
-            <div className="grid gap-2.5 sm:grid-cols-3">
-              {[
-                ['01', 'احكِ اللي صار', 'اكتب القصة بطريقتك، حتى لو كانت غير مرتبة.'],
-                ['02', 'ارفع أوراقك', 'حكم، قرار، عقد، تحويل أو أي مستند عندك.'],
-                ['03', 'خذ خطتك', 'نعرض لك النواقص والخطوة التالية أو نبدأ المسودة.'],
-              ].map(([number, title, text]) => (
-                <div key={number} className="rounded-2xl bg-[#f7f8fa] p-4">
-                  <div className="text-xs font-black text-slate-400">{number}</div>
-                  <div className="mt-5 text-sm font-black text-slate-950">{title}</div>
-                  <div className="mt-1 text-xs leading-5 text-slate-500">{text}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-5xl px-4 pb-8 sm:px-6">
-          <AgentFlowDiagram />
-        </section>
-
-        <section className="mx-auto max-w-5xl px-4 pb-4 sm:px-6">
-          <div className="rounded-3xl border border-emerald-900/10 bg-white p-5 shadow-[0_14px_44px_rgba(0,70,45,.06)] sm:p-7">
-            <div className="mb-5">
-              <div className="text-xs font-black text-emerald-700">وش تحصل بعد ما تبدأ؟</div>
-              <h2 className="mt-1 text-xl font-black text-slate-950 sm:text-2xl">النتيجة تكون واضحة، مو كلام عام.</h2>
-            </div>
-            <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                ['فهم وضعك', 'ملخص مرتب للوقائع والمشكلة القانونية.'],
-                ['وش ناقصك', 'المستندات أو المعلومات التي تحتاج تكملها.'],
-                ['وش تسوي بعدين', 'المسار والإجراء التالي بلغة واضحة.'],
-                ['المخرج المطلوب', 'دعوى، اعتراض، مذكرة أو جواب بحسب حالتك.'],
-              ].map(([title, text]) => (
-                <div key={title} className="rounded-2xl bg-[#f7faf8] p-4">
-                  <div className="text-sm font-black text-slate-950">{title}</div>
-                  <div className="mt-1.5 text-xs leading-5 text-slate-500">{text}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="contact" className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-          <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-xs leading-6 text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-2.5">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
-              <p>QADA يساعدك في فهم القضية وترتيبها والبحث والصياغة. قبل أي تقديم رسمي، راجع المخرج النهائي والمستندات المرتبطة به.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => onEnterApp({ kind: 'dashboard' })}
-              className="shrink-0 font-black text-slate-950"
-            >
-              الدخول للمنصة
-            </button>
-          </div>
-        </section>
-      </main>
-    </div>
-  );
-}
 
 // ==========================================
 // 4. التطبيق الرئيسي (Main App Component)
@@ -339,6 +144,7 @@ export default function App() {
   const [isAdminAuditOpen, setIsAdminAuditOpen] = useState(false);
   const [isAdminSentinelOpen, setIsAdminSentinelOpen] = useState(false);
   const [isAccountSecurityOpen, setIsAccountSecurityOpen] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   const [judgmentRecords, setJudgmentRecords] = useState<JudgmentRecord[]>([]);
   const [caseStoreError, setCaseStoreError] = useState('');
@@ -605,6 +411,19 @@ export default function App() {
       });
   };
 
+  // Ctrl/⌘+K opens the command palette. KeyK keeps it working on the Arabic layout.
+  useEffect(() => {
+    if (!session) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && (event.code === 'KeyK' || event.key.toLowerCase() === 'k')) {
+        event.preventDefault();
+        setIsPaletteOpen((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [session]);
+
   if (showLandingPage) {
     return <LandingPage onEnterApp={handleEnterApp} />;
   }
@@ -634,6 +453,63 @@ export default function App() {
   const userMode = session.role === 'user';
   const simpleUserMode = userMode && interfaceMode === 'simple';
 
+  type AdminView = 'map' | 'analysis' | 'users' | 'audit' | 'sentinel';
+  const openAdminView = (view: AdminView | null) => {
+    setActiveCourt(null);
+    setActiveService(null);
+    setIsAdminMapOpen(view === 'map');
+    setIsAdminAnalysisOpen(view === 'analysis');
+    setIsAdminUsersOpen(view === 'users');
+    setIsAdminAuditOpen(view === 'audit');
+    setIsAdminSentinelOpen(view === 'sentinel');
+  };
+  const openCourt = (court: CourtJurisdiction, service: string | null = null) => {
+    openAdminView(null);
+    setActiveCourt(court);
+    setActiveService(service);
+  };
+  const activeCourtConfig = COURT_CATEGORIES.find((category) => category.id === activeCourt);
+  const activeServiceConfig = activeCourtConfig?.services.find((item) => item.id === activeService);
+
+  const commandActions: CommandAction[] = [
+    { id: 'home', group: 'التنقل', label: 'الرئيسية', icon: Home, run: () => openAdminView(session.role === 'admin' ? 'map' : null) },
+    ...(!simpleUserMode
+      ? [
+          ...COURT_CATEGORIES.map((category) => ({
+            id: `court-${category.id}`, group: 'المحاكم', label: category.title, hint: category.subTitle, icon: category.icon, run: () => openCourt(category.id),
+          })),
+          ...COURT_CATEGORIES.flatMap((category) => category.services.map((item) => ({
+            id: `service-${item.id}`,
+            group: 'الخدمات',
+            label: item.label,
+            hint: `${category.title} — ${item.description}`,
+            icon: item.icon,
+            run: () => openCourt(category.id, item.id),
+          }))),
+        ]
+      : []),
+    { id: 'library', group: 'الأدوات', label: 'الأنظمة والمراجع', hint: 'الفهرس الرسمي واللوائح والتعديلات', keywords: 'مكتبة نظام مادة', icon: Library, run: () => setIsReferencesOpen(true) },
+    { id: 'assistant', group: 'الأدوات', label: 'اسأل QADA', hint: 'المستشار الذكي', keywords: 'محادثة مساعد', icon: Bot, run: () => requestAssistant('') },
+    { id: 'search', group: 'الأدوات', label: 'ابحث عن جواب قانوني', hint: 'بحث في الأنظمة مع المصدر', icon: Search, run: () => requestAssistant('ابحث لي في الأنظمة والمراجع ذات الصلة بسؤالي، واذكر السند ومصدره الرسمي.') },
+    { id: 'dossier', group: 'الأدوات', label: 'قضيتي', hint: 'ملف القضية والأحكام', keywords: 'ملف تقارير', icon: FolderOpen, run: () => setIsDossierOpen(true) },
+    { id: 'repository', group: 'الأدوات', label: 'مستودع الأحكام', hint: 'إضافة حكم أو قرار وتحليله', icon: Gavel, run: () => setIsRepositoryOpen(true) },
+    { id: 'upload', group: 'الأدوات', label: 'رفع مستند PDF', icon: FileUp, run: () => setIsPdfModalOpen(true) },
+    ...(userMode
+      ? [{ id: 'mode', group: 'الحساب', label: simpleUserMode ? 'التبديل إلى الوضع المتقدم' : 'التبديل إلى الوضع البسيط', icon: Repeat, run: () => handleInterfaceModeChange(simpleUserMode ? 'professional' : 'simple') }]
+      : []),
+    { id: 'security', group: 'الحساب', label: 'أمان الحساب', icon: KeyRound, run: () => setIsAccountSecurityOpen(true) },
+    ...(session.role === 'admin'
+      ? [
+          { id: 'admin-map', group: 'الإدارة', label: 'خريطة الوكلاء وغرفة العمليات', icon: Network, run: () => openAdminView('map') },
+          { id: 'admin-analysis', group: 'الإدارة', label: 'غرفة تحليل الأحكام والمذكرات', icon: ScrollText, run: () => openAdminView('analysis') },
+          { id: 'admin-users', group: 'الإدارة', label: 'إدارة المستخدمين', icon: Users, run: () => openAdminView('users') },
+          { id: 'admin-audit', group: 'الإدارة', label: 'سجل التدقيق', icon: ShieldCheck, run: () => openAdminView('audit') },
+          { id: 'admin-sentinel', group: 'الإدارة', label: 'المراقبة الحية', hint: 'QADA Sentinel', icon: ShieldAlert, run: () => openAdminView('sentinel') },
+        ]
+      : []),
+    { id: 'logout', group: 'الحساب', label: 'تسجيل الخروج', icon: LogOut, run: handleLogout },
+  ];
+
   // 3. مساحة العمل الأساسية المشفرة
   return (
     <Suspense fallback={<DeferredSurfaceFallback />}>
@@ -647,6 +523,7 @@ export default function App() {
       >
       {/* طبقة الأمان (العلامة المائية) */}
       <SecurityWatermark user={session} />
+      <CommandPalette open={isPaletteOpen} onClose={() => setIsPaletteOpen(false)} actions={commandActions} />
 
       {!simpleUserMode && (
       <Sidebar
@@ -675,50 +552,11 @@ export default function App() {
         onOpenSearch={() => requestAssistant('ابحث لي في الأنظمة والمراجع ذات الصلة بسؤالي، واذكر السند ومصدره بوضوح: ')}
         onOpenAssistant={() => requestAssistant('')}
         onOpenReports={() => setIsDossierOpen(true)}
-        onOpenAdminMap={session.role === 'admin' ? () => {
-          setActiveCourt(null);
-          setActiveService(null);
-          setIsAdminAnalysisOpen(false);
-          setIsAdminUsersOpen(false);
-          setIsAdminAuditOpen(false);
-          setIsAdminSentinelOpen(false);
-          setIsAdminMapOpen(true);
-        } : undefined}
-        onOpenAdminAnalysis={session.role === 'admin' ? () => {
-          setActiveCourt(null);
-          setActiveService(null);
-          setIsAdminMapOpen(false);
-          setIsAdminUsersOpen(false);
-          setIsAdminAuditOpen(false);
-          setIsAdminSentinelOpen(false);
-          setIsAdminAnalysisOpen(true);
-        } : undefined}
-        onOpenAdminUsers={session.role === 'admin' ? () => {
-          setActiveCourt(null);
-          setActiveService(null);
-          setIsAdminMapOpen(false);
-          setIsAdminAnalysisOpen(false);
-          setIsAdminSentinelOpen(false);
-          setIsAdminUsersOpen(true);
-        } : undefined}
-        onOpenAdminAudit={session.role === 'admin' ? () => {
-          setActiveCourt(null);
-          setActiveService(null);
-          setIsAdminMapOpen(false);
-          setIsAdminAnalysisOpen(false);
-          setIsAdminUsersOpen(false);
-          setIsAdminSentinelOpen(false);
-          setIsAdminAuditOpen(true);
-        } : undefined}
-        onOpenAdminSentinel={session.role === 'admin' ? () => {
-          setActiveCourt(null);
-          setActiveService(null);
-          setIsAdminMapOpen(false);
-          setIsAdminAnalysisOpen(false);
-          setIsAdminUsersOpen(false);
-          setIsAdminAuditOpen(false);
-          setIsAdminSentinelOpen(true);
-        } : undefined}
+        onOpenAdminMap={session.role === 'admin' ? () => openAdminView('map') : undefined}
+        onOpenAdminAnalysis={session.role === 'admin' ? () => openAdminView('analysis') : undefined}
+        onOpenAdminUsers={session.role === 'admin' ? () => openAdminView('users') : undefined}
+        onOpenAdminAudit={session.role === 'admin' ? () => openAdminView('audit') : undefined}
+        onOpenAdminSentinel={session.role === 'admin' ? () => openAdminView('sentinel') : undefined}
         onOpenAccountSecurity={session.loginMethod === 'test_open' ? undefined : () => setIsAccountSecurityOpen(true)}
       />
       )}
@@ -770,6 +608,17 @@ export default function App() {
             </div>
           )}
 
+          <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setIsPaletteOpen(true)}
+            className={`min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl transition-colors ${
+              userMode ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-300 hover:text-white'
+            }`}
+            aria-label="البحث والانتقال السريع"
+          >
+            <Search className="w-4 h-4" />
+          </button>
           <button
             onClick={handleLogout}
             className={`min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl transition-colors ${
@@ -781,6 +630,7 @@ export default function App() {
           >
             <LogOut className="w-4 h-4" />
           </button>
+          </div>
         </header>
 
         {/* مساحة العمل */}
@@ -789,13 +639,36 @@ export default function App() {
             ? 'qada-user-main bg-[#f7f8fa] p-3 pb-24 sm:p-5 sm:pb-6 lg:p-8'
             : 'p-3 sm:p-6 lg:p-8 pb-24 sm:pb-6 lg:pb-8'
         }`}>
+          <div className="qada-topbar">
+            <nav className="qada-crumbs" aria-label="مسار التنقل">
+              <button type="button" onClick={() => openAdminView(session.role === 'admin' ? 'map' : null)}>الرئيسية</button>
+              {activeCourtConfig && (
+                <>
+                  <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                  <button type="button" onClick={() => openCourt(activeCourtConfig.id)} aria-current={activeServiceConfig ? undefined : 'page'}>{activeCourtConfig.title}</button>
+                </>
+              )}
+              {activeServiceConfig && (
+                <>
+                  <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                  <span aria-current="page">{activeServiceConfig.label}</span>
+                </>
+              )}
+            </nav>
+            <button type="button" className="qada-cmdk" onClick={() => setIsPaletteOpen(true)} aria-label="البحث والانتقال السريع" aria-keyshortcuts="Control+K Meta+K">
+              <Search className="h-4 w-4" aria-hidden="true" />
+              <span>ابحث أو انتقل إلى...</span>
+              <kbd>Ctrl K</kbd>
+            </button>
+          </div>
+
           {caseStoreError && (
             <div className="mb-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-200">
               {userMode ? 'تعذر تحميل قضاياك مؤقتاً. جرّب تحديث الصفحة بعد قليل.' : `تعذر الوصول إلى مخزن القضايا: ${caseStoreError}`}
             </div>
           )}
           {activeCourt && (
-            <div className="mb-4 flex justify-end py-1">
+            <div className="mb-4 flex justify-end py-1 lg:hidden">
               <button
                 type="button"
                 onClick={() => {
