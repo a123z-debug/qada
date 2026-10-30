@@ -201,7 +201,8 @@ async function startServer() {
           res.setHeader('Expires', '0');
           return;
         }
-        if (/\/assets\/.*\.[a-f0-9]{8,}\./i.test(filePath)) {
+        // Vite emits `name-<8 char base64url hash>.ext`, not hex.
+        if (/[\\/]assets[\\/].+-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/i.test(filePath)) {
           res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         }
       },
