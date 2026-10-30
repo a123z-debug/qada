@@ -1,0 +1,598 @@
+/* ==========================================================================
+   QADA Glass — frosted surfaces, ambient motion and the agent-flow diagram.
+   Imported after qada-design.css. Blur is reserved for surfaces that float
+   over scrolling content (sidebar, docks, modals, chat, hero); ordinary cards
+   are translucent only, because the ambient background is already soft.
+   All motion stops under prefers-reduced-motion (see qada-design.css).
+   ========================================================================== */
+
+:root {
+  --qg-glass-light: rgba(255, 255, 255, .6);
+  --qg-glass-light-strong: rgba(251, 250, 245, .86);
+  --qg-glass-edge: rgba(255, 255, 255, .78);
+  --qg-glass-shadow: 0 14px 44px rgba(8, 19, 15, .08), inset 0 1px rgba(255, 255, 255, .9);
+  --qg-glass-dark: rgba(7, 32, 23, .78);
+  --qg-glass-dark-edge: rgba(231, 207, 154, .16);
+  --qg-ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* ---------- Ambient background ---------- */
+
+.user-shell,
+.qada-saudi-landing {
+  isolation: isolate;
+}
+
+.user-shell::after,
+.qada-saudi-landing::after {
+  content: '';
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(36% 30% at 84% 10%, rgba(0, 108, 53, .22), transparent 70%),
+    radial-gradient(32% 28% at 10% 80%, rgba(199, 161, 90, .26), transparent 70%),
+    radial-gradient(26% 24% at 46% 44%, rgba(40, 100, 131, .1), transparent 70%),
+    radial-gradient(20% 18% at 70% 70%, rgba(0, 108, 53, .1), transparent 70%);
+  animation: qg-ambient 32s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.admin-shell {
+  isolation: isolate;
+}
+
+.admin-shell::after {
+  content: '';
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(34% 30% at 80% 10%, rgba(34, 211, 238, .08), transparent 70%),
+    radial-gradient(32% 28% at 15% 85%, rgba(0, 108, 53, .14), transparent 70%);
+  animation: qg-ambient 36s ease-in-out infinite alternate;
+}
+
+@keyframes qg-ambient {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate3d(3%, -2%, 0) rotate(4deg) scale(1.05); }
+  100% { transform: translate3d(-3%, 2%, 0) rotate(-3deg) scale(1.02); }
+}
+
+/* Let the ambient layer show through the page canvas (the shell itself keeps
+   the paper background that the ambient layer paints on). */
+.user-shell .qada-user-main {
+  background: transparent !important;
+}
+
+/* ---------- Translucent cards (no blur: background is already soft) ---------- */
+
+.user-shell .qada-user-main :is(.bg-white, [class~="bg-slate-950"], [class~="bg-slate-900"], [class~="bg-neutral-950"], [class~="bg-neutral-900"])[class*="rounded-"][class*="border"],
+.qada-saudi-landing main :is(.bg-white)[class*="rounded-"] {
+  background-color: var(--qg-glass-light) !important;
+  border-color: var(--qg-glass-edge) !important;
+  box-shadow: var(--qg-glass-shadow) !important;
+  transition: transform 260ms var(--qg-ease), box-shadow 260ms var(--qg-ease), background-color 260ms var(--qg-ease);
+}
+
+.user-shell .qada-user-main :is(button, a)[class*="rounded-"][class*="border"]:is(.bg-white, [class~="bg-slate-900"], [class~="bg-slate-950"]):hover,
+.qada-saudi-landing main button.bg-white[class*="rounded-"]:hover {
+  transform: translateY(-2px);
+  background-color: rgba(255, 255, 255, .84) !important;
+  box-shadow: 0 18px 50px rgba(8, 19, 15, .12), inset 0 1px rgba(255, 255, 255, .95) !important;
+}
+
+/* ---------- Frosted floating surfaces ---------- */
+
+.user-shell .qada-user-sidebar {
+  background: linear-gradient(180deg, rgba(6, 48, 33, .84), rgba(4, 28, 20, .9)) !important;
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  border-inline-start: 1px solid var(--qg-glass-dark-edge) !important;
+  box-shadow: inset 1px 0 rgba(255, 255, 255, .05), -18px 0 50px rgba(8, 19, 15, .12) !important;
+}
+
+.user-shell .qada-mobile-header {
+  background: rgba(251, 250, 245, .72) !important;
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border-color: rgba(16, 32, 25, .08) !important;
+}
+
+.user-shell .qada-glass-dock {
+  background: rgba(251, 250, 245, .74) !important;
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  border-color: rgba(255, 255, 255, .8) !important;
+  box-shadow: 0 -12px 36px rgba(8, 19, 15, .08), inset 0 1px rgba(255, 255, 255, .9) !important;
+}
+
+.admin-shell .qada-glass-dock {
+  background: rgba(3, 16, 35, .72) !important;
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+}
+
+.user-shell .qada-pro-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 80% at 100% 0%, rgba(231, 207, 154, .14), transparent 60%),
+    linear-gradient(135deg, rgba(6, 60, 40, .9), rgba(4, 30, 22, .94)) !important;
+  border: 1px solid var(--qg-glass-dark-edge) !important;
+  box-shadow: 0 28px 70px rgba(4, 30, 22, .28), inset 0 1px rgba(255, 255, 255, .08) !important;
+}
+
+/* A slow light sweep across the hero glass. */
+.user-shell .qada-pro-hero::after {
+  content: '';
+  position: absolute;
+  inset: -40% -60%;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, .07) 50%, transparent 58%);
+  animation: qg-sweep 9s var(--qg-ease) infinite;
+}
+
+@keyframes qg-sweep {
+  0%, 55% { transform: translateX(-40%); }
+  100% { transform: translateX(40%); }
+}
+
+.user-shell .qada-8k-modal-overlay {
+  background: rgba(8, 19, 15, .4) !important;
+  backdrop-filter: blur(10px) saturate(1.1) !important;
+}
+
+.user-shell .qada-8k-modal {
+  background: var(--qg-glass-light-strong) !important;
+  backdrop-filter: blur(26px) saturate(1.4);
+  -webkit-backdrop-filter: blur(26px) saturate(1.4);
+  border: 1px solid var(--qg-glass-edge) !important;
+  box-shadow: 0 34px 90px rgba(8, 19, 15, .24), inset 0 1px rgba(255, 255, 255, .9) !important;
+  animation: qg-pop 320ms var(--qg-ease) both;
+}
+
+.user-shell .qada-8k-modal > header,
+.user-shell .qada-8k-modal > div:first-child {
+  background: rgba(251, 250, 245, .7) !important;
+}
+
+.qada-8k-floating-chat > div:first-child {
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  animation: qg-pop 280ms var(--qg-ease) both;
+}
+
+.user-shell .qada-8k-floating-chat > div:first-child {
+  background: rgba(251, 250, 245, .88) !important;
+  border: 1px solid var(--qg-glass-edge) !important;
+  box-shadow: 0 30px 80px rgba(8, 19, 15, .2), inset 0 1px rgba(255, 255, 255, .9) !important;
+}
+
+@keyframes qg-pop {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- Entrance motion ---------- */
+
+.user-shell .qada-user-main > * > *,
+.qada-saudi-landing main > section {
+  animation: qg-rise 520ms var(--qg-ease) both;
+}
+
+.user-shell .qada-user-main > * > *:nth-child(2) { animation-delay: 60ms; }
+.user-shell .qada-user-main > * > *:nth-child(3) { animation-delay: 120ms; }
+.user-shell .qada-user-main > * > *:nth-child(n + 4) { animation-delay: 180ms; }
+
+@keyframes qg-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Primary actions get a quiet glint on hover. */
+.user-shell button:is([class*="from-amber-"], [class~="bg-amber-500"], [class~="bg-emerald-600"]),
+.qada-primary-action {
+  position: relative;
+  overflow: hidden;
+}
+
+.user-shell button:is([class*="from-amber-"], [class~="bg-amber-500"], [class~="bg-emerald-600"])::after,
+.qada-primary-action::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .28) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform 700ms var(--qg-ease);
+}
+
+.user-shell button:is([class*="from-amber-"], [class~="bg-amber-500"], [class~="bg-emerald-600"]):hover::after,
+.qada-primary-action:hover::after {
+  transform: translateX(120%);
+}
+
+/* ---------- Agent-flow diagram ---------- */
+
+.qd-flow {
+  --qd-gold: #e7c26a;
+  --qd-blue: #8fb8ff;
+  --qd-violet: #c0a8ff;
+  --qd-green: #4fd8a0;
+  --qd-brass: #e0ad66;
+  --qd-rose: #f39bb0;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin: 0;
+  padding: 22px 18px 16px;
+  border-radius: 28px;
+  color: #eef3ef;
+  background:
+    radial-gradient(55% 40% at 100% 0%, rgba(231, 207, 154, .12), transparent 65%),
+    radial-gradient(50% 40% at 0% 100%, rgba(0, 108, 53, .28), transparent 65%),
+    linear-gradient(180deg, rgba(8, 26, 20, .94), rgba(5, 17, 13, .96));
+  border: 1px solid rgba(231, 207, 154, .16);
+  box-shadow: 0 30px 80px rgba(4, 20, 14, .3), inset 0 1px rgba(255, 255, 255, .06);
+}
+
+.qd-flow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .035) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(80% 70% at 50% 40%, black, transparent);
+}
+
+.qd-tone-gold { --tone: var(--qd-gold, #e7c26a); }
+.qd-tone-blue { --tone: var(--qd-blue, #8fb8ff); }
+.qd-tone-violet { --tone: var(--qd-violet, #c0a8ff); }
+.qd-tone-green { --tone: var(--qd-green, #4fd8a0); }
+.qd-tone-brass { --tone: var(--qd-brass, #e0ad66); }
+.qd-tone-rose { --tone: var(--qd-rose, #f39bb0); }
+
+.qd-flow-head {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.qd-flow-kicker {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: var(--qd-gold);
+  color: #1b1406;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.qd-flow-heading {
+  font-size: clamp(20px, 3.2vw, 28px);
+  font-weight: 700;
+  line-height: 1.35;
+  color: #f7f9f6;
+}
+
+.qd-flow-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  font-size: 14px;
+  color: rgba(238, 243, 239, .86);
+}
+
+.qd-flow-step-no {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--qd-brass);
+}
+
+.qd-flow-board {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 660px;
+  margin: 0 auto;
+}
+
+.qd-flow-row {
+  display: grid;
+  width: 100%;
+  gap: 10px;
+}
+
+.qd-flow-center {
+  justify-items: center;
+}
+
+.qd-flow-hub {
+  grid-template-columns: 1fr 22px 1.2fr 22px 1fr;
+  align-items: center;
+  gap: 0;
+}
+
+.qd-flow-trio {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.qd-flow-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 9px 12px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid color-mix(in srgb, var(--tone) 34%, transparent);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background-color 420ms var(--qg-ease), border-color 420ms var(--qg-ease), box-shadow 420ms var(--qg-ease), transform 420ms var(--qg-ease);
+}
+
+.qd-flow-center > .qd-flow-node {
+  min-width: min(240px, 100%);
+}
+
+.qd-flow-node-wide {
+  min-width: min(320px, 100%) !important;
+}
+
+.qd-flow-node[data-active] {
+  background: color-mix(in srgb, var(--tone) 15%, rgba(255, 255, 255, .05));
+  border-color: var(--tone);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone) 55%, transparent), 0 0 34px color-mix(in srgb, var(--tone) 38%, transparent), inset 0 1px rgba(255, 255, 255, .12);
+  transform: translateY(-2px);
+  animation: qd-breathe 1.8s ease-in-out infinite;
+}
+
+@keyframes qd-breathe {
+  0%, 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--tone) 55%, transparent), 0 0 24px color-mix(in srgb, var(--tone) 28%, transparent), inset 0 1px rgba(255, 255, 255, .12); }
+  50% { box-shadow: 0 0 0 1px var(--tone), 0 0 40px color-mix(in srgb, var(--tone) 45%, transparent), inset 0 1px rgba(255, 255, 255, .14); }
+}
+
+.qd-flow-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+}
+
+.qd-flow-text {
+  display: grid;
+  min-width: 0;
+  text-align: start;
+}
+
+.qd-flow-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #f4f7f3;
+}
+
+.qd-flow-sub {
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(226, 234, 229, .74);
+}
+
+/* Connectors */
+
+.qd-flow-rail {
+  position: relative;
+  width: 2px;
+  height: 24px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .13);
+}
+
+.qd-flow-rail[data-active] {
+  background: color-mix(in srgb, var(--tone) 45%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tone) 60%, transparent);
+}
+
+.qd-flow-rail[data-active]::after {
+  content: '';
+  position: absolute;
+  inset-inline: -2px;
+  height: 10px;
+  border-radius: 99px;
+  background: var(--tone);
+  box-shadow: 0 0 12px var(--tone);
+  animation: qd-drop 900ms linear infinite;
+}
+
+@keyframes qd-drop {
+  from { transform: translateY(-12px); }
+  to { transform: translateY(26px); }
+}
+
+.qd-flow-link {
+  height: 2px;
+  background: rgba(255, 255, 255, .13);
+  transition: background-color 420ms var(--qg-ease), box-shadow 420ms var(--qg-ease);
+}
+
+.qd-flow-link[data-active] {
+  background: linear-gradient(90deg, transparent, var(--tone), transparent);
+  background-size: 200% 100%;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--tone) 60%, transparent);
+  animation: qd-slide 1.1s linear infinite;
+}
+
+@keyframes qd-slide {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* Fan-out bracket spanning the centers of the three agent columns. */
+.qd-flow-fan {
+  width: calc(66.66% - 4px);
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, .13);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  transition: border-color 420ms var(--qg-ease), box-shadow 420ms var(--qg-ease);
+}
+
+.qd-flow-fan[data-active] {
+  border-color: var(--qd-green);
+  box-shadow: 0 -6px 18px rgba(79, 216, 160, .25);
+}
+
+.qd-flow-band {
+  position: relative;
+  width: 100%;
+  margin-top: 18px;
+  padding: 22px 10px 10px;
+  border: 1px dashed rgba(224, 173, 102, .38);
+  border-radius: 18px;
+  transition: border-color 420ms var(--qg-ease), background-color 420ms var(--qg-ease);
+}
+
+.qd-flow-band[data-active] {
+  border-style: solid;
+  border-color: var(--qd-brass);
+  background: rgba(224, 173, 102, .06);
+}
+
+.qd-flow-band-label {
+  position: absolute;
+  top: -11px;
+  inset-inline-start: 50%;
+  transform: translateX(50%);
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--qd-brass);
+  background: #081a14;
+  white-space: nowrap;
+}
+
+/* Controls */
+
+.qd-flow-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.qd-flow-steps {
+  display: flex;
+  align-items: center;
+}
+
+.qd-flow-dot {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.qd-flow-dot::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .28);
+  transform: translate(50%, -50%);
+  transition: width 300ms var(--qg-ease), background-color 300ms var(--qg-ease);
+}
+
+.qd-flow-dot[aria-pressed="true"]::before {
+  width: 22px;
+  background: var(--qd-gold);
+}
+
+.qd-flow-play {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: #eef3ef;
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid rgba(255, 255, 255, .14);
+  cursor: pointer;
+}
+
+.qd-flow-play:hover {
+  background: rgba(255, 255, 255, .12);
+}
+
+.qd-flow :is(.qd-flow-dot, .qd-flow-play):focus-visible {
+  outline: 2px solid var(--qd-gold) !important;
+  outline-offset: 2px;
+}
+
+.qd-flow-note {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(226, 234, 229, .7);
+}
+
+/* Phones: stack node content so three columns still fit at 360px. */
+@media (max-width: 560px) {
+  .qd-flow {
+    padding: 18px 12px 12px;
+    border-radius: 22px;
+  }
+
+  .qd-flow-hub {
+    grid-template-columns: 1fr 10px 1.15fr 10px 1fr;
+  }
+
+  .qd-flow-hub .qd-flow-node,
+  .qd-flow-trio .qd-flow-node {
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 6px;
+    text-align: center;
+  }
+
+  .qd-flow-hub .qd-flow-text,
+  .qd-flow-trio .qd-flow-text {
+    text-align: center;
+  }
+
+  .qd-flow-hub .qd-flow-title,
+  .qd-flow-trio .qd-flow-title {
+    font-size: 12.5px;
+  }
+
+  .qd-flow-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .qd-flow-trio {
+    gap: 6px;
+  }
+}

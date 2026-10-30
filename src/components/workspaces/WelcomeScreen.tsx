@@ -17,6 +17,7 @@ import { CourtJurisdiction, COURT_CATEGORIES } from '../layout/Sidebar';
 import { readSseTextResponse } from '../../lib/readSseTextResponse';
 import { readFileAsAttachment } from '../../lib/clientAttachments';
 import type { Attachment } from '../../types';
+import { AgentFlowDiagram } from '../AgentFlowDiagram';
 
 async function simpleAssistantHttpError(response: Response): Promise<string> {
   const payload = await response.json().catch(() => ({} as Record<string, unknown>));
@@ -563,6 +564,8 @@ export function WelcomeScreen({
         </div>
       </div>
 
+      <AgentFlowDiagram />
+
       {isAdmin && onOpenAdminOverview && (
         <div className="qada-pro-admin relative overflow-hidden rounded-[26px] border p-5 sm:p-6">
           <div className="absolute -top-16 -left-16 h-44 w-44 rounded-full bg-violet-500/15 blur-3xl pointer-events-none" />
@@ -574,7 +577,7 @@ export function WelcomeScreen({
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-1 text-xs font-black text-violet-200">
                   <LockKeyhole className="h-3 w-3" />
-                  ADMIN ONLY
+                  للإدارة فقط
                 </div>
                 <h2 className="mt-2 text-xl sm:text-2xl font-black text-white">غرفة العمليات وخريطة الوكلاء</h2>
                 <p className="mt-1 max-w-2xl text-xs sm:text-sm leading-6 text-slate-400">

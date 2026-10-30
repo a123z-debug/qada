@@ -70,7 +70,7 @@ export function AdminUserManagement({ onBack }: { onBack: () => void }) {
             </div>
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-3 py-1 text-xs font-black text-violet-200">
-                <LockKeyhole className="h-3 w-3" /> ADMIN ONLY
+                <LockKeyhole className="h-3 w-3" /> للإدارة فقط
               </div>
               <h2 className="mt-2 text-xl sm:text-2xl font-black text-white">إدارة مستخدمي المنصة</h2>
               <p className="mt-1 text-xs sm:text-sm leading-6 text-slate-400">عرض الحسابات المسجلة وإيقافها أو إعادة تفعيلها دون كشف كلمات المرور أو بصماتها.</p>

@@ -35,7 +35,7 @@ const rules: Array<{ id: string; pattern: RegExp; message: string }> = [
   { id: 'arabic-indic-digits', pattern: /[٠-٩]/, message: 'Arabic-Indic digits mixed with the Western digits used across the UI' },
   { id: 'tiny-font', pattern: /text-\[(?:[0-9]|10)(?:\.\d+)?px\]/, message: 'font size below 11px' },
   { id: 'emoji', pattern: /[\u{1F300}-\u{1FAFF}\u{2B50}\u{26F6}]/u, message: 'emoji/pictograph used as UI decoration' },
-  { id: 'english-label', pattern: />\s*(?:ADMIN|LIVE|SECURE OS|OS v3\.0)\s*<|placeholder="Admin code"|\(LocalStorage\)/, message: 'English-only label in the Arabic interface' },
+  { id: 'english-label', pattern: />\s*(?:ADMIN|LIVE|SECURE OS|OS v3\.0)\s*<|\bADMIN ONLY\b|placeholder="Admin code"|\(LocalStorage\)/, message: 'English-only label in the Arabic interface' },
   { id: 'locale-less-date', pattern: /toLocale(?:Date|Time)?String\(\s*\)/, message: 'date/number formatting without an explicit locale' },
   { id: 'hijri-arabic-digit-locale', pattern: /toLocale(?:Date|Time)?String\('ar-SA'\)/, message: "use 'ar-SA-u-nu-latn' to keep Western digits" },
   { id: 'decorative-check', pattern: / ✓['`<]/, message: 'decorative check mark appended to Arabic copy' },
@@ -53,7 +53,7 @@ for (const file of uiFiles) {
 
 const app = readFileSync(path.join(process.cwd(), 'src/App.tsx'), 'utf8');
 const watermark = app.slice(app.indexOf('function SecurityWatermark'), app.indexOf('function SystemAgentBar'));
-expect(watermark.includes('aria-hidden="true"'), 'security watermark must be hidden from screen readers');
+expect(watermark.includes('aria-hidden="true"') && watermark.includes('data-mark='), 'security watermark must be hidden from screen readers and drawn via CSS');
 expect(!/:\s*'ADMIN'/.test(watermark), 'security watermark must not label regular users as ADMIN');
 
 if (failures.length) {

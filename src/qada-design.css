@@ -69,13 +69,20 @@ p {
 
 /* ---------- Security watermark: present for screenshots, quiet for reading ---------- */
 
+/* Drawn from data-mark via ::before so it is neither selectable nor read as
+   page text by assistive technology or contrast audits. */
+.qada-watermark [data-mark]::before {
+  content: attr(data-mark);
+}
+
 .qada-watermark {
-  opacity: 1 !important;
-  color: rgba(19, 38, 31, .035) !important;
+  opacity: .025 !important;
+  color: var(--qd-ink) !important;
 }
 
 .admin-shell .qada-watermark {
-  color: rgba(255, 255, 255, .03) !important;
+  opacity: .03 !important;
+  color: #fff !important;
 }
 
 /* ---------- Public landing ---------- */

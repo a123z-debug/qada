@@ -8,6 +8,7 @@ import { Menu, Scale, ShieldCheck, LogOut, ArrowRight, FileText, Library, Bot, F
 import { UserSession, JudgmentRecord, Attachment } from './types';
 import { LoginScreen } from './components/LoginScreen';
 import { Sidebar, CourtJurisdiction } from './components/layout/Sidebar';
+import { AgentFlowDiagram } from './components/AgentFlowDiagram';
 const WelcomeScreen = React.lazy(() => import('./components/workspaces/WelcomeScreen').then((module) => ({ default: module.WelcomeScreen })));
 const AdministrativeWorkspace = React.lazy(() => import('./components/workspaces/AdministrativeWorkspace').then((module) => ({ default: module.AdministrativeWorkspace })));
 const GeneralWorkspace = React.lazy(() => import('./components/workspaces/GeneralWorkspace').then((module) => ({ default: module.GeneralWorkspace })));
@@ -53,9 +54,7 @@ function SecurityWatermark({ user }: { user: UserSession }) {
   const stamp = new Date().toLocaleDateString('ar-SA-u-nu-latn');
   return (
     <div aria-hidden="true" className="qada-watermark pointer-events-none fixed inset-0 z-[9999] overflow-hidden flex items-center justify-center select-none">
-      <div className="rotate-[-35deg] font-black text-4xl sm:text-7xl whitespace-nowrap">
-        {user.name} - {identityMarker} - {stamp}
-      </div>
+      <div className="rotate-[-35deg] font-black text-4xl sm:text-7xl whitespace-nowrap" data-mark={`${user.name} - ${identityMarker} - ${stamp}`} />
     </div>
   );
 }
@@ -264,6 +263,10 @@ function LandingPage({ onEnterApp }: { onEnterApp: (intent?: LaunchIntent) => vo
               ))}
             </div>
           </div>
+        </section>
+
+        <section className="mx-auto max-w-5xl px-4 pb-8 sm:px-6">
+          <AgentFlowDiagram />
         </section>
 
         <section className="mx-auto max-w-5xl px-4 pb-4 sm:px-6">
@@ -945,7 +948,7 @@ export default function App() {
 
       {userMode ? (
         <nav
-          className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 px-2 pt-1.5 shadow-[0_-8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl"
+          className="qada-glass-dock lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 bg-white/95 px-2 pt-1.5 shadow-[0_-8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl"
           aria-label="التنقل السريع"
           style={{ paddingBottom: 'max(0.4rem, env(safe-area-inset-bottom))' }}
         >
@@ -1001,7 +1004,7 @@ export default function App() {
         </nav>
       ) : (
         <nav
-          className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-cyan-400/15 bg-[#031023]/94 backdrop-blur-2xl shadow-[0_-14px_40px_rgba(0,0,0,0.35)]"
+          className="qada-glass-dock lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-cyan-400/15 bg-[#031023]/94 backdrop-blur-2xl shadow-[0_-14px_40px_rgba(0,0,0,0.35)]"
           aria-label="التنقل السريع"
           style={{ paddingBottom: 'max(0.45rem, env(safe-area-inset-bottom))' }}
         >

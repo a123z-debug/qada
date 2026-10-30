@@ -8,6 +8,7 @@ import '@fontsource/ibm-plex-sans-arabic/700.css';
 import './index.css';
 import './qada-8k.css';
 import './qada-design.css';
+import './qada-glass.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
