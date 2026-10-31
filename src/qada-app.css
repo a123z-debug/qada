@@ -1,0 +1,244 @@
+/* ==========================================================================
+   QADA app surfaces — greeting header, mode switch, court cards, case
+   workspaces. Imported last; builds on the qada-design / qada-glass tokens.
+   ========================================================================== */
+
+/* ---------- Greeting header (simple) and professional head ---------- */
+
+.qada-greeting,
+.qada-pro-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 20px;
+  padding: 4px 2px 2px;
+}
+
+.qada-greeting-id {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.qada-greeting-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(160deg, #0a7b47, #053d29);
+  box-shadow: 0 0 0 3px rgba(231, 207, 154, .55), 0 10px 24px rgba(6, 75, 50, .22);
+}
+
+.qada-greeting-hello {
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--qd-ink);
+}
+
+.qada-greeting-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--qd-muted);
+}
+
+.qada-greeting-sub svg {
+  color: var(--qd-green-700);
+}
+
+.qada-greeting-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qada-greeting-admin {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--qd-ink-soft);
+  background: rgba(255, 255, 255, .7);
+  border: 1px solid var(--qd-line);
+  cursor: pointer;
+}
+
+.qada-pro-head-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--qd-brass-700);
+}
+
+.qada-pro-head-title {
+  margin-top: 2px;
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 700;
+  color: var(--qd-ink);
+}
+
+/* ---------- Mode switch ---------- */
+
+.qada-mode-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 13px;
+  background: rgba(16, 32, 25, .06);
+  border: 1px solid rgba(16, 32, 25, .07);
+}
+
+.qada-mode-switch button {
+  min-height: 36px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--qd-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background-color 200ms, color 200ms, box-shadow 200ms;
+}
+
+.qada-mode-switch button:hover {
+  color: var(--qd-ink);
+}
+
+.qada-mode-switch button[aria-checked="true"] {
+  color: var(--qd-green-800);
+  font-weight: 700;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(8, 19, 15, .08), inset 0 0 0 1px rgba(16, 32, 25, .06);
+}
+
+/* ---------- Professional court cards ---------- */
+
+.user-shell .qada-pro-court-card {
+  transition: transform 260ms var(--qg-ease), box-shadow 260ms var(--qg-ease), border-color 260ms var(--qg-ease);
+}
+
+.user-shell .qada-pro-court-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 108, 53, .22) !important;
+  box-shadow: 0 22px 54px rgba(8, 19, 15, .1), inset 0 1px rgba(255, 255, 255, .95) !important;
+}
+
+.user-shell .qada-pro-court-card > div:last-child > button.qada-court-cta {
+  color: var(--qd-green-800) !important;
+  background: var(--qd-green-50) !important;
+  border: 1px solid rgba(0, 108, 53, .2) !important;
+  box-shadow: none !important;
+}
+
+.user-shell .qada-pro-court-card > div:last-child > button.qada-court-cta * {
+  color: inherit !important;
+}
+
+.user-shell .qada-pro-court-card > div:last-child > button.qada-court-cta:hover,
+.user-shell .qada-pro-court-card:hover > div:last-child > button.qada-court-cta {
+  color: #fff !important;
+  background: linear-gradient(180deg, var(--qd-green-700), var(--qd-green-800)) !important;
+  border-color: var(--qd-green-800) !important;
+  box-shadow: 0 10px 24px rgba(6, 75, 50, .2) !important;
+}
+
+/* ---------- Case workspaces ---------- */
+
+.user-shell .qada-case-workspace button.qada-example-chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px !important;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--qd-green-800) !important;
+  background: rgba(255, 255, 255, .78) !important;
+  border: 1px solid rgba(0, 108, 53, .2) !important;
+  box-shadow: none !important;
+}
+
+.user-shell .qada-case-workspace button.qada-example-chip:hover {
+  background: var(--qd-green-50) !important;
+  border-color: rgba(0, 108, 53, .4) !important;
+}
+
+.user-shell .qada-case-workspace :is(#btn-draft-memo-admin, #btn-draft-memo-general, #btn-draft-memo-criminal) {
+  min-height: 54px;
+  border-radius: 15px !important;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff !important;
+  background: linear-gradient(180deg, var(--qd-green-700), var(--qd-green-800)) !important;
+  border: 1px solid var(--qd-green-800) !important;
+  box-shadow: 0 14px 32px rgba(6, 75, 50, .22), inset 0 1px rgba(255, 255, 255, .14) !important;
+}
+
+.user-shell .qada-case-workspace :is(#btn-draft-memo-admin, #btn-draft-memo-general, #btn-draft-memo-criminal) * {
+  color: #fff !important;
+}
+
+.user-shell .qada-case-workspace :is(#btn-draft-memo-admin, #btn-draft-memo-general, #btn-draft-memo-criminal):hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 40px rgba(6, 75, 50, .28), inset 0 1px rgba(255, 255, 255, .16) !important;
+}
+
+/* The preview reads as a document sheet, pinned beside the form on wide screens. */
+.user-shell .qada-case-workspace .qada-ws-preview {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .86) !important;
+  border: 1px solid var(--qd-line) !important;
+  box-shadow: 0 24px 60px rgba(8, 19, 15, .08), inset 0 1px rgba(255, 255, 255, .95) !important;
+}
+
+.user-shell .qada-case-workspace .qada-ws-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--qd-green-700), var(--qd-brass-500), var(--qd-green-700));
+}
+
+@media (min-width: 1280px) {
+  .user-shell .qada-case-workspace {
+    max-width: 1320px !important;
+  }
+
+  .user-shell .qada-case-workspace .qada-ws-preview {
+    min-height: 560px;
+  }
+}
+
+/* Form fields: calmer labels, comfortable inputs. */
+.user-shell .qada-case-workspace .qada-ws-form label {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--qd-ink-soft) !important;
+}
+
+.user-shell .qada-case-workspace .qada-ws-form :is(input, textarea):not([type="file"]) {
+  font-size: 15px !important;
+  line-height: 1.8;
+  border-radius: 13px !important;
+  background: rgba(255, 255, 255, .9) !important;
+}
+
+.user-shell .qada-case-workspace .qada-ws-form input:not([type="file"]) {
+  min-height: 48px;
+}
+
+@media (max-width: 767px) {
+  .user-shell .qada-case-workspace button.qada-example-chip {
+    min-height: 44px;
+  }
+}

@@ -18,6 +18,7 @@ import { readSseTextResponse } from '../../lib/readSseTextResponse';
 import { readFileAsAttachment } from '../../lib/clientAttachments';
 import type { Attachment } from '../../types';
 import { AgentFlowDiagram } from '../AgentFlowDiagram';
+import { ModeSwitch } from '../ModeSwitch';
 
 async function simpleAssistantHttpError(response: Response): Promise<string> {
   const payload = await response.json().catch(() => ({} as Record<string, unknown>));
@@ -231,72 +232,27 @@ export function WelcomeScreen({
   if (interfaceMode === 'simple') {
     return (
       <div className="qada-simple-screen qada-luxury-simple mx-auto w-full max-w-5xl space-y-6 px-1 py-2 sm:px-4 sm:py-5" dir="rtl">
-        <div className="qada-profile-card qada-luxury-profile relative overflow-hidden rounded-[28px] border px-4 py-4 sm:px-6 sm:py-5">
-          <div className="qada-profile-ribbon" aria-hidden="true" />
-          <div className="qada-profile-gold-sweep" aria-hidden="true" />
-
-          <div className="relative z-10 flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3.5 sm:gap-4">
-              <div className="qada-profile-avatar-shell relative shrink-0">
-                <div className="qada-profile-avatar flex h-14 w-14 items-center justify-center rounded-full text-lg font-black text-white sm:h-16 sm:w-16 sm:text-xl">
-                  {(userName || 'مستخدم').trim().slice(0, 1)}
-                </div>
-                <span className="qada-profile-verified absolute -bottom-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full">
-                  <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2.2} />
-                </span>
-              </div>
-
-              <div className="min-w-0">
-                <div className="qada-profile-kicker mb-1 inline-flex items-center gap-1.5 text-xs font-black">
-                  <Scale className="h-3.5 w-3.5" strokeWidth={1.9} />
-                  الملف الشخصي
-                </div>
-                <div className="qada-profile-name truncate text-base font-black sm:text-lg">
-                  {userName || 'مستخدم QADA'}
-                </div>
-                <div className="qada-profile-meta mt-1 flex flex-wrap items-center gap-1.5 text-xs font-bold sm:text-xs">
-                  <span>الوضع المبسط</span>
-                  <span className="opacity-40">•</span>
-                  <span>مساحة شخصية</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="qada-profile-status hidden items-center gap-2 rounded-full px-3 py-2 text-xs font-black sm:flex">
-              <ShieldCheck className="h-4 w-4" strokeWidth={2} />
-              جلسة محمية
+        <div className="qada-greeting">
+          <div className="qada-greeting-id">
+            <span className="qada-greeting-avatar" aria-hidden="true">
+              {(userName || 'مستخدم').trim().slice(0, 1)}
+            </span>
+            <div className="min-w-0">
+              <p className="qada-greeting-hello">{new Date().getHours() < 12 ? 'صباح الخير' : 'مساء الخير'}، {userName || 'مستخدم QADA'}</p>
+              <p className="qada-greeting-sub">
+                <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                جلسة محمية · مساحتك الشخصية
+              </p>
             </div>
           </div>
-
-          <div className="qada-profile-mobile-status relative z-10 mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black sm:hidden">
-            <ShieldCheck className="h-3.5 w-3.5" strokeWidth={2} />
-            جلسة محمية
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-3 px-1">
-          <div>
-            <div className="sr-only">QADA SIMPLE</div>
-            <h2 className="text-sm font-black text-slate-950">قضيتي</h2>
-            <p className="mt-0.5 text-xs text-slate-500">كل شيء عن مشكلتك في مكان واحد.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => changeInterfaceMode('professional')}
-              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-bold text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-950"
-            >
-              أدوات متقدمة
-            </button>
+          <div className="qada-greeting-actions">
+            <span className="sr-only">QADA SIMPLE</span>
             {isAdmin && onOpenAdminOverview && (
-              <button
-                type="button"
-                onClick={onOpenAdminOverview}
-                className="min-h-10 rounded-xl border border-slate-200 bg-white px-3.5 text-xs font-black text-slate-700 shadow-sm"
-              >
+              <button type="button" onClick={onOpenAdminOverview} className="qada-greeting-admin">
                 واجهة الإدارة
               </button>
             )}
+            <ModeSwitch mode="simple" onChange={changeInterfaceMode} />
           </div>
         </div>
 
@@ -455,20 +411,18 @@ export function WelcomeScreen({
 
   return (
     <div className="qada-professional-screen max-w-7xl mx-auto space-y-7 py-4 px-2 sm:px-6 select-none" dir="rtl">
-      <div className="qada-pro-toolbar flex flex-col gap-3 rounded-2xl border p-3.5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="text-xs font-black text-amber-300">QADA PROFESSIONAL</div>
-          <p className="mt-1 text-xs text-slate-400">للشخص الذي يعرف نوع القضية ويريد اختيار المحكمة والخدمة والمراجع بنفسه.</p>
+      <div className="qada-pro-head">
+        <div className="min-w-0">
+          <div className="qada-pro-head-kicker">QADA PROFESSIONAL</div>
+          <h2 className="qada-pro-head-title">مساحة العمل المتقدمة</h2>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => changeInterfaceMode('simple')} className="min-h-10 rounded-xl border border-slate-700 bg-slate-950 px-4 text-xs font-bold text-slate-200 hover:border-cyan-400/40">
-            رجوع للوضع البسيط
-          </button>
+        <div className="qada-greeting-actions">
           {isAdmin && onOpenAdminOverview && (
-            <button type="button" onClick={onOpenAdminOverview} className="min-h-10 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 text-xs font-black text-violet-200 hover:bg-violet-500/20">
+            <button type="button" onClick={onOpenAdminOverview} className="qada-greeting-admin">
               واجهة الإدارة
             </button>
           )}
+          <ModeSwitch mode="professional" onChange={changeInterfaceMode} />
         </div>
       </div>
 
@@ -564,7 +518,6 @@ export function WelcomeScreen({
         </div>
       </div>
 
-      <AgentFlowDiagram />
 
       {isAdmin && onOpenAdminOverview && (
         <div className="qada-pro-admin relative overflow-hidden rounded-[26px] border p-5 sm:p-6">
@@ -657,7 +610,7 @@ export function WelcomeScreen({
                   <button
                     type="button"
                     onClick={() => handleQuickLaunch(cat.id, primaryService.id)}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition-all shadow-md cursor-pointer"
+                    className="qada-court-cta w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer"
                   >
                     <span>الدخول لمساحة {cat.title}</span>
                     <ArrowLeft className="w-4 h-4" />
@@ -708,6 +661,7 @@ export function WelcomeScreen({
         </div>
       </div>
 
+      <AgentFlowDiagram />
     </div>
   );
 }

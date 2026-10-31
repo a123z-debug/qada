@@ -393,8 +393,8 @@ ${sharedRules}`;
         </div>
       ) : (
         /* Primary Defense / Appeal / Procedural */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7 bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 space-y-4">
+        <div className="qada-ws-split grid grid-cols-1 gap-6 xl:grid-cols-12 xl:items-start">
+          <div className="qada-ws-form bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 space-y-4 xl:col-span-7">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-rose-400" />
@@ -526,7 +526,7 @@ ${sharedRules}`;
             </button>
           </div>
 
-          <div className="lg:col-span-5 bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4">
+          <div className="qada-ws-preview bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4 xl:col-span-5 xl:sticky xl:top-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                 <div className="flex items-center gap-2">

@@ -428,8 +428,8 @@ ${sharedRules}`;
         </div>
       ) : (
         /* Primary Pleading / Claim / Appeal / Memo Studio */
-        <div className="space-y-6">
-          <div className="bg-transparent border-0 rounded-3xl p-0 space-y-4">
+        <div className="qada-ws-split grid grid-cols-1 gap-6 xl:grid-cols-12 xl:items-start">
+          <div className="qada-ws-form bg-transparent border-0 rounded-3xl p-0 space-y-4 xl:col-span-7">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-amber-400" />
@@ -563,17 +563,6 @@ ${sharedRules}`;
                 />
               </div>
 
-              <button
-                type="button"
-                id="btn-draft-memo-admin"
-                onClick={handleGenerateDocument}
-                disabled={isGenerating}
-                className="w-full bg-amber-500/90 hover:bg-amber-500 text-slate-950 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-200 cursor-pointer disabled:opacity-50"
-              >
-                <Sparkles className="w-5 h-5" />
-                <span>{isGenerating ? 'جاري الاتصال بالذكاء الاصطناعي والصياغة...' : 'صياغة المذكرة الاحترافية'}</span>
-              </button>
-
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <label htmlFor="administrativeworkspace-field-9" className="text-xs font-semibold text-neutral-300">الطلبات الختامية الجازمة:</label>
@@ -591,6 +580,17 @@ ${sharedRules}`;
                 />
               </div>
 
+              <button
+                type="button"
+                id="btn-draft-memo-admin"
+                onClick={handleGenerateDocument}
+                disabled={isGenerating}
+                className="w-full bg-amber-500/90 hover:bg-amber-500 text-slate-950 font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all duration-200 cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className="w-5 h-5" />
+                <span>{isGenerating ? 'جاري الاتصال بالذكاء الاصطناعي والصياغة...' : 'صياغة المذكرة الاحترافية'}</span>
+              </button>
+
               <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-slate-300 text-sm backdrop-blur-sm">
                 <span className="text-xs text-amber-400/80 block mb-1">تنبيه مرجعي:</span>
                 <p className="opacity-80">لا تعتمد أي مادة أو مرسوم أو ميعاد ما لم يظهر معه مصدر رسمي وحالة تحقق واضحة.</p>
@@ -598,7 +598,7 @@ ${sharedRules}`;
             </div>
           </div>
 
-          <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4">
+          <div className="qada-ws-preview bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4 xl:col-span-5 xl:sticky xl:top-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                 <div className="flex items-center gap-2">

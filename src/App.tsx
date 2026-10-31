@@ -675,7 +675,7 @@ export default function App() {
                   setActiveCourt(null);
                   setActiveService(null);
                 }}
-                className="min-h-9 inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:border-amber-400/60 hover:bg-amber-500/20 transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)]"
+                className="min-h-11 inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:border-amber-400/60 hover:bg-amber-500/20 transition-all shadow-[0_0_15px_rgba(245,158,11,0.1)]"
               >
                 <ArrowRight className="h-4 w-4" />
                 <span>رجوع للوحة القيادة</span>

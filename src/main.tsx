@@ -10,6 +10,7 @@ import './qada-8k.css';
 import './qada-design.css';
 import './qada-glass.css';
 import './qada-landing.css';
+import './qada-app.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

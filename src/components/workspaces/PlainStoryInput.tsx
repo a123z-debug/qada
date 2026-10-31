@@ -180,7 +180,7 @@ export function PlainStoryInput({
               type="button"
               id={`btn-quick-example-${idx}`}
               onClick={() => onStoryChange(ex)}
-              className="text-xs px-3 py-1 rounded-xl bg-neutral-900 hover:bg-amber-500/10 hover:text-amber-300 text-neutral-300 border border-neutral-800 hover:border-amber-500/40 transition-all cursor-pointer"
+              className="qada-example-chip text-xs px-3 py-1 rounded-xl bg-neutral-900 hover:bg-amber-500/10 hover:text-amber-300 text-neutral-300 border border-neutral-800 hover:border-amber-500/40 transition-all cursor-pointer"
             >
               {ex}
             </button>
